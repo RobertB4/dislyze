@@ -1,0 +1,27 @@
+linters:
+  enable:
+    - gofmt
+    - golint
+    - govet
+    - errcheck
+    - staticcheck
+    - gosimple
+    - ineffassign
+    - unused
+    - misspell
+    - gocyclo
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+
+run:
+  deadline: 5m
+  tests: true
+  skip-dirs:
+    - vendor/
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0 
