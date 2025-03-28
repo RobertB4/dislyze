@@ -25,6 +25,11 @@ type TokenPair struct {
 
 // GenerateTokenPair creates a new access token and refresh token
 func GenerateTokenPair(userID, tenantID pgtype.UUID, role string, secret []byte) (*TokenPair, error) {
+	// Validate secret
+	if len(secret) == 0 {
+		return nil, fmt.Errorf("secret cannot be empty")
+	}
+
 	// Generate a random refresh token
 	refreshToken := make([]byte, 32)
 	if _, err := rand.Read(refreshToken); err != nil {
