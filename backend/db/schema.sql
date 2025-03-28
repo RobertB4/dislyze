@@ -25,9 +25,25 @@ CREATE TABLE users (
     UNIQUE(tenant_id, email)
 );
 
+-- Create refresh_tokens table
+CREATE TABLE refresh_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash VARCHAR(255) NOT NULL,
+    device_info TEXT,
+    ip_address VARCHAR(45),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_used_at TIMESTAMP WITH TIME ZONE,
+    revoked_at TIMESTAMP WITH TIME ZONE,
+    UNIQUE(token_hash)
+);
+
 -- Create indexes for better query performance
 CREATE INDEX idx_users_tenant_id ON users(tenant_id);
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -52,6 +68,7 @@ CREATE TRIGGER update_users_updated_at
 -- Create RLS (Row Level Security) policies
 ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE refresh_tokens ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for tenants
 CREATE POLICY tenant_isolation ON tenants
@@ -62,6 +79,15 @@ CREATE POLICY tenant_isolation ON tenants
 CREATE POLICY user_isolation ON users
     USING (tenant_id = current_setting('app.current_tenant_id')::uuid)
     WITH CHECK (tenant_id = current_setting('app.current_tenant_id')::uuid);
+
+-- Create policies for refresh_tokens
+CREATE POLICY refresh_token_isolation ON refresh_tokens
+    USING (user_id IN (
+        SELECT id FROM users WHERE tenant_id = current_setting('app.current_tenant_id')::uuid
+    ))
+    WITH CHECK (user_id IN (
+        SELECT id FROM users WHERE tenant_id = current_setting('app.current_tenant_id')::uuid
+    ));
 
 -- Create function to set current tenant context
 CREATE OR REPLACE FUNCTION set_tenant_context(tenant_id UUID)

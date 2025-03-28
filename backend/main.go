@@ -17,7 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func SetupRoutes(dbConn *pgxpool.Pool) http.Handler {
+func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env) http.Handler {
 	r := chi.NewRouter()
 
 	// Middleware
@@ -34,7 +34,7 @@ func SetupRoutes(dbConn *pgxpool.Pool) http.Handler {
 
 	// Auth routes
 	r.Route("/auth", func(r chi.Router) {
-		r.Post("/signup", handlers.Signup(dbConn))
+		r.Post("/signup", handlers.Signup(dbConn, env))
 	})
 
 	return r
@@ -62,8 +62,8 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Setup routes with database connection
-	router := SetupRoutes(pool)
+	// Setup routes with database connection and environment
+	router := SetupRoutes(pool, env)
 
 	// Start the server
 	go func() {

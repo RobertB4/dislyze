@@ -14,6 +14,7 @@ type Env struct {
 	DBPassword string
 	DBName     string
 	DBSSLMode  string
+	JWTSecret  string
 }
 
 func LoadEnv() (*Env, error) {
@@ -33,6 +34,7 @@ func LoadEnv() (*Env, error) {
 		"DB_PASSWORD": &env.DBPassword,
 		"DB_NAME":     &env.DBName,
 		"DB_SSL_MODE": &env.DBSSLMode,
+		"JWT_SECRET":  &env.JWTSecret,
 	}
 
 	var missing []string

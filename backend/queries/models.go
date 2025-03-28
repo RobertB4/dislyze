@@ -8,6 +8,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type RefreshToken struct {
+	ID         pgtype.UUID
+	UserID     pgtype.UUID
+	TokenHash  string
+	DeviceInfo pgtype.Text
+	IpAddress  pgtype.Text
+	ExpiresAt  pgtype.Timestamptz
+	CreatedAt  pgtype.Timestamptz
+	LastUsedAt pgtype.Timestamptz
+	RevokedAt  pgtype.Timestamptz
+}
+
 type Tenant struct {
 	ID        pgtype.UUID
 	Name      string

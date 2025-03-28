@@ -11,11 +11,16 @@ import (
 )
 
 type Querier interface {
+	CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error)
 	CreateTenant(ctx context.Context, arg *CreateTenantParams) (*Tenant, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
+	DeleteExpiredRefreshTokens(ctx context.Context) error
 	ExistsUserWithEmail(ctx context.Context, email string) (bool, error)
+	GetRefreshTokenByHash(ctx context.Context, tokenHash string) (*RefreshToken, error)
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error)
 	GetUserByEmail(ctx context.Context, arg *GetUserByEmailParams) (*User, error)
+	RevokeRefreshToken(ctx context.Context, id pgtype.UUID) error
+	UpdateRefreshTokenLastUsed(ctx context.Context, id pgtype.UUID) error
 }
 
 var _ Querier = (*Queries)(nil)

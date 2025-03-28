@@ -2,10 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	"lugia/config"
+	"lugia/errors"
+	"lugia/jwt"
 	"lugia/queries"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -14,13 +18,13 @@ import (
 )
 
 var (
-	ErrCompanyNameRequired = errors.New("company name is required")
-	ErrUserNameRequired    = errors.New("user name is required")
-	ErrEmailRequired       = errors.New("email is required")
-	ErrPasswordRequired    = errors.New("password is required")
-	ErrPasswordTooShort    = errors.New("password must be at least 8 characters long")
-	ErrPasswordsDoNotMatch = errors.New("passwords do not match")
-	ErrUserAlreadyExists   = errors.New("user with this email already exists")
+	ErrCompanyNameRequired = fmt.Errorf("company name is required")
+	ErrUserNameRequired    = fmt.Errorf("user name is required")
+	ErrEmailRequired       = fmt.Errorf("email is required")
+	ErrPasswordRequired    = fmt.Errorf("password is required")
+	ErrPasswordTooShort    = fmt.Errorf("password must be at least 8 characters long")
+	ErrPasswordsDoNotMatch = fmt.Errorf("passwords do not match")
+	ErrUserAlreadyExists   = fmt.Errorf("user with this email already exists")
 )
 
 type SignupRequest struct {
@@ -32,9 +36,8 @@ type SignupRequest struct {
 }
 
 type SignupResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	Error        string `json:"error,omitempty"`
+	Success bool   `json:"success"`
+	Error   string `json:"error,omitempty"`
 }
 
 func (r *SignupRequest) Validate() error {
@@ -67,10 +70,12 @@ func (r *SignupRequest) Validate() error {
 	return nil
 }
 
-func Signup(dbConn *pgxpool.Pool) http.HandlerFunc {
+func Signup(dbConn *pgxpool.Pool, env *config.Env) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req SignupRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			appErr := errors.New(err, "Failed to decode request body", http.StatusBadRequest)
+			errors.LogError(appErr)
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
@@ -90,6 +95,8 @@ func Signup(dbConn *pgxpool.Pool) http.HandlerFunc {
 		// Check if user already exists
 		exists, err := q.ExistsUserWithEmail(r.Context(), req.Email)
 		if err != nil {
+			appErr := errors.New(err, "Failed to check if user exists", http.StatusInternalServerError)
+			errors.LogError(appErr)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
@@ -104,6 +111,8 @@ func Signup(dbConn *pgxpool.Pool) http.HandlerFunc {
 		// Hash the password
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 		if err != nil {
+			appErr := errors.New(err, "Failed to hash password", http.StatusInternalServerError)
+			errors.LogError(appErr)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
@@ -111,6 +120,8 @@ func Signup(dbConn *pgxpool.Pool) http.HandlerFunc {
 		// Start a transaction
 		tx, err := dbConn.Begin(r.Context())
 		if err != nil {
+			appErr := errors.New(err, "Failed to start transaction", http.StatusInternalServerError)
+			errors.LogError(appErr)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
@@ -129,12 +140,14 @@ func Signup(dbConn *pgxpool.Pool) http.HandlerFunc {
 			},
 		})
 		if err != nil {
+			appErr := errors.New(err, "Failed to create tenant", http.StatusInternalServerError)
+			errors.LogError(appErr)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 
 		// Create user
-		_, err = qtx.CreateUser(r.Context(), &queries.CreateUserParams{
+		user, err := qtx.CreateUser(r.Context(), &queries.CreateUserParams{
 			TenantID:     tenant.ID,
 			Email:        req.Email,
 			PasswordHash: string(hashedPassword),
@@ -149,22 +162,76 @@ func Signup(dbConn *pgxpool.Pool) http.HandlerFunc {
 			},
 		})
 		if err != nil {
+			appErr := errors.New(err, "Failed to create user", http.StatusInternalServerError)
+			errors.LogError(appErr)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		// Generate tokens
+		tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, user.Role, []byte(env.JWTSecret))
+		if err != nil {
+			appErr := errors.New(err, "Failed to generate tokens", http.StatusInternalServerError)
+			errors.LogError(appErr)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		// Hash refresh token for storage
+		hashedRefreshToken, err := bcrypt.GenerateFromPassword([]byte(tokenPair.RefreshToken), bcrypt.DefaultCost)
+		if err != nil {
+			appErr := errors.New(err, "Failed to hash refresh token", http.StatusInternalServerError)
+			errors.LogError(appErr)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		// Store refresh token
+		_, err = qtx.CreateRefreshToken(r.Context(), &queries.CreateRefreshTokenParams{
+			UserID:     user.ID,
+			TokenHash:  string(hashedRefreshToken),
+			DeviceInfo: pgtype.Text{String: r.UserAgent(), Valid: true},
+			IpAddress:  pgtype.Text{String: r.RemoteAddr, Valid: true},
+			ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
+		})
+		if err != nil {
+			appErr := errors.New(err, "Failed to store refresh token", http.StatusInternalServerError)
+			errors.LogError(appErr)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 
 		// Commit the transaction
 		if err := tx.Commit(r.Context()); err != nil {
+			appErr := errors.New(err, "Failed to commit transaction", http.StatusInternalServerError)
+			errors.LogError(appErr)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 
-		// TODO: Generate real JWT tokens
+		// Set cookies
+		http.SetCookie(w, &http.Cookie{
+			Name:     "access_token",
+			Value:    tokenPair.AccessToken,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteStrictMode,
+			MaxAge:   int(tokenPair.ExpiresIn),
+		})
 
-		// For now, return dummy tokens
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    tokenPair.RefreshToken,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteStrictMode,
+			MaxAge:   7 * 24 * 60 * 60, // 7 days
+		})
+
 		response := SignupResponse{
-			AccessToken:  "dummy_access_token",
-			RefreshToken: "dummy_refresh_token",
+			Success: true,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
