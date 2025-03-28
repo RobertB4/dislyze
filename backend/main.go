@@ -32,9 +32,11 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env) http.Handler {
 		MaxAge:           300,
 	}))
 
+	authHandler := handlers.NewAuthHandler(dbConn, env)
+
 	// Auth routes
 	r.Route("/auth", func(r chi.Router) {
-		r.Post("/signup", handlers.Signup(dbConn, env))
+		r.Post("/signup", authHandler.Signup)
 	})
 
 	return r
