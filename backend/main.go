@@ -9,12 +9,34 @@ import (
 
 	"lugia/config"
 	"lugia/db"
+	"lugia/handlers"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
-func enableCors(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "http://localhost:1338")
-	(*w).Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type")
+func SetupRoutes() http.Handler {
+	r := chi.NewRouter()
+
+	// Middleware
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	// CORS middleware
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:1338"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+
+	// Auth routes
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/signup", handlers.Signup)
+	})
+
+	return r
 }
 
 func main() {
@@ -39,10 +61,13 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
+	// Setup routes
+	router := SetupRoutes()
+
 	// Start the server
 	go func() {
 		log.Printf("main: API listening on %s", ":1337")
-		serverErrors <- http.ListenAndServe(":1337", nil)
+		serverErrors <- http.ListenAndServe(":1337", router)
 	}()
 
 	// Blocking select waiting for either a server error or a signal
