@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 )
 
 var (
@@ -31,6 +32,14 @@ type SignupResponse struct {
 }
 
 func (r *SignupRequest) Validate() error {
+	// Trim whitespace from all fields
+	r.CompanyName = strings.TrimSpace(r.CompanyName)
+	r.UserName = strings.TrimSpace(r.UserName)
+	r.Email = strings.TrimSpace(r.Email)
+	r.Password = strings.TrimSpace(r.Password)
+	r.PasswordConfirm = strings.TrimSpace(r.PasswordConfirm)
+
+	// Check for empty or whitespace-only fields
 	if r.CompanyName == "" {
 		return ErrCompanyNameRequired
 	}

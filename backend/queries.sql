@@ -9,8 +9,8 @@ WHERE id = $1;
 -- name: CreateTenant :one
 INSERT INTO tenants (
     name,
-    status,
-    settings
+    plan,
+    status
 ) VALUES (
     $1, $2, $3
 ) RETURNING *;
