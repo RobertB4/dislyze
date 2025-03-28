@@ -87,6 +87,19 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User,
 	return &i, err
 }
 
+const ExistsUserWithEmail = `-- name: ExistsUserWithEmail :one
+SELECT EXISTS (
+    SELECT 1 FROM users WHERE email = $1
+)
+`
+
+func (q *Queries) ExistsUserWithEmail(ctx context.Context, email string) (bool, error) {
+	row := q.db.QueryRow(ctx, ExistsUserWithEmail, email)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const GetTenantByID = `-- name: GetTenantByID :one
 SELECT id, name, created_at, updated_at, plan, status FROM tenants
 WHERE id = $1

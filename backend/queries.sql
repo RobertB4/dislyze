@@ -25,4 +25,9 @@ INSERT INTO users (
     status
 ) VALUES (
     $1, $2, $3, $4, $5, $6
-) RETURNING *; 
+) RETURNING *;
+
+-- name: ExistsUserWithEmail :one
+SELECT EXISTS (
+    SELECT 1 FROM users WHERE email = $1
+); 

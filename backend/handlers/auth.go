@@ -5,6 +5,10 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+
+	"lugia/queries"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
@@ -61,34 +65,52 @@ func (r *SignupRequest) Validate() error {
 	return nil
 }
 
-func Signup(w http.ResponseWriter, r *http.Request) {
-	var req SignupRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
+func Signup(dbConn *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req SignupRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
 
-	// Validate request
-	if err := req.Validate(); err != nil {
-		response := SignupResponse{Error: err.Error()}
+		// Validate request
+		if err := req.Validate(); err != nil {
+			response := SignupResponse{Error: err.Error()}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		// Initialize queries with database connection
+		q := queries.New(dbConn)
+
+		// Check if user already exists
+		exists, err := q.ExistsUserWithEmail(r.Context(), req.Email)
+		if err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		if exists {
+			response := SignupResponse{Error: ErrUserAlreadyExists.Error()}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		// TODO: Create tenant
+		// TODO: Create user
+		// TODO: Generate real JWT tokens
+
+		// For now, return dummy tokens
+		response := SignupResponse{
+			AccessToken:  "dummy_access_token",
+			RefreshToken: "dummy_refresh_token",
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
-		return
 	}
-
-	// TODO: Check if user exists
-	// TODO: Create tenant
-	// TODO: Create user
-	// TODO: Generate real JWT tokens
-
-	// For now, return dummy tokens
-	response := SignupResponse{
-		AccessToken:  "dummy_access_token",
-		RefreshToken: "dummy_refresh_token",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
 }

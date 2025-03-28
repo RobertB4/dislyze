@@ -14,9 +14,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func SetupRoutes() http.Handler {
+func SetupRoutes(dbConn *pgxpool.Pool) http.Handler {
 	r := chi.NewRouter()
 
 	// Middleware
@@ -33,7 +34,7 @@ func SetupRoutes() http.Handler {
 
 	// Auth routes
 	r.Route("/auth", func(r chi.Router) {
-		r.Post("/signup", handlers.Signup)
+		r.Post("/signup", handlers.Signup(dbConn))
 	})
 
 	return r
@@ -61,8 +62,8 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Setup routes
-	router := SetupRoutes()
+	// Setup routes with database connection
+	router := SetupRoutes(pool)
 
 	// Start the server
 	go func() {

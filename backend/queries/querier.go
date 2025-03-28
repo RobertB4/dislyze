@@ -13,6 +13,7 @@ import (
 type Querier interface {
 	CreateTenant(ctx context.Context, arg *CreateTenantParams) (*Tenant, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
+	ExistsUserWithEmail(ctx context.Context, email string) (bool, error)
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error)
 	GetUserByEmail(ctx context.Context, arg *GetUserByEmailParams) (*User, error)
 }
