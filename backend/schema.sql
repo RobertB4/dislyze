@@ -8,7 +8,7 @@ CREATE TABLE tenants (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     plan VARCHAR(50) NOT NULL DEFAULT 'none' CHECK (plan IN ('none', 'basic', 'pro', 'enterprise')),
-    status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'suspended')),
+    status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'suspended'))
 );
 
 -- Create users table

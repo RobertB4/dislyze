@@ -1,0 +1,21 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "queries.sql"
+    schema: "schema.sql"
+    gen:
+      go:
+        package: "db"
+        out: "db"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_exported_queries: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: true
+        emit_methods_with_db_argument: true
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        json_tags_for_structs: true
+        emit_exported_queries: true 

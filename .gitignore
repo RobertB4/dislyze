@@ -10,9 +10,6 @@ go.work
 
 # Node.js ignores
 node_modules/
-.env
-.env.*
-!.env.example
 .svelte-kit/
 package
 .DS_Store
