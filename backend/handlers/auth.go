@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"lugia/config"
-	"lugia/errors"
-	"lugia/jwt"
+	"lugia/lib/config"
+	"lugia/lib/errors"
+	"lugia/lib/jwt"
 	"lugia/queries"
 
 	"github.com/jackc/pgx/v5/pgtype"

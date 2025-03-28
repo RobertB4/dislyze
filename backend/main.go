@@ -7,9 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"lugia/config"
-	"lugia/db"
 	"lugia/handlers"
+	"lugia/lib/config"
+	"lugia/lib/db"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
