@@ -8,7 +8,9 @@ import (
 
 	"lugia/queries"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -99,8 +101,64 @@ func Signup(dbConn *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 
-		// TODO: Create tenant
-		// TODO: Create user
+		// Hash the password
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		// Start a transaction
+		tx, err := dbConn.Begin(r.Context())
+		if err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		defer tx.Rollback(r.Context())
+
+		// Create queries instance for transaction
+		qtx := queries.New(tx)
+
+		// Create tenant
+		tenant, err := qtx.CreateTenant(r.Context(), &queries.CreateTenantParams{
+			Name: req.CompanyName,
+			Plan: "basic",
+			Status: pgtype.Text{
+				String: "active",
+				Valid:  true,
+			},
+		})
+		if err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		// Create user
+		_, err = qtx.CreateUser(r.Context(), &queries.CreateUserParams{
+			TenantID:     tenant.ID,
+			Email:        req.Email,
+			PasswordHash: string(hashedPassword),
+			Name: pgtype.Text{
+				String: req.UserName,
+				Valid:  true,
+			},
+			Role: "admin",
+			Status: pgtype.Text{
+				String: "active",
+				Valid:  true,
+			},
+		})
+		if err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		// Commit the transaction
+		if err := tx.Commit(r.Context()); err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
 		// TODO: Generate real JWT tokens
 
 		// For now, return dummy tokens
