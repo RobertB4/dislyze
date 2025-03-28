@@ -1,55 +1,65 @@
-# Full Stack Application
+# Full Stack Monorepo
 
-This project consists of a Go backend server and a SvelteKit frontend application.
+This monorepo contains a Go backend server and a SvelteKit frontend application.
 
 ## Project Structure
 
-- `backend/` - Go HTTP server (port 1337)
-- `frontend/` - SvelteKit application (port 1338)
+```
+.
+├── backend/         # Go HTTP server
+│   ├── main.go     # Server entry point
+│   └── go.mod      # Go module file
+│
+└── frontend/       # SvelteKit application
+    ├── src/        # Source code
+    ├── static/     # Static assets
+    └── package.json # Node.js dependencies
+```
 
-## Backend
+## Requirements
 
-### Requirements
-
+### Backend
 - Go 1.23 or higher
 - golangci-lint (for development)
 
-### Running the Backend Server
+### Frontend
+- Node.js (Latest LTS recommended)
+- npm or pnpm
+
+## Development
+
+### Starting the Backend
 
 ```bash
 cd backend
 go run main.go
 ```
 
-The server will start on http://localhost:1337
+The backend will start on http://localhost:1337
 
-### Running Linters
-
-```bash
-cd backend
-golangci-lint run
-```
-
-## Frontend
-
-### Requirements
-
-- Node.js (Latest LTS recommended)
-- pnpm (recommended) or npm
-
-### Running the Frontend
+### Starting the Frontend
 
 ```bash
 cd frontend
-pnpm install    # or npm install
-pnpm dev       # or npm run dev
+npm install    # or pnpm install
+npm run dev    # or pnpm dev
 ```
 
 The frontend will start on http://localhost:1338
 
-### Building for Production
+## Features
 
-```bash
-cd frontend
-pnpm build     # or npm run build
-``` 
+- Backend: Simple Go HTTP server with CORS support
+- Frontend: SvelteKit application with:
+  - TypeScript support
+  - Client-side only rendering (SSR disabled)
+  - API integration with the backend
+  - Modern UI with responsive design
+  - Development tools (ESLint, Prettier, Playwright, Vitest)
+
+## Development Tools
+
+- Go linting: `cd backend && golangci-lint run`
+- Frontend linting: `cd frontend && npm run lint`
+- Frontend testing: `cd frontend && npm run test`
+- Frontend E2E tests: `cd frontend && npm run test:e2e` 

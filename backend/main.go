@@ -15,10 +15,6 @@ func enableCors(w *http.ResponseWriter) {
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		enableCors(&w)
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 		fmt.Fprint(w, "Hello World")
 	})
 
