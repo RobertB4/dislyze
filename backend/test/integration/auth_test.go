@@ -28,6 +28,10 @@ type SignupResponse struct {
 }
 
 func TestSignup(t *testing.T) {
+	// Clean up database before tests
+	CleanupDB(t)
+	defer CloseDB()
+
 	tests := []struct {
 		name           string
 		request        SignupRequest
@@ -179,6 +183,10 @@ func TestSignup(t *testing.T) {
 }
 
 func TestSignupDuplicateEmail(t *testing.T) {
+	// Clean up database before tests
+	CleanupDB(t)
+	defer CloseDB()
+
 	// First signup
 	request := SignupRequest{
 		CompanyName:     "Test Company",
@@ -203,14 +211,18 @@ func TestSignupDuplicateEmail(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Second signup with same email
-	resp, err = client.Do(req)
-	assert.NoError(t, err)
-	defer resp.Body.Close()
 
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	req2, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", baseURL), bytes.NewBuffer(body))
+	assert.NoError(t, err)
+	req2.Header.Set("Content-Type", "application/json")
+	resp2, err := client.Do(req2)
+	assert.NoError(t, err)
+	defer resp2.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, resp2.StatusCode)
 
 	var response SignupResponse
-	err = json.NewDecoder(resp.Body).Decode(&response)
+	err = json.NewDecoder(resp2.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.False(t, response.Success)
 	assert.Equal(t, "user with this email already exists", response.Error)
