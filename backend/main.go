@@ -10,9 +10,10 @@ import (
 	"lugia/handlers"
 	"lugia/lib/config"
 	"lugia/lib/db"
+	middleware "lugia/lib/middelware"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -21,8 +22,8 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env) http.Handler {
 	r := chi.NewRouter()
 
 	// Middleware
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	r.Use(chiMiddleware.Logger)
+	r.Use(chiMiddleware.Recoverer)
 
 	// CORS middleware
 	r.Use(cors.Handler(cors.Options{
@@ -39,10 +40,21 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env) http.Handler {
 	})
 
 	authHandler := handlers.NewAuthHandler(dbConn, env)
+	usersHandler := handlers.NewUsersHandler()
 
 	// Auth routes
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/signup", authHandler.Signup)
+	})
+
+	// Protected routes
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(env.JWTSecret))
+
+		// Users routes
+		r.Route("/users", func(r chi.Router) {
+			r.Get("/", usersHandler.GetUsers)
+		})
 	})
 
 	return r
