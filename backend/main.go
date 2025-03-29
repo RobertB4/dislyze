@@ -32,6 +32,12 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env) http.Handler {
 		MaxAge:           300,
 	}))
 
+	// Health check endpoint
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+
 	authHandler := handlers.NewAuthHandler(dbConn, env)
 
 	// Auth routes

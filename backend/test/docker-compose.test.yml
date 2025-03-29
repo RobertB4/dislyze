@@ -1,23 +1,25 @@
 services:
   postgres:
     image: postgres:17-alpine
+    container_name: test-postgres
     environment:
       POSTGRES_USER: test_user
       POSTGRES_PASSWORD: test_password
       POSTGRES_DB: test_db
-    volumes:
-      - postgres_test_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U test_user -d test_db"]
       interval: 5s
       timeout: 5s
       retries: 5
-
+    ports:
+      - "15432:5432"
   backend:
+    container_name: test-backend
     build:
       context: ..
       dockerfile: test/Dockerfile
     environment:
+      - APP_ENV=test
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=test_user
@@ -25,10 +27,14 @@ services:
       - DB_NAME=test_db
       - DB_SSL_MODE=disable
       - JWT_SECRET=test_jwt_secret_key_for_testing_only
-      - PORT=5432
+    ports:
+      - "11337:1337"
     depends_on:
       postgres:
         condition: service_healthy
-
-volumes:
-  postgres_test_data: 
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:11337/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: ["./main"]
