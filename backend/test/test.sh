@@ -3,6 +3,9 @@
 # Exit on error
 set -e
 
+# Print commands
+set -x
+
 # Colors for output
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -10,27 +13,33 @@ NC='\033[0m'
 
 echo "🚀 Starting test environment..."
 
-# Build and start the containers
+# Build and start containers
 docker compose -f docker-compose.test.yml up -d --build
 
-# Wait for services to be ready
 echo "⏳ Waiting for services to be ready..."
+
+# Wait for PostgreSQL to be ready
 sleep 5
 
-# Run tests
 echo "🧪 Running tests..."
-docker compose -f docker-compose.test.yml exec backend go test ./... -v
+# Run tests
+docker compose -f docker-compose.test.yml exec -T backend go test -v ./test/integration/... -v
 
-# Check test result
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ All tests passed!${NC}"
-else
+# Capture the exit code
+TEST_EXIT_CODE=$?
+
+# If tests failed, show backend logs
+if [ $TEST_EXIT_CODE -ne 0 ]; then
     echo -e "${RED}❌ Tests failed!${NC}"
-    exit 1
+    echo -e "${RED}❌ Tests failed! logs:${NC}"
+    docker compose -f docker-compose.test.yml logs backend
+else
+    echo -e "${GREEN}✅ All tests passed!${NC}"
 fi
 
-# Clean up
 echo "🧹 Cleaning up..."
-docker compose -f docker-compose.test.yml down -v
+# Stop and remove containers
+docker compose -f docker-compose.test.yml down
 
-echo "✨ Done!" 
+# Exit with the test exit code
+exit $TEST_EXIT_CODE 
