@@ -23,7 +23,7 @@ sleep 5
 
 echo "🧪 Running tests..."
 # Run tests
-docker compose -f docker-compose.test.yml exec -T backend go test -v ./test/integration/... -v
+docker compose -f docker-compose.test.yml exec backend go test ./test/integration/... -v
 
 # Capture the exit code
 TEST_EXIT_CODE=$?

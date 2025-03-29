@@ -57,6 +57,11 @@ func main() {
 	}
 	defer db.CloseDB(pool)
 
+	// Run migrations
+	if err := db.RunMigrations(pool); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
+	}
+
 	// Create a channel to listen for errors coming from the server
 	serverErrors := make(chan error, 1)
 
