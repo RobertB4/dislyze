@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { enhance } from '$app/forms';
 
 	let formData = {
 		company_name: '',
@@ -42,24 +43,26 @@
 	}
 </script>
 
-<main>
-	<div class="signup-container">
-		<div class="header">
-			<h2>Create your account</h2>
-			<p>
+<main class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+	<div class="max-w-md w-full space-y-8">
+		<div>
+			<h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Create your account</h2>
+			<p class="mt-2 text-center text-sm text-gray-600">
 				Or
-				<a href="/auth/login"> sign in to your account </a>
+				<a href="/auth/login" class="font-medium text-indigo-600 hover:text-indigo-500">
+					sign in to your account
+				</a>
 			</p>
 		</div>
 
-		<form on:submit|preventDefault={handleSubmit}>
+		<form class="mt-8 space-y-6" on:submit|preventDefault={handleSubmit}>
 			{#if error}
-				<div class="error-message">
-					<p>{error}</p>
+				<div class="bg-red-50 border border-red-200 rounded-md p-4">
+					<p class="text-sm text-red-600">{error}</p>
 				</div>
 			{/if}
 
-			<div class="form-fields">
+			<div class="rounded-md shadow-sm space-y-4">
 				<div>
 					<label for="company_name" class="sr-only">Company Name</label>
 					<input
@@ -68,6 +71,7 @@
 						type="text"
 						required
 						bind:value={formData.company_name}
+						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
 						placeholder="Company Name"
 					/>
 				</div>
@@ -80,6 +84,7 @@
 						type="text"
 						required
 						bind:value={formData.user_name}
+						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
 						placeholder="Full Name"
 					/>
 				</div>
@@ -92,6 +97,7 @@
 						type="email"
 						required
 						bind:value={formData.email}
+						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
 						placeholder="Email address"
 					/>
 				</div>
@@ -104,6 +110,7 @@
 						type="password"
 						required
 						bind:value={formData.password}
+						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
 						placeholder="Password"
 					/>
 				</div>
@@ -116,18 +123,36 @@
 						type="password"
 						required
 						bind:value={formData.password_confirm}
+						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
 						placeholder="Confirm Password"
 					/>
 				</div>
 			</div>
 
-			<div class="submit-container">
-				<button type="submit" disabled={loading} class="submit-button">
+			<div>
+				<button
+					type="submit"
+					disabled={loading}
+					class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+				>
 					{#if loading}
-						<span class="loading-spinner">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-								<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+						<span class="absolute left-0 inset-y-0 flex items-center pl-3">
+							<svg
+								class="animate-spin h-5 w-5 text-white"
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+							>
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								></circle>
 								<path
+									class="opacity-75"
 									fill="currentColor"
 									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 								></path>
@@ -140,155 +165,3 @@
 		</form>
 	</div>
 </main>
-
-<style>
-	main {
-		min-height: 100vh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background-color: #f9fafb;
-		padding: 3rem 1rem;
-	}
-
-	.signup-container {
-		max-width: 28rem;
-		width: 100%;
-	}
-
-	.header {
-		text-align: center;
-		margin-bottom: 2rem;
-	}
-
-	h2 {
-		margin-top: 1.5rem;
-		font-size: 1.875rem;
-		font-weight: 800;
-		color: #111827;
-	}
-
-	.header p {
-		margin-top: 0.5rem;
-		font-size: 0.875rem;
-		color: #4b5563;
-	}
-
-	.header a {
-		font-weight: 500;
-		color: #4f46e5;
-		text-decoration: none;
-	}
-
-	.header a:hover {
-		color: #4338ca;
-	}
-
-	form {
-		margin-top: 2rem;
-	}
-
-	.error-message {
-		background-color: #fef2f2;
-		border: 1px solid #fecaca;
-		border-radius: 0.375rem;
-		padding: 1rem;
-		margin-bottom: 1rem;
-	}
-
-	.error-message p {
-		font-size: 0.875rem;
-		color: #dc2626;
-	}
-
-	.form-fields {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	.sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		margin: -1px;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
-		white-space: nowrap;
-		border: 0;
-	}
-
-	input {
-		width: 100%;
-		padding: 0.5rem 0.75rem;
-		border: 1px solid #d1d5db;
-		border-radius: 0.375rem;
-		font-size: 0.875rem;
-		color: #111827;
-	}
-
-	input:focus {
-		outline: none;
-		border-color: #4f46e5;
-		box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
-	}
-
-	.submit-container {
-		margin-top: 1.5rem;
-	}
-
-	.submit-button {
-		position: relative;
-		width: 100%;
-		display: flex;
-		justify-content: center;
-		padding: 0.5rem 1rem;
-		border: none;
-		border-radius: 0.375rem;
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: white;
-		background-color: #4f46e5;
-		cursor: pointer;
-	}
-
-	.submit-button:hover {
-		background-color: #4338ca;
-	}
-
-	.submit-button:focus {
-		outline: none;
-		box-shadow:
-			0 0 0 2px white,
-			0 0 0 4px #4f46e5;
-	}
-
-	.submit-button:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.loading-spinner {
-		position: absolute;
-		left: 1rem;
-		top: 50%;
-		transform: translateY(-50%);
-	}
-
-	.loading-spinner svg {
-		height: 1.25rem;
-		width: 1.25rem;
-		color: white;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		from {
-			transform: rotate(0deg);
-		}
-		to {
-			transform: rotate(360deg);
-		}
-	}
-</style>
