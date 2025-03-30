@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import ToastContainer from '$lib/components/ToastContainer.svelte';
+	import ToastContainer from '$components/ToastContainer.svelte';
 </script>
 
 <ToastContainer />
