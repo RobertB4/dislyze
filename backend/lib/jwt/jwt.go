@@ -1,8 +1,6 @@
 package jwt
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -54,13 +52,31 @@ func GenerateAccessToken(userID, tenantID pgtype.UUID, role string, secret []byt
 }
 
 // GenerateRefreshToken creates a new refresh token
-func GenerateRefreshToken() (string, error) {
-	// Generate a random refresh token
-	refreshToken := make([]byte, 32)
-	if _, err := rand.Read(refreshToken); err != nil {
-		return "", fmt.Errorf("failed to generate refresh token: %w", err)
+func GenerateRefreshToken(userID pgtype.UUID, secret []byte) (string, error) {
+	// Validate secret
+	if len(secret) == 0 {
+		return "", fmt.Errorf("secret cannot be empty")
 	}
-	return base64.URLEncoding.EncodeToString(refreshToken), nil
+
+	// Create refresh token claims
+	now := time.Now()
+	claims := Claims{
+		UserID: userID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(7 * 24 * time.Hour)), // Refresh token expires in 7 days
+			NotBefore: jwt.NewNumericDate(now),
+		},
+	}
+
+	// Create refresh token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	refreshToken, err := token.SignedString(secret)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign refresh token: %w", err)
+	}
+
+	return refreshToken, nil
 }
 
 // GenerateTokenPair creates a new access token and refresh token
@@ -72,7 +88,7 @@ func GenerateTokenPair(userID, tenantID pgtype.UUID, role string, secret []byte)
 	}
 
 	// Generate refresh token
-	refreshToken, err := GenerateRefreshToken()
+	refreshToken, err := GenerateRefreshToken(userID, secret)
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +100,8 @@ func GenerateTokenPair(userID, tenantID pgtype.UUID, role string, secret []byte)
 	}, nil
 }
 
-// ValidateAccessToken validates an access token and returns its claims
-func ValidateAccessToken(tokenString string, secret []byte) (*Claims, error) {
+// ValidateToken validates an access or refresh token and returns its claims
+func ValidateToken(tokenString string, secret []byte) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

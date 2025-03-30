@@ -193,6 +193,28 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 	return &i, err
 }
 
+const GetUserByID = `-- name: GetUserByID :one
+SELECT id, tenant_id, email, password_hash, name, role, created_at, updated_at, status FROM users
+WHERE id = $1
+`
+
+func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error) {
+	row := q.db.QueryRow(ctx, GetUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.Name,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Status,
+	)
+	return &i, err
+}
+
 const GetUserRefreshToken = `-- name: GetUserRefreshToken :one
 SELECT id, user_id, token_hash, device_info, ip_address, expires_at, created_at, last_used_at, revoked_at FROM refresh_tokens 
 WHERE user_id = $1 

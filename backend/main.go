@@ -6,11 +6,14 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"lugia/handlers"
 	"lugia/lib/config"
 	"lugia/lib/db"
-	middleware "lugia/lib/middelware"
+	middleware "lugia/lib/middleware"
+	"lugia/lib/ratelimit"
+	"lugia/queries"
 
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
@@ -48,9 +51,16 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env) http.Handler {
 		r.Post("/login", authHandler.Login)
 	})
 
+	// Create rate limiter
+	rateLimiter := ratelimit.NewRateLimiter(60*time.Minute, 5) // 5 attempts per 60 minutes
+
+	// Create queries instance
+	queries := queries.New(dbConn)
+
 	// Protected routes
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.AuthMiddleware(env.JWTSecret))
+
+		r.Use(middleware.NewAuthMiddleware(env, queries, rateLimiter).Authenticate)
 
 		// Users routes
 		r.Route("/users", func(r chi.Router) {

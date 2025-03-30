@@ -305,7 +305,7 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 		refreshToken = existingToken.TokenHash
 	} else {
 		// Generate new refresh token
-		refreshToken, err = jwt.GenerateRefreshToken()
+		refreshToken, err = jwt.GenerateRefreshToken(user.ID, []byte(h.env.JWTSecret))
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate refresh token: %w", err)
 		}

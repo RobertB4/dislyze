@@ -65,7 +65,7 @@ func TestGenerateTokenPair(t *testing.T) {
 			assert.Equal(t, int64(15*60), tokenPair.ExpiresIn) // 15 minutes in seconds
 
 			// Validate the access token
-			claims, err := ValidateAccessToken(tokenPair.AccessToken, tt.secret)
+			claims, err := ValidateToken(tokenPair.AccessToken, tt.secret)
 			assert.NoError(t, err)
 			assert.NotNil(t, claims)
 			assert.Equal(t, tt.userID, claims.UserID)
@@ -75,7 +75,7 @@ func TestGenerateTokenPair(t *testing.T) {
 	}
 }
 
-func TestValidateAccessToken(t *testing.T) {
+func TestValidateToken(t *testing.T) {
 	// Test data
 	userID := pgtype.UUID{
 		Bytes: [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
@@ -145,7 +145,7 @@ func TestValidateAccessToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			claims, err := ValidateAccessToken(tt.token, tt.secret)
+			claims, err := ValidateToken(tt.token, tt.secret)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -179,7 +179,7 @@ func TestTokenExpiration(t *testing.T) {
 	assert.NotNil(t, tokenPair)
 
 	// Validate the token immediately
-	claims, err := ValidateAccessToken(tokenPair.AccessToken, secret)
+	claims, err := ValidateToken(tokenPair.AccessToken, secret)
 	assert.NoError(t, err)
 	assert.NotNil(t, claims)
 

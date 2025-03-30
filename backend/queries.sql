@@ -64,4 +64,8 @@ WHERE expires_at < CURRENT_TIMESTAMP
 -- name: UpdateRefreshTokenLastUsed :exec
 UPDATE refresh_tokens 
 SET last_used_at = CURRENT_TIMESTAMP 
+WHERE id = $1;
+
+-- name: GetUserByID :one
+SELECT * FROM users
 WHERE id = $1; 

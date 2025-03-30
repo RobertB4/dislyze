@@ -18,6 +18,7 @@ type Querier interface {
 	ExistsUserWithEmail(ctx context.Context, email string) (bool, error)
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
+	GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error)
 	GetUserRefreshToken(ctx context.Context, userID pgtype.UUID) (*RefreshToken, error)
 	RevokeRefreshToken(ctx context.Context, id pgtype.UUID) error
 	UpdateRefreshTokenLastUsed(ctx context.Context, id pgtype.UUID) error
