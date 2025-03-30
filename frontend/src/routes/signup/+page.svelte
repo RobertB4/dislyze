@@ -1,53 +1,80 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { toast } from '$components/toast';
+	import { createForm } from 'felte';
 
-	let formData = {
-		company_name: '',
-		user_name: '',
-		email: '',
-		password: '',
-		password_confirm: ''
-	};
+	const { form, errors, data, isValid, isSubmitting } = createForm({
+		initialValues: {
+			company_name: '',
+			user_name: '',
+			email: '',
+			password: '',
+			password_confirm: ''
+		},
+		validate: (values) => {
+			const errors: Record<string, string> = {};
 
-	let loading = false;
+			// Trim whitespace from all fields
+			values.company_name = values.company_name.trim();
+			values.user_name = values.user_name.trim();
+			values.email = values.email.trim();
+			values.password = values.password.trim();
+			values.password_confirm = values.password_confirm.trim();
 
-	async function handleSubmit() {
-		loading = true;
-
-		try {
-			const response = await fetch('http://localhost:1337/auth/signup', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify(formData),
-				credentials: 'include'
-			});
-
-			const data = await response.json();
-			console.log({ data });
-
-			if (data.error) {
-				throw new Error(data.error);
+			// Check for empty or whitespace-only fields
+			if (!values.company_name) {
+				errors.company_name = 'Company name is required';
+			}
+			if (!values.user_name) {
+				errors.user_name = 'User name is required';
+			}
+			if (!values.email) {
+				errors.email = 'Email is required';
+			} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
+				errors.email = 'Invalid email format';
+			}
+			if (!values.password) {
+				errors.password = 'Password is required';
+			} else if (values.password.length < 8) {
+				errors.password = 'Password must be at least 8 characters long';
+			}
+			if (!values.password_confirm) {
+				errors.password_confirm = 'Please confirm your password';
+			} else if (values.password !== values.password_confirm) {
+				errors.password_confirm = 'Passwords do not match';
 			}
 
-			// Show success toast and redirect to dashboard
-			toast.show('Account created successfully!', 'success');
-			goto('/dashboard');
-		} catch (err) {
-			console.log({ err });
-			const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+			return errors;
+		},
+		onSubmit: async (values) => {
+			try {
+				const response = await fetch('http://localhost:1337/auth/signup', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify(values),
+					credentials: 'include'
+				});
 
-			if (errorMessage === 'email already exists') {
-				toast.show('This email is already registered. Please try logging in instead.', 'error');
-			} else {
+				const data = await response.json();
+				console.log({ data });
+
+				if (data.error) {
+					throw new Error(data.error);
+				}
+
+				// Show success toast and redirect to dashboard
+				toast.show('Account created successfully!', 'success');
+				goto('/dashboard');
+			} catch (err) {
+				console.log({ err });
+				const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+
 				toast.show(errorMessage, 'error');
 			}
-		} finally {
-			loading = false;
 		}
-	}
+	});
 </script>
 
 <main class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -62,7 +89,7 @@
 			</p>
 		</div>
 
-		<form class="mt-8 space-y-6" on:submit|preventDefault={handleSubmit}>
+		<form class="mt-8 space-y-6" use:form>
 			<div class="rounded-md shadow-sm space-y-4">
 				<div>
 					<label for="company_name" class="sr-only">Company Name</label>
@@ -71,10 +98,13 @@
 						name="company_name"
 						type="text"
 						required
-						bind:value={formData.company_name}
+						bind:value={$data.company_name}
 						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
 						placeholder="Company Name"
 					/>
+					{#if $errors.company_name}
+						<p class="mt-1 text-sm text-red-600">{$errors.company_name}</p>
+					{/if}
 				</div>
 
 				<div>
@@ -84,10 +114,13 @@
 						name="user_name"
 						type="text"
 						required
-						bind:value={formData.user_name}
+						bind:value={$data.user_name}
 						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
 						placeholder="Full Name"
 					/>
+					{#if $errors.user_name}
+						<p class="mt-1 text-sm text-red-600">{$errors.user_name}</p>
+					{/if}
 				</div>
 
 				<div>
@@ -97,10 +130,13 @@
 						name="email"
 						type="email"
 						required
-						bind:value={formData.email}
+						bind:value={$data.email}
 						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
 						placeholder="Email address"
 					/>
+					{#if $errors.email}
+						<p class="mt-1 text-sm text-red-600">{$errors.email}</p>
+					{/if}
 				</div>
 
 				<div>
@@ -110,10 +146,13 @@
 						name="password"
 						type="password"
 						required
-						bind:value={formData.password}
+						bind:value={$data.password}
 						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
 						placeholder="Password"
 					/>
+					{#if $errors.password}
+						<p class="mt-1 text-sm text-red-600">{$errors.password}</p>
+					{/if}
 				</div>
 
 				<div>
@@ -123,20 +162,23 @@
 						name="password_confirm"
 						type="password"
 						required
-						bind:value={formData.password_confirm}
+						bind:value={$data.password_confirm}
 						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
 						placeholder="Confirm Password"
 					/>
+					{#if $errors.password_confirm}
+						<p class="mt-1 text-sm text-red-600">{$errors.password_confirm}</p>
+					{/if}
 				</div>
 			</div>
 
 			<div>
 				<button
 					type="submit"
-					disabled={loading}
+					disabled={!$isValid}
 					class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
 				>
-					{#if loading}
+					{#if $isSubmitting}
 						<span class="absolute left-0 inset-y-0 flex items-center pl-3">
 							<svg
 								class="animate-spin h-5 w-5 text-white"
