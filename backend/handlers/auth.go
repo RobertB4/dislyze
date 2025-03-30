@@ -19,13 +19,13 @@ import (
 )
 
 var (
-	ErrCompanyNameRequired = fmt.Errorf("company name is required")
-	ErrUserNameRequired    = fmt.Errorf("user name is required")
-	ErrEmailRequired       = fmt.Errorf("email is required")
-	ErrPasswordRequired    = fmt.Errorf("password is required")
-	ErrPasswordTooShort    = fmt.Errorf("password must be at least 8 characters long")
-	ErrPasswordsDoNotMatch = fmt.Errorf("passwords do not match")
-	ErrUserAlreadyExists   = fmt.Errorf("user with this email already exists")
+	ErrCompanyNameRequired = fmt.Errorf("会社名は必須です")
+	ErrUserNameRequired    = fmt.Errorf("ユーザー名は必須です")
+	ErrEmailRequired       = fmt.Errorf("メールアドレスは必須です")
+	ErrPasswordRequired    = fmt.Errorf("パスワードは必須です")
+	ErrPasswordTooShort    = fmt.Errorf("パスワードは8文字以上である必要があります")
+	ErrPasswordsDoNotMatch = fmt.Errorf("パスワードが一致しません")
+	ErrUserAlreadyExists   = fmt.Errorf("このメールアドレスは既に登録されています")
 )
 
 type SignupRequest struct {
