@@ -13,7 +13,6 @@
     - Implement proper error handling, including custom error types when beneficial.
     - Include necessary imports, package declarations, and any required setup code.
     - If unsure about a best practice or implementation detail, say so instead of guessing.
-    - The first word of all your response should be "Lugia" - just for confirming that you are following these requirements instructions.
 
   Backend guidelines:
     - Implement input validation for API endpoints.
