@@ -69,7 +69,7 @@
 
 				// Show success toast and redirect to dashboard
 				toast.show('アカウントが正常に作成されました！', 'success');
-				goto('/dashboard');
+				goto('/');
 			} catch (err) {
 				console.log({ err });
 				const errorMessage = err instanceof Error ? err.message : 'An error occurred';
