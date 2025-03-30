@@ -1,6 +1,7 @@
 package errors
 
 import (
+	errs "errors"
 	"fmt"
 	"runtime"
 	"strings"
@@ -47,4 +48,9 @@ func LogError(err error) {
 	} else {
 		fmt.Printf("Error: %v\n", err)
 	}
+}
+
+// Wrapper of standard library errors.Is
+func Is(err error, target error) bool {
+	return errs.Is(err, target)
 }

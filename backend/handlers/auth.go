@@ -52,6 +52,16 @@ type LoginResponse struct {
 	Error   string `json:"error,omitempty"`
 }
 
+type RefreshTokenInfo struct {
+	ID         string    `json:"id"`
+	DeviceInfo string    `json:"device_info"`
+	IPAddress  string    `json:"ip_address"`
+	LastUsedAt time.Time `json:"last_used_at"`
+	CreatedAt  time.Time `json:"created_at"`
+	ExpiresAt  time.Time `json:"expires_at"`
+	IsRevoked  bool      `json:"is_revoked"`
+}
+
 type AuthHandler struct {
 	dbConn *pgxpool.Pool
 	env    *config.Env
@@ -264,11 +274,9 @@ func (r *LoginRequest) Validate() error {
 
 func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Request) (*jwt.TokenPair, error) {
 	// Get user by email
-	fmt.Println("req.Email", req.Email)
 	user, err := queries.New(h.dbConn).GetUserByEmail(ctx, req.Email)
-	fmt.Println("user", user, err)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("メールアドレスまたはパスワードが正しくありません")
 		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
@@ -276,7 +284,6 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 
 	// Verify password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		fmt.Println("err", err)
 		return nil, fmt.Errorf("メールアドレスまたはパスワードが正しくありません")
 	}
 
@@ -286,31 +293,53 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 		return nil, fmt.Errorf("failed to get tenant: %w", err)
 	}
 
-	// Generate token pair
-	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, user.Role, []byte(h.env.JWTSecret))
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate token pair: %w", err)
+	// Check for existing valid refresh token
+	existingToken, err := queries.New(h.dbConn).GetUserRefreshToken(ctx, user.ID)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("failed to check existing refresh token: %w", err)
 	}
 
-	// Hash the refresh token before storing
-	hashedToken, err := bcrypt.GenerateFromPassword([]byte(tokenPair.RefreshToken), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, fmt.Errorf("failed to hash refresh token: %w", err)
+	var refreshToken string
+	if !errors.Is(err, pgx.ErrNoRows) {
+		// Use existing refresh token
+		refreshToken = existingToken.TokenHash
+	} else {
+		// Generate new refresh token
+		refreshToken, err = jwt.GenerateRefreshToken()
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate refresh token: %w", err)
+		}
+
+		// Hash the refresh token before storing
+		hashedToken, err := bcrypt.GenerateFromPassword([]byte(refreshToken), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, fmt.Errorf("failed to hash refresh token: %w", err)
+		}
+
+		// Store new refresh token
+		_, err = queries.New(h.dbConn).CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
+			UserID:     user.ID,
+			TokenHash:  string(hashedToken),
+			DeviceInfo: pgtype.Text{String: r.UserAgent(), Valid: true},
+			IpAddress:  pgtype.Text{String: r.RemoteAddr, Valid: true},
+			ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to store refresh token: %w", err)
+		}
 	}
 
-	// Store refresh token
-	_, err = queries.New(h.dbConn).CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
-		UserID:     user.ID,
-		TokenHash:  string(hashedToken),
-		DeviceInfo: pgtype.Text{String: r.UserAgent(), Valid: true},
-		IpAddress:  pgtype.Text{String: r.RemoteAddr, Valid: true},
-		ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
-	})
+	// Generate new access token
+	accessToken, expiresIn, err := jwt.GenerateAccessToken(user.ID, tenant.ID, user.Role, []byte(h.env.JWTSecret))
 	if err != nil {
-		return nil, fmt.Errorf("failed to store refresh token: %w", err)
+		return nil, fmt.Errorf("failed to generate access token: %w", err)
 	}
 
-	return tokenPair, nil
+	return &jwt.TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		ExpiresIn:    expiresIn,
+	}, nil
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {

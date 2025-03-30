@@ -23,19 +23,12 @@ type TokenPair struct {
 	ExpiresIn    int64
 }
 
-// GenerateTokenPair creates a new access token and refresh token
-func GenerateTokenPair(userID, tenantID pgtype.UUID, role string, secret []byte) (*TokenPair, error) {
+// GenerateAccessToken creates a new access token
+func GenerateAccessToken(userID, tenantID pgtype.UUID, role string, secret []byte) (string, int64, error) {
 	// Validate secret
 	if len(secret) == 0 {
-		return nil, fmt.Errorf("secret cannot be empty")
+		return "", 0, fmt.Errorf("secret cannot be empty")
 	}
-
-	// Generate a random refresh token
-	refreshToken := make([]byte, 32)
-	if _, err := rand.Read(refreshToken); err != nil {
-		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
-	}
-	refreshTokenString := base64.URLEncoding.EncodeToString(refreshToken)
 
 	// Create access token claims
 	now := time.Now()
@@ -54,13 +47,40 @@ func GenerateTokenPair(userID, tenantID pgtype.UUID, role string, secret []byte)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	accessToken, err := token.SignedString(secret)
 	if err != nil {
-		return nil, fmt.Errorf("failed to sign access token: %w", err)
+		return "", 0, fmt.Errorf("failed to sign access token: %w", err)
+	}
+
+	return accessToken, 15 * 60, nil // 15 minutes in seconds
+}
+
+// GenerateRefreshToken creates a new refresh token
+func GenerateRefreshToken() (string, error) {
+	// Generate a random refresh token
+	refreshToken := make([]byte, 32)
+	if _, err := rand.Read(refreshToken); err != nil {
+		return "", fmt.Errorf("failed to generate refresh token: %w", err)
+	}
+	return base64.URLEncoding.EncodeToString(refreshToken), nil
+}
+
+// GenerateTokenPair creates a new access token and refresh token
+func GenerateTokenPair(userID, tenantID pgtype.UUID, role string, secret []byte) (*TokenPair, error) {
+	// Generate access token
+	accessToken, expiresIn, err := GenerateAccessToken(userID, tenantID, role, secret)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate refresh token
+	refreshToken, err := GenerateRefreshToken()
+	if err != nil {
+		return nil, err
 	}
 
 	return &TokenPair{
 		AccessToken:  accessToken,
-		RefreshToken: refreshTokenString,
-		ExpiresIn:    15 * 60, // 15 minutes in seconds
+		RefreshToken: refreshToken,
+		ExpiresIn:    expiresIn,
 	}, nil
 }
 

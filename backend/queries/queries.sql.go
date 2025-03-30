@@ -152,27 +152,6 @@ func (q *Queries) ExistsUserWithEmail(ctx context.Context, email string) (bool, 
 	return exists, err
 }
 
-const GetRefreshTokenByHash = `-- name: GetRefreshTokenByHash :one
-SELECT id, user_id, token_hash, device_info, ip_address, expires_at, created_at, last_used_at, revoked_at FROM refresh_tokens WHERE token_hash = $1
-`
-
-func (q *Queries) GetRefreshTokenByHash(ctx context.Context, tokenHash string) (*RefreshToken, error) {
-	row := q.db.QueryRow(ctx, GetRefreshTokenByHash, tokenHash)
-	var i RefreshToken
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.TokenHash,
-		&i.DeviceInfo,
-		&i.IpAddress,
-		&i.ExpiresAt,
-		&i.CreatedAt,
-		&i.LastUsedAt,
-		&i.RevokedAt,
-	)
-	return &i, err
-}
-
 const GetTenantByID = `-- name: GetTenantByID :one
 SELECT id, name, created_at, updated_at, plan, status FROM tenants
 WHERE id = $1
@@ -210,6 +189,32 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,
+	)
+	return &i, err
+}
+
+const GetUserRefreshToken = `-- name: GetUserRefreshToken :one
+SELECT id, user_id, token_hash, device_info, ip_address, expires_at, created_at, last_used_at, revoked_at FROM refresh_tokens 
+WHERE user_id = $1 
+AND revoked_at IS NULL 
+AND expires_at > CURRENT_TIMESTAMP
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetUserRefreshToken(ctx context.Context, userID pgtype.UUID) (*RefreshToken, error) {
+	row := q.db.QueryRow(ctx, GetUserRefreshToken, userID)
+	var i RefreshToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TokenHash,
+		&i.DeviceInfo,
+		&i.IpAddress,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.LastUsedAt,
+		&i.RevokedAt,
 	)
 	return &i, err
 }
