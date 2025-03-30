@@ -58,7 +58,7 @@ func TestSignup(t *testing.T) {
 				PasswordConfirm: "password123",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "company name is required",
+			expectedError:  "会社名は必須です",
 		},
 		{
 			name: "missing user name",
@@ -69,7 +69,7 @@ func TestSignup(t *testing.T) {
 				PasswordConfirm: "password123",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "user name is required",
+			expectedError:  "ユーザー名は必須です",
 		},
 		{
 			name: "missing email",
@@ -80,7 +80,7 @@ func TestSignup(t *testing.T) {
 				PasswordConfirm: "password123",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "email is required",
+			expectedError:  "メールアドレスは必須です",
 		},
 		{
 			name: "missing password",
@@ -91,7 +91,7 @@ func TestSignup(t *testing.T) {
 				PasswordConfirm: "password123",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "password is required",
+			expectedError:  "パスワードは必須です",
 		},
 		{
 			name: "password too short",
@@ -103,7 +103,7 @@ func TestSignup(t *testing.T) {
 				PasswordConfirm: "short",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "password must be at least 8 characters long",
+			expectedError:  "パスワードは8文字以上である必要があります",
 		},
 		{
 			name: "passwords do not match",
@@ -115,7 +115,7 @@ func TestSignup(t *testing.T) {
 				PasswordConfirm: "password456",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "passwords do not match",
+			expectedError:  "パスワードが一致しません",
 		},
 	}
 
@@ -225,5 +225,5 @@ func TestSignupDuplicateEmail(t *testing.T) {
 	err = json.NewDecoder(resp2.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.False(t, response.Success)
-	assert.Equal(t, "user with this email already exists", response.Error)
+	assert.Equal(t, "このメールアドレスは既に登録されています", response.Error)
 }
