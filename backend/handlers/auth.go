@@ -160,16 +160,10 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Re
 		return nil, fmt.Errorf("failed to generate token pair: %w", err)
 	}
 
-	// Hash the refresh token before storing
-	hashedToken, err := bcrypt.GenerateFromPassword([]byte(tokenPair.RefreshToken), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, fmt.Errorf("failed to hash refresh token: %w", err)
-	}
-
 	// Store refresh token
 	_, err = qtx.CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
 		UserID:     user.ID,
-		TokenHash:  string(hashedToken),
+		Jti:        tokenPair.JTI,
 		DeviceInfo: pgtype.Text{String: r.UserAgent(), Valid: true},
 		IpAddress:  pgtype.Text{String: r.RemoteAddr, Valid: true},
 		ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
@@ -293,53 +287,54 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 		return nil, fmt.Errorf("failed to get tenant: %w", err)
 	}
 
-	// Check for existing valid refresh token
-	existingToken, err := queries.New(h.dbConn).GetUserRefreshToken(ctx, user.ID)
+	// Start a transaction for refresh token operations
+	tx, err := h.dbConn.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Create queries instance for transaction
+	qtx := queries.New(tx)
+
+	// Check for existing valid refresh token and mark it as used
+	existingToken, err := qtx.GetRefreshTokenByUserID(ctx, user.ID)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("failed to check existing refresh token: %w", err)
 	}
 
-	var refreshToken string
 	if !errors.Is(err, pgx.ErrNoRows) {
-		// Use existing refresh token
-		refreshToken = existingToken.TokenHash
-	} else {
-		// Generate new refresh token
-		refreshToken, err = jwt.GenerateRefreshToken(user.ID, []byte(h.env.JWTSecret))
+		// Mark existing token as used
+		err = qtx.UpdateRefreshTokenLastUsed(ctx, existingToken.Jti)
 		if err != nil {
-			return nil, fmt.Errorf("failed to generate refresh token: %w", err)
-		}
-
-		// Hash the refresh token before storing
-		hashedToken, err := bcrypt.GenerateFromPassword([]byte(refreshToken), bcrypt.DefaultCost)
-		if err != nil {
-			return nil, fmt.Errorf("failed to hash refresh token: %w", err)
-		}
-
-		// Store new refresh token
-		_, err = queries.New(h.dbConn).CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
-			UserID:     user.ID,
-			TokenHash:  string(hashedToken),
-			DeviceInfo: pgtype.Text{String: r.UserAgent(), Valid: true},
-			IpAddress:  pgtype.Text{String: r.RemoteAddr, Valid: true},
-			ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to store refresh token: %w", err)
+			return nil, fmt.Errorf("failed to update refresh token last used: %w", err)
 		}
 	}
 
-	// Generate new access token
-	accessToken, expiresIn, err := jwt.GenerateAccessToken(user.ID, tenant.ID, user.Role, []byte(h.env.JWTSecret))
+	// Generate new token pair
+	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, user.Role, []byte(h.env.JWTSecret))
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate access token: %w", err)
+		return nil, fmt.Errorf("failed to generate token pair: %w", err)
 	}
 
-	return &jwt.TokenPair{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		ExpiresIn:    expiresIn,
-	}, nil
+	// Store new refresh token
+	_, err = qtx.CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
+		UserID:     user.ID,
+		Jti:        tokenPair.JTI,
+		DeviceInfo: pgtype.Text{String: r.UserAgent(), Valid: true},
+		IpAddress:  pgtype.Text{String: r.RemoteAddr, Valid: true},
+		ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to store refresh token: %w", err)
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return tokenPair, nil
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {

@@ -11,13 +11,13 @@ import (
 type RefreshToken struct {
 	ID         pgtype.UUID
 	UserID     pgtype.UUID
-	TokenHash  string
 	DeviceInfo pgtype.Text
 	IpAddress  pgtype.Text
 	ExpiresAt  pgtype.Timestamptz
 	CreatedAt  pgtype.Timestamptz
 	LastUsedAt pgtype.Timestamptz
 	RevokedAt  pgtype.Timestamptz
+	Jti        pgtype.UUID
 }
 
 type Tenant struct {

@@ -32,18 +32,22 @@ SELECT EXISTS (
     SELECT 1 FROM users WHERE email = $1
 );
 
--- name: GetUserRefreshToken :one
+-- name: GetRefreshTokenByJTI :one
+SELECT * FROM refresh_tokens 
+WHERE jti = $1 
+AND revoked_at IS NULL 
+AND expires_at > CURRENT_TIMESTAMP;
+
+-- name: GetRefreshTokenByUserID :one
 SELECT * FROM refresh_tokens 
 WHERE user_id = $1 
 AND revoked_at IS NULL 
-AND expires_at > CURRENT_TIMESTAMP
-ORDER BY created_at DESC
-LIMIT 1;
+AND expires_at > CURRENT_TIMESTAMP;
 
 -- name: CreateRefreshToken :one
 INSERT INTO refresh_tokens (
     user_id,
-    token_hash,
+    jti,
     device_info,
     ip_address,
     expires_at
@@ -52,9 +56,7 @@ INSERT INTO refresh_tokens (
 -- name: RevokeRefreshToken :exec
 UPDATE refresh_tokens 
 SET revoked_at = CURRENT_TIMESTAMP 
-WHERE id = $1;
-
-
+WHERE jti = $1;
 
 -- name: DeleteExpiredRefreshTokens :exec
 DELETE FROM refresh_tokens 
@@ -64,7 +66,7 @@ WHERE expires_at < CURRENT_TIMESTAMP
 -- name: UpdateRefreshTokenLastUsed :exec
 UPDATE refresh_tokens 
 SET last_used_at = CURRENT_TIMESTAMP 
-WHERE id = $1;
+WHERE jti = $1;
 
 -- name: GetUserByID :one
 SELECT * FROM users

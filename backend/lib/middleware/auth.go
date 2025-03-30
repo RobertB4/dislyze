@@ -15,7 +15,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type contextKey string
@@ -90,8 +89,8 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 		return errors.New("invalid refresh token")
 	}
 
-	// Get refresh token from database using claims.UserID
-	refreshToken, err := m.db.GetUserRefreshToken(r.Context(), claims.UserID)
+	// Get refresh token from database using claims.JTI
+	refreshToken, err := m.db.GetRefreshTokenByJTI(r.Context(), claims.JTI)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return errors.New("invalid refresh token")
@@ -127,26 +126,15 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Generate new refresh token
-	newRefreshToken, err := jwt.GenerateRefreshToken(user.ID, []byte(m.env.JWTSecret))
+	newRefreshToken, jti, err := jwt.GenerateRefreshToken(user.ID, []byte(m.env.JWTSecret))
 	if err != nil {
 		return fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 
-	// Hash the new refresh token
-	newHashedToken, err := bcrypt.GenerateFromPassword([]byte(newRefreshToken), bcrypt.DefaultCost)
-	if err != nil {
-		return fmt.Errorf("failed to hash refresh token: %w", err)
-	}
-
-	// Update refresh token last used and create new one
-	err = m.db.UpdateRefreshTokenLastUsed(r.Context(), refreshToken.ID)
-	if err != nil {
-		return fmt.Errorf("failed to update refresh token: %w", err)
-	}
-
+	// Store new refresh token
 	_, err = m.db.CreateRefreshToken(r.Context(), &queries.CreateRefreshTokenParams{
 		UserID:     user.ID,
-		TokenHash:  string(newHashedToken),
+		Jti:        jti,
 		DeviceInfo: pgtype.Text{String: r.UserAgent(), Valid: true},
 		IpAddress:  pgtype.Text{String: r.RemoteAddr, Valid: true},
 		ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
