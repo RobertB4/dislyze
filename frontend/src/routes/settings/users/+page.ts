@@ -1,4 +1,5 @@
 import type { PageLoad } from './$types';
+import { PUBLIC_API_URL } from '$env/static/public';
 
 interface User {
 	id: string;
@@ -9,7 +10,7 @@ interface User {
 
 export const load: PageLoad = async ({ fetch }) => {
 	try {
-		const response = await fetch('http://localhost:1337/users', {
+		const response = await fetch(`${PUBLIC_API_URL}/users`, {
 			credentials: 'include'
 		});
 

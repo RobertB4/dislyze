@@ -8,13 +8,14 @@ import (
 )
 
 type Env struct {
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-	DBSSLMode  string
-	JWTSecret  string
+	DBHost      string
+	DBPort      string
+	DBUser      string
+	DBPassword  string
+	DBName      string
+	DBSSLMode   string
+	JWTSecret   string
+	FrontendURL string
 }
 
 func LoadEnv() (*Env, error) {
@@ -28,13 +29,14 @@ func LoadEnv() (*Env, error) {
 	env := &Env{}
 
 	required := map[string]*string{
-		"DB_HOST":     &env.DBHost,
-		"DB_PORT":     &env.DBPort,
-		"DB_USER":     &env.DBUser,
-		"DB_PASSWORD": &env.DBPassword,
-		"DB_NAME":     &env.DBName,
-		"DB_SSL_MODE": &env.DBSSLMode,
-		"JWT_SECRET":  &env.JWTSecret,
+		"DB_HOST":      &env.DBHost,
+		"DB_PORT":      &env.DBPort,
+		"DB_USER":      &env.DBUser,
+		"DB_PASSWORD":  &env.DBPassword,
+		"DB_NAME":      &env.DBName,
+		"DB_SSL_MODE":  &env.DBSSLMode,
+		"JWT_SECRET":   &env.JWTSecret,
+		"FRONTEND_URL": &env.FrontendURL,
 	}
 
 	var missing []string

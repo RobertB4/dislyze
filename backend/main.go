@@ -27,7 +27,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env) http.Handler {
 
 	// CORS middleware
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:1338"},
+		AllowedOrigins:   []string{env.FrontendURL},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowCredentials: true,
 		MaxAge:           300,

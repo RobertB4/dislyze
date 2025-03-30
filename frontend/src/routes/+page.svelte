@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './types';
+	import { PUBLIC_API_URL } from '$env/static/public';
 
 	export let data: PageData;
 </script>
@@ -10,7 +11,7 @@
 		<h2>Message from Backend:</h2>
 		<p class="backend-message">{data.message}</p>
 	</div>
-	<p class="api-info">Backend API: <a href="http://localhost:1337">http://localhost:1337</a></p>
+	<p class="api-info">Backend API: <a href={PUBLIC_API_URL}>{PUBLIC_API_URL}</a></p>
 </main>
 
 <style>

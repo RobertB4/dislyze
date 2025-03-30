@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { toast } from '$components/toast';
 	import { createForm } from 'felte';
+	import { PUBLIC_API_URL } from '$env/static/public';
 
 	const { form, errors, data, isValid, isSubmitting } = createForm({
 		initialValues: {
@@ -48,7 +49,7 @@
 		},
 		onSubmit: async (values) => {
 			try {
-				const response = await fetch('http://localhost:1337/auth/signup', {
+				const response = await fetch(`${PUBLIC_API_URL}/auth/signup`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json'
