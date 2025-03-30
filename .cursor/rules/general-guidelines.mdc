@@ -17,3 +17,4 @@ Also use the latest stable version of SvelteKit (2.0 or newer), Tailwind (4.0 or
 - Implement proper error handling, including custom error types when beneficial.
 - Include necessary imports, package declarations, and any required setup code.
 - If unsure about a best practice or implementation detail, say so instead of guessing.
+- Any user facing text should be written in Japanese.

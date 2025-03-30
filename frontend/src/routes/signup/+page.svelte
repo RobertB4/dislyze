@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { enhance } from '$app/forms';
+	import { toast } from '$components/toast';
 
 	let formData = {
 		company_name: '',
@@ -10,12 +10,10 @@
 		password_confirm: ''
 	};
 
-	let error: string | null = null;
 	let loading = false;
 
 	async function handleSubmit() {
 		loading = true;
-		error = null;
 
 		try {
 			const response = await fetch('http://localhost:1337/auth/signup', {
@@ -28,15 +26,24 @@
 			});
 
 			const data = await response.json();
+			console.log({ data });
 
-			if (!response.ok) {
-				throw new Error(data.error || 'Failed to sign up');
+			if (data.error) {
+				throw new Error(data.error);
 			}
 
-			// Redirect to dashboard on success
+			// Show success toast and redirect to dashboard
+			toast.show('Account created successfully!', 'success');
 			goto('/dashboard');
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'An error occurred';
+			console.log({ err });
+			const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+
+			if (errorMessage === 'email already exists') {
+				toast.show('This email is already registered. Please try logging in instead.', 'error');
+			} else {
+				toast.show(errorMessage, 'error');
+			}
 		} finally {
 			loading = false;
 		}
@@ -56,12 +63,6 @@
 		</div>
 
 		<form class="mt-8 space-y-6" on:submit|preventDefault={handleSubmit}>
-			{#if error}
-				<div class="bg-red-50 border border-red-200 rounded-md p-4">
-					<p class="text-sm text-red-600">{error}</p>
-				</div>
-			{/if}
-
 			<div class="rounded-md shadow-sm space-y-4">
 				<div>
 					<label for="company_name" class="sr-only">Company Name</label>
