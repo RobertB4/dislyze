@@ -1,0 +1,8 @@
+---
+description: 
+globs: frontend/*,frontend/**/*
+alwaysApply: false
+---
+- Always add loading and error states to data fetching components
+- Implement error handling and error logging
+- Use semantic HTML elements where possible

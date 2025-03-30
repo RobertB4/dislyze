@@ -1,0 +1,10 @@
+---
+description: 
+globs: backend/*,backend/**/*
+alwaysApply: false
+---
+- Implement input validation for API endpoints.
+- Follow RESTful API design principles and best practices.
+- Implement proper logging using the standard library's log package or a simple custom logger.
+- Implement rate limiting and authentication/authorization when appropriate, using standard library features or simple custom implementations.
+- Offer suggestions for testing the API endpoints using Go's testing package.
