@@ -45,6 +45,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env) http.Handler {
 	// Auth routes
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/signup", authHandler.Signup)
+		r.Post("/login", authHandler.Login)
 	})
 
 	// Protected routes

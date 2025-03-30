@@ -227,3 +227,84 @@ func TestSignupRequest_Validate(t *testing.T) {
 		})
 	}
 }
+
+func TestLoginRequest_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		request LoginRequest
+		wantErr error
+	}{
+		{
+			name: "valid request",
+			request: LoginRequest{
+				Email:    "test@example.com",
+				Password: "password123",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "missing email",
+			request: LoginRequest{
+				Password: "password123",
+			},
+			wantErr: ErrEmailRequired,
+		},
+		{
+			name: "missing password",
+			request: LoginRequest{
+				Email: "test@example.com",
+			},
+			wantErr: ErrPasswordRequired,
+		},
+		// Edge cases
+		{
+			name: "empty email",
+			request: LoginRequest{
+				Email:    "",
+				Password: "password123",
+			},
+			wantErr: ErrEmailRequired,
+		},
+		{
+			name: "whitespace-only email",
+			request: LoginRequest{
+				Email:    "   ",
+				Password: "password123",
+			},
+			wantErr: ErrEmailRequired,
+		},
+		{
+			name: "empty password",
+			request: LoginRequest{
+				Email:    "test@example.com",
+				Password: "",
+			},
+			wantErr: ErrPasswordRequired,
+		},
+		{
+			name: "whitespace-only password",
+			request: LoginRequest{
+				Email:    "test@example.com",
+				Password: "   ",
+			},
+			wantErr: ErrPasswordRequired,
+		},
+		{
+			name: "fields with leading/trailing whitespace",
+			request: LoginRequest{
+				Email:    "  test@example.com  ",
+				Password: "  password123  ",
+			},
+			wantErr: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.request.Validate()
+			if err != tt.wantErr {
+				t.Errorf("LoginRequest.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

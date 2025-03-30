@@ -27,6 +27,16 @@ type SignupResponse struct {
 	Error   string `json:"error,omitempty"`
 }
 
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginResponse struct {
+	Success bool   `json:"success"`
+	Error   string `json:"error,omitempty"`
+}
+
 func TestSignup(t *testing.T) {
 	// Clean up database before tests
 	CleanupDB(t)
@@ -226,4 +236,152 @@ func TestSignupDuplicateEmail(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, response.Success)
 	assert.Equal(t, "このメールアドレスは既に登録されています", response.Error)
+}
+
+func TestLogin(t *testing.T) {
+	// Clean up database before tests
+	CleanupDB(t)
+	defer CloseDB()
+
+	// First create a test user
+	createTestUser(t)
+
+	tests := []struct {
+		name           string
+		request        LoginRequest
+		expectedStatus int
+		expectedError  string
+	}{
+		{
+			name: "successful login",
+			request: LoginRequest{
+				Email:    "test@example.com",
+				Password: "password123",
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "wrong password",
+			request: LoginRequest{
+				Email:    "test@example.com",
+				Password: "wrongpassword",
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  "メールアドレスまたはパスワードが正しくありません",
+		},
+		{
+			name: "non-existent email",
+			request: LoginRequest{
+				Email:    "nonexistent@example.com",
+				Password: "password123",
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  "メールアドレスまたはパスワードが正しくありません",
+		},
+		{
+			name: "missing email",
+			request: LoginRequest{
+				Password: "password123",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "メールアドレスは必須です",
+		},
+		{
+			name: "missing password",
+			request: LoginRequest{
+				Email: "test@example.com",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "パスワードは必須です",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create request body
+			body, err := json.Marshal(tt.request)
+			assert.NoError(t, err)
+
+			// Create request
+			req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/login", baseURL), bytes.NewBuffer(body))
+			assert.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+
+			// Send request
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			assert.NoError(t, err)
+			defer resp.Body.Close()
+
+			// Check status code
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+
+			// Parse response
+			var response LoginResponse
+			err = json.NewDecoder(resp.Body).Decode(&response)
+			assert.NoError(t, err)
+
+			// Check response
+			if tt.expectedError != "" {
+				assert.False(t, response.Success)
+				assert.Equal(t, tt.expectedError, response.Error)
+			} else {
+				assert.True(t, response.Success)
+				assert.Empty(t, response.Error)
+
+				// Check cookies
+				cookies := resp.Cookies()
+				assert.NotEmpty(t, cookies, "Expected cookies in response")
+
+				var accessToken, refreshToken *http.Cookie
+				for _, cookie := range cookies {
+					switch cookie.Name {
+					case "access_token":
+						accessToken = cookie
+					case "refresh_token":
+						refreshToken = cookie
+					}
+				}
+
+				// Verify access token cookie
+				assert.NotNil(t, accessToken, "Access token cookie not found")
+				assert.True(t, accessToken.HttpOnly, "Access token cookie should be HttpOnly")
+				assert.True(t, accessToken.Secure, "Access token cookie should be Secure")
+				assert.Equal(t, http.SameSiteStrictMode, accessToken.SameSite, "Access token cookie should have SameSite=Strict")
+
+				// Verify refresh token cookie
+				assert.NotNil(t, refreshToken, "Refresh token cookie not found")
+				assert.True(t, refreshToken.HttpOnly, "Refresh token cookie should be HttpOnly")
+				assert.True(t, refreshToken.Secure, "Refresh token cookie should be Secure")
+				assert.Equal(t, http.SameSiteStrictMode, refreshToken.SameSite, "Refresh token cookie should have SameSite=Strict")
+			}
+		})
+	}
+}
+
+// Helper function to create a test user
+func createTestUser(t *testing.T) {
+	// Create request body
+	body, err := json.Marshal(SignupRequest{
+		CompanyName:     "Test Company",
+		UserName:        "Test User",
+		Email:           "test@example.com",
+		Password:        "password123",
+		PasswordConfirm: "password123",
+	})
+	assert.NoError(t, err)
+
+	// Create request
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", baseURL), bytes.NewBuffer(body))
+	assert.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	assert.NoError(t, err)
+	defer resp.Body.Close()
+
+	// Check status code
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
