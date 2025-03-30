@@ -8,6 +8,10 @@
 *.out
 go.work
 
+# Air ignores
+tmp/
+build-errors.log
+
 # Node.js ignores
 node_modules/
 .svelte-kit/
