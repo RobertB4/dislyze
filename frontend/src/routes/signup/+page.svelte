@@ -5,6 +5,7 @@
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import Button from '$lib/components/Button.svelte';
 	import Input from '$lib/components/Input.svelte';
+	import { KnownError } from '$lib/errors';
 
 	const { form, errors, data, isValid, isSubmitting } = createForm({
 		initialValues: {
@@ -61,20 +62,16 @@
 				});
 
 				const data = await response.json();
-				console.log({ data });
 
 				if (data.error) {
-					throw new Error(data.error);
+					throw new KnownError(data.error);
 				}
 
 				// Show success toast and redirect to dashboard
 				toast.show('アカウントが正常に作成されました！', 'success');
 				goto('/');
 			} catch (err) {
-				console.log({ err });
-				const errorMessage = err instanceof Error ? err.message : 'An error occurred';
-
-				toast.show(errorMessage, 'error');
+				toast.showError(err);
 			}
 		}
 	});
