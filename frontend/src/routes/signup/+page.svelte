@@ -4,6 +4,7 @@
 	import { createForm } from 'felte';
 	import { PUBLIC_API_URL } from '$env/static/public';
 	import Button from '$lib/components/Button.svelte';
+	import Input from '$lib/components/Input.svelte';
 
 	const { form, errors, data, isValid, isSubmitting } = createForm({
 		initialValues: {
@@ -93,85 +94,60 @@
 
 		<form class="mt-8 space-y-6" use:form>
 			<div class="rounded-md space-y-4">
-				<div>
-					<label for="company_name" class="sr-only">会社名</label>
-					<input
-						id="company_name"
-						name="company_name"
-						type="text"
-						required
-						bind:value={$data.company_name}
-						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-						placeholder="会社名"
-					/>
-					{#if $errors.company_name}
-						<p class="mt-1 text-sm text-red-600">{$errors.company_name}</p>
-					{/if}
-				</div>
+				<Input
+					id="company_name"
+					name="company_name"
+					type="text"
+					label="会社名"
+					placeholder="会社名"
+					required
+					bind:value={$data.company_name}
+					error={$errors.company_name?.[0]}
+				/>
 
-				<div>
-					<label for="user_name" class="sr-only">お名前</label>
-					<input
-						id="user_name"
-						name="user_name"
-						type="text"
-						required
-						bind:value={$data.user_name}
-						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-						placeholder="お名前"
-					/>
-					{#if $errors.user_name}
-						<p class="mt-1 text-sm text-red-600">{$errors.user_name}</p>
-					{/if}
-				</div>
+				<Input
+					id="user_name"
+					name="user_name"
+					type="text"
+					label="お名前"
+					placeholder="お名前"
+					required
+					bind:value={$data.user_name}
+					error={$errors.user_name?.[0]}
+				/>
 
-				<div>
-					<label for="email" class="sr-only">メールアドレス</label>
-					<input
-						id="email"
-						name="email"
-						type="email"
-						required
-						bind:value={$data.email}
-						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-						placeholder="メールアドレス"
-					/>
-					{#if $errors.email}
-						<p class="mt-1 text-sm text-red-600">{$errors.email}</p>
-					{/if}
-				</div>
+				<Input
+					id="email"
+					name="email"
+					type="email"
+					label="メールアドレス"
+					placeholder="メールアドレス"
+					required
+					bind:value={$data.email}
+					error={$errors.email?.[0]}
+				/>
 
-				<div>
-					<label for="password" class="sr-only">パスワード</label>
-					<input
-						id="password"
-						name="password"
-						type="password"
-						required
-						bind:value={$data.password}
-						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-						placeholder="パスワード"
-					/>
-					{#if $errors.password}
-						<p class="mt-1 text-sm text-red-600">{$errors.password}</p>
-					{/if}
-				</div>
+				<Input
+					id="password"
+					name="password"
+					type="password"
+					label="パスワード"
+					placeholder="パスワード"
+					required
+					bind:value={$data.password}
+					error={$errors.password?.[0]}
+				/>
 
-				<div>
-					<label for="password_confirm" class="sr-only">パスワード（確認）</label>
-					<input
-						id="password_confirm"
-						name="password_confirm"
-						type="password"
-						required
-						bind:value={$data.password_confirm}
-						class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-						placeholder="パスワード（確認）"
-					/>
-					{#if $errors.password_confirm}
-						<p class="mt-1 text-sm text-red-600">{$errors.password_confirm}</p>
-					{/if}
-				</div>
+				<Input
+					id="password_confirm"
+					name="password_confirm"
+					type="password"
+					label="パスワード（確認）"
+					placeholder="パスワード（確認）"
+					required
+					bind:value={$data.password_confirm}
+					error={$errors.password_confirm?.[0]}
+				/>
 			</div>
 
 			<div>
