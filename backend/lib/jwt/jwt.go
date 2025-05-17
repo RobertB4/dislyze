@@ -36,15 +36,15 @@ type TokenPair struct {
 }
 
 // GenerateAccessToken creates a new access token
-func GenerateAccessToken(userID, tenantID pgtype.UUID, role string, secret []byte) (string, int64, error) {
+func GenerateAccessToken(userID, tenantID pgtype.UUID, role string, secret []byte) (string, int64, *Claims, error) {
 	// Validate secret
 	if len(secret) == 0 {
-		return "", 0, fmt.Errorf("secret cannot be empty")
+		return "", 0, nil, fmt.Errorf("secret cannot be empty")
 	}
 
 	// Create access token claims
 	now := time.Now()
-	claims := Claims{
+	claims := &Claims{
 		UserID:   userID,
 		TenantID: tenantID,
 		Role:     role,
@@ -59,10 +59,10 @@ func GenerateAccessToken(userID, tenantID pgtype.UUID, role string, secret []byt
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	accessToken, err := token.SignedString(secret)
 	if err != nil {
-		return "", 0, fmt.Errorf("failed to sign access token: %w", err)
+		return "", 0, nil, fmt.Errorf("failed to sign access token: %w", err)
 	}
 
-	return accessToken, 15 * 60, nil // 15 minutes in seconds
+	return accessToken, 15 * 60, claims, nil // 15 minutes in seconds, return claims
 }
 
 // GenerateRefreshToken creates a new refresh token
@@ -111,7 +111,7 @@ func GenerateRefreshToken(userID pgtype.UUID, secret []byte) (string, pgtype.UUI
 // GenerateTokenPair creates a new access token and refresh token
 func GenerateTokenPair(userID, tenantID pgtype.UUID, role string, secret []byte) (*TokenPair, error) {
 	// Generate access token
-	accessToken, expiresIn, err := GenerateAccessToken(userID, tenantID, role, secret)
+	accessToken, expiresIn, _, err := GenerateAccessToken(userID, tenantID, role, secret)
 	if err != nil {
 		return nil, err
 	}

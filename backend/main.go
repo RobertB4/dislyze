@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -42,8 +43,13 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env) http.Handler {
 		w.Write([]byte("OK"))
 	})
 
+	rateLimit, err := strconv.Atoi(env.RateLimit)
+	if err != nil {
+		log.Fatalf("Failed to convert env.RateLimit to int: %v", err)
+	}
+
 	// Create rate limiter
-	rateLimiter := ratelimit.NewRateLimiter(60*time.Minute, 5) // 5 attempts per 60 minutes
+	rateLimiter := ratelimit.NewRateLimiter(60*time.Minute, rateLimit)
 
 	authHandler := handlers.NewAuthHandler(dbConn, env, rateLimiter)
 	usersHandler := handlers.NewUsersHandler()

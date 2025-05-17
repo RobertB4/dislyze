@@ -15,6 +15,7 @@ type Env struct {
 	DBName      string
 	DBSSLMode   string
 	JWTSecret   string
+	RateLimit   string
 	FrontendURL string
 }
 
@@ -36,6 +37,7 @@ func LoadEnv() (*Env, error) {
 		"DB_NAME":      &env.DBName,
 		"DB_SSL_MODE":  &env.DBSSLMode,
 		"JWT_SECRET":   &env.JWTSecret,
+		"RATE_LIMIT":   &env.RateLimit,
 		"FRONTEND_URL": &env.FrontendURL,
 	}
 
