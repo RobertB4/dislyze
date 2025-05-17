@@ -15,6 +15,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type contextKey string
@@ -28,13 +29,15 @@ type AuthMiddleware struct {
 	env         *config.Env
 	db          *queries.Queries
 	rateLimiter *ratelimit.RateLimiter
+	pool        *pgxpool.Pool
 }
 
-func NewAuthMiddleware(env *config.Env, db *queries.Queries, rateLimiter *ratelimit.RateLimiter) *AuthMiddleware {
+func NewAuthMiddleware(env *config.Env, db *queries.Queries, rateLimiter *ratelimit.RateLimiter, pool *pgxpool.Pool) *AuthMiddleware {
 	return &AuthMiddleware{
 		env:         env,
 		db:          db,
 		rateLimiter: rateLimiter,
+		pool:        pool,
 	}
 }
 
@@ -83,80 +86,119 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 		return errors.New("too many refresh attempts")
 	}
 
-	// Parse and validate refresh token to get claims
+	// Parse and validate refresh token from cookie to get claims
 	claims, err := jwt.ValidateToken(refreshCookie.Value, []byte(m.env.JWTSecret))
 	if err != nil {
-		return errors.New("invalid refresh token")
+		// This could be due to an invalid signature, or if the token is malformed/expired by JWT standards.
+		return errors.New("invalid refresh token signature or format")
 	}
 
-	// Get refresh token from database using claims.JTI
-	refreshToken, err := m.db.GetRefreshTokenByJTI(r.Context(), claims.JTI)
+	// Start a database transaction
+	tx, err := m.pool.Begin(r.Context())
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return errors.New("invalid refresh token")
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(r.Context()) // Rollback by default, commit on success
+
+	qtx := m.db.WithTx(tx) // Use queries with transaction
+
+	// Get the stored refresh token details from database using JTI from cookie claims
+	storedRefreshToken, err := qtx.GetRefreshTokenByJTI(r.Context(), claims.JTI)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return errors.New("refresh token not found in database")
 		}
-		return fmt.Errorf("failed to get refresh token: %w", err)
+		return fmt.Errorf("failed to get refresh token from db: %w", err)
 	}
 
-	// Check if refresh token is expired or revoked
-	if refreshToken.ExpiresAt.Time.Before(time.Now()) || refreshToken.RevokedAt.Valid {
-		return errors.New("refresh token expired or revoked")
+	// --- Security Check: Verify UserID consistency ---
+	if storedRefreshToken.UserID != claims.UserID {
+		// This is a critical security check. If the UserID in the JWT doesn't match the one associated with the JTI in the DB,
+		// it could indicate a compromised JWT or a serious flaw.
+		return errors.New("user ID mismatch between JWT and stored token")
 	}
 
-	// Check if refresh token has been used before
-	if refreshToken.LastUsedAt.Valid {
-		return errors.New("refresh token already used")
+	// Check if refresh token is expired or revoked (according to DB record)
+	if storedRefreshToken.ExpiresAt.Time.Before(time.Now()) {
+		return errors.New("refresh token expired")
+	}
+	if storedRefreshToken.RevokedAt.Valid {
+		return errors.New("refresh token revoked")
 	}
 
-	// Get user and tenant
-	user, err := m.db.GetUserByID(r.Context(), claims.UserID)
+	// --- Security Check: Prevent replay of an already used (for rotation) token ---
+	if storedRefreshToken.LastUsedAt.Valid {
+		// If LastUsedAt is set, this token has already been used to rotate tokens.
+		// This is a critical defense against replay attacks of a token that was part of a successful rotation.
+		// Consider revoking all tokens for this user if this happens, as it indicates a potential compromise.
+		return errors.New("refresh token already used for rotation")
+	}
+
+	// --- Security Step: Mark the current refresh token as used ---
+	if err := qtx.UpdateRefreshTokenLastUsed(r.Context(), storedRefreshToken.Jti); err != nil {
+		return fmt.Errorf("failed to mark refresh token as used: %w", err)
+	}
+
+	// Get user and tenant details for generating new tokens
+	user, err := qtx.GetUserByID(r.Context(), claims.UserID) // Use claims.UserID as it's now verified against storedRefreshToken.UserID
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return errors.New("user not found for refresh token")
+		}
 		return fmt.Errorf("failed to get user: %w", err)
 	}
 
-	tenant, err := m.db.GetTenantByID(r.Context(), user.TenantID)
+	tenant, err := qtx.GetTenantByID(r.Context(), user.TenantID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return errors.New("tenant not found for user")
+		}
 		return fmt.Errorf("failed to get tenant: %w", err)
 	}
 
 	// Generate new access token
-	accessToken, expiresIn, err := jwt.GenerateAccessToken(user.ID, tenant.ID, user.Role, []byte(m.env.JWTSecret))
+	newAccessToken, newExpiresIn, err := jwt.GenerateAccessToken(user.ID, tenant.ID, user.Role, []byte(m.env.JWTSecret))
 	if err != nil {
-		return fmt.Errorf("failed to generate access token: %w", err)
+		return fmt.Errorf("failed to generate new access token: %w", err)
 	}
 
-	// Generate new refresh token
-	newRefreshToken, jti, err := jwt.GenerateRefreshToken(user.ID, []byte(m.env.JWTSecret))
+	// Generate new refresh token (which includes a new JTI)
+	newRefreshTokenString, newJTI, err := jwt.GenerateRefreshToken(user.ID, []byte(m.env.JWTSecret))
 	if err != nil {
-		return fmt.Errorf("failed to generate refresh token: %w", err)
+		return fmt.Errorf("failed to generate new refresh token: %w", err)
 	}
 
-	// Store new refresh token
-	_, err = m.db.CreateRefreshToken(r.Context(), &queries.CreateRefreshTokenParams{
+	// Store the new refresh token in the database
+	_, err = qtx.CreateRefreshToken(r.Context(), &queries.CreateRefreshTokenParams{
 		UserID:     user.ID,
-		Jti:        jti,
-		DeviceInfo: pgtype.Text{String: r.UserAgent(), Valid: true},
-		IpAddress:  pgtype.Text{String: r.RemoteAddr, Valid: true},
+		Jti:        newJTI,
+		DeviceInfo: pgtype.Text{String: r.UserAgent(), Valid: true}, // Consider copying from old token or updating
+		IpAddress:  pgtype.Text{String: r.RemoteAddr, Valid: true},  // Consider copying from old token or updating
 		ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create new refresh token: %w", err)
+		return fmt.Errorf("failed to create new refresh token in db: %w", err)
 	}
 
-	// Set new cookies
+	// If all operations were successful, commit the transaction
+	if err := tx.Commit(r.Context()); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// Set new cookies (outside transaction, as this is HTTP response)
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
-		Value:    accessToken,
+		Value:    newAccessToken,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
-		MaxAge:   int(expiresIn),
+		MaxAge:   int(newExpiresIn),
 	})
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
-		Value:    newRefreshToken,
+		Value:    newRefreshTokenString,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
@@ -164,20 +206,20 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 		MaxAge:   7 * 24 * 60 * 60, // 7 days
 	})
 
-	// Log the token refresh
+	// Log the token refresh (outside transaction)
 	logger.LogTokenRefresh(logger.AuthEvent{
-		EventType:  "token_refresh",
+		EventType:  "token_refresh_successful",
 		UserID:     user.ID.String(),
 		IPAddress:  r.RemoteAddr,
 		UserAgent:  r.UserAgent(),
-		DeviceInfo: refreshToken.DeviceInfo.String,
+		DeviceInfo: storedRefreshToken.DeviceInfo.String, // Info from the old token
 		Timestamp:  time.Now(),
 		Success:    true,
 		TokenType:  "refresh",
-		TokenID:    refreshToken.ID.String(),
+		TokenID:    storedRefreshToken.ID.String(), // ID of the old, now used token
 	})
 
-	return nil
+	return nil // Success
 }
 
 func (m *AuthMiddleware) handleAuthError(w http.ResponseWriter, r *http.Request, err error) {

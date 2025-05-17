@@ -60,7 +60,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env) http.Handler {
 	// Protected routes
 	r.Group(func(r chi.Router) {
 
-		r.Use(middleware.NewAuthMiddleware(env, queries, rateLimiter).Authenticate)
+		r.Use(middleware.NewAuthMiddleware(env, queries, rateLimiter, dbConn).Authenticate)
 
 		// Users routes
 		r.Route("/users", func(r chi.Router) {
