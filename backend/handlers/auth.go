@@ -67,13 +67,15 @@ type AuthHandler struct {
 	dbConn      *pgxpool.Pool
 	env         *config.Env
 	rateLimiter *ratelimit.RateLimiter
+	queries     *queries.Queries
 }
 
-func NewAuthHandler(dbConn *pgxpool.Pool, env *config.Env, rateLimiter *ratelimit.RateLimiter) *AuthHandler {
+func NewAuthHandler(dbConn *pgxpool.Pool, env *config.Env, rateLimiter *ratelimit.RateLimiter, queries *queries.Queries) *AuthHandler {
 	return &AuthHandler{
 		dbConn:      dbConn,
 		env:         env,
 		rateLimiter: rateLimiter,
+		queries:     queries,
 	}
 }
 
@@ -117,7 +119,7 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Re
 	}
 	defer tx.Rollback(ctx)
 
-	qtx := queries.New(tx)
+	qtx := h.queries.WithTx(tx)
 
 	tenant, err := qtx.CreateTenant(ctx, &queries.CreateTenantParams{
 		Name: req.CompanyName,
@@ -196,7 +198,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exists, err := queries.New(h.dbConn).ExistsUserWithEmail(r.Context(), req.Email)
+	exists, err := h.queries.ExistsUserWithEmail(r.Context(), req.Email)
 	if err != nil {
 		appErr := errors.New(err, "Failed to check if user exists", http.StatusInternalServerError)
 		errors.LogError(appErr)
@@ -262,7 +264,7 @@ func (r *LoginRequest) Validate() error {
 }
 
 func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Request) (*jwt.TokenPair, error) {
-	user, err := queries.New(h.dbConn).GetUserByEmail(ctx, req.Email)
+	user, err := h.queries.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("メールアドレスまたはパスワードが正しくありません")
@@ -274,7 +276,7 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 		return nil, fmt.Errorf("メールアドレスまたはパスワードが正しくありません")
 	}
 
-	tenant, err := queries.New(h.dbConn).GetTenantByID(ctx, user.TenantID)
+	tenant, err := h.queries.GetTenantByID(ctx, user.TenantID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tenant: %w", err)
 	}
@@ -285,7 +287,7 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 	}
 	defer tx.Rollback(ctx)
 
-	qtx := queries.New(tx)
+	qtx := h.queries.WithTx(tx)
 
 	existingToken, err := qtx.GetRefreshTokenByUserID(ctx, user.ID)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
