@@ -44,7 +44,7 @@ func CleanupDB(t *testing.T) {
 	pool := initDB(t)
 
 	// Read delete.sql file
-	deleteSQL, err := os.ReadFile("/app/lib/db/delete.sql")
+	deleteSQL, err := os.ReadFile("/database/delete.sql")
 	if err != nil {
 		t.Fatalf("Failed to read delete.sql: %v", err)
 	}

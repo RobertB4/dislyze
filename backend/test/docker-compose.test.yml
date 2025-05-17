@@ -16,8 +16,8 @@ services:
   backend:
     container_name: test-backend
     build:
-      context: ..
-      dockerfile: test/Dockerfile
+      context: ../..
+      dockerfile: backend/test/Dockerfile
     environment:
       - APP_ENV=test
       - DB_HOST=postgres

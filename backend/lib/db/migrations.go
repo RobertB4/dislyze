@@ -20,7 +20,7 @@ func RunMigrations(pool *pgxpool.Pool) error {
 	}
 
 	// Run migrations
-	if err := goose.Up(db, "lib/db/migrations"); err != nil {
+	if err := goose.Up(db, "../database/migrations"); err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
