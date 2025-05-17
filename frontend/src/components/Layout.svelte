@@ -291,26 +291,6 @@
 		<div class="flex flex-1 flex-col overflow-y-auto pt-5 pb-4 overflow-hidden">
 			<div class="flex flex-shrink-0 justify-between items-center h-8 px-4">
 				<img class="h-8 w-auto" src="/logo.png" alt="dislyze logo" />
-
-				<button
-					type="button"
-					class="inline-flex rounded-md text-gray-400 hover:text-white focus:outline-none"
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke-width="1.5"
-						stroke="currentColor"
-						class="w-6 h-6"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5"
-						></path>
-					</svg>
-				</button>
 			</div>
 			<nav class="mt-5 flex-1 space-y-1 px-2">
 				<a
@@ -566,9 +546,7 @@
 					</svg>
 				</button>
 
-				<img class="h-8 w-auto hidden md:block" src="/logo.png" alt="dislyze logo" />
-
-				<h1 class="text-2xl font-semibold text-gray-900 px-2 hidden md:block">page title</h1>
+				<h1 class="text-2xl font-semibold text-gray-900 pr-2 hidden md:block">page title</h1>
 			</div>
 			<div class="px-4 sm:px-6 md:px-8">
 				<slot name="buttons" />
