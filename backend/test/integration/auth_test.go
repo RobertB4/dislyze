@@ -4,14 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"lugia/test/integration/setup"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-)
-
-const (
-	baseURL = "http://backend:1337"
 )
 
 type SignupRequest struct {
@@ -27,19 +24,15 @@ type SignupResponse struct {
 	Error   string `json:"error,omitempty"`
 }
 
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
 type LoginResponse struct {
 	Success bool   `json:"success"`
 	Error   string `json:"error,omitempty"`
 }
 
 func TestSignup(t *testing.T) {
-	CleanupDB(t)
-	defer CloseDB()
+	pool := setup.InitDB(t)
+	setup.CleanupDB(t, pool)
+	defer setup.CloseDB(pool)
 
 	tests := []struct {
 		name           string
@@ -133,7 +126,7 @@ func TestSignup(t *testing.T) {
 			body, err := json.Marshal(tt.request)
 			assert.NoError(t, err)
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", baseURL), bytes.NewBuffer(body))
+			req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", setup.BaseURL), bytes.NewBuffer(body))
 			assert.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")
 
@@ -183,8 +176,9 @@ func TestSignup(t *testing.T) {
 }
 
 func TestSignupDuplicateEmail(t *testing.T) {
-	CleanupDB(t)
-	defer CloseDB()
+	pool := setup.InitDB(t)
+	setup.CleanupDB(t, pool)
+	defer setup.CloseDB(pool)
 
 	request := SignupRequest{
 		CompanyName:     "Test Company",
@@ -197,7 +191,7 @@ func TestSignupDuplicateEmail(t *testing.T) {
 	body, err := json.Marshal(request)
 	assert.NoError(t, err)
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", baseURL), bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", setup.BaseURL), bytes.NewBuffer(body))
 	assert.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -208,7 +202,7 @@ func TestSignupDuplicateEmail(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	req2, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", baseURL), bytes.NewBuffer(body))
+	req2, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", setup.BaseURL), bytes.NewBuffer(body))
 	assert.NoError(t, err)
 	req2.Header.Set("Content-Type", "application/json")
 	resp2, err := client.Do(req2)
@@ -225,20 +219,21 @@ func TestSignupDuplicateEmail(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
-	CleanupDB(t)
-	defer CloseDB()
+	pool := setup.InitDB(t)
+	setup.CleanupDB(t, pool)
+	defer setup.CloseDB(pool)
 
 	createTestUser(t)
 
 	tests := []struct {
 		name           string
-		request        LoginRequest
+		request        setup.LoginRequest
 		expectedStatus int
 		expectedError  string
 	}{
 		{
 			name: "successful login",
-			request: LoginRequest{
+			request: setup.LoginRequest{
 				Email:    "test@example.com",
 				Password: "password123",
 			},
@@ -246,7 +241,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name: "wrong password",
-			request: LoginRequest{
+			request: setup.LoginRequest{
 				Email:    "test@example.com",
 				Password: "wrongpassword",
 			},
@@ -255,7 +250,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name: "non-existent email",
-			request: LoginRequest{
+			request: setup.LoginRequest{
 				Email:    "nonexistent@example.com",
 				Password: "password123",
 			},
@@ -264,7 +259,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name: "missing email",
-			request: LoginRequest{
+			request: setup.LoginRequest{
 				Password: "password123",
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -272,7 +267,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name: "missing password",
-			request: LoginRequest{
+			request: setup.LoginRequest{
 				Email: "test@example.com",
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -285,7 +280,7 @@ func TestLogin(t *testing.T) {
 			body, err := json.Marshal(tt.request)
 			assert.NoError(t, err)
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/login", baseURL), bytes.NewBuffer(body))
+			req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/login", setup.BaseURL), bytes.NewBuffer(body))
 			assert.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")
 
@@ -344,7 +339,7 @@ func createTestUser(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", baseURL), bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", setup.BaseURL), bytes.NewBuffer(body))
 	assert.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
