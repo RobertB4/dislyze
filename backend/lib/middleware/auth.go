@@ -118,7 +118,7 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 	// Parse and validate refresh token from cookie to get claims
 	claimsFromCookie, err := jwt.ValidateToken(refreshCookie.Value, []byte(m.env.JWTSecret))
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", jwt.ErrTokenInvalid, "refresh token signature/format invalid") // Wrap specific error
+		return nil, fmt.Errorf("refresh token validation failed: %w", err)
 	}
 
 	// Start a database transaction
