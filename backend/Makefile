@@ -3,3 +3,6 @@ dev:
 
 test-integration:
 	cd test && sh test.sh
+
+sqlc:
+	sqlc generate
