@@ -68,38 +68,6 @@ CREATE TRIGGER update_users_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Create RLS (Row Level Security) policies
-ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE refresh_tokens ENABLE ROW LEVEL SECURITY;
-
--- Create policies for tenants
-CREATE POLICY tenant_isolation ON tenants
-    USING (true)  -- Only superusers can access tenants table
-    WITH CHECK (true);
-
--- Create policies for users
-CREATE POLICY user_isolation ON users
-    USING (tenant_id = current_setting('app.current_tenant_id')::uuid)
-    WITH CHECK (tenant_id = current_setting('app.current_tenant_id')::uuid);
-
--- Create policies for refresh_tokens
-CREATE POLICY refresh_token_isolation ON refresh_tokens
-    USING (user_id IN (
-        SELECT id FROM users WHERE tenant_id = current_setting('app.current_tenant_id')::uuid
-    ))
-    WITH CHECK (user_id IN (
-        SELECT id FROM users WHERE tenant_id = current_setting('app.current_tenant_id')::uuid
-    ));
-
--- Create function to set current tenant context
-CREATE OR REPLACE FUNCTION set_tenant_context(tenant_id UUID)
-RETURNS void AS $$
-BEGIN
-    PERFORM set_config('app.current_tenant_id', tenant_id::text, false);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER; 
-
 -- +goose StatementEnd
 
 -- +goose Down
