@@ -15,11 +15,9 @@
 		validate: (values) => {
 			const errors: Record<string, string> = {};
 
-			// Trim whitespace from all fields
 			values.email = values.email.trim();
 			values.password = values.password.trim();
 
-			// Check for empty or whitespace-only fields
 			if (!values.email) {
 				errors.email = 'メールアドレスは必須です';
 			} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {

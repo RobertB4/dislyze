@@ -10,7 +10,6 @@ import (
 )
 
 func TestGenerateTokenPair(t *testing.T) {
-	// Test data
 	userID := pgtype.UUID{
 		Bytes: [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
 		Valid: true,
@@ -64,7 +63,6 @@ func TestGenerateTokenPair(t *testing.T) {
 			assert.NotEmpty(t, tokenPair.RefreshToken)
 			assert.Equal(t, int64(15*60), tokenPair.ExpiresIn) // 15 minutes in seconds
 
-			// Validate the access token
 			claims, err := ValidateToken(tokenPair.AccessToken, tt.secret)
 			assert.NoError(t, err)
 			assert.NotNil(t, claims)
@@ -88,7 +86,6 @@ func TestValidateToken(t *testing.T) {
 	role := "admin"
 	secret := []byte("test-secret-key")
 
-	// Generate a valid token
 	now := time.Now()
 	claims := Claims{
 		UserID:   userID,
@@ -173,17 +170,14 @@ func TestTokenExpiration(t *testing.T) {
 	}
 	secret := []byte("test-secret-key")
 
-	// Generate a token pair
 	tokenPair, err := GenerateTokenPair(userID, tenantID, "admin", secret)
 	assert.NoError(t, err)
 	assert.NotNil(t, tokenPair)
 
-	// Validate the token immediately
 	claims, err := ValidateToken(tokenPair.AccessToken, secret)
 	assert.NoError(t, err)
 	assert.NotNil(t, claims)
 
-	// Check that the expiration time is set correctly
 	expectedExp := time.Now().Add(15 * time.Minute)
 	assert.True(t, claims.ExpiresAt.Time.After(time.Now()))
 	assert.True(t, claims.ExpiresAt.Time.Before(expectedExp.Add(time.Minute)))

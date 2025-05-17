@@ -27,7 +27,6 @@ func (rl *RateLimiter) Allow(key string) bool {
 	now := time.Now()
 	windowStart := now.Add(-rl.window)
 
-	// Clean up old attempts
 	if attempts, exists := rl.attempts[key]; exists {
 		valid := attempts[:0]
 		for _, t := range attempts {
@@ -38,12 +37,10 @@ func (rl *RateLimiter) Allow(key string) bool {
 		rl.attempts[key] = valid
 	}
 
-	// Check if we've exceeded the limit
 	if len(rl.attempts[key]) >= rl.max {
 		return false
 	}
 
-	// Add new attempt
 	rl.attempts[key] = append(rl.attempts[key], now)
 	return true
 }

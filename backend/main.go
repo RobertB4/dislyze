@@ -25,11 +25,9 @@ import (
 func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries) http.Handler {
 	r := chi.NewRouter()
 
-	// Middleware
 	r.Use(chiMiddleware.Logger)
 	r.Use(chiMiddleware.Recoverer)
 
-	// CORS middleware
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{env.FrontendURL},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -37,7 +35,6 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		MaxAge:           300,
 	}))
 
-	// Health check endpoint
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
@@ -48,24 +45,20 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		log.Fatalf("Failed to convert env.RateLimit to int: %v", err)
 	}
 
-	// Create rate limiter
 	rateLimiter := ratelimit.NewRateLimiter(60*time.Minute, rateLimit)
 
 	authHandler := handlers.NewAuthHandler(dbConn, env, rateLimiter)
 	usersHandler := handlers.NewUsersHandler(dbConn, queries)
 
-	// Auth routes
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/signup", authHandler.Signup)
 		r.Post("/login", authHandler.Login)
 	})
 
-	// Protected routes
 	r.Group(func(r chi.Router) {
 
 		r.Use(middleware.NewAuthMiddleware(env, queries, rateLimiter, dbConn).Authenticate)
 
-		// Users routes
 		r.Route("/users", func(r chi.Router) {
 			r.Get("/", usersHandler.GetUsers)
 		})
@@ -75,44 +68,35 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 }
 
 func main() {
-	// Load environment variables
 	env, err := config.LoadEnv()
 	if err != nil {
 		log.Fatalf("Failed to load environment variables: %v", err)
 	}
 
-	// Initialize database connection
 	pool, err := db.NewDB(env)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer db.CloseDB(pool)
 
-	// Run migrations
 	if err := db.RunMigrations(pool); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
-	// Create queries instance for handlers that need it
 	appQueries := queries.New(pool)
 
-	// Create a channel to listen for errors coming from the server
 	serverErrors := make(chan error, 1)
 
-	// Create a channel to listen for signals
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Setup routes with database connection and environment
 	router := SetupRoutes(pool, env, appQueries)
 
-	// Start the server
 	go func() {
 		log.Printf("main: API listening on %s", ":1337")
 		serverErrors <- http.ListenAndServe(":1337", router)
 	}()
 
-	// Blocking select waiting for either a server error or a signal
 	select {
 	case err := <-serverErrors:
 		log.Fatalf("Error starting server: %v", err)

@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// Custom JWT validation errors
 var (
 	ErrTokenExpired          = errors.New("token is expired")
 	ErrTokenNotValidYet      = errors.New("token is not valid yet")
@@ -35,14 +34,11 @@ type TokenPair struct {
 	JTI          pgtype.UUID
 }
 
-// GenerateAccessToken creates a new access token
 func GenerateAccessToken(userID, tenantID pgtype.UUID, role string, secret []byte) (string, int64, *Claims, error) {
-	// Validate secret
 	if len(secret) == 0 {
 		return "", 0, nil, fmt.Errorf("secret cannot be empty")
 	}
 
-	// Create access token claims
 	now := time.Now()
 	claims := &Claims{
 		UserID:   userID,
@@ -55,7 +51,6 @@ func GenerateAccessToken(userID, tenantID pgtype.UUID, role string, secret []byt
 		},
 	}
 
-	// Create access token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	accessToken, err := token.SignedString(secret)
 	if err != nil {
@@ -65,9 +60,7 @@ func GenerateAccessToken(userID, tenantID pgtype.UUID, role string, secret []byt
 	return accessToken, 15 * 60, claims, nil // 15 minutes in seconds, return claims
 }
 
-// GenerateRefreshToken creates a new refresh token
 func GenerateRefreshToken(userID pgtype.UUID, secret []byte) (string, pgtype.UUID, error) {
-	// Validate secret
 	if len(secret) == 0 {
 		return "", pgtype.UUID{}, fmt.Errorf("secret cannot be empty")
 	}
@@ -78,7 +71,6 @@ func GenerateRefreshToken(userID pgtype.UUID, secret []byte) (string, pgtype.UUI
 		return "", pgtype.UUID{}, fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 
-	// Generate a new UUID for the jti claim
 	var jti pgtype.UUID
 	jti.Bytes = [16]byte{}
 	if _, err := rand.Read(jti.Bytes[:]); err != nil {
@@ -86,7 +78,6 @@ func GenerateRefreshToken(userID pgtype.UUID, secret []byte) (string, pgtype.UUI
 	}
 	jti.Valid = true
 
-	// Create refresh token claims
 	now := time.Now()
 	claims := Claims{
 		UserID: userID,
@@ -98,7 +89,6 @@ func GenerateRefreshToken(userID pgtype.UUID, secret []byte) (string, pgtype.UUI
 		},
 	}
 
-	// Create refresh token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	refreshToken, err := token.SignedString(secret)
 	if err != nil {
@@ -108,15 +98,12 @@ func GenerateRefreshToken(userID pgtype.UUID, secret []byte) (string, pgtype.UUI
 	return refreshToken, jti, nil
 }
 
-// GenerateTokenPair creates a new access token and refresh token
 func GenerateTokenPair(userID, tenantID pgtype.UUID, role string, secret []byte) (*TokenPair, error) {
-	// Generate access token
 	accessToken, expiresIn, _, err := GenerateAccessToken(userID, tenantID, role, secret)
 	if err != nil {
 		return nil, err
 	}
 
-	// Generate refresh token
 	refreshToken, jti, err := GenerateRefreshToken(userID, secret)
 	if err != nil {
 		return nil, err
@@ -130,7 +117,6 @@ func GenerateTokenPair(userID, tenantID pgtype.UUID, role string, secret []byte)
 	}, nil
 }
 
-// ValidateToken validates a token and returns its claims
 func ValidateToken(tokenString string, secret []byte) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

@@ -9,17 +9,13 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
-// RunMigrations runs all pending database migrations
 func RunMigrations(pool *pgxpool.Pool) error {
-	// Convert pgxpool to standard library db
 	db := stdlib.OpenDBFromPool(pool)
 
-	// Set the dialect to postgres
 	if err := goose.SetDialect("postgres"); err != nil {
 		return fmt.Errorf("failed to set dialect: %w", err)
 	}
 
-	// Run migrations
 	if err := goose.Up(db, "../database/migrations"); err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
@@ -27,5 +23,3 @@ func RunMigrations(pool *pgxpool.Pool) error {
 	log.Println("Successfully ran database migrations")
 	return nil
 }
-
-// ... existing code ...

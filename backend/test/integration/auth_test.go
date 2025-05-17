@@ -38,7 +38,6 @@ type LoginResponse struct {
 }
 
 func TestSignup(t *testing.T) {
-	// Clean up database before tests
 	CleanupDB(t)
 	defer CloseDB()
 
@@ -131,30 +130,24 @@ func TestSignup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create request body
 			body, err := json.Marshal(tt.request)
 			assert.NoError(t, err)
 
-			// Create request
 			req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", baseURL), bytes.NewBuffer(body))
 			assert.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")
 
-			// Send request
 			client := &http.Client{}
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
 			defer resp.Body.Close()
 
-			// Check status code
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
-			// Parse response
 			var response SignupResponse
 			err = json.NewDecoder(resp.Body).Decode(&response)
 			assert.NoError(t, err)
 
-			// Check response
 			if tt.expectedError != "" {
 				assert.False(t, response.Success)
 				assert.Equal(t, tt.expectedError, response.Error)
@@ -162,7 +155,6 @@ func TestSignup(t *testing.T) {
 				assert.True(t, response.Success)
 				assert.Empty(t, response.Error)
 
-				// Check cookies
 				cookies := resp.Cookies()
 				assert.NotEmpty(t, cookies, "Expected cookies in response")
 
@@ -176,13 +168,11 @@ func TestSignup(t *testing.T) {
 					}
 				}
 
-				// Verify access token cookie
 				assert.NotNil(t, accessToken, "Access token cookie not found")
 				assert.True(t, accessToken.HttpOnly, "Access token cookie should be HttpOnly")
 				assert.True(t, accessToken.Secure, "Access token cookie should be Secure")
 				assert.Equal(t, http.SameSiteStrictMode, accessToken.SameSite, "Access token cookie should have SameSite=Strict")
 
-				// Verify refresh token cookie
 				assert.NotNil(t, refreshToken, "Refresh token cookie not found")
 				assert.True(t, refreshToken.HttpOnly, "Refresh token cookie should be HttpOnly")
 				assert.True(t, refreshToken.Secure, "Refresh token cookie should be Secure")
@@ -193,11 +183,9 @@ func TestSignup(t *testing.T) {
 }
 
 func TestSignupDuplicateEmail(t *testing.T) {
-	// Clean up database before tests
 	CleanupDB(t)
 	defer CloseDB()
 
-	// First signup
 	request := SignupRequest{
 		CompanyName:     "Test Company",
 		UserName:        "Test User",
@@ -220,8 +208,6 @@ func TestSignupDuplicateEmail(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	// Second signup with same email
-
 	req2, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", baseURL), bytes.NewBuffer(body))
 	assert.NoError(t, err)
 	req2.Header.Set("Content-Type", "application/json")
@@ -239,11 +225,9 @@ func TestSignupDuplicateEmail(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
-	// Clean up database before tests
 	CleanupDB(t)
 	defer CloseDB()
 
-	// First create a test user
 	createTestUser(t)
 
 	tests := []struct {
@@ -298,30 +282,24 @@ func TestLogin(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create request body
 			body, err := json.Marshal(tt.request)
 			assert.NoError(t, err)
 
-			// Create request
 			req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/login", baseURL), bytes.NewBuffer(body))
 			assert.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")
 
-			// Send request
 			client := &http.Client{}
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
 			defer resp.Body.Close()
 
-			// Check status code
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
-			// Parse response
 			var response LoginResponse
 			err = json.NewDecoder(resp.Body).Decode(&response)
 			assert.NoError(t, err)
 
-			// Check response
 			if tt.expectedError != "" {
 				assert.False(t, response.Success)
 				assert.Equal(t, tt.expectedError, response.Error)
@@ -329,7 +307,6 @@ func TestLogin(t *testing.T) {
 				assert.True(t, response.Success)
 				assert.Empty(t, response.Error)
 
-				// Check cookies
 				cookies := resp.Cookies()
 				assert.NotEmpty(t, cookies, "Expected cookies in response")
 
@@ -343,13 +320,11 @@ func TestLogin(t *testing.T) {
 					}
 				}
 
-				// Verify access token cookie
 				assert.NotNil(t, accessToken, "Access token cookie not found")
 				assert.True(t, accessToken.HttpOnly, "Access token cookie should be HttpOnly")
 				assert.True(t, accessToken.Secure, "Access token cookie should be Secure")
 				assert.Equal(t, http.SameSiteStrictMode, accessToken.SameSite, "Access token cookie should have SameSite=Strict")
 
-				// Verify refresh token cookie
 				assert.NotNil(t, refreshToken, "Refresh token cookie not found")
 				assert.True(t, refreshToken.HttpOnly, "Refresh token cookie should be HttpOnly")
 				assert.True(t, refreshToken.Secure, "Refresh token cookie should be Secure")
@@ -359,9 +334,7 @@ func TestLogin(t *testing.T) {
 	}
 }
 
-// Helper function to create a test user
 func createTestUser(t *testing.T) {
-	// Create request body
 	body, err := json.Marshal(SignupRequest{
 		CompanyName:     "Test Company",
 		UserName:        "Test User",
@@ -371,17 +344,14 @@ func createTestUser(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	// Create request
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", baseURL), bytes.NewBuffer(body))
 	assert.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
-	// Send request
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	assert.NoError(t, err)
 	defer resp.Body.Close()
 
-	// Check status code
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }

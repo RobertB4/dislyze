@@ -18,14 +18,12 @@
 		validate: (values) => {
 			const errors: Record<string, string> = {};
 
-			// Trim whitespace from all fields
 			values.company_name = values.company_name.trim();
 			values.user_name = values.user_name.trim();
 			values.email = values.email.trim();
 			values.password = values.password.trim();
 			values.password_confirm = values.password_confirm.trim();
 
-			// Check for empty or whitespace-only fields
 			if (!values.company_name) {
 				errors.company_name = '会社名は必須です';
 			}
@@ -67,7 +65,6 @@
 					throw new KnownError(data.error);
 				}
 
-				// Show success toast and redirect to dashboard
 				toast.show('アカウントが正常に作成されました！', 'success');
 				goto('/');
 			} catch (err) {

@@ -10,13 +10,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"lugia/lib/errors" // Assuming this path for your custom errors package
-	// Assuming this path for your JWT claims struct
-	"lugia/lib/middleware" // Assuming this path for UserClaimsKey and TenantIDKey
+	"lugia/lib/errors"
+	"lugia/lib/middleware"
 	"lugia/queries"
 )
 
-// User struct defines the user data returned by the API
 type User struct {
 	ID        string    `json:"id"`
 	Email     string    `json:"email"`
@@ -53,7 +51,7 @@ func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, pgx.ErrNoRows) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode([]User{}) // Return empty list
+			json.NewEncoder(w).Encode([]User{})
 			return
 		}
 		appErr := errors.New(err, "Failed to retrieve user list.", http.StatusInternalServerError)
@@ -68,6 +66,8 @@ func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		if dbUser.ID.Valid {
 			userIDStr = dbUser.ID.String()
 		} else {
+			// This case should ideally not happen for a User's ID (Primary Key).
+			// Log an error if it does. userIDStr will remain "".
 			errDetail := fmt.Errorf("retrieved user record with invalid/NULL ID (email for context: %s)", dbUser.Email)
 			appErr := errors.New(errDetail, "", http.StatusInternalServerError)
 			errors.LogError(appErr)

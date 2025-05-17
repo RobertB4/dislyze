@@ -78,14 +78,12 @@ func NewAuthHandler(dbConn *pgxpool.Pool, env *config.Env, rateLimiter *ratelimi
 }
 
 func (r *SignupRequest) Validate() error {
-	// Trim whitespace from all fields
 	r.CompanyName = strings.TrimSpace(r.CompanyName)
 	r.UserName = strings.TrimSpace(r.UserName)
 	r.Email = strings.TrimSpace(r.Email)
 	r.Password = strings.TrimSpace(r.Password)
 	r.PasswordConfirm = strings.TrimSpace(r.PasswordConfirm)
 
-	// Check for empty or whitespace-only fields
 	if r.CompanyName == "" {
 		return ErrCompanyNameRequired
 	}
@@ -107,25 +105,20 @@ func (r *SignupRequest) Validate() error {
 	return nil
 }
 
-// signup handles user registration and returns a token pair
 func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Request) (*jwt.TokenPair, error) {
-	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	// Start a transaction
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
-	// Create queries instance for transaction
 	qtx := queries.New(tx)
 
-	// Create tenant
 	tenant, err := qtx.CreateTenant(ctx, &queries.CreateTenantParams{
 		Name: req.CompanyName,
 		Plan: "basic",
@@ -138,7 +131,6 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Re
 		return nil, fmt.Errorf("failed to create tenant: %w", err)
 	}
 
-	// Create user
 	user, err := qtx.CreateUser(ctx, &queries.CreateUserParams{
 		TenantID:     tenant.ID,
 		Email:        req.Email,
@@ -157,13 +149,11 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Re
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// Generate token pair
 	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, user.Role, []byte(h.env.JWTSecret))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token pair: %w", err)
 	}
 
-	// Store refresh token
 	_, err = qtx.CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
 		UserID:     user.ID,
 		Jti:        tokenPair.JTI,
@@ -175,7 +165,6 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Re
 		return nil, fmt.Errorf("failed to store refresh token: %w", err)
 	}
 
-	// Commit the transaction
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
@@ -184,7 +173,6 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Re
 }
 
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
-	// Rate limit check
 	if !h.rateLimiter.Allow(r.RemoteAddr) {
 		appErr := errors.New(fmt.Errorf("rate limit exceeded for signup"), "Too many requests", http.StatusTooManyRequests)
 		errors.LogError(appErr)
@@ -200,7 +188,6 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate request
 	if err := req.Validate(); err != nil {
 		response := SignupResponse{Error: err.Error()}
 		w.Header().Set("Content-Type", "application/json")
@@ -209,7 +196,6 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user already exists
 	exists, err := queries.New(h.dbConn).ExistsUserWithEmail(r.Context(), req.Email)
 	if err != nil {
 		appErr := errors.New(err, "Failed to check if user exists", http.StatusInternalServerError)
@@ -225,7 +211,6 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create user and get token pair
 	tokenPair, err := h.signup(r.Context(), &req, r)
 	if err != nil {
 		appErr := errors.New(err, "Failed to create user", http.StatusInternalServerError)
@@ -234,7 +219,6 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set cookies
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
 		Value:    tokenPair.AccessToken,
@@ -278,7 +262,6 @@ func (r *LoginRequest) Validate() error {
 }
 
 func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Request) (*jwt.TokenPair, error) {
-	// Get user by email
 	user, err := queries.New(h.dbConn).GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -287,48 +270,40 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
-	// Verify password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
 		return nil, fmt.Errorf("メールアドレスまたはパスワードが正しくありません")
 	}
 
-	// Get tenant
 	tenant, err := queries.New(h.dbConn).GetTenantByID(ctx, user.TenantID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tenant: %w", err)
 	}
 
-	// Start a transaction for refresh token operations
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
-	// Create queries instance for transaction
 	qtx := queries.New(tx)
 
-	// Check for existing valid refresh token and mark it as used
 	existingToken, err := qtx.GetRefreshTokenByUserID(ctx, user.ID)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("failed to check existing refresh token: %w", err)
 	}
 
 	if !errors.Is(err, pgx.ErrNoRows) {
-		// Mark existing token as used
 		err = qtx.UpdateRefreshTokenLastUsed(ctx, existingToken.Jti)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update refresh token last used: %w", err)
 		}
 	}
 
-	// Generate new token pair
 	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, user.Role, []byte(h.env.JWTSecret))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token pair: %w", err)
 	}
 
-	// Store new refresh token
 	_, err = qtx.CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
 		UserID:     user.ID,
 		Jti:        tokenPair.JTI,
@@ -340,7 +315,6 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 		return nil, fmt.Errorf("failed to store refresh token: %w", err)
 	}
 
-	// Commit the transaction
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
@@ -349,7 +323,6 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	// Rate limit check
 	if !h.rateLimiter.Allow(r.RemoteAddr) {
 		appErr := errors.New(fmt.Errorf("rate limit exceeded for login"), "Too many requests", http.StatusTooManyRequests)
 		errors.LogError(appErr)
@@ -365,7 +338,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate request
 	if err := req.Validate(); err != nil {
 		response := LoginResponse{Error: err.Error()}
 		w.Header().Set("Content-Type", "application/json")
@@ -374,7 +346,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Authenticate user and get token pair
 	tokenPair, err := h.login(r.Context(), &req, r)
 	if err != nil {
 		response := LoginResponse{Error: err.Error()}
@@ -384,7 +355,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set cookies
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
 		Value:    tokenPair.AccessToken,

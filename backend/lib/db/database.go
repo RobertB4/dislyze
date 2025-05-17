@@ -25,7 +25,6 @@ func NewDB(env *config.Env) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("error parsing database config: %w", err)
 	}
 
-	// Set connection pool settings
 	pgxConfig.MaxConns = 25
 	pgxConfig.MinConns = 5
 	pgxConfig.MaxConnLifetime = 5 * time.Minute
@@ -35,7 +34,6 @@ func NewDB(env *config.Env) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("error creating connection pool: %w", err)
 	}
 
-	// Verify connection
 	if err := pool.Ping(ctx); err != nil {
 		return nil, fmt.Errorf("error connecting to database: %w", err)
 	}
@@ -44,7 +42,6 @@ func NewDB(env *config.Env) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-// CloseDB closes the database connection pool
 func CloseDB(pool *pgxpool.Pool) {
 	if pool != nil {
 		pool.Close()
