@@ -141,11 +141,8 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Re
 			String: req.UserName,
 			Valid:  true,
 		},
-		Role: "admin",
-		Status: pgtype.Text{
-			String: "active",
-			Valid:  true,
-		},
+		Role:   "admin",
+		Status: "active",
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)

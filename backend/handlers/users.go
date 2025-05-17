@@ -15,12 +15,16 @@ import (
 	"lugia/queries"
 )
 
+var (
+	ErrInvalidUserDataFromDB = fmt.Errorf("invalid user data retrieved from database")
+)
+
 type User struct {
 	ID        string    `json:"id"`
 	Email     string    `json:"email"`
 	Name      string    `json:"name,omitempty"`
 	Role      string    `json:"role"`
-	Status    string    `json:"status,omitempty"`
+	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -35,6 +39,37 @@ func NewUsersHandler(dbConn *pgxpool.Pool, q *queries.Queries) *UsersHandler {
 		dbConn: dbConn,
 		q:      q,
 	}
+}
+
+func mapDBUsersToResponse(dbUsers []*queries.GetUsersByTenantIDRow) ([]User, error) {
+	responseUsers := make([]User, len(dbUsers))
+	for i, dbUser := range dbUsers {
+		if dbUser == nil {
+			// This is highly unexpected if the DB query is correct.
+			return nil, fmt.Errorf("%w: encountered nil user record at index %d", ErrInvalidUserDataFromDB, i)
+		}
+		userIDStr := ""
+		if dbUser.ID.Valid {
+			userIDStr = dbUser.ID.String()
+		} else {
+			// This case should ideally not happen for a User's ID (Primary Key).
+			return nil, fmt.Errorf("%w: user record with invalid/NULL ID (email for context: %s)", ErrInvalidUserDataFromDB, dbUser.Email)
+		}
+
+		mappedUser := User{
+			ID:        userIDStr,
+			Email:     dbUser.Email,
+			Role:      dbUser.Role,
+			Status:    dbUser.Status,
+			CreatedAt: dbUser.CreatedAt.Time,
+			UpdatedAt: dbUser.UpdatedAt.Time,
+		}
+		if dbUser.Name.Valid {
+			mappedUser.Name = dbUser.Name.String
+		}
+		responseUsers[i] = mappedUser
+	}
+	return responseUsers, nil
 }
 
 func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -60,33 +95,12 @@ func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseUsers := make([]User, len(dbUsers))
-	for i, dbUser := range dbUsers {
-		userIDStr := ""
-		if dbUser.ID.Valid {
-			userIDStr = dbUser.ID.String()
-		} else {
-			// This case should ideally not happen for a User's ID (Primary Key).
-			// Log an error if it does. userIDStr will remain "".
-			errDetail := fmt.Errorf("retrieved user record with invalid/NULL ID (email for context: %s)", dbUser.Email)
-			appErr := errors.New(errDetail, "", http.StatusInternalServerError)
-			errors.LogError(appErr)
-		}
-
-		mappedUser := User{
-			ID:        userIDStr,
-			Email:     dbUser.Email,
-			Role:      dbUser.Role,
-			CreatedAt: dbUser.CreatedAt.Time,
-			UpdatedAt: dbUser.UpdatedAt.Time,
-		}
-		if dbUser.Name.Valid {
-			mappedUser.Name = dbUser.Name.String
-		}
-		if dbUser.Status.Valid {
-			mappedUser.Status = dbUser.Status.String
-		}
-		responseUsers[i] = mappedUser
+	responseUsers, mapErr := mapDBUsersToResponse(dbUsers)
+	if mapErr != nil {
+		appErr := errors.New(mapErr, "Internal server error during data processing.", http.StatusInternalServerError)
+		errors.LogError(appErr)
+		http.Error(w, "An internal error occurred.", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")

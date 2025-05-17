@@ -101,7 +101,7 @@ type CreateUserParams struct {
 	PasswordHash string
 	Name         pgtype.Text
 	Role         string
-	Status       pgtype.Text
+	Status       string
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error) {

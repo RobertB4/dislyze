@@ -38,5 +38,5 @@ type User struct {
 	Role         string
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
-	Status       pgtype.Text
+	Status       string
 }

@@ -23,7 +23,7 @@ type GetUsersByTenantIDRow struct {
 	Email     string
 	Name      pgtype.Text
 	Role      string
-	Status    pgtype.Text
+	Status    string
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 }
