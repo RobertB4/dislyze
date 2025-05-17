@@ -22,7 +22,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env) http.Handler {
+func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries) http.Handler {
 	r := chi.NewRouter()
 
 	// Middleware
@@ -52,16 +52,13 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env) http.Handler {
 	rateLimiter := ratelimit.NewRateLimiter(60*time.Minute, rateLimit)
 
 	authHandler := handlers.NewAuthHandler(dbConn, env, rateLimiter)
-	usersHandler := handlers.NewUsersHandler()
+	usersHandler := handlers.NewUsersHandler(dbConn, queries)
 
 	// Auth routes
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/signup", authHandler.Signup)
 		r.Post("/login", authHandler.Login)
 	})
-
-	// Create queries instance
-	queries := queries.New(dbConn)
 
 	// Protected routes
 	r.Group(func(r chi.Router) {
@@ -96,6 +93,9 @@ func main() {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
+	// Create queries instance for handlers that need it
+	appQueries := queries.New(pool)
+
 	// Create a channel to listen for errors coming from the server
 	serverErrors := make(chan error, 1)
 
@@ -104,7 +104,7 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	// Setup routes with database connection and environment
-	router := SetupRoutes(pool, env)
+	router := SetupRoutes(pool, env, appQueries)
 
 	// Start the server
 	go func() {

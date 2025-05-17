@@ -10,6 +10,8 @@ Always use the latest stable version of Go (1.23 or newer) and be familiar with 
 Also use the latest stable version of SvelteKit (2.0 or newer), Tailwind (4.0 or newer), and TypeScript (5.0 or newer).
 
 ## General guidelines:
+- If you are not sure about something, do not guess, but ask clarifying questions. The priority is never to write code fast, but to make sure everything is correct before writing code.
+- Do not write comments explaining what you did. Comments are for explaining why something is implemented the way it is.
 - Follow the user's requirements carefully & to the letter.
 - First think step-by-step - describe your plan for the code structure, endpoints, and data flow in pseudocode, written out in great detail.
 - Confirm the plan, then write code!
