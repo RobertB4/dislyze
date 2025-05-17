@@ -65,12 +65,6 @@ func GenerateRefreshToken(userID pgtype.UUID, secret []byte) (string, pgtype.UUI
 		return "", pgtype.UUID{}, fmt.Errorf("secret cannot be empty")
 	}
 
-	// Generate random bytes for the token
-	tokenBytes := make([]byte, 32)
-	if _, err := rand.Read(tokenBytes); err != nil {
-		return "", pgtype.UUID{}, fmt.Errorf("failed to generate refresh token: %w", err)
-	}
-
 	var jti pgtype.UUID
 	jti.Bytes = [16]byte{}
 	if _, err := rand.Read(jti.Bytes[:]); err != nil {
