@@ -11,6 +11,7 @@ import (
 	"lugia/lib/config"
 	"lugia/lib/errors"
 	"lugia/lib/jwt"
+	"lugia/lib/ratelimit"
 	"lugia/queries"
 
 	"github.com/jackc/pgx/v5"
@@ -63,14 +64,16 @@ type RefreshTokenInfo struct {
 }
 
 type AuthHandler struct {
-	dbConn *pgxpool.Pool
-	env    *config.Env
+	dbConn      *pgxpool.Pool
+	env         *config.Env
+	rateLimiter *ratelimit.RateLimiter
 }
 
-func NewAuthHandler(dbConn *pgxpool.Pool, env *config.Env) *AuthHandler {
+func NewAuthHandler(dbConn *pgxpool.Pool, env *config.Env, rateLimiter *ratelimit.RateLimiter) *AuthHandler {
 	return &AuthHandler{
-		dbConn: dbConn,
-		env:    env,
+		dbConn:      dbConn,
+		env:         env,
+		rateLimiter: rateLimiter,
 	}
 }
 
@@ -181,6 +184,14 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Re
 }
 
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
+	// Rate limit check
+	if !h.rateLimiter.Allow(r.RemoteAddr) {
+		appErr := errors.New(fmt.Errorf("rate limit exceeded for signup"), "Too many requests", http.StatusTooManyRequests)
+		errors.LogError(appErr)
+		http.Error(w, "Too many requests, please try again later.", http.StatusTooManyRequests)
+		return
+	}
+
 	var req SignupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		appErr := errors.New(err, "Failed to decode request body", http.StatusBadRequest)
@@ -338,6 +349,14 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	// Rate limit check
+	if !h.rateLimiter.Allow(r.RemoteAddr) {
+		appErr := errors.New(fmt.Errorf("rate limit exceeded for login"), "Too many requests", http.StatusTooManyRequests)
+		errors.LogError(appErr)
+		http.Error(w, "Too many requests, please try again later.", http.StatusTooManyRequests)
+		return
+	}
+
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		appErr := errors.New(err, "Failed to decode request body", http.StatusBadRequest)

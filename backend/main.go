@@ -42,7 +42,10 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env) http.Handler {
 		w.Write([]byte("OK"))
 	})
 
-	authHandler := handlers.NewAuthHandler(dbConn, env)
+	// Create rate limiter
+	rateLimiter := ratelimit.NewRateLimiter(60*time.Minute, 5) // 5 attempts per 60 minutes
+
+	authHandler := handlers.NewAuthHandler(dbConn, env, rateLimiter)
 	usersHandler := handlers.NewUsersHandler()
 
 	// Auth routes
@@ -50,9 +53,6 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env) http.Handler {
 		r.Post("/signup", authHandler.Signup)
 		r.Post("/login", authHandler.Login)
 	})
-
-	// Create rate limiter
-	rateLimiter := ratelimit.NewRateLimiter(60*time.Minute, 5) // 5 attempts per 60 minutes
 
 	// Create queries instance
 	queries := queries.New(dbConn)

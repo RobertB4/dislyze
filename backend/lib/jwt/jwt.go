@@ -2,11 +2,22 @@ package jwt
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+)
+
+// Custom JWT validation errors
+var (
+	ErrTokenExpired          = errors.New("token is expired")
+	ErrTokenNotValidYet      = errors.New("token is not valid yet")
+	ErrTokenMalformed        = errors.New("token is malformed")
+	ErrTokenInvalidSignature = errors.New("token signature is invalid")
+	ErrTokenUsedBeforeIssued = errors.New("token used before issued")
+	ErrTokenInvalid          = errors.New("token is invalid for other reasons")
 )
 
 type Claims struct {
@@ -129,12 +140,27 @@ func ValidateToken(tokenString string, secret []byte) (*Claims, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse token: %w", err)
+		if errors.Is(err, jwt.ErrTokenMalformed) {
+			return nil, ErrTokenMalformed
+		} else if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, ErrTokenExpired
+		} else if errors.Is(err, jwt.ErrTokenNotValidYet) {
+			return nil, ErrTokenNotValidYet
+		} else if errors.Is(err, jwt.ErrTokenSignatureInvalid) {
+			return nil, ErrTokenInvalidSignature
+		} else if errors.Is(err, jwt.ErrTokenUsedBeforeIssued) {
+			return nil, ErrTokenUsedBeforeIssued
+		}
+		// Fallback for other parsing errors or validation errors not specifically handled above.
+		// We wrap the original error to preserve its context.
+		return nil, fmt.Errorf("%w: %v", ErrTokenInvalid, err)
 	}
 
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
 
-	return nil, fmt.Errorf("invalid token")
+	// This case should ideally not be reached if token.Valid is false and err was nil,
+	// but as a fallback, we return a generic invalid token error.
+	return nil, ErrTokenInvalid
 }
