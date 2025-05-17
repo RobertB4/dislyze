@@ -11,7 +11,7 @@ import (
 	"lugia/handlers"
 	"lugia/lib/config"
 	"lugia/lib/db"
-	middleware "lugia/lib/middleware"
+	"lugia/lib/middleware"
 	"lugia/lib/ratelimit"
 	"lugia/queries"
 
@@ -79,8 +79,7 @@ func main() {
 	}
 
 	// Initialize database connection
-	dbConfig := db.NewConfig(env)
-	pool, err := db.NewDB(dbConfig)
+	pool, err := db.NewDB(env)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
