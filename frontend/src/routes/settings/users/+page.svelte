@@ -1,9 +1,10 @@
 <script lang="ts">
+	import Layout from '$components/Layout.svelte';
 	import type { PageData } from './$types';
 	export let data: PageData;
 </script>
 
-<main class="p-6">
+<Layout>
 	{#if data.error}
 		<div class="bg-red-50 border border-red-200 rounded-lg p-4">
 			<h2 class="text-red-800 font-semibold">Error</h2>
@@ -21,4 +22,4 @@
 			</div>
 		</div>
 	{/if}
-</main>
+</Layout>
