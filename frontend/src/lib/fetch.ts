@@ -18,7 +18,11 @@ export async function handleFetch(
 		throw new Error(`Server error: ${response.status} on URL: ${response.url}`);
 	}
 
-	// Handle 401 Unauthorized errors
+	if (response.status === 404) {
+		errorStore.setError(404, "ページが見つかりません。");
+		throw new Error(`Not found: ${response.url}`);
+	}
+
 	if (response.status === 401) {
 		let logoutSuccessful = false;
 		try {
