@@ -54,10 +54,10 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		r.Post("/signup", authHandler.Signup)
 		r.Post("/login", authHandler.Login)
 		r.Post("/logout", authHandler.Logout)
+		r.Post("/accept-invite", usersHandler.AcceptInvite)
 	})
 
 	r.Group(func(r chi.Router) {
-
 		r.Use(middleware.NewAuthMiddleware(env, queries, rateLimiter, dbConn).Authenticate)
 
 		r.Route("/users", func(r chi.Router) {

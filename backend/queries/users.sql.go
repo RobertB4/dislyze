@@ -11,6 +11,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const ActivateInvitedUser = `-- name: ActivateInvitedUser :exec
+UPDATE users
+SET password_hash = $1, status = 'active', updated_at = CURRENT_TIMESTAMP
+WHERE id = $2 AND status = 'pending_verification'
+`
+
+type ActivateInvitedUserParams struct {
+	PasswordHash string
+	ID           pgtype.UUID
+}
+
+func (q *Queries) ActivateInvitedUser(ctx context.Context, arg *ActivateInvitedUserParams) error {
+	_, err := q.db.Exec(ctx, ActivateInvitedUser, arg.PasswordHash, arg.ID)
+	return err
+}
+
 const CreateInvitationToken = `-- name: CreateInvitationToken :one
 INSERT INTO invitation_tokens (token_hash, tenant_id, user_id, expires_at)
 VALUES ($1, $2, $3, $4)
@@ -41,6 +57,16 @@ func (q *Queries) CreateInvitationToken(ctx context.Context, arg *CreateInvitati
 		&i.CreatedAt,
 	)
 	return &i, err
+}
+
+const DeleteInvitationToken = `-- name: DeleteInvitationToken :exec
+DELETE FROM invitation_tokens
+WHERE id = $1
+`
+
+func (q *Queries) DeleteInvitationToken(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, DeleteInvitationToken, id)
+	return err
 }
 
 const GetInvitationByTokenHash = `-- name: GetInvitationByTokenHash :one

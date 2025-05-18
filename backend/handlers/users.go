@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -176,43 +177,49 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 
 	var req InviteUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errors.LogError(err)
+		errors.LogError(fmt.Errorf("InviteUser: failed to decode request: %w", err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
 	if err := req.Validate(); err != nil {
-		errors.LogError(err)
+		errors.LogError(fmt.Errorf("InviteUser: validation failed: %w", err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	rawTenantID := libctx.GetTenantID(ctx)
 
-	_, err := h.q.GetUserByEmail(ctx, req.Email)
+	rawTenantID := libctx.GetTenantID(ctx)
+	inviterUserID := libctx.GetUserID(ctx)
+
+	inviterDBUser, err := h.q.GetUserByID(ctx, inviterUserID)
+	if err != nil {
+		errors.LogError(fmt.Errorf("InviteUser: failed to get inviter's user details for UserID %s: %w", inviterUserID.String(), err))
+	}
+
+	_, err = h.q.GetUserByEmail(ctx, req.Email)
 	if err == nil {
-		errResp := InviteUserResponse{Error: "指定されたメールアドレスは既に使用されています。"}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(errResp)
+		// User found, email already exists
+		errors.LogError(fmt.Errorf("InviteUser: attempt to invite existing email: %s", req.Email))
+		w.WriteHeader(http.StatusConflict)
 		return
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
-		errors.LogError(err)
+		errors.LogError(fmt.Errorf("InviteUser: GetUserByEmail failed: %w", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	hashedInitialPassword, err := bcrypt.GenerateFromPassword([]byte(h.env.InitialPW), bcrypt.DefaultCost)
 	if err != nil {
-		errors.LogError(err)
+		errors.LogError(fmt.Errorf("InviteUser: failed to hash initial password: %w", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		errors.LogError(err)
+		errors.LogError(fmt.Errorf("InviteUser: failed to begin transaction: %w", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -221,7 +228,6 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 			errors.LogError(fmt.Errorf("InviteUser: failed to rollback transaction: %w", rbErr))
 		}
 	}()
-
 	qtx := h.q.WithTx(tx)
 
 	createdUserID, err := qtx.InviteUserToTenant(ctx, &queries.InviteUserToTenantParams{
@@ -233,14 +239,14 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 		Status:       "pending_verification",
 	})
 	if err != nil {
-		errors.LogError(err)
+		errors.LogError(fmt.Errorf("InviteUser: InviteUserToTenant failed: %w", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
-		errors.LogError(fmt.Errorf("failed to generate random bytes for invitation token: %w", err))
+		errors.LogError(fmt.Errorf("InviteUser: failed to generate random bytes for invitation token: %w", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -258,40 +264,39 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 	if err != nil {
-		errors.LogError(fmt.Errorf("failed to create invitation token in db: %w", err))
+		errors.LogError(fmt.Errorf("InviteUser: CreateInvitationToken failed: %w", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	subject := "dislyzeへのご招待"
-	invitationLink := fmt.Sprintf("https://%s/accept-invite?token=%s", h.env.FrontendURL, plaintextToken)
+	subject := fmt.Sprintf("%sさんから%s様へのdislyzeへのご招待", inviterDBUser.Name, req.Name)
+	invitationLink := fmt.Sprintf("https://%s/accept-invite?token=%s&inviter_name=%s&invited_email=%s",
+		h.env.FrontendURL,
+		plaintextToken,
+		url.QueryEscape(inviterDBUser.Name),
+		url.QueryEscape(req.Email))
 
-	plainTextContent := fmt.Sprintf("%s 様、\n\n%s dislyzeに招待されました。\n\n以下のリンクをクリックして登録を完了してください。\n%s\n\nこのメールにお心当たりがない場合は、無視してください。", req.Name, sendGridFromName, invitationLink)
-	htmlContent := fmt.Sprintf(`<p>%s 様</p>
-	<p>%s dislyzeに招待されました。</p>
+	plainTextContent := fmt.Sprintf("%s様、\n\n%sさんがあなたをdislyzeに招待しています。\n\n以下のリンクをクリックして登録を完了してください。\n%s\n\nこのメールにお心当たりがない場合は、無視してください。", req.Name, inviterDBUser.Name, invitationLink)
+	htmlContent := fmt.Sprintf(`<p>%s様</p>
+	<p>%sさんがあなたをdislyzeに招待しています。</p>
 	<p>以下のリンクをクリックして登録を完了してください。</p>
 	<p><a href="%s">登録を完了する</a></p>
-	<p>このメールにお心当たりがない場合は、無視してください。</p>`, req.Name, sendGridFromName, invitationLink)
+	<p>このメールにお心当たりがない場合は、無視してください。</p>`, req.Name, inviterDBUser.Name, invitationLink)
 
 	sgMailBody := SendGridMailRequestBody{
 		Personalizations: []SendGridPersonalization{
 			{
-				To: []SendGridEmailAddress{
-					{Email: req.Email, Name: req.Name},
-				},
+				To:      []SendGridEmailAddress{{Email: req.Email, Name: req.Name}},
 				Subject: subject,
 			},
 		},
-		From: SendGridEmailAddress{Email: sendGridFromEmail, Name: sendGridFromName},
-		Content: []SendGridContent{
-			{Type: "text/plain", Value: plainTextContent},
-			{Type: "text/html", Value: htmlContent},
-		},
+		From:    SendGridEmailAddress{Email: sendGridFromEmail, Name: sendGridFromName},
+		Content: []SendGridContent{{Type: "text/plain", Value: plainTextContent}, {Type: "text/html", Value: htmlContent}},
 	}
 
 	bodyBytes, err := json.Marshal(sgMailBody)
 	if err != nil {
-		errors.LogError(fmt.Errorf("failed to marshal SendGrid request body: %w", err))
+		errors.LogError(fmt.Errorf("InviteUser: failed to marshal SendGrid request body: %w", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -301,28 +306,149 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	sendgridRequest.Body = bodyBytes
 	response, err := sendgrid.API(sendgridRequest)
 	if err != nil {
-		errors.LogError(err)
+		errors.LogError(fmt.Errorf("InviteUser: SendGrid API call failed: %w", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		errors.LogError(fmt.Errorf("SendGrid Sendgrid API return error status code: %d, Body: %s", response.StatusCode, response.Body))
+		errors.LogError(fmt.Errorf("InviteUser: SendGrid API returned error status code: %d, Body: %s", response.StatusCode, response.Body))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		errors.LogError(err)
+		errors.LogError(fmt.Errorf("InviteUser: failed to commit transaction: %w", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	successResp := InviteUserResponse{
-		Success: true,
-		Message: "招待メールを送信しました。",
-	}
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(successResp)
+}
+
+type AcceptInviteRequest struct {
+	Token           string `json:"token"`
+	Password        string `json:"password"`
+	PasswordConfirm string `json:"password_confirm"`
+}
+
+func (r *AcceptInviteRequest) Validate() error {
+	r.Token = strings.TrimSpace(r.Token)
+
+	if r.Token == "" {
+		return fmt.Errorf("token is required")
+	}
+	if r.Password == "" {
+		return fmt.Errorf("password is required")
+	}
+	if len(r.Password) < 8 {
+		return fmt.Errorf("password must be at least 8 characters long")
+	}
+	if r.Password != r.PasswordConfirm {
+		return fmt.Errorf("passwords do not match")
+	}
+	return nil
+}
+
+type AcceptInviteResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+	Error   string `json:"error,omitempty"`
+}
+
+func (h *UsersHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var req AcceptInviteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		errors.LogError(fmt.Errorf("AcceptInvite: failed to decode request: %w", err))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	if err := req.Validate(); err != nil {
+		errors.LogError(fmt.Errorf("AcceptInvite: validation failed: %w", err))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	hash := sha256.Sum256([]byte(req.Token))
+	hashedTokenStr := fmt.Sprintf("%x", hash[:])
+
+	tx, err := h.dbConn.Begin(ctx)
+	if err != nil {
+		errors.LogError(fmt.Errorf("AcceptInvite: failed to begin transaction: %w", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer func() {
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errors.Is(rbErr, pgx.ErrTxClosed) && !errors.Is(rbErr, sql.ErrTxDone) {
+			errors.LogError(fmt.Errorf("AcceptInvite: failed to rollback transaction: %w", rbErr))
+		}
+	}()
+	qtx := h.q.WithTx(tx)
+
+	invitationTokenRecord, err := qtx.GetInvitationByTokenHash(ctx, hashedTokenStr)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			errors.LogError(fmt.Errorf("AcceptInvite: token not found or expired for hash %s", hashedTokenStr))
+			w.WriteHeader(http.StatusUnauthorized) // Token invalid or expired
+			return
+		}
+		errors.LogError(fmt.Errorf("AcceptInvite: GetInvitationByTokenHash failed: %w", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	dbUser, err := qtx.GetUserByID(ctx, invitationTokenRecord.UserID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			errors.LogError(fmt.Errorf("AcceptInvite: user for valid token not found, userID: %s", invitationTokenRecord.UserID.String()))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		errors.LogError(fmt.Errorf("AcceptInvite: GetUserByID failed: %w", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if dbUser.Status != "pending_verification" {
+		errors.LogError(fmt.Errorf("AcceptInvite: user %s status is '%s', expected 'pending_verification' for token %s", dbUser.ID.String(), dbUser.Status, hashedTokenStr))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	hashedNewPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		errors.LogError(fmt.Errorf("AcceptInvite: failed to hash new password: %w", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = qtx.ActivateInvitedUser(ctx, &queries.ActivateInvitedUserParams{
+		PasswordHash: string(hashedNewPassword),
+		ID:           invitationTokenRecord.UserID,
+	})
+	if err != nil {
+		errors.LogError(fmt.Errorf("AcceptInvite: ActivateInvitedUser failed: %w", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = qtx.DeleteInvitationToken(ctx, invitationTokenRecord.ID)
+	if err != nil {
+		errors.LogError(fmt.Errorf("AcceptInvite: failed to delete used invitation token ID %s: %w", invitationTokenRecord.ID.String(), err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		errors.LogError(fmt.Errorf("AcceptInvite: failed to commit transaction: %w", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
