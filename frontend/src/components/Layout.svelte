@@ -1,12 +1,33 @@
 <script lang="ts">
-	import { page } from '$app/state';
-	import EmptyAvatar from '$components/EmptyAvatar.svelte';
-	import { slide } from 'svelte/transition';
+	import { goto } from "$app/navigation";
+	import { page } from "$app/state";
+	import EmptyAvatar from "$components/EmptyAvatar.svelte";
+	import { PUBLIC_API_URL } from "$env/static/public";
+	import { errorStore } from "$lib/errors";
+	import { slide } from "svelte/transition";
 
 	let isMobileNavigationOpen = false;
 
 	function toggleMobileNavigation() {
 		isMobileNavigationOpen = !isMobileNavigationOpen;
+	}
+
+	async function handleLogout() {
+		try {
+			const res = await fetch(`${PUBLIC_API_URL}/auth/logout`, {
+				method: "POST",
+				credentials: "include"
+			});
+
+			if (!res.ok) {
+				errorStore.setError(500, "処理中に予期せぬエラーが発生しました。");
+			}
+
+			goto("/auth/login");
+		} catch (logoutError) {
+			console.error("Logout request failed:", logoutError);
+			errorStore.setError(500, "処理中に予期せぬエラーが発生しました。");
+		}
 	}
 </script>
 
@@ -19,7 +40,7 @@
 	<div class="fixed inset-0 bg-gray-600 bg-opacity-75"></div>
 
 	{#if isMobileNavigationOpen}
-		<div class="fixed inset-0 z-40 flex" transition:slide={{ duration: 1000, axis: 'x' }}>
+		<div class="fixed inset-0 z-40 flex" transition:slide={{ duration: 1000, axis: "x" }}>
 			<div class="relative flex w-full max-w-xs flex-1 flex-col bg-gray-800">
 				<div class="absolute top-0 right-0 -mr-12 pt-2">
 					<button
@@ -53,7 +74,7 @@
 							href="/"
 							on:click={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 mb-4 text-base rounded-md"
-							class:bg-gray-900={page.route.id === '/'}
+							class:bg-gray-900={page.route.id === "/"}
 						>
 							<!--
                     Heroicon name: outline/home
@@ -62,7 +83,7 @@
                   -->
 							<svg
 								class="text-gray-400 group-hover:text-gray-300 mr-4 flex-shrink-0 h-6 w-6"
-								class:text-gray-100={page.route.id === '/'}
+								class:text-gray-100={page.route.id === "/"}
 								xmlns="http://www.w3.org/2000/svg"
 								fill="none"
 								viewBox="0 0 24 24"
@@ -89,12 +110,12 @@
 							href="/data/custom-fields"
 							on:click={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
-							class:bg-gray-900={page.route.id?.includes('/data/custom-fields')}
+							class:bg-gray-900={page.route.id?.includes("/data/custom-fields")}
 						>
 							<!-- Heroicon name: outline/table-cells -->
 							<svg
 								class="text-gray-400 group-hover:text-gray-300 mr-4 flex-shrink-0 h-6 w-6"
-								class:text-gray-100={page.route.id?.includes('/data/custom-fields')}
+								class:text-gray-100={page.route.id?.includes("/data/custom-fields")}
 								xmlns="http://www.w3.org/2000/svg"
 								fill="none"
 								viewBox="0 0 24 24"
@@ -116,12 +137,12 @@
 							href="/data/companies"
 							on:click={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
-							class:bg-gray-900={page.route.id?.includes('/data/companies')}
+							class:bg-gray-900={page.route.id?.includes("/data/companies")}
 						>
 							<!-- Heroicon name: building-office-2 -->
 							<svg
 								class="text-gray-400 group-hover:text-gray-300 mr-4 flex-shrink-0 h-6 w-6"
-								class:text-gray-100={page.route.id?.includes('/data/companies')}
+								class:text-gray-100={page.route.id?.includes("/data/companies")}
 								xmlns="http://www.w3.org/2000/svg"
 								fill="none"
 								viewBox="0 0 24 24"
@@ -143,12 +164,12 @@
 							href="/data/users"
 							on:click={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
-							class:bg-gray-900={page.route.id?.includes('/data/users')}
+							class:bg-gray-900={page.route.id?.includes("/data/users")}
 						>
 							<!-- Heroicon name: users -->
 							<svg
 								class="text-gray-400 group-hover:text-gray-300 mr-4 flex-shrink-0 h-6 w-6"
-								class:text-gray-100={page.route.id?.includes('/data/users')}
+								class:text-gray-100={page.route.id?.includes("/data/users")}
 								xmlns="http://www.w3.org/2000/svg"
 								fill="none"
 								viewBox="0 0 24 24"
@@ -169,12 +190,12 @@
 							href="/data/segments"
 							on:click={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
-							class:bg-gray-900={page.route.id?.includes('/data/segments')}
+							class:bg-gray-900={page.route.id?.includes("/data/segments")}
 						>
 							<!-- Heroicon name: chart-pie -->
 							<svg
 								class="text-gray-400 group-hover:text-gray-300 mr-4 flex-shrink-0 h-6 w-6"
-								class:text-gray-100={page.route.id?.includes('/data/segments')}
+								class:text-gray-100={page.route.id?.includes("/data/segments")}
 								xmlns="http://www.w3.org/2000/svg"
 								fill="none"
 								viewBox="0 0 24 24"
@@ -203,12 +224,12 @@
 						href="/settings/users"
 						on:click={toggleMobileNavigation}
 						class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
-						class:bg-gray-900={page.route.id?.includes('/settings')}
+						class:bg-gray-900={page.route.id?.includes("/settings")}
 					>
 						<!-- Heroicon name: outline/cog-6-tooth -->
 						<svg
 							class="text-gray-400 group-hover:text-gray-300 mr-4 flex-shrink-0 h-6 w-6"
-							class:text-gray-100={page.route.id?.includes('/settings')}
+							class:text-gray-100={page.route.id?.includes("/settings")}
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
 							viewBox="0 0 24 24"
@@ -297,7 +318,7 @@
 					data-testid="navigation-home"
 					href="/"
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 mb-4 text-sm font-medium rounded-md"
-					class:bg-gray-900={page.route.id === '/'}
+					class:bg-gray-900={page.route.id === "/"}
 				>
 					<!--
                   Heroicon name: outline/home
@@ -306,7 +327,7 @@
                 -->
 					<svg
 						class="text-gray-400 group-hover:text-gray-300 mr-3 flex-shrink-0 h-6 w-6"
-						class:text-gray-100={page.route.id === '/'}
+						class:text-gray-100={page.route.id === "/"}
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
 						viewBox="0 0 24 24"
@@ -332,12 +353,12 @@
 					data-testid="navigation-custom-fields"
 					href="/data/custom-fields"
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-					class:bg-gray-900={page.route.id?.includes('/data/custom-fields')}
+					class:bg-gray-900={page.route.id?.includes("/data/custom-fields")}
 				>
 					<!-- Heroicon name: outline/table-cells -->
 					<svg
 						class="text-gray-400 group-hover:text-gray-300 mr-3 flex-shrink-0 h-6 w-6"
-						class:text-gray-100={page.route.id?.includes('/data/custom-fields')}
+						class:text-gray-100={page.route.id?.includes("/data/custom-fields")}
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
 						viewBox="0 0 24 24"
@@ -358,12 +379,12 @@
 					data-testid="navigation-companies"
 					href="/data/companies"
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-					class:bg-gray-900={page.route.id?.includes('/data/companies')}
+					class:bg-gray-900={page.route.id?.includes("/data/companies")}
 				>
 					<!-- Heroicon name: building-office-2 -->
 					<svg
 						class="text-gray-400 group-hover:text-gray-300 mr-3 flex-shrink-0 h-6 w-6"
-						class:text-gray-100={page.route.id?.includes('/data/companies')}
+						class:text-gray-100={page.route.id?.includes("/data/companies")}
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
 						viewBox="0 0 24 24"
@@ -384,12 +405,12 @@
 					data-testid="navigation-users"
 					href="/data/users"
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-					class:bg-gray-900={page.route.id?.includes('/data/users')}
+					class:bg-gray-900={page.route.id?.includes("/data/users")}
 				>
 					<!-- Heroicon name: users -->
 					<svg
 						class="text-gray-400 group-hover:text-gray-300 mr-3 flex-shrink-0 h-6 w-6"
-						class:text-gray-100={page.route.id?.includes('/data/users')}
+						class:text-gray-100={page.route.id?.includes("/data/users")}
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
 						viewBox="0 0 24 24"
@@ -409,12 +430,12 @@
 					data-testid="navigation-segments"
 					href="/data/segments"
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-					class:bg-gray-900={page.route.id?.includes('/data/segments')}
+					class:bg-gray-900={page.route.id?.includes("/data/segments")}
 				>
 					<!-- Heroicon name: chart-pie -->
 					<svg
 						class="text-gray-400 group-hover:text-gray-300 mr-3 flex-shrink-0 h-6 w-6"
-						class:text-gray-100={page.route.id?.includes('/data/segments')}
+						class:text-gray-100={page.route.id?.includes("/data/segments")}
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
 						viewBox="0 0 24 24"
@@ -443,12 +464,12 @@
 				data-testid="navigation-settings"
 				href="/settings/users"
 				class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-				class:bg-gray-900={page.route.id?.includes('/settings')}
+				class:bg-gray-900={page.route.id?.includes("/settings")}
 			>
 				<!-- Heroicon name: outline/cog-6-tooth -->
 				<svg
 					class="text-gray-400 group-hover:text-gray-300 mr-3 flex-shrink-0 h-6 w-6"
-					class:text-gray-100={page.route.id?.includes('/settings')}
+					class:text-gray-100={page.route.id?.includes("/settings")}
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"
 					viewBox="0 0 24 24"
@@ -470,12 +491,12 @@
 				data-testid="navigation-settings"
 				href="/settings/permissions"
 				class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-				class:bg-gray-900={page.route.id?.includes('/settings')}
+				class:bg-gray-900={page.route.id?.includes("/settings")}
 			>
 				<!-- Heroicon name: outline/cog-6-tooth -->
 				<svg
 					class="text-gray-400 group-hover:text-gray-300 mr-3 flex-shrink-0 h-6 w-6"
-					class:text-gray-100={page.route.id?.includes('/settings')}
+					class:text-gray-100={page.route.id?.includes("/settings")}
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"
 					viewBox="0 0 24 24"
@@ -494,12 +515,12 @@
 				<span class="ml-2">権限設定</span>
 			</a>
 
-			<span
+			<button
 				role="menu"
 				tabindex={6}
 				data-testid="navigation-signout"
-				class=" text-gray-300 hover:bg-gray-700 cursor-pointer hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-				on:keypress={() => {}}
+				class=" text-gray-300 hover:bg-gray-700 w-full cursor-pointer hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
+				on:click={handleLogout}
 			>
 				<!-- Heroicon name: arrow-left-on-rectangle -->
 				<svg
@@ -518,7 +539,7 @@
 				</svg>
 
 				<span class="ml-2">ログアウト</span>
-			</span>
+			</button>
 		</nav>
 
 		<div class="flex flex-shrink-0 bg-gray-700 px-2 py-4">
