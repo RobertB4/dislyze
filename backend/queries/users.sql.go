@@ -55,3 +55,29 @@ func (q *Queries) GetUsersByTenantID(ctx context.Context, tenantID pgtype.UUID) 
 	}
 	return items, nil
 }
+
+const InviteUserToTenant = `-- name: InviteUserToTenant :exec
+INSERT INTO users (tenant_id, email, password_hash, name, role, status)
+VALUES ($1, $2, $3, $4, $5, $6)
+`
+
+type InviteUserToTenantParams struct {
+	TenantID     pgtype.UUID
+	Email        string
+	PasswordHash string
+	Name         pgtype.Text
+	Role         string
+	Status       string
+}
+
+func (q *Queries) InviteUserToTenant(ctx context.Context, arg *InviteUserToTenantParams) error {
+	_, err := q.db.Exec(ctx, InviteUserToTenant,
+		arg.TenantID,
+		arg.Email,
+		arg.PasswordHash,
+		arg.Name,
+		arg.Role,
+		arg.Status,
+	)
+	return err
+}

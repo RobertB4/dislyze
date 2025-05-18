@@ -8,15 +8,18 @@ import (
 )
 
 type Env struct {
-	DBHost      string
-	DBPort      string
-	DBUser      string
-	DBPassword  string
-	DBName      string
-	DBSSLMode   string
-	JWTSecret   string
-	RateLimit   string
-	FrontendURL string
+	DBHost         string
+	DBPort         string
+	DBUser         string
+	DBPassword     string
+	DBName         string
+	DBSSLMode      string
+	JWTSecret      string
+	RateLimit      string
+	FrontendURL    string
+	InitialPW      string
+	SendgridAPIKey string
+	SendgridAPIUrl string
 }
 
 func LoadEnv() (*Env, error) {
@@ -30,15 +33,18 @@ func LoadEnv() (*Env, error) {
 	env := &Env{}
 
 	required := map[string]*string{
-		"DB_HOST":      &env.DBHost,
-		"DB_PORT":      &env.DBPort,
-		"DB_USER":      &env.DBUser,
-		"DB_PASSWORD":  &env.DBPassword,
-		"DB_NAME":      &env.DBName,
-		"DB_SSL_MODE":  &env.DBSSLMode,
-		"JWT_SECRET":   &env.JWTSecret,
-		"RATE_LIMIT":   &env.RateLimit,
-		"FRONTEND_URL": &env.FrontendURL,
+		"DB_HOST":          &env.DBHost,
+		"DB_PORT":          &env.DBPort,
+		"DB_USER":          &env.DBUser,
+		"DB_PASSWORD":      &env.DBPassword,
+		"DB_NAME":          &env.DBName,
+		"DB_SSL_MODE":      &env.DBSSLMode,
+		"JWT_SECRET":       &env.JWTSecret,
+		"RATE_LIMIT":       &env.RateLimit,
+		"FRONTEND_URL":     &env.FrontendURL,
+		"INITIAL_PW":       &env.InitialPW,
+		"SENDGRID_API_KEY": &env.SendgridAPIKey,
+		"SENDGRID_API_URL": &env.SendgridAPIUrl,
 	}
 
 	var missing []string

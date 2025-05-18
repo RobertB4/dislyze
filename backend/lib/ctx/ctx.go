@@ -1,20 +1,18 @@
 package ctx
 
-import "context"
+import (
+	"context"
+	"lugia/lib/middleware"
 
-type contextKey string
-
-const (
-	TenantIDKey contextKey = "tenant_id"
-	UserIDKey   contextKey = "user_id"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func GetTenantID(ctx context.Context) string {
-	tenantID := ctx.Value(TenantIDKey).(string)
+func GetTenantID(ctx context.Context) pgtype.UUID {
+	tenantID := ctx.Value(middleware.TenantIDKey).(pgtype.UUID)
 	return tenantID
 }
 
-func GetUserID(ctx context.Context) string {
-	userID := ctx.Value(UserIDKey).(string)
+func GetUserID(ctx context.Context) pgtype.UUID {
+	userID := ctx.Value(middleware.UserIDKey).(pgtype.UUID)
 	return userID
 }

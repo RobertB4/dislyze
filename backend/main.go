@@ -48,7 +48,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	rateLimiter := ratelimit.NewRateLimiter(60*time.Minute, rateLimit)
 
 	authHandler := handlers.NewAuthHandler(dbConn, env, rateLimiter, queries)
-	usersHandler := handlers.NewUsersHandler(dbConn, queries)
+	usersHandler := handlers.NewUsersHandler(dbConn, queries, env)
 
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/signup", authHandler.Signup)
@@ -62,6 +62,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 
 		r.Route("/users", func(r chi.Router) {
 			r.Get("/", usersHandler.GetUsers)
+			r.Post("/invite", usersHandler.InviteUser)
 		})
 	})
 

@@ -22,6 +22,7 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error)
 	GetUsersByTenantID(ctx context.Context, tenantID pgtype.UUID) ([]*GetUsersByTenantIDRow, error)
+	InviteUserToTenant(ctx context.Context, arg *InviteUserToTenantParams) error
 	RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error
 	UpdateRefreshTokenLastUsed(ctx context.Context, jti pgtype.UUID) error
 }
