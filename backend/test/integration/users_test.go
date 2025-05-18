@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"testing"
 
@@ -35,14 +36,22 @@ func TestGetUsers_Integration(t *testing.T) {
 			name:           "alpha_admin (Tenant A) gets users from Tenant Alpha",
 			loginUserKey:   "alpha_admin",
 			expectedStatus: http.StatusOK,
-			// Order by created_at ASC from setup.sql: alpha_admin (11:00) then alpha_user (11:01)
-			expectedUserEmails: []string{setup.TestUsersData["alpha_admin"].Email, setup.TestUsersData["alpha_user"].Email},
+			// Order by created_at ASC from setup.sql: alpha_admin, alpha_user, pending_user_valid_token
+			expectedUserEmails: []string{
+				setup.TestUsersData["alpha_admin"].Email,
+				setup.TestUsersData["alpha_user"].Email,
+				setup.TestUsersData["pending_user_valid_token"].Email,
+			},
 		},
 		{
-			name:               "alpha_user (Tenant A) gets users from Tenant Alpha",
-			loginUserKey:       "alpha_user",
-			expectedStatus:     http.StatusOK,
-			expectedUserEmails: []string{setup.TestUsersData["alpha_admin"].Email, setup.TestUsersData["alpha_user"].Email},
+			name:           "alpha_user (Tenant A) gets users from Tenant Alpha",
+			loginUserKey:   "alpha_user",
+			expectedStatus: http.StatusOK,
+			expectedUserEmails: []string{
+				setup.TestUsersData["alpha_admin"].Email,
+				setup.TestUsersData["alpha_user"].Email,
+				setup.TestUsersData["pending_user_valid_token"].Email,
+			},
 		},
 		{
 			name:               "beta_admin (Tenant B) gets users from Tenant Beta (only self)",
@@ -64,7 +73,6 @@ func TestGetUsers_Integration(t *testing.T) {
 				assert.True(t, ok, "Login user key not found in setup.TestUsersData: %s", tt.loginUserKey)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
-				// Assuming your auth middleware expects a cookie named "access_token"
 				req.AddCookie(&http.Cookie{
 					Name:  "access_token",
 					Value: accessToken,
@@ -89,15 +97,19 @@ func TestGetUsers_Integration(t *testing.T) {
 				for i, u := range usersResponse {
 					actualEmails[i] = u.Email
 					assert.NotEmpty(t, u.ID, "User ID should not be empty for user %s", u.Email)
-					assert.Equal(t, "active", u.Status, "User status should be active for user %s", u.Email)
 
-					var expectedName, expectedRole, expectedUserID string
+					var expectedName, expectedRole, expectedUserID, expectedStatus string
 					foundInTestData := false
 					for _, seededUser := range setup.TestUsersData {
 						if seededUser.Email == u.Email {
 							expectedName = seededUser.Name
 							expectedRole = seededUser.Role
 							expectedUserID = seededUser.UserID
+							if u.Email == setup.TestUsersData["pending_user_valid_token"].Email {
+								expectedStatus = "pending_verification"
+							} else {
+								expectedStatus = "active"
+							}
 							foundInTestData = true
 							break
 						}
@@ -106,6 +118,7 @@ func TestGetUsers_Integration(t *testing.T) {
 					assert.Equal(t, expectedUserID, u.ID, "ID mismatch for user %s", u.Email)
 					assert.Equal(t, expectedName, u.Name, "Name mismatch for user %s", u.Email)
 					assert.Equal(t, expectedRole, u.Role, "Role mismatch for user %s", u.Email)
+					assert.Equal(t, expectedStatus, u.Status, "Status mismatch for user %s", u.Email)
 				}
 				assert.Equal(t, tt.expectedUserEmails, actualEmails, "User email list or order mismatch for test: %s", tt.name)
 			}
@@ -113,12 +126,10 @@ func TestGetUsers_Integration(t *testing.T) {
 	}
 }
 
-// ErrorResponse is a common structure for JSON error responses.
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
-// expectedInviteErrorMessages holds predefined error messages for invite user validation.
 var expectedInviteErrorMessages = map[string]string{
 	"emailConflict": "このメールアドレスは既に使用されています。",
 }
@@ -150,63 +161,63 @@ func TestInviteUser_Integration(t *testing.T) {
 			},
 			expectedStatus: http.StatusCreated,
 		},
-		// {
-		// 	name:         "error when email already exists (alpha_admin invites existing alpha_user)",
-		// 	loginUserKey: "alpha_admin",
-		// 	requestBody: handlers.InviteUserRequest{
-		// 		Email: setup.TestUsersData["alpha_user"].Email,
-		// 		Name:  "Duplicate Invitee",
-		// 		Role:  "user",
-		// 	},
-		// 	expectedStatus:   http.StatusConflict,
-		// 	expectedErrorKey: "emailConflict",
-		// },
-		// {
-		// 	name:         "error for unauthorized request",
-		// 	expectUnauth: true,
-		// 	requestBody: handlers.InviteUserRequest{
-		// 		Email: "unauth_invitee@example.com",
-		// 		Name:  "Unauth Invitee",
-		// 		Role:  "user",
-		// 	},
-		// 	expectedStatus: http.StatusUnauthorized,
-		// },
-		// {
-		// 	name:           "validation error: missing email",
-		// 	loginUserKey:   "alpha_admin",
-		// 	requestBody:    handlers.InviteUserRequest{Email: "", Name: "Test Name", Role: "user"},
-		// 	expectedStatus: http.StatusBadRequest,
-		// },
-		// {
-		// 	name:           "validation error: invalid email format",
-		// 	loginUserKey:   "alpha_admin",
-		// 	requestBody:    handlers.InviteUserRequest{Email: "invalid-email", Name: "Test Name", Role: "user"},
-		// 	expectedStatus: http.StatusBadRequest,
-		// },
-		// {
-		// 	name:           "validation error: missing name",
-		// 	loginUserKey:   "alpha_admin",
-		// 	requestBody:    handlers.InviteUserRequest{Email: "valid@example.com", Name: "", Role: "user"},
-		// 	expectedStatus: http.StatusBadRequest,
-		// },
-		// {
-		// 	name:           "validation error: name with only whitespace",
-		// 	loginUserKey:   "alpha_admin",
-		// 	requestBody:    handlers.InviteUserRequest{Email: "whitespace@example.com", Name: "   ", Role: "user"},
-		// 	expectedStatus: http.StatusBadRequest,
-		// },
-		// {
-		// 	name:           "validation error: missing role",
-		// 	loginUserKey:   "alpha_admin",
-		// 	requestBody:    handlers.InviteUserRequest{Email: "valid@example.com", Name: "Test Name", Role: ""},
-		// 	expectedStatus: http.StatusBadRequest,
-		// },
-		// {
-		// 	name:           "validation error: invalid role value",
-		// 	loginUserKey:   "alpha_admin",
-		// 	requestBody:    handlers.InviteUserRequest{Email: "valid@example.com", Name: "Test Name", Role: "guest"},
-		// 	expectedStatus: http.StatusBadRequest,
-		// },
+		{
+			name:         "error when email already exists (alpha_admin invites existing alpha_user)",
+			loginUserKey: "alpha_admin",
+			requestBody: handlers.InviteUserRequest{
+				Email: setup.TestUsersData["alpha_user"].Email,
+				Name:  "Duplicate Invitee",
+				Role:  "user",
+			},
+			expectedStatus:   http.StatusConflict,
+			expectedErrorKey: "emailConflict",
+		},
+		{
+			name:         "error for unauthorized request",
+			expectUnauth: true,
+			requestBody: handlers.InviteUserRequest{
+				Email: "unauth_invitee@example.com",
+				Name:  "Unauth Invitee",
+				Role:  "user",
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "validation error: missing email",
+			loginUserKey:   "alpha_admin",
+			requestBody:    handlers.InviteUserRequest{Email: "", Name: "Test Name", Role: "user"},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "validation error: invalid email format",
+			loginUserKey:   "alpha_admin",
+			requestBody:    handlers.InviteUserRequest{Email: "invalid-email", Name: "Test Name", Role: "user"},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "validation error: missing name",
+			loginUserKey:   "alpha_admin",
+			requestBody:    handlers.InviteUserRequest{Email: "valid@example.com", Name: "", Role: "user"},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "validation error: name with only whitespace",
+			loginUserKey:   "alpha_admin",
+			requestBody:    handlers.InviteUserRequest{Email: "whitespace@example.com", Name: "   ", Role: "user"},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "validation error: missing role",
+			loginUserKey:   "alpha_admin",
+			requestBody:    handlers.InviteUserRequest{Email: "valid@example.com", Name: "Test Name", Role: ""},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "validation error: invalid role value",
+			loginUserKey:   "alpha_admin",
+			requestBody:    handlers.InviteUserRequest{Email: "valid@example.com", Name: "Test Name", Role: "guest"},
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 
 	client := &http.Client{}
@@ -247,6 +258,115 @@ func TestInviteUser_Integration(t *testing.T) {
 				assert.True(t, msgOk, "Expected error key %s not found in error messages map for test: %s", tt.expectedErrorKey, tt.name)
 				assert.Equal(t, expectedMsg, errResp.Error, "Error message mismatch for test: %s", tt.name)
 			}
+		})
+	}
+}
+
+func TestAcceptInvite_Integration(t *testing.T) {
+	pool := setup.InitDB(t)
+	defer setup.CloseDB(pool)
+
+	setup.CleanupDB(t, pool)
+	setup.SeedDB(t, pool)
+
+	const (
+		plainValidTokenForAccept       = "accept-invite-plain-valid-token-for-testing-123"
+		plainNonExistentTokenForAccept = "accept-invite-plain-nonexistent-token-for-testing-456"
+		plainExpiredTokenForAccept     = "accept-invite-plain-expired-token-for-testing-789"
+		plainTokenForActiveUserAccept  = "accept-invite-plain-token-for-active-user-000"
+		newPasswordForAcceptInvite     = "SuP3rS3cur3N3wP@sswOrd!"
+	)
+
+	type acceptInviteTestCase struct {
+		name           string
+		requestBody    handlers.AcceptInviteRequest
+		expectedStatus int
+	}
+
+	tests := []acceptInviteTestCase{
+		{
+			name: "successful invite acceptance",
+			requestBody: handlers.AcceptInviteRequest{
+				Token:           plainValidTokenForAccept,
+				Password:        newPasswordForAcceptInvite,
+				PasswordConfirm: newPasswordForAcceptInvite,
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "token not found",
+			requestBody: handlers.AcceptInviteRequest{
+				Token:           plainNonExistentTokenForAccept,
+				Password:        newPasswordForAcceptInvite,
+				PasswordConfirm: newPasswordForAcceptInvite,
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name: "validation error - password mismatch",
+			requestBody: handlers.AcceptInviteRequest{
+				Token:           plainValidTokenForAccept, // Needs a valid token context for this to be the failure point
+				Password:        newPasswordForAcceptInvite,
+				PasswordConfirm: "IncorrectP@sswOrdConfirm",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "validation error - password too short",
+			requestBody: handlers.AcceptInviteRequest{
+				Token:           plainValidTokenForAccept,
+				Password:        "short",
+				PasswordConfirm: "short",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "validation error - empty token",
+			requestBody: handlers.AcceptInviteRequest{
+				Token:           "",
+				Password:        newPasswordForAcceptInvite,
+				PasswordConfirm: newPasswordForAcceptInvite,
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "expired token",
+			requestBody: handlers.AcceptInviteRequest{
+				Token:           plainExpiredTokenForAccept,
+				Password:        newPasswordForAcceptInvite,
+				PasswordConfirm: newPasswordForAcceptInvite,
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name: "user status not pending_verification (e.g., already active)",
+			requestBody: handlers.AcceptInviteRequest{
+				Token:           plainTokenForActiveUserAccept, // Token associated with an already active user
+				Password:        newPasswordForAcceptInvite,
+				PasswordConfirm: newPasswordForAcceptInvite,
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
+	}
+
+	client := &http.Client{}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			payloadBytes, err := json.Marshal(tt.requestBody)
+			assert.NoError(t, err, "Test: %s, Failed to marshal request body", tt.name)
+
+			reqURL := fmt.Sprintf("%s/auth/accept-invite", setup.BaseURL)
+			req, err := http.NewRequest(http.MethodPost, reqURL, bytes.NewBuffer(payloadBytes))
+			assert.NoError(t, err, "Test: %s, Failed to create request", tt.name)
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err := client.Do(req)
+			assert.NoError(t, err, "Test: %s, Failed to execute request", tt.name)
+			defer resp.Body.Close()
+
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Test: %s, Expected status %d, got %d. Body: %s", tt.name, tt.expectedStatus, resp.StatusCode, string(bodyBytes))
 		})
 	}
 }
