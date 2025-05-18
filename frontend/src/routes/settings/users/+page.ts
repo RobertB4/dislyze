@@ -2,12 +2,15 @@ import type { PageLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
 import { handleFetch } from "$lib/fetch";
 
-interface User {
+type User = {
 	id: string;
 	email: string;
-	first_name: string;
-	last_name: string;
-}
+	name: string;
+	role: string;
+	status: string;
+	created_at: string;
+	updated_at: string;
+};
 
 export const load: PageLoad = async ({ fetch }) => {
 	try {
