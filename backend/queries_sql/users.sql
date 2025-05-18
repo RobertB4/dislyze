@@ -4,9 +4,10 @@ FROM users
 WHERE tenant_id = $1
 ORDER BY created_at ASC; 
 
--- name: InviteUserToTenant :exec
+-- name: InviteUserToTenant :one
 INSERT INTO users (tenant_id, email, password_hash, name, role, status)
-VALUES ($1, $2, $3, $4, $5, $6); 
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id; 
 
 -- name: CreateInvitationToken :one
 INSERT INTO invitation_tokens (token_hash, tenant_id, user_id, expires_at)

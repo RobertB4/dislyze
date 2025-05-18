@@ -9,9 +9,14 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sendgrid/sendgrid-go"
 	"golang.org/x/crypto/bcrypt"
+
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 
 	"lugia/lib/config"
 	libctx "lugia/lib/ctx"
@@ -219,7 +224,7 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 
 	qtx := h.q.WithTx(tx)
 
-	err = qtx.InviteUserToTenant(ctx, &queries.InviteUserToTenantParams{
+	createdUserID, err := qtx.InviteUserToTenant(ctx, &queries.InviteUserToTenantParams{
 		TenantID:     rawTenantID,
 		Email:        req.Email,
 		PasswordHash: string(hashedInitialPassword),
@@ -233,13 +238,35 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subject := "dislyzeへのご招待"
-	// TODO: Generate a secure, unique, and time-limited token for the invitation link.
-	// For now, using a placeholder. The actual token should be stored and verified.
-	invitationToken := "PLACEHOLDER_INVITATION_TOKEN_" + req.Email                              // Replace with real token
-	invitationLink := fmt.Sprintf("https://%s/accept-invite?token=%s", r.Host, invitationToken) // Assuming r.Host gives a usable domain for the link
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		errors.LogError(fmt.Errorf("failed to generate random bytes for invitation token: %w", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	plaintextToken := base64.URLEncoding.EncodeToString(tokenBytes)
 
-	plainTextContent := fmt.Sprintf("%s 様、\\n\\n%s dislyzeに招待されました。\\n\\n以下のリンクをクリックして登録を完了してください。\\n%s\\n\\nこのメールにお心当たりがない場合は、無視してください。", req.Name, sendGridFromName, invitationLink)
+	hash := sha256.Sum256([]byte(plaintextToken))
+	hashedTokenStr := fmt.Sprintf("%x", hash[:])
+
+	expiresAt := time.Now().Add(48 * time.Hour)
+
+	_, err = qtx.CreateInvitationToken(ctx, &queries.CreateInvitationTokenParams{
+		TokenHash: hashedTokenStr,
+		TenantID:  rawTenantID,
+		UserID:    createdUserID,
+		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
+	})
+	if err != nil {
+		errors.LogError(fmt.Errorf("failed to create invitation token in db: %w", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	subject := "dislyzeへのご招待"
+	invitationLink := fmt.Sprintf("https://%s/accept-invite?token=%s", h.env.FrontendURL, plaintextToken)
+
+	plainTextContent := fmt.Sprintf("%s 様、\n\n%s dislyzeに招待されました。\n\n以下のリンクをクリックして登録を完了してください。\n%s\n\nこのメールにお心当たりがない場合は、無視してください。", req.Name, sendGridFromName, invitationLink)
 	htmlContent := fmt.Sprintf(`<p>%s 様</p>
 	<p>%s dislyzeに招待されました。</p>
 	<p>以下のリンクをクリックして登録を完了してください。</p>
