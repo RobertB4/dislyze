@@ -137,12 +137,9 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Re
 		TenantID:     tenant.ID,
 		Email:        req.Email,
 		PasswordHash: string(hashedPassword),
-		Name: pgtype.Text{
-			String: req.UserName,
-			Valid:  true,
-		},
-		Role:   "admin",
-		Status: "active",
+		Name:         req.UserName,
+		Role:         "admin",
+		Status:       "active",
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)

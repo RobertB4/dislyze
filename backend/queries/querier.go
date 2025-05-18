@@ -11,11 +11,13 @@ import (
 )
 
 type Querier interface {
+	CreateInvitationToken(ctx context.Context, arg *CreateInvitationTokenParams) (*InvitationToken, error)
 	CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error)
 	CreateTenant(ctx context.Context, arg *CreateTenantParams) (*Tenant, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
 	DeleteExpiredRefreshTokens(ctx context.Context) error
 	ExistsUserWithEmail(ctx context.Context, email string) (bool, error)
+	GetInvitationByTokenHash(ctx context.Context, tokenHash string) (*InvitationToken, error)
 	GetRefreshTokenByJTI(ctx context.Context, jti pgtype.UUID) (*RefreshToken, error)
 	GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUID) (*RefreshToken, error)
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error)

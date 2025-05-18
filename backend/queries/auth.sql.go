@@ -18,7 +18,7 @@ INSERT INTO refresh_tokens (
     device_info,
     ip_address,
     expires_at
-) VALUES ($1, $2, $3, $4, $5) RETURNING id, user_id, device_info, ip_address, expires_at, created_at, last_used_at, revoked_at, jti
+) VALUES ($1, $2, $3, $4, $5) RETURNING id, user_id, jti, device_info, ip_address, expires_at, created_at, last_used_at, revoked_at
 `
 
 type CreateRefreshTokenParams struct {
@@ -41,13 +41,13 @@ func (q *Queries) CreateRefreshToken(ctx context.Context, arg *CreateRefreshToke
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
+		&i.Jti,
 		&i.DeviceInfo,
 		&i.IpAddress,
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.LastUsedAt,
 		&i.RevokedAt,
-		&i.Jti,
 	)
 	return &i, err
 }
@@ -99,7 +99,7 @@ type CreateUserParams struct {
 	TenantID     pgtype.UUID
 	Email        string
 	PasswordHash string
-	Name         pgtype.Text
+	Name         string
 	Role         string
 	Status       string
 }
@@ -153,7 +153,7 @@ func (q *Queries) ExistsUserWithEmail(ctx context.Context, email string) (bool, 
 }
 
 const GetRefreshTokenByJTI = `-- name: GetRefreshTokenByJTI :one
-SELECT id, user_id, device_info, ip_address, expires_at, created_at, last_used_at, revoked_at, jti FROM refresh_tokens 
+SELECT id, user_id, jti, device_info, ip_address, expires_at, created_at, last_used_at, revoked_at FROM refresh_tokens 
 WHERE jti = $1 
 AND revoked_at IS NULL 
 AND expires_at > CURRENT_TIMESTAMP
@@ -165,19 +165,19 @@ func (q *Queries) GetRefreshTokenByJTI(ctx context.Context, jti pgtype.UUID) (*R
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
+		&i.Jti,
 		&i.DeviceInfo,
 		&i.IpAddress,
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.LastUsedAt,
 		&i.RevokedAt,
-		&i.Jti,
 	)
 	return &i, err
 }
 
 const GetRefreshTokenByUserID = `-- name: GetRefreshTokenByUserID :one
-SELECT id, user_id, device_info, ip_address, expires_at, created_at, last_used_at, revoked_at, jti FROM refresh_tokens 
+SELECT id, user_id, jti, device_info, ip_address, expires_at, created_at, last_used_at, revoked_at FROM refresh_tokens 
 WHERE user_id = $1 
 AND revoked_at IS NULL 
 AND expires_at > CURRENT_TIMESTAMP
@@ -189,13 +189,13 @@ func (q *Queries) GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUI
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
+		&i.Jti,
 		&i.DeviceInfo,
 		&i.IpAddress,
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.LastUsedAt,
 		&i.RevokedAt,
-		&i.Jti,
 	)
 	return &i, err
 }

@@ -7,3 +7,12 @@ ORDER BY created_at ASC;
 -- name: InviteUserToTenant :exec
 INSERT INTO users (tenant_id, email, password_hash, name, role, status)
 VALUES ($1, $2, $3, $4, $5, $6); 
+
+-- name: CreateInvitationToken :one
+INSERT INTO invitation_tokens (token_hash, tenant_id, user_id, expires_at)
+VALUES ($1, $2, $3, $4)
+RETURNING *;
+
+-- name: GetInvitationByTokenHash :one
+SELECT * FROM invitation_tokens
+WHERE token_hash = $1 AND expires_at > CURRENT_TIMESTAMP;

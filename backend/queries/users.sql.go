@@ -11,6 +11,57 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const CreateInvitationToken = `-- name: CreateInvitationToken :one
+INSERT INTO invitation_tokens (token_hash, tenant_id, user_id, expires_at)
+VALUES ($1, $2, $3, $4)
+RETURNING id, tenant_id, user_id, token_hash, expires_at, created_at
+`
+
+type CreateInvitationTokenParams struct {
+	TokenHash string
+	TenantID  pgtype.UUID
+	UserID    pgtype.UUID
+	ExpiresAt pgtype.Timestamptz
+}
+
+func (q *Queries) CreateInvitationToken(ctx context.Context, arg *CreateInvitationTokenParams) (*InvitationToken, error) {
+	row := q.db.QueryRow(ctx, CreateInvitationToken,
+		arg.TokenHash,
+		arg.TenantID,
+		arg.UserID,
+		arg.ExpiresAt,
+	)
+	var i InvitationToken
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.UserID,
+		&i.TokenHash,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+	)
+	return &i, err
+}
+
+const GetInvitationByTokenHash = `-- name: GetInvitationByTokenHash :one
+SELECT id, tenant_id, user_id, token_hash, expires_at, created_at FROM invitation_tokens
+WHERE token_hash = $1 AND expires_at > CURRENT_TIMESTAMP
+`
+
+func (q *Queries) GetInvitationByTokenHash(ctx context.Context, tokenHash string) (*InvitationToken, error) {
+	row := q.db.QueryRow(ctx, GetInvitationByTokenHash, tokenHash)
+	var i InvitationToken
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.UserID,
+		&i.TokenHash,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+	)
+	return &i, err
+}
+
 const GetUsersByTenantID = `-- name: GetUsersByTenantID :many
 SELECT id, email, name, role, status, created_at, updated_at
 FROM users
@@ -21,7 +72,7 @@ ORDER BY created_at ASC
 type GetUsersByTenantIDRow struct {
 	ID        pgtype.UUID
 	Email     string
-	Name      pgtype.Text
+	Name      string
 	Role      string
 	Status    string
 	CreatedAt pgtype.Timestamptz
@@ -65,7 +116,7 @@ type InviteUserToTenantParams struct {
 	TenantID     pgtype.UUID
 	Email        string
 	PasswordHash string
-	Name         pgtype.Text
+	Name         string
 	Role         string
 	Status       string
 }

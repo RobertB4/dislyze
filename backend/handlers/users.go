@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sendgrid/sendgrid-go"
 	"golang.org/x/crypto/bcrypt"
@@ -106,13 +105,11 @@ func mapDBUsersToResponse(dbUsers []*queries.GetUsersByTenantIDRow) ([]User, err
 		mappedUser := User{
 			ID:        userIDStr,
 			Email:     dbUser.Email,
+			Name:      dbUser.Name,
 			Role:      dbUser.Role,
 			Status:    dbUser.Status,
 			CreatedAt: dbUser.CreatedAt.Time,
 			UpdatedAt: dbUser.UpdatedAt.Time,
-		}
-		if dbUser.Name.Valid {
-			mappedUser.Name = dbUser.Name.String
 		}
 		responseUsers[i] = mappedUser
 	}
@@ -226,7 +223,7 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 		TenantID:     rawTenantID,
 		Email:        req.Email,
 		PasswordHash: string(hashedInitialPassword),
-		Name:         pgtype.Text{String: req.Name, Valid: true},
+		Name:         req.Name,
 		Role:         req.Role,
 		Status:       "pending_verification",
 	})

@@ -32,21 +32,35 @@ CREATE TABLE users (
 CREATE TABLE refresh_tokens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token_hash VARCHAR(255) NOT NULL,
+    jti UUID NOT NULL,
     device_info TEXT,
     ip_address VARCHAR(45),
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_used_at TIMESTAMP WITH TIME ZONE,
     revoked_at TIMESTAMP WITH TIME ZONE,
-    UNIQUE(token_hash)
+    UNIQUE(jti)
+);
+
+-- Create invitation_tokens table
+CREATE TABLE invitation_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash VARCHAR(255) NOT NULL UNIQUE, 
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_invitation_tenant_user_id UNIQUE (tenant_id, user_id) 
 );
 
 -- Create indexes for better query performance
 CREATE INDEX idx_users_tenant_id ON users(tenant_id);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+CREATE INDEX idx_refresh_tokens_jti ON refresh_tokens(jti);
 CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
+CREATE INDEX idx_invitation_tokens_token_hash ON invitation_tokens(token_hash);
+CREATE INDEX idx_invitation_tokens_tenant_id_user_id ON invitation_tokens(tenant_id, user_id);
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -74,11 +88,14 @@ CREATE TRIGGER update_users_updated_at
 -- +goose StatementBegin
 
 -- Drop indexes
+DROP INDEX IF EXISTS idx_invitation_tokens_email_tenant;
+DROP INDEX IF EXISTS idx_invitation_tokens_expires_at;
+DROP INDEX IF EXISTS idx_invitation_tokens_token_hash;
 DROP INDEX IF EXISTS idx_users_email;
-DROP INDEX IF EXISTS idx_refresh_tokens_token;
 DROP INDEX IF EXISTS idx_refresh_tokens_user_id;
 
 -- Drop tables
+DROP TABLE IF EXISTS invitation_tokens;
 DROP TABLE IF EXISTS refresh_tokens;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS tenants;

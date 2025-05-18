@@ -29,6 +29,9 @@ services:
       - JWT_SECRET=test_jwt_secret_key_for_testing_only
       - RATE_LIMIT=5000
       - FRONTEND_URL=http://localhost:11338
+      - SENDGRID_API_KEY=sendgrid
+      - SENDGRID_API_URL=http://localhost:3030
+      - INITIAL_PW=password
     ports:
       - "11337:1337"
     depends_on:

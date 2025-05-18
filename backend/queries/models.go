@@ -8,16 +8,25 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type InvitationToken struct {
+	ID        pgtype.UUID
+	TenantID  pgtype.UUID
+	UserID    pgtype.UUID
+	TokenHash string
+	ExpiresAt pgtype.Timestamptz
+	CreatedAt pgtype.Timestamptz
+}
+
 type RefreshToken struct {
 	ID         pgtype.UUID
 	UserID     pgtype.UUID
+	Jti        pgtype.UUID
 	DeviceInfo pgtype.Text
 	IpAddress  pgtype.Text
 	ExpiresAt  pgtype.Timestamptz
 	CreatedAt  pgtype.Timestamptz
 	LastUsedAt pgtype.Timestamptz
 	RevokedAt  pgtype.Timestamptz
-	Jti        pgtype.UUID
 }
 
 type Tenant struct {
@@ -34,7 +43,7 @@ type User struct {
 	TenantID     pgtype.UUID
 	Email        string
 	PasswordHash string
-	Name         pgtype.Text
+	Name         string
 	Role         string
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
