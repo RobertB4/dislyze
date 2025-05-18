@@ -1,16 +1,16 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { toast } from '$components/Toast/toast';
-	import { createForm } from 'felte';
-	import { PUBLIC_API_URL } from '$env/static/public';
-	import Button from '$lib/components/Button.svelte';
-	import Input from '$lib/components/Input.svelte';
-	import { KnownError } from '$lib/errors';
+	import { goto } from "$app/navigation";
+	import { toast } from "$components/Toast/toast";
+	import { createForm } from "felte";
+	import { PUBLIC_API_URL } from "$env/static/public";
+	import Button from "$lib/components/Button.svelte";
+	import Input from "$lib/components/Input.svelte";
+	import { KnownError } from "$lib/errors";
 
 	const { form, errors, data, isValid, isSubmitting } = createForm({
 		initialValues: {
-			email: '',
-			password: ''
+			email: "",
+			password: ""
 		},
 		validate: (values) => {
 			const errors: Record<string, string> = {};
@@ -19,12 +19,12 @@
 			values.password = values.password.trim();
 
 			if (!values.email) {
-				errors.email = 'メールアドレスは必須です';
+				errors.email = "メールアドレスは必須です";
 			} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
-				errors.email = 'メールアドレスの形式が正しくありません';
+				errors.email = "メールアドレスの形式が正しくありません";
 			}
 			if (!values.password) {
-				errors.password = 'パスワードは必須です';
+				errors.password = "パスワードは必須です";
 			}
 
 			return errors;
@@ -32,12 +32,12 @@
 		onSubmit: async (values) => {
 			try {
 				const response = await fetch(`${PUBLIC_API_URL}/auth/login`, {
-					method: 'POST',
+					method: "POST",
 					headers: {
-						'Content-Type': 'application/json'
+						"Content-Type": "application/json"
 					},
 					body: JSON.stringify(values),
-					credentials: 'include'
+					credentials: "include"
 				});
 
 				const data = await response.json();
@@ -45,7 +45,7 @@
 				if (data.error) {
 					throw new KnownError(data.error);
 				}
-				goto('/');
+				goto("/");
 			} catch (err) {
 				toast.showError(err);
 			}
@@ -59,7 +59,7 @@
 			<h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">ログイン</h2>
 			<p class="mt-2 text-center text-sm text-gray-600">
 				または
-				<a href="/signup" class="font-medium text-indigo-600 hover:text-indigo-500">
+				<a href="/auth/signup" class="font-medium text-indigo-600 hover:text-indigo-500">
 					新規アカウントを作成
 				</a>
 			</p>
