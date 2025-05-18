@@ -3,8 +3,8 @@
 	import { toast } from "$components/Toast/toast";
 	import { createForm } from "felte";
 	import { PUBLIC_API_URL } from "$env/static/public";
-	import Button from "$lib/components/Button.svelte";
-	import Input from "$lib/components/Input.svelte";
+	import Button from "$components/Button.svelte";
+	import Input from "$components/Input.svelte";
 	import { KnownError } from "$lib/errors";
 
 	const { form, errors, data, isValid, isSubmitting } = createForm({

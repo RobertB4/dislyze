@@ -1,19 +1,19 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { toast } from '$components/Toast/toast';
-	import { createForm } from 'felte';
-	import { PUBLIC_API_URL } from '$env/static/public';
-	import Button from '$lib/components/Button.svelte';
-	import Input from '$lib/components/Input.svelte';
-	import { KnownError } from '$lib/errors';
+	import { goto } from "$app/navigation";
+	import { toast } from "$components/Toast/toast";
+	import { createForm } from "felte";
+	import { PUBLIC_API_URL } from "$env/static/public";
+	import Button from "$components/Button.svelte";
+	import Input from "$components/Input.svelte";
+	import { KnownError } from "$lib/errors";
 
 	const { form, errors, data, isValid, isSubmitting } = createForm({
 		initialValues: {
-			company_name: '',
-			user_name: '',
-			email: '',
-			password: '',
-			password_confirm: ''
+			company_name: "",
+			user_name: "",
+			email: "",
+			password: "",
+			password_confirm: ""
 		},
 		validate: (values) => {
 			const errors: Record<string, string> = {};
@@ -25,25 +25,25 @@
 			values.password_confirm = values.password_confirm.trim();
 
 			if (!values.company_name) {
-				errors.company_name = '会社名は必須です';
+				errors.company_name = "会社名は必須です";
 			}
 			if (!values.user_name) {
-				errors.user_name = 'ユーザー名は必須です';
+				errors.user_name = "ユーザー名は必須です";
 			}
 			if (!values.email) {
-				errors.email = 'メールアドレスは必須です';
+				errors.email = "メールアドレスは必須です";
 			} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
-				errors.email = 'メールアドレスの形式が正しくありません';
+				errors.email = "メールアドレスの形式が正しくありません";
 			}
 			if (!values.password) {
-				errors.password = 'パスワードは必須です';
+				errors.password = "パスワードは必須です";
 			} else if (values.password.length < 8) {
-				errors.password = 'パスワードは8文字以上である必要があります';
+				errors.password = "パスワードは8文字以上である必要があります";
 			}
 			if (!values.password_confirm) {
-				errors.password_confirm = 'パスワードを確認してください';
+				errors.password_confirm = "パスワードを確認してください";
 			} else if (values.password !== values.password_confirm) {
-				errors.password_confirm = 'パスワードが一致しません';
+				errors.password_confirm = "パスワードが一致しません";
 			}
 
 			return errors;
@@ -51,12 +51,12 @@
 		onSubmit: async (values) => {
 			try {
 				const response = await fetch(`${PUBLIC_API_URL}/auth/signup`, {
-					method: 'POST',
+					method: "POST",
 					headers: {
-						'Content-Type': 'application/json'
+						"Content-Type": "application/json"
 					},
 					body: JSON.stringify(values),
-					credentials: 'include'
+					credentials: "include"
 				});
 
 				const data = await response.json();
@@ -65,8 +65,8 @@
 					throw new KnownError(data.error);
 				}
 
-				toast.show('アカウントが正常に作成されました！', 'success');
-				goto('/');
+				toast.show("アカウントが正常に作成されました！", "success");
+				goto("/");
 			} catch (err) {
 				toast.showError(err);
 			}
