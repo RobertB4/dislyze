@@ -1,5 +1,7 @@
 import { goto } from "$app/navigation";
 import { PUBLIC_API_URL } from "$env/static/public";
+import { errorStore } from "$lib/errors";
+import { get } from "svelte/store";
 
 export async function handleFetch(
 	fetchFunction: typeof fetch,
@@ -7,8 +9,18 @@ export async function handleFetch(
 	options?: RequestInit
 ): Promise<Response> {
 	const response = await fetchFunction(url, options);
+
+	if (response.status >= 500) {
+		errorStore.setError(
+			response.status,
+			"サーバーでエラーが発生しました。時間をおいて再度お試しください。"
+		);
+		throw new Error(`Server error: ${response.status} on URL: ${response.url}`);
+	}
+
+	// Handle 401 Unauthorized errors
 	if (response.status === 401) {
-		console.log("inside");
+		let logoutSuccessful = false;
 		try {
 			const res = await fetchFunction(`${PUBLIC_API_URL}/auth/logout`, {
 				method: "POST",
@@ -16,15 +28,21 @@ export async function handleFetch(
 			});
 
 			if (!res.ok) {
-				console.log("not ok");
-				// TODO: show 500 error screen
+				errorStore.setError(500, "処理中に予期せぬエラーが発生しました。");
+			} else {
+				logoutSuccessful = true;
 			}
 		} catch (logoutError) {
 			console.error("Logout request failed:", logoutError);
-			// TODO: show 500 error screen
+			errorStore.setError(500, "処理中に予期せぬエラーが発生しました。");
 		}
-		goto("/auth/login");
-		throw new Error("Session expired. Redirecting to login.");
+
+		const currentErrorState = get(errorStore);
+		if (!currentErrorState.statusCode && logoutSuccessful) {
+			goto("/auth/login");
+		}
+
+		throw new Error("Session expired or unauthorized.");
 	}
 
 	return response;
