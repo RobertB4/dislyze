@@ -51,7 +51,7 @@ func TestMapDBUsersToResponse(t *testing.T) {
 				{
 					ID:        pUUID1,
 					Email:     "test1@example.com",
-					Name:      pgtype.Text{String: "Test User One", Valid: true},
+					Name:      "Test User One",
 					Role:      "admin",
 					Status:    "active",
 					CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
@@ -77,7 +77,7 @@ func TestMapDBUsersToResponse(t *testing.T) {
 				{
 					ID:        pUUID2,
 					Email:     "test2@example.com",
-					Name:      pgtype.Text{Valid: false},
+					Name:      "",
 					Role:      "user",
 					Status:    "active",
 					CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
@@ -103,7 +103,7 @@ func TestMapDBUsersToResponse(t *testing.T) {
 				{
 					ID:        pgtype.UUID{Bytes: uuidInvalidBytes, Valid: false},
 					Email:     "invalidid@example.com",
-					Name:      pgtype.Text{String: "Invalid", Valid: true},
+					Name:      "Invalid",
 					Role:      "user",
 					Status:    "active",
 					CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
@@ -119,7 +119,7 @@ func TestMapDBUsersToResponse(t *testing.T) {
 				{
 					ID:        pUUID1,
 					Email:     "user1@example.com",
-					Name:      pgtype.Text{String: "User One", Valid: true},
+					Name:      "User One",
 					Role:      "user",
 					Status:    "active",
 					CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
@@ -152,6 +152,127 @@ func TestMapDBUsersToResponse(t *testing.T) {
 
 			if !reflect.DeepEqual(gotUsers, tt.wantUsers) {
 				t.Errorf("mapDBUsersToResponse() gotUsers = %v, want %v", gotUsers, tt.wantUsers)
+			}
+		})
+	}
+}
+
+func TestInviteUserRequest_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		request InviteUserRequest
+		wantErr error
+	}{
+		{
+			name: "valid request",
+			request: InviteUserRequest{
+				Email: "test@example.com",
+				Name:  "Test User",
+				Role:  "user",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "empty email",
+			request: InviteUserRequest{
+				Email: "",
+				Name:  "Test User",
+				Role:  "user",
+			},
+			wantErr: fmt.Errorf("email is required"),
+		},
+		{
+			name: "invalid email format (basic check)",
+			request: InviteUserRequest{
+				Email: "testexample.com",
+				Name:  "Test User",
+				Role:  "user",
+			},
+			wantErr: fmt.Errorf("email is invalid"),
+		},
+		{
+			name: "empty name",
+			request: InviteUserRequest{
+				Email: "test@example.com",
+				Name:  "",
+				Role:  "user",
+			},
+			wantErr: fmt.Errorf("name is required and cannot be only whitespace"),
+		},
+		{
+			name: "name with only whitespace",
+			request: InviteUserRequest{
+				Email: "test@example.com",
+				Name:  "   ",
+				Role:  "user",
+			},
+			wantErr: fmt.Errorf("name is required and cannot be only whitespace"),
+		},
+		{
+			name: "empty role",
+			request: InviteUserRequest{
+				Email: "test@example.com",
+				Name:  "Test User",
+				Role:  "",
+			},
+			wantErr: fmt.Errorf("role is required"),
+		},
+		{
+			name: "invalid role value",
+			request: InviteUserRequest{
+				Email: "test@example.com",
+				Name:  "Test User",
+				Role:  "guest",
+			},
+			wantErr: fmt.Errorf("role is invalid, must be 'admin' or 'user'"),
+		},
+		{
+			name: "role with mixed case (should be normalized and valid)",
+			request: InviteUserRequest{
+				Email: "test@example.com",
+				Name:  "Test User",
+				Role:  "Admin",
+			},
+			wantErr: nil, // Expecting it to be normalized to lowercase "admin"
+		},
+		{
+			name: "role with leading/trailing whitespace (should be normalized and valid)",
+			request: InviteUserRequest{
+				Email: "test@example.com",
+				Name:  "Test User With Spaces   ",
+				Role:  "  user  ",
+			},
+			wantErr: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reqCopy := tt.request // Copy to avoid modifying the original tt.request due to TrimSpace
+			gotErr := reqCopy.Validate()
+
+			if tt.wantErr != nil {
+				if gotErr == nil {
+					t.Errorf("%s: Validate() error = nil, wantErr %v", tt.name, tt.wantErr)
+					return
+				}
+				if gotErr.Error() != tt.wantErr.Error() {
+					t.Errorf("%s: Validate() error message = %q, wantErrMsg %q", tt.name, gotErr.Error(), tt.wantErr.Error())
+				}
+			} else if gotErr != nil {
+				t.Errorf("%s: Validate() unexpected error = %v", tt.name, gotErr)
+			}
+
+			// Additionally, check if fields were trimmed as expected, for cases where no error is expected
+			if tt.wantErr == nil && tt.name == "role with leading/trailing whitespace (should be normalized and valid)" {
+				expectedTrimmedName := "Test User With Spaces"
+				expectedTrimmedRole := "user"
+				if reqCopy.Name != expectedTrimmedName {
+					t.Errorf("%s: Name not trimmed as expected: got %q, want %q", tt.name, reqCopy.Name, expectedTrimmedName)
+				}
+				if reqCopy.Role != expectedTrimmedRole {
+					t.Errorf("%s: Role not trimmed/lowercased as expected: got %q, want %q", tt.name, reqCopy.Role, expectedTrimmedRole)
+				}
 			}
 		})
 	}

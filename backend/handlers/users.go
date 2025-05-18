@@ -201,7 +201,9 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		// User found, email already exists
 		errors.LogError(fmt.Errorf("InviteUser: attempt to invite existing email: %s", req.Email))
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(map[string]string{"error": "このメールアドレスは既に使用されています。"})
 		return
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {

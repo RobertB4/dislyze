@@ -13,6 +13,13 @@ services:
       retries: 5
     ports:
       - "15432:5432"
+  test-sendgrid-mock:
+    image: yudppp/simple-sendgrid-mock-server
+    container_name: test-sendgrid-mock
+    ports:
+      - "13030:3030"
+    environment:
+      - SENDGRID_API_KEY=sendgrid
   backend:
     container_name: test-backend
     build:
@@ -30,13 +37,15 @@ services:
       - RATE_LIMIT=5000
       - FRONTEND_URL=http://localhost:11338
       - SENDGRID_API_KEY=sendgrid
-      - SENDGRID_API_URL=http://localhost:3030
+      - SENDGRID_API_URL=http://test-sendgrid-mock:3030
       - INITIAL_PW=password
     ports:
       - "11337:1337"
     depends_on:
       postgres:
         condition: service_healthy
+      test-sendgrid-mock:
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:11337/health"]
       interval: 5s
