@@ -2,7 +2,6 @@ import { redirect } from "@sveltejs/kit";
 import type { Handle } from "@sveltejs/kit";
 
 export const handle: Handle = async ({ event, resolve }) => {
-	console.log("handle");
 	const accessToken = event.cookies.get("access_token");
 	const refreshToken = event.cookies.get("refresh_token");
 

@@ -104,6 +104,6 @@ func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusUnauthorized)
 	json.NewEncoder(w).Encode(responseUsers)
 }

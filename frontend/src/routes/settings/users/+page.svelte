@@ -1,6 +1,6 @@
 <script lang="ts">
-	import Layout from '$components/Layout.svelte';
-	import type { PageData } from './$types';
+	import Layout from "$components/Layout.svelte";
+	import type { PageData } from "./$types";
 	export let data: PageData;
 </script>
 

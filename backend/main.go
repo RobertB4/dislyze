@@ -53,6 +53,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/signup", authHandler.Signup)
 		r.Post("/login", authHandler.Login)
+		r.Post("/logout", authHandler.Logout)
 	})
 
 	r.Group(func(r chi.Router) {
