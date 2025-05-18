@@ -9,3 +9,8 @@ dev-frontend:
 
 dev-sendgrid-mock:
 	docker run -p 3030:3030 -e SENDGRID_API_KEY=sendgrid -t yudppp/simple-sendgrid-mock-server
+
+migrate: 
+	goose --dir ./database/migrations postgres postgresql://postgres:password@localhost:5432/lugia up
+initdb:
+	psql -U postgres -h localhost -p 5432 -d lugia -f ./database/drop.sql && make migrate
