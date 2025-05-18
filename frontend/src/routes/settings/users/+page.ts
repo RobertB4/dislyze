@@ -17,10 +17,6 @@ export const load: PageLoad = async ({ fetch }) => {
 		credentials: "include"
 	});
 
-	if (!response.ok) {
-		throw new Error("Failed to fetch users");
-	}
-
 	const users: User[] = await response.json();
 	return { users };
 };

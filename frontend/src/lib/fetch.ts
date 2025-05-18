@@ -23,6 +23,11 @@ export async function handleFetch(
 		throw new Error(`Not found: ${response.url}`);
 	}
 
+	if (response.status === 403) {
+		errorStore.setError(403, "権限がありません。");
+		throw new Error(`Forbidden: ${response.url}`);
+	}
+
 	if (response.status === 401) {
 		let logoutSuccessful = false;
 		try {
