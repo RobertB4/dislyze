@@ -1,16 +1,76 @@
 <script lang="ts">
 	import Button from "$components/Button.svelte";
 	import Layout from "$components/Layout.svelte";
+	import Slideover from "$components/Slideover.svelte";
 	import type { PageData } from "./$types";
-	export let data: PageData;
+
+	let { data } = $props<{ data: PageData }>();
+
+	let isSlideoverOpen = $state(false);
+	let formData = $state({
+		email: "",
+		name: "",
+		role: "user"
+	});
+
+	const handleClose = () => {
+		isSlideoverOpen = false;
+	};
 </script>
 
 <Layout>
-	<div class="sm:flex sm:justify-end mt-6">
-		<div class="mt-4 sm:mt-0 sm:flex-none">
-			<Button type="button" variant="primary">ユーザーを追加</Button>
-		</div>
+	<div slot="buttons">
+		<Button type="button" variant="primary" on:click={() => (isSlideoverOpen = true)}
+			>ユーザーを追加</Button
+		>
 	</div>
+
+	{#if isSlideoverOpen}
+		<Slideover
+			title="ユーザーを追加"
+			subtitle="新しいユーザーを招待します"
+			primaryButtonText="招待を送信"
+			onClose={handleClose}
+		>
+			<div class="space-y-4">
+				<div>
+					<label for="email" class="block text-sm font-medium text-gray-700">メールアドレス</label>
+					<input
+						type="email"
+						name="email"
+						id="email"
+						bind:value={formData.email}
+						class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+						placeholder="user@example.com"
+					/>
+				</div>
+				<div>
+					<label for="name" class="block text-sm font-medium text-gray-700">名前</label>
+					<input
+						type="text"
+						name="name"
+						id="name"
+						bind:value={formData.name}
+						class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+						placeholder="山田 太郎"
+					/>
+				</div>
+				<div>
+					<label for="role" class="block text-sm font-medium text-gray-700">役割</label>
+					<select
+						id="role"
+						name="role"
+						bind:value={formData.role}
+						class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+					>
+						<option value="user">一般ユーザー</option>
+						<option value="admin">管理者</option>
+					</select>
+				</div>
+			</div>
+		</Slideover>
+	{/if}
+
 	<div class="mt-8 flow-root">
 		<div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
 			<div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
