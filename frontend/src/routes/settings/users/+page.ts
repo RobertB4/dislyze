@@ -1,6 +1,6 @@
 import type { PageLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
-import { handleFetch } from "$lib/fetch";
+import { loadFunctionFetch } from "$lib/fetch";
 
 type User = {
 	id: string;
@@ -13,7 +13,7 @@ type User = {
 };
 
 export const load: PageLoad = async ({ fetch }) => {
-	const response = await handleFetch(fetch, `${PUBLIC_API_URL}/users`, {
+	const response = await loadFunctionFetch(fetch, `${PUBLIC_API_URL}/users`, {
 		credentials: "include"
 	});
 

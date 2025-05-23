@@ -1,57 +1,75 @@
-import { goto } from "$app/navigation";
+import { redirect, error as svelteKitError } from "@sveltejs/kit";
 import { PUBLIC_API_URL } from "$env/static/public";
-import { errorStore } from "$lib/errors";
-import { get } from "svelte/store";
 
-export async function handleFetch(
-	fetchFunction: typeof fetch,
+/**
+ * For use in the `load` function to fetch data for the page.
+ * Do not catch the error of this function.
+ * Catching the error prevents SvelteKit from handling it.
+ * If you need to catch the error, make sure to rethrow it.
+ */
+export async function loadFunctionFetch(
+	loadEventFetch: typeof fetch,
 	url: string | URL | Request,
 	options?: RequestInit
 ): Promise<Response> {
-	const response = await fetchFunction(url, options);
+	let response: Response;
+	try {
+		const opt = options ?? {};
+		opt.credentials = "include";
+		response = await loadEventFetch(url, opt);
+	} catch (networkError) {
+		console.error(`loadFunctionFetch: Network error for URL ${url.toString()}:`, networkError);
+		throw svelteKitError(
+			503,
+			"ネットワーク接続に問題があるか、サーバーが応答しませんでした。接続を確認し、再度お試しください。"
+		);
+	}
 
 	if (response.status >= 500) {
-		errorStore.setError(
+		console.error(
+			`loadFunctionFetch: Server error for URL ${response.url}, status ${response.status}`
+		);
+		throw svelteKitError(
 			response.status,
 			"サーバーでエラーが発生しました。時間をおいて再度お試しください。"
 		);
-		throw new Error(`Server error: ${response.status} on URL: ${response.url}`);
-	}
-
-	if (response.status === 404) {
-		errorStore.setError(404, "ページが見つかりません。");
-		throw new Error(`Not found: ${response.url}`);
 	}
 
 	if (response.status === 403) {
-		errorStore.setError(403, "権限がありません。");
-		throw new Error(`Forbidden: ${response.url}`);
+		console.error(`loadFunctionFetch: Forbidden for URL ${response.url}`);
+		throw svelteKitError(403, "権限がありません。");
 	}
 
 	if (response.status === 401) {
-		let logoutSuccessful = false;
+		console.log(
+			`loadFunctionFetch: Received 401 from ${response.url}. Attempting logout before redirecting to login.`
+		);
 		try {
-			const res = await fetchFunction(`${PUBLIC_API_URL}/auth/logout`, {
+			const logoutResponse = await loadEventFetch(`${PUBLIC_API_URL}/auth/logout`, {
 				method: "POST",
 				credentials: "include"
 			});
-
-			if (!res.ok) {
-				errorStore.setError(500, "処理中に予期せぬエラーが発生しました。");
-			} else {
-				logoutSuccessful = true;
+			if (!logoutResponse.ok) {
+				console.error(
+					`loadFunctionFetch: Logout attempt failed with status ${logoutResponse.status} after 401. Body: ${await logoutResponse.text()}`
+				);
+				throw svelteKitError(
+					logoutResponse.status,
+					"サーバーでエラーが発生しました。時間をおいて再度お試しください。"
+				);
 			}
-		} catch (logoutError) {
-			console.error("Logout request failed:", logoutError);
-			errorStore.setError(500, "処理中に予期せぬエラーが発生しました。");
+		} catch (logoutAttemptError) {
+			console.error(
+				`loadFunctionFetch: Network error or other issue during logout attempt for URL ${url.toString()}:`,
+				logoutAttemptError
+			);
+			throw svelteKitError(
+				503,
+				"ネットワーク接続に問題があるか、サーバーが応答しませんでした。接続を確認し、再度お試しください。"
+			);
 		}
 
-		const currentErrorState = get(errorStore);
-		if (!currentErrorState.statusCode && logoutSuccessful) {
-			goto("/auth/login");
-		}
-
-		throw new Error("Session expired or unauthorized.");
+		throw redirect(307, "/auth/login");
 	}
 
 	return response;

@@ -12,6 +12,7 @@
 	import Badge from "$components/Badge.svelte";
 	import Select from "$components/Select.svelte";
 	import Alert from "$components/Alert.svelte";
+	import { me, meStore } from "$lib/stores/meStore";
 
 	let { data: pageData }: { data: PageData } = $props();
 

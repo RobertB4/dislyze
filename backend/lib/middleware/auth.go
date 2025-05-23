@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -233,5 +234,6 @@ func (m *AuthMiddleware) handleAuthError(w http.ResponseWriter, r *http.Request,
 		Error:     err.Error(),
 	})
 
-	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	w.WriteHeader(http.StatusUnauthorized)
+	json.NewEncoder(w).Encode(map[string]string{})
 }
