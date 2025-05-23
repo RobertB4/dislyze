@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"lugia/lib/config"
+	"dislyze/lib/config"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )

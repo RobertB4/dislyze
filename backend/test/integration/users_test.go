@@ -10,8 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"lugia/handlers"
-	"lugia/test/integration/setup"
+	"dislyze/handlers"
+	"dislyze/test/integration/setup"
 )
 
 func TestGetUsers_Integration(t *testing.T) {

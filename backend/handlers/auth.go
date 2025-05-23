@@ -10,16 +10,17 @@ import (
 	"strings"
 	"time"
 
-	"lugia/lib/config"
-	"lugia/lib/errors"
-	"lugia/lib/jwt"
-	"lugia/lib/ratelimit"
-	"lugia/queries"
+	"golang.org/x/crypto/bcrypt"
+
+	"dislyze/lib/config"
+	"dislyze/lib/errors"
+	"dislyze/lib/jwt"
+	"dislyze/lib/ratelimit"
+	"dislyze/queries"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var (

@@ -1,4 +1,4 @@
-module lugia
+module dislyze
 
 go 1.23.0
 

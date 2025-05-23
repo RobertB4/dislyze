@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"lugia/lib/config"
-	"lugia/lib/jwt"
-	"lugia/lib/logger"
-	"lugia/lib/ratelimit"
-	"lugia/queries"
+	"dislyze/lib/config"
+	"dislyze/lib/jwt"
+	"dislyze/lib/logger"
+	"dislyze/lib/ratelimit"
+	"dislyze/queries"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"

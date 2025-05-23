@@ -2,9 +2,9 @@ package integration
 
 import (
 	"bytes"
+	"dislyze/test/integration/setup"
 	"encoding/json"
 	"fmt"
-	"lugia/test/integration/setup"
 	"net/http"
 	"testing"
 

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"lugia/lib/errors"
-	"lugia/queries"
+	"dislyze/lib/errors"
+	"dislyze/queries"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )

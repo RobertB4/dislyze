@@ -2,7 +2,7 @@ package ctx
 
 import (
 	"context"
-	"lugia/lib/middleware"
+	"dislyze/lib/middleware"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )

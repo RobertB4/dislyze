@@ -9,12 +9,12 @@ import (
 	"syscall"
 	"time"
 
-	"lugia/handlers"
-	"lugia/lib/config"
-	"lugia/lib/db"
-	"lugia/lib/middleware"
-	"lugia/lib/ratelimit"
-	"lugia/queries"
+	"dislyze/handlers"
+	"dislyze/lib/config"
+	"dislyze/lib/db"
+	"dislyze/lib/middleware"
+	"dislyze/lib/ratelimit"
+	"dislyze/queries"
 
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"

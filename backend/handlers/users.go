@@ -19,11 +19,11 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 	"golang.org/x/crypto/bcrypt"
 
-	"lugia/lib/config"
-	libctx "lugia/lib/ctx"
-	"lugia/lib/errors"
-	"lugia/lib/ratelimit"
-	"lugia/queries"
+	"dislyze/lib/config"
+	libctx "dislyze/lib/ctx"
+	"dislyze/lib/errors"
+	"dislyze/lib/ratelimit"
+	"dislyze/queries"
 )
 
 var (
