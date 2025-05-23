@@ -1,7 +1,6 @@
 <script lang="ts">
 	import "../app.css";
 	import ToastContainer from "$components/Toast/ToastContainer.svelte";
-	import { page } from "$app/state";
 	import { setMe } from "$lib/stores/meStore";
 	import type { LayoutData } from "./$types";
 	import type { Snippet } from "svelte";

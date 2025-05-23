@@ -9,8 +9,8 @@ export type Me = {
 	tenant_plan: "none" | "basic" | "pro" | "enterprise";
 };
 
-export const meStore = writable<Me>(null as any);
+export const me = writable<Me>(null as any);
 
-export function setMe(me: Me) {
-	meStore.update(() => me);
+export function setMe(user: Me) {
+	me.update(() => user);
 }
