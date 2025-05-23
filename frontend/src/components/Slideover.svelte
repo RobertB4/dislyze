@@ -95,7 +95,7 @@
 										on:click={onPrimaryClick}>{primaryButtonText}</Button
 									>
 								{/if}
-								<Button variant="secondary" on:click={handleClose}>Cancel</Button>
+								<Button variant="secondary" on:click={handleClose}>キャンセル</Button>
 							</div>
 						</div>
 					</div>

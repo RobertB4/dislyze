@@ -3,18 +3,69 @@
 	import Layout from "$components/Layout.svelte";
 	import Slideover from "$components/Slideover.svelte";
 	import type { PageData } from "./$types";
+	import { createForm } from "felte";
+	import Input from "$components/Input.svelte";
+	import { toast } from "$components/Toast/toast";
+	import { PUBLIC_API_URL } from "$env/static/public";
+	import { KnownError } from "$lib/errors";
 
-	let { data } = $props<{ data: PageData }>();
+	let { data: pageData }: { data: PageData } = $props();
 
 	let isSlideoverOpen = $state(false);
-	let formData = $state({
-		email: "",
-		name: "",
-		role: "user"
+
+	const { form, data, errors, isSubmitting, reset } = createForm({
+		initialValues: {
+			email: "",
+			name: "",
+			role: "user"
+		},
+		validate: (values) => {
+			const errs: Record<string, string> = {};
+			values.email = values.email.trim();
+			values.name = values.name.trim();
+
+			if (!values.name) {
+				errs.name = "名前は必須です";
+			}
+			if (!values.email) {
+				errs.email = "メールアドレスは必須です";
+			} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
+				errs.email = "メールアドレスの形式が正しくありません";
+			}
+			return errs;
+		},
+		onSubmit: async (values) => {
+			try {
+				const response = await fetch(`${PUBLIC_API_URL}/users/invite`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json"
+					},
+					body: JSON.stringify(values),
+					credentials: "include"
+				});
+
+				const responseData: { error?: string } = await response.json();
+
+				console.log({ responseData });
+
+				if (responseData.error) {
+					throw new KnownError(responseData.error || "招待の送信に失敗しました。");
+				}
+
+				toast.show("ユーザーを招待しました。", "success");
+				isSlideoverOpen = false;
+				reset();
+			} catch (err) {
+				console.log("catch", err);
+				toast.showError(err);
+			}
+		}
 	});
 
 	const handleClose = () => {
 		isSlideoverOpen = false;
+		reset();
 	};
 </script>
 
@@ -26,49 +77,51 @@
 	{/snippet}
 
 	{#if isSlideoverOpen}
-		<Slideover
-			title="ユーザーを追加"
-			subtitle="新しいユーザーを招待します"
-			primaryButtonText="招待を送信"
-			onClose={handleClose}
-		>
-			<div class="space-y-4">
-				<div>
-					<label for="email" class="block text-sm font-medium text-gray-700">メールアドレス</label>
-					<input
-						type="email"
-						name="email"
+		<form use:form class="space-y-6 p-1 flex flex-col h-full">
+			<Slideover
+				title="ユーザーを追加"
+				subtitle="新しいユーザーを招待します"
+				primaryButtonText="招待を送信"
+				primaryButtonTypeSubmit={true}
+				onClose={handleClose}
+				loading={$isSubmitting}
+			>
+				<div class="flex-grow space-y-6">
+					<Input
 						id="email"
-						bind:value={formData.email}
-						class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+						name="email"
+						type="email"
+						label="メールアドレス"
+						bind:value={$data.email}
+						error={$errors.email?.[0]}
+						required
 						placeholder="user@example.com"
 					/>
-				</div>
-				<div>
-					<label for="name" class="block text-sm font-medium text-gray-700">名前</label>
-					<input
-						type="text"
-						name="name"
+					<Input
 						id="name"
-						bind:value={formData.name}
-						class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+						name="name"
+						type="text"
+						label="名前"
+						bind:value={$data.name}
+						error={$errors.name?.[0]}
+						required
 						placeholder="山田 太郎"
 					/>
+					<div>
+						<label for="role" class="block text-sm font-medium text-gray-700">役割</label>
+						<select
+							id="role"
+							name="role"
+							bind:value={$data.role}
+							class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+						>
+							<option value="user">一般ユーザー</option>
+							<option value="admin">管理者</option>
+						</select>
+					</div>
 				</div>
-				<div>
-					<label for="role" class="block text-sm font-medium text-gray-700">役割</label>
-					<select
-						id="role"
-						name="role"
-						bind:value={formData.role}
-						class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-					>
-						<option value="user">一般ユーザー</option>
-						<option value="admin">管理者</option>
-					</select>
-				</div>
-			</div>
-		</Slideover>
+			</Slideover>
+		</form>
 	{/if}
 
 	<div class="mt-8 flow-root">
@@ -98,7 +151,7 @@
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-gray-200 bg-white">
-							{#each data.users as user (user.id)}
+							{#each pageData.users as user (user.id)}
 								<tr>
 									<td
 										class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6"
