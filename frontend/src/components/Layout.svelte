@@ -4,7 +4,7 @@
 	import EmptyAvatar from "$components/EmptyAvatar.svelte";
 	import { PUBLIC_API_URL } from "$env/static/public";
 	import { errorStore } from "$lib/errors";
-	import { slide } from "svelte/transition";
+	import { slide, fade } from "svelte/transition";
 	import type { Snippet } from "svelte";
 
 	let isMobileNavigationOpen = $state(false);
@@ -39,16 +39,11 @@
 	}
 </script>
 
-<div
-	class="relative z-40 md:hidden"
-	role="dialog"
-	aria-modal="true"
-	class:hidden={!isMobileNavigationOpen}
->
-	<div class="fixed inset-0 bg-gray-600 bg-opacity-75"></div>
+{#if isMobileNavigationOpen}
+	<div class="relative z-40 md:hidden" role="dialog" aria-modal="true">
+		<div class="fixed inset-0 bg-gray-600 opacity-75" transition:fade={{ duration: 300 }}></div>
 
-	{#if isMobileNavigationOpen}
-		<div class="fixed inset-0 z-40 flex" transition:slide={{ duration: 1000, axis: "x" }}>
+		<div class="fixed inset-0 z-40 flex" transition:slide={{ duration: 300, axis: "x" }}>
 			<div class="relative flex w-full max-w-xs flex-1 flex-col bg-gray-800">
 				<div class="absolute top-0 right-0 -mr-12 pt-2">
 					<button
@@ -59,7 +54,7 @@
 						<span class="sr-only">Close sidebar</span>
 						<!-- Heroicon name: outline/x-mark -->
 						<svg
-							class="h-6 w-6"
+							class="h-6 w-6 text-white"
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
 							viewBox="0 0 24 24"
@@ -311,8 +306,8 @@
 				<!-- Force sidebar to shrink to fit close icon -->
 			</div>
 		</div>
-	{/if}
-</div>
+	</div>
+{/if}
 <!-- Static sidebar for desktop -->
 <div class="hidden md:fixed md:inset-y-0 md:w-56 md:flex md:flex-col" style="transition: 1s ease;">
 	<!-- Sidebar component, swap this element with another sidebar if you like -->
@@ -560,9 +555,10 @@
 					<EmptyAvatar />
 
 					<div class="ml-4 overflow-hidden">
-						<p class="text-sm font-medium text-white h-4"></p>
-
-						<p class="text-xs font-medium text-gray-300 group-hover:text-gray-200 h-4 truncate"></p>
+						<p class="text-sm font-medium text-white h-4 mb-1">User Name</p>
+						<p class="text-xs font-medium text-gray-300 group-hover:text-gray-200 h-4 truncate">
+							test@test.com
+						</p>
 					</div>
 				</div></a
 			>

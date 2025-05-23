@@ -81,18 +81,20 @@ type InviteUserResponse struct {
 }
 
 type UsersHandler struct {
-	dbConn      *pgxpool.Pool
-	q           *queries.Queries
-	env         *config.Env
-	rateLimiter *ratelimit.RateLimiter
+	dbConn                  *pgxpool.Pool
+	q                       *queries.Queries
+	env                     *config.Env
+	resendInviteRateLimiter *ratelimit.RateLimiter
+	deleteUserRateLimiter   *ratelimit.RateLimiter
 }
 
-func NewUsersHandler(dbConn *pgxpool.Pool, q *queries.Queries, env *config.Env, rateLimiter *ratelimit.RateLimiter) *UsersHandler {
+func NewUsersHandler(dbConn *pgxpool.Pool, q *queries.Queries, env *config.Env, resendInviteRateLimiter *ratelimit.RateLimiter, deleteUserRateLimiter *ratelimit.RateLimiter) *UsersHandler {
 	return &UsersHandler{
-		dbConn:      dbConn,
-		q:           q,
-		env:         env,
-		rateLimiter: rateLimiter,
+		dbConn:                  dbConn,
+		q:                       q,
+		env:                     env,
+		resendInviteRateLimiter: resendInviteRateLimiter,
+		deleteUserRateLimiter:   deleteUserRateLimiter,
 	}
 }
 
@@ -337,7 +339,7 @@ func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
 
 	targetUserIDStr := chi.URLParam(r, "userID")
 
-	if !h.rateLimiter.Allow(targetUserIDStr) {
+	if !h.resendInviteRateLimiter.Allow(targetUserIDStr) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusTooManyRequests)
 		json.NewEncoder(w).Encode(map[string]string{"error": "招待メールの再送信は、ユーザーごとに5分間に1回のみ可能です。しばらくしてから再度お試しください。"})
@@ -494,4 +496,98 @@ func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
+func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	targetUserIDStr := chi.URLParam(r, "userID")
+
+	if !h.deleteUserRateLimiter.Allow(targetUserIDStr) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		json.NewEncoder(w).Encode(map[string]string{"error": "ユーザー削除の操作は制限されています。しばらくしてから再度お試しください。"})
+		return
+	}
+
+	var targetUserID pgtype.UUID
+	if err := targetUserID.Scan(targetUserIDStr); err != nil {
+		errors.LogError(fmt.Errorf("DeleteUser: invalid target userID format '%s': %w", targetUserIDStr, err))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// TODO: Implement proper authorization: check if current user is admin of the target user's tenant.
+	// For now, we assume the authenticated user has permission to delete users.
+
+	invokerUserID := libctx.GetUserID(ctx)
+	invokerTenantID := libctx.GetTenantID(ctx)
+
+	targetDBUser, err := h.q.GetUserByID(ctx, targetUserID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			errors.LogError(fmt.Errorf("DeleteUser: target user with ID %s not found: %w", targetUserIDStr, err))
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		errors.LogError(fmt.Errorf("DeleteUser: failed to get target user %s: %w", targetUserIDStr, err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if invokerTenantID != targetDBUser.TenantID {
+		errors.LogError(fmt.Errorf("DeleteUser: invoker %s (tenant %s) attempting to delete user %s (tenant %s) in different tenant", invokerUserID.String(), invokerTenantID.String(), targetUserID.String(), targetDBUser.TenantID.String()))
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	if invokerUserID == targetUserID {
+		errors.LogError(fmt.Errorf("DeleteUser: user %s attempting to delete themselves", invokerUserID.String()))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(map[string]string{"error": "自分自身を削除することはできません。"})
+		return
+	}
+
+	tx, err := h.dbConn.Begin(ctx)
+	if err != nil {
+		errors.LogError(fmt.Errorf("DeleteUser: failed to begin transaction: %w", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer func() {
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errors.Is(rbErr, pgx.ErrTxClosed) && !errors.Is(rbErr, sql.ErrTxDone) {
+			errors.LogError(fmt.Errorf("DeleteUser: failed to rollback transaction: %w", rbErr))
+		}
+	}()
+	qtx := h.q.WithTx(tx)
+
+	if err := qtx.DeleteInvitationTokensByUserIDAndTenantID(ctx, &queries.DeleteInvitationTokensByUserIDAndTenantIDParams{
+		UserID:   targetUserID,
+		TenantID: targetDBUser.TenantID,
+	}); err != nil {
+		errors.LogError(fmt.Errorf("DeleteUser: failed to delete invitation tokens for user %s: %w", targetUserIDStr, err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := qtx.DeleteRefreshTokensByUserID(ctx, targetUserID); err != nil {
+		errors.LogError(fmt.Errorf("DeleteUser: failed to delete refresh tokens for user %s: %w", targetUserIDStr, err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := qtx.DeleteUser(ctx, targetUserID); err != nil {
+		errors.LogError(fmt.Errorf("DeleteUser: failed to delete user %s: %w", targetUserIDStr, err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		errors.LogError(fmt.Errorf("DeleteUser: failed to commit transaction for user %s: %w", targetUserIDStr, err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

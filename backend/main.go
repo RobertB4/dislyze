@@ -45,11 +45,12 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		log.Fatalf("Failed to convert env.RateLimit to int: %v", err)
 	}
 
-	rateLimiter := ratelimit.NewRateLimiter(60*time.Minute, rateLimit)
+	authRateLimiter := ratelimit.NewRateLimiter(60*time.Minute, rateLimit)
 	resendInviteRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, 1)
+	deleteUserRateLimiter := ratelimit.NewRateLimiter(1*time.Minute, 10)
 
-	authHandler := handlers.NewAuthHandler(dbConn, env, rateLimiter, queries)
-	usersHandler := handlers.NewUsersHandler(dbConn, queries, env, resendInviteRateLimiter)
+	authHandler := handlers.NewAuthHandler(dbConn, env, authRateLimiter, queries)
+	usersHandler := handlers.NewUsersHandler(dbConn, queries, env, resendInviteRateLimiter, deleteUserRateLimiter)
 
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/signup", authHandler.Signup)
@@ -59,12 +60,13 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.NewAuthMiddleware(env, queries, rateLimiter, dbConn).Authenticate)
+		r.Use(middleware.NewAuthMiddleware(env, queries, authRateLimiter, dbConn).Authenticate)
 
 		r.Route("/users", func(r chi.Router) {
 			r.Get("/", usersHandler.GetUsers)
 			r.Post("/invite", usersHandler.InviteUser)
 			r.Post("/{userID}/resend-invite", usersHandler.ResendInvite)
+			r.Delete("/{userID}", usersHandler.DeleteUser)
 		})
 	})
 

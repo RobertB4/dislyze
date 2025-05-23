@@ -11,10 +11,12 @@
 	import { invalidateAll } from "$app/navigation";
 	import Badge from "$components/Badge.svelte";
 	import Select from "$components/Select.svelte";
+	import Alert from "$components/Alert.svelte";
 
 	let { data: pageData }: { data: PageData } = $props();
 
 	let isSlideoverOpen = $state(false);
+	let userToDelete = $state<{ id: string; name: string; email: string } | null>(null);
 
 	const { form, data, errors, isSubmitting, reset } = createForm({
 		initialValues: {
@@ -65,9 +67,68 @@
 		}
 	});
 
+	const {
+		form: deleteForm,
+		data: deleteData,
+		errors: deleteErrors,
+		isSubmitting: isDeleting,
+		reset: resetDelete
+	} = createForm({
+		initialValues: {
+			confirmEmail: ""
+		},
+		validate: (values) => {
+			const errs: Record<string, string> = {};
+			values.confirmEmail = values.confirmEmail.trim();
+
+			if (!values.confirmEmail) {
+				errs.confirmEmail = "メールアドレスの入力は必須です";
+			} else if (values.confirmEmail !== userToDelete?.email) {
+				errs.confirmEmail = "メールアドレスが一致しません";
+			}
+			return errs;
+		},
+		onSubmit: async () => {
+			if (!userToDelete) return;
+
+			try {
+				const response = await fetch(`${PUBLIC_API_URL}/users/${userToDelete.id}`, {
+					method: "DELETE",
+					credentials: "include"
+				});
+
+				if (response.status === 204) {
+					toast.show("ユーザーを削除しました。", "success");
+					userToDelete = null;
+					resetDelete();
+					await invalidateAll();
+					return;
+				}
+
+				const responseData: { error?: string } = await response.json();
+				if (responseData.error) {
+					throw new KnownError(responseData.error);
+				}
+
+				if (!response.ok) {
+					throw new Error(
+						`request to /users/${userToDelete.id} failed with status ${response.status}`
+					);
+				}
+			} catch (err) {
+				toast.showError(err);
+			}
+		}
+	});
+
 	const handleClose = () => {
 		isSlideoverOpen = false;
 		reset();
+	};
+
+	const handleDeleteModalClose = () => {
+		userToDelete = null;
+		resetDelete();
 	};
 
 	const handleResendInvite = async (userId: string) => {
@@ -95,6 +156,10 @@
 		} catch (err) {
 			toast.showError(err);
 		}
+	};
+
+	const handleDeleteUser = (user: { id: string; name: string; email: string }) => {
+		userToDelete = user;
 	};
 
 	const statusMap: Record<string, { label: string; color: "green" | "yellow" | "red" }> = {
@@ -173,6 +238,39 @@
 		</form>
 	{/if}
 
+	{#if userToDelete}
+		<form use:deleteForm class="space-y-6 p-1 flex flex-col h-full">
+			<Slideover
+				title="ユーザーの削除"
+				subtitle={`${userToDelete.name}（${userToDelete.email}）を削除しますか？`}
+				primaryButtonText="削除"
+				primaryButtonTypeSubmit={true}
+				onClose={handleDeleteModalClose}
+				loading={$isDeleting}
+			>
+				<div class="flex-grow space-y-6">
+					<Alert type="danger" title="この操作は元に戻せません。">
+						<p>
+							削除を確認するには、ユーザーのメールアドレス<strong>「{userToDelete.email}」</strong
+							>を入力してください。
+						</p>
+					</Alert>
+					<Input
+						id="confirmEmail"
+						name="confirmEmail"
+						type="email"
+						label="メールアドレスを入力して確認"
+						bind:value={$deleteData.confirmEmail}
+						error={$deleteErrors.confirmEmail?.[0]}
+						required
+						placeholder={userToDelete.email}
+						variant="underlined"
+					/>
+				</div>
+			</Slideover>
+		</form>
+	{/if}
+
 	<div class="mt-8 flow-root">
 		<div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
 			<div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
@@ -225,10 +323,16 @@
 									<td
 										class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6"
 									>
+										{#if user.status === "pending_verification"}
+											<Button
+												variant="link"
+												class="mr-4 text-sm text-red-600 hover:text-red-900"
+												onclick={() => handleDeleteUser(user)}>招待をキャンセル</Button
+											>
+										{/if}
 										<a href="#" class="text-indigo-600 hover:text-indigo-900"
 											>編集<span class="sr-only">, {user.name}</span></a
 										>
-										招待をキャンセル ユーザーを削除
 									</td>
 								</tr>
 							{/each}

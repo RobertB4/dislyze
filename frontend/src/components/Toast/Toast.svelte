@@ -16,9 +16,11 @@
 		autocloseDuration?: number;
 	} = $props();
 
-	let visible = $state(true);
+	let visible = $state(false);
 
 	onMount(() => {
+		visible = true;
+
 		if (autocloseDuration > 0) {
 			const timer = setTimeout(() => {
 				closeToast();
@@ -36,7 +38,7 @@
 
 {#if visible}
 	<div
-		class="fixed left-4 top-4 z-50 min-w-[300px] max-w-[400px] rounded-lg shadow-lg"
+		class="fixed left-4 bottom-4 z-50 min-w-[300px] max-w-[400px] rounded-lg shadow-lg"
 		transition:slide={{ duration: 300 }}
 		role="alert"
 		aria-live="assertive"

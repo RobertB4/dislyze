@@ -19,6 +19,8 @@ type Querier interface {
 	DeleteExpiredRefreshTokens(ctx context.Context) error
 	DeleteInvitationToken(ctx context.Context, id pgtype.UUID) error
 	DeleteInvitationTokensByUserIDAndTenantID(ctx context.Context, arg *DeleteInvitationTokensByUserIDAndTenantIDParams) error
+	DeleteRefreshTokensByUserID(ctx context.Context, userID pgtype.UUID) error
+	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	ExistsUserWithEmail(ctx context.Context, email string) (bool, error)
 	GetInvitationByTokenHash(ctx context.Context, tokenHash string) (*InvitationToken, error)
 	GetRefreshTokenByJTI(ctx context.Context, jti pgtype.UUID) (*RefreshToken, error)

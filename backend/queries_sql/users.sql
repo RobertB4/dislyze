@@ -30,3 +30,11 @@ WHERE id = $1;
 -- name: DeleteInvitationTokensByUserIDAndTenantID :exec
 DELETE FROM invitation_tokens
 WHERE user_id = $1 AND tenant_id = $2;
+
+-- name: DeleteRefreshTokensByUserID :exec
+DELETE FROM refresh_tokens
+WHERE user_id = $1;
+
+-- name: DeleteUser :exec
+DELETE FROM users
+WHERE id = $1;
