@@ -92,10 +92,10 @@
 									<Button
 										type={primaryButtonTypeSubmit ? "submit" : "button"}
 										{loading}
-										on:click={onPrimaryClick}>{primaryButtonText}</Button
+										onclick={onPrimaryClick}>{primaryButtonText}</Button
 									>
 								{/if}
-								<Button variant="secondary" on:click={handleClose}>キャンセル</Button>
+								<Button variant="secondary" onclick={handleClose}>キャンセル</Button>
 							</div>
 						</div>
 					</div>

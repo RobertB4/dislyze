@@ -8,7 +8,7 @@
 		required = false,
 		disabled = false,
 		error,
-		className = "",
+		class: customClass = "",
 		value = $bindable("" as string | number),
 		variant = "default" as "default" | "underlined"
 	}: {
@@ -20,7 +20,7 @@
 		required?: boolean;
 		disabled?: boolean;
 		error?: string | undefined;
-		className?: string;
+		class?: string;
 		value?: string | number;
 		variant?: "default" | "underlined";
 	} = $props();
@@ -47,7 +47,7 @@
 	};
 
 	const inputClass = $derived(
-		`${variantStyles[variant]} ${error ? stateStyles[variant].error : stateStyles[variant].default} ${disabled ? stateStyles[variant].disabled : ""} ${className}`
+		`${variantStyles[variant]} ${error ? stateStyles[variant].error : stateStyles[variant].default} ${disabled ? stateStyles[variant].disabled : ""} ${customClass}`
 	);
 </script>
 

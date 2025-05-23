@@ -14,7 +14,7 @@
 		pageTitle,
 		buttons,
 		children
-	}: { pageTitle: string; buttons?: Snippet; children?: Snippet } = $props();
+	}: { pageTitle: string; buttons?: Snippet; children: Snippet } = $props();
 
 	function toggleMobileNavigation() {
 		isMobileNavigationOpen = !isMobileNavigationOpen;
@@ -53,7 +53,7 @@
 				<div class="absolute top-0 right-0 -mr-12 pt-2">
 					<button
 						type="button"
-						on:click={toggleMobileNavigation}
+						onclick={toggleMobileNavigation}
 						class="ml-1 flex h-10 w-10 items-center justify-center cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
 					>
 						<span class="sr-only">Close sidebar</span>
@@ -80,7 +80,7 @@
 						<a
 							data-testid="navigation-home-mobile"
 							href="/"
-							on:click={toggleMobileNavigation}
+							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 mb-4 text-base rounded-md"
 							class:bg-gray-900={page.route.id === "/"}
 						>
@@ -116,7 +116,7 @@
 						<a
 							data-testid="navigation-custom-fields-mobile"
 							href="/data/custom-fields"
-							on:click={toggleMobileNavigation}
+							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
 							class:bg-gray-900={page.route.id?.includes("/data/custom-fields")}
 						>
@@ -143,7 +143,7 @@
 						<a
 							data-testid="navigation-companies-mobile"
 							href="/data/companies"
-							on:click={toggleMobileNavigation}
+							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
 							class:bg-gray-900={page.route.id?.includes("/data/companies")}
 						>
@@ -170,7 +170,7 @@
 						<a
 							data-testid="navigation-users-mobile"
 							href="/data/users"
-							on:click={toggleMobileNavigation}
+							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
 							class:bg-gray-900={page.route.id?.includes("/data/users")}
 						>
@@ -196,7 +196,7 @@
 						<a
 							data-testid="navigation-segments-mobile"
 							href="/data/segments"
-							on:click={toggleMobileNavigation}
+							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
 							class:bg-gray-900={page.route.id?.includes("/data/segments")}
 						>
@@ -230,7 +230,7 @@
 					<a
 						data-testid="navigation-settings-mobile"
 						href="/settings/users"
-						on:click={toggleMobileNavigation}
+						onclick={toggleMobileNavigation}
 						class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
 						class:bg-gray-900={page.route.id?.includes("/settings")}
 					>
@@ -262,9 +262,9 @@
 						role="menu"
 						tabindex={6}
 						data-testid="navigation-signout-mobile"
-						on:click={toggleMobileNavigation}
+						onclick={toggleMobileNavigation}
 						class="w-full text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md cursor-pointer"
-						on:keypress={() => {}}
+						onkeypress={() => {}}
 					>
 						<!-- Heroicon name: arrow-left-on-rectangle -->
 						<svg
@@ -528,7 +528,7 @@
 				tabindex={6}
 				data-testid="navigation-signout"
 				class=" text-gray-300 hover:bg-gray-700 w-full cursor-pointer hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-				on:click={handleLogout}
+				onclick={handleLogout}
 			>
 				<!-- Heroicon name: arrow-left-on-rectangle -->
 				<svg
@@ -580,7 +580,7 @@
 			<div class="flex items-center px-4 sm:px-6 md:px-8">
 				<button
 					type="button"
-					on:click={toggleMobileNavigation}
+					onclick={toggleMobileNavigation}
 					class="-ml-0.5 -mt-0.5 mr-4 inline-flex cursor-pointer h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 md:hidden"
 				>
 					<span class="sr-only">Open sidebar</span>

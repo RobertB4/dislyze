@@ -1,25 +1,36 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { fade, slide } from 'svelte/transition';
+	import { onMount } from "svelte";
+	import { fade, slide } from "svelte/transition";
 
-	export let text: string;
-	export let mode: 'success' | 'error' | 'info' = 'info';
-	export let onClose: () => void;
+	type ToastMode = "success" | "error" | "info";
 
-	let visible = true;
+	let {
+		text,
+		mode = "info" as ToastMode,
+		onClose,
+		autocloseDuration = 5000
+	}: {
+		text: string;
+		mode?: ToastMode;
+		onClose: () => void;
+		autocloseDuration?: number;
+	} = $props();
+
+	let visible = $state(true);
 
 	onMount(() => {
-		const timer = setTimeout(() => {
-			visible = false;
-			setTimeout(onClose, 300); // Wait for fade out animation
-		}, 5000);
-
-		return () => clearTimeout(timer);
+		if (autocloseDuration > 0) {
+			const timer = setTimeout(() => {
+				closeToast();
+			}, autocloseDuration);
+			return () => clearTimeout(timer);
+		}
 	});
 
-	function handleClose() {
+	function closeToast() {
 		visible = false;
-		setTimeout(onClose, 300);
+		// Wait for fade out animation before calling onClose
+		setTimeout(onClose, 301);
 	}
 </script>
 
@@ -27,19 +38,24 @@
 	<div
 		class="fixed left-4 top-4 z-50 min-w-[300px] max-w-[400px] rounded-lg shadow-lg"
 		transition:slide={{ duration: 300 }}
+		role="alert"
+		aria-live="assertive"
 	>
 		<div
-			class="relative flex items-center justify-between rounded-lg p-4 text-white"
-			class:bg-green-600={mode === 'success'}
-			class:bg-red-600={mode === 'error'}
-			class:bg-blue-600={mode === 'info'}
+			class="relative flex items-center justify-between rounded-lg p-4 text-white {mode ===
+			'success'
+				? 'bg-green-600'
+				: mode === 'error'
+					? 'bg-red-600'
+					: 'bg-blue-600'}"
 			transition:fade={{ duration: 300 }}
 		>
 			<p class="text-sm font-medium">{text}</p>
 			<button
 				type="button"
 				class="ml-4 inline-flex h-5 w-5 flex-shrink-0 rounded-md p-0.5 text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
-				on:click={handleClose}
+				onclick={closeToast}
+				aria-label="閉じる"
 			>
 				<span class="sr-only">Close</span>
 				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

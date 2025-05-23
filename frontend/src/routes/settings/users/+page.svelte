@@ -71,11 +71,23 @@
 		isSlideoverOpen = false;
 		reset();
 	};
+
+	const statusLabelMap: Record<string, string> = {
+		active: "有効",
+		pending_verification: "招待済み",
+		suspended: "停止中"
+	};
+
+	const statusColorMap: Record<string, "green" | "yellow" | "red" | "orange" | "gray"> = {
+		active: "green",
+		pending_verification: "yellow",
+		suspended: "red"
+	};
 </script>
 
 <Layout pageTitle="ユーザー管理">
 	{#snippet buttons()}
-		<Button type="button" variant="primary" on:click={() => (isSlideoverOpen = true)}>
+		<Button type="button" variant="primary" onclick={() => (isSlideoverOpen = true)}>
 			ユーザーを追加
 		</Button>
 	{/snippet}
@@ -162,8 +174,16 @@
 										>{user.name}</td
 									>
 									<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
-										><Badge color="yellow">{user.status}</Badge> 招待メールを再送信</td
-									>
+										><Badge color={statusColorMap[user.status]}>{statusLabelMap[user.status]}</Badge
+										>
+										{#if user.status === "pending_verification"}
+											<Button
+												variant="link"
+												class="ml-2 text-sm text-indigo-600 hover:text-indigo-900"
+												>招待メールを再送信</Button
+											>
+										{/if}
+									</td>
 									<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{user.email}</td>
 									<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{user.role}</td>
 									<td

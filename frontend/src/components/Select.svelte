@@ -121,7 +121,7 @@
 	}
 </script>
 
-<svelte:window on:click={handleClickOutside} />
+<svelte:window onclick={handleClickOutside} />
 
 <div class={customClass}>
 	<label for={id} class="block text-sm/6 font-medium text-gray-900">{label}</label>
@@ -131,7 +131,7 @@
 			{id}
 			type="button"
 			{name}
-			class="grid w-full cursor-default grid-cols-1 rounded-md bg-white py-1.5 pr-2 pl-3 text-left text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+			class="grid w-full cursor-pointer grid-cols-1 rounded-md bg-white py-1.5 pr-2 pl-3 text-left text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-orange-600 sm:text-sm/6"
 			aria-haspopup="listbox"
 			aria-expanded={isOpen}
 			aria-labelledby="{id}-label"
@@ -179,9 +179,9 @@
 						aria-selected={isSelected}
 						tabindex="-1"
 						data-value={option.value}
-						class="relative cursor-default select-none py-2 pr-9 pl-3 {isSelected
-							? 'font-semibold text-indigo-600'
-							: 'text-gray-900'} {isFocused ? 'bg-indigo-50' : ''} hover:bg-indigo-50"
+						class="relative cursor-pointer select-none py-2 pr-9 pl-3 {isSelected
+							? 'font-semibold text-orange-600'
+							: 'text-gray-900'} {isFocused ? 'bg-orange-50' : ''} hover:bg-orange-50"
 						onclick={() => selectOption(option.value)}
 						onkeydown={() => {}}
 						onmouseenter={(e) => (e.target as HTMLLIElement).focus()}
@@ -191,7 +191,7 @@
 							>{option.label}</span
 						>
 						{#if isSelected}
-							<span class="absolute inset-y-0 right-0 flex items-center pr-4 text-indigo-600">
+							<span class="absolute inset-y-0 right-0 flex items-center pr-4 text-orange-600">
 								<svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 									<path
 										fill-rule="evenodd"

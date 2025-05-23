@@ -34,13 +34,13 @@
 		</p>
 		<div class="flex space-x-4">
 			<button
-				on:click={handleReturnToLogin}
+				onclick={handleReturnToLogin}
 				class="rounded bg-blue-600 px-6 py-3 text-lg cursor-pointer font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-150"
 			>
 				ログイン画面へ戻る
 			</button>
 			<button
-				on:click={handleGoHome}
+				onclick={handleGoHome}
 				class="rounded bg-gray-600 px-6 py-3 text-lg cursor-pointer font-semibold text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition-colors duration-150"
 			>
 				ダッシュボードへ

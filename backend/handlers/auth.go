@@ -266,8 +266,16 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
+	if user.Status == "pending_verification" {
+		return nil, fmt.Errorf("アカウントが有効化されていません。招待メールを確認し、登録を完了してください。")
+	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
 		return nil, fmt.Errorf("メールアドレスまたはパスワードが正しくありません")
+	}
+
+	if user.Status == "suspended" {
+		return nil, fmt.Errorf("アカウントが停止されています。サポートにお問い合わせください。")
 	}
 
 	tenant, err := h.queries.GetTenantByID(ctx, user.TenantID)
