@@ -1,5 +1,7 @@
 import { redirect, error as svelteKitError } from "@sveltejs/kit";
 import { PUBLIC_API_URL } from "$env/static/public";
+import { KnownError } from "./errors";
+import { toast } from "$components/Toast/toast";
 
 /**
  * For use in the `load` function to fetch data for the page.
@@ -14,9 +16,9 @@ export async function loadFunctionFetch(
 ): Promise<Response> {
 	let response: Response;
 	try {
-		const opt = options ?? {};
-		opt.credentials = "include";
-		response = await loadEventFetch(url, opt);
+		const requestOptions = options ?? {};
+		requestOptions.credentials = requestOptions.credentials ?? "include";
+		response = await loadEventFetch(url, requestOptions);
 	} catch (networkError) {
 		console.error(`loadFunctionFetch: Network error for URL ${url.toString()}:`, networkError);
 		throw svelteKitError(
@@ -67,6 +69,78 @@ export async function loadFunctionFetch(
 		}
 
 		throw redirect(307, "/auth/login");
+	}
+
+	return response;
+}
+
+/**
+ * For use in Svelte components for mutations (POST, PUT, DELETE).
+ * Handles common error cases and 401 redirection.
+ */
+export async function mutationFetch(
+	url: string | URL | Request,
+	options?: RequestInit
+): Promise<Response & { success: boolean }> {
+	let response: Response & { success: boolean };
+	const requestOptions = options ?? {};
+	requestOptions.credentials = requestOptions.credentials ?? "include";
+
+	try {
+		response = (await fetch(url, requestOptions)) as Response & { success: boolean };
+	} catch (networkError) {
+		toast.showError();
+		throw new Error(`mutationFetch: Network error for URL ${url.toString()}: ${networkError}`);
+	}
+
+	if (response.status === 401) {
+		try {
+			const logoutResponse = await fetch(`${PUBLIC_API_URL}/auth/logout`, {
+				method: "POST",
+				credentials: "include"
+			});
+			if (!logoutResponse.ok) {
+				console.error(
+					`mutationFetch: Logout attempt failed with status ${logoutResponse.status}. Body: ${await logoutResponse.text()}`
+				);
+			}
+		} catch (logoutAttemptError) {
+			toast.showError();
+			throw new Error(`mutationFetch: Logout attempt network error: ${logoutAttemptError}`);
+		}
+
+		window.location.href = "/auth/login";
+	}
+
+	if (
+		response.status >= 400 &&
+		response.headers.get("content-type")?.includes("application/json")
+	) {
+		try {
+			const clonedResponse = response.clone();
+			const body = await clonedResponse.json();
+			if (body && typeof body.error === "string") {
+				toast.showError(new KnownError(body.error));
+				response.success = false;
+			}
+		} catch (jsonError) {
+			console.warn(
+				"mutationFetch: Could not parse JSON body for error key or body not JSON:",
+				jsonError
+			);
+		}
+	}
+
+	if (
+		response.status >= 400 &&
+		!response.headers.get("content-type")?.includes("application/json")
+	) {
+		toast.showError();
+		response.success = false;
+	}
+
+	if (response.status >= 200 && response.status <= 204) {
+		response.success = true;
 	}
 
 	return response;

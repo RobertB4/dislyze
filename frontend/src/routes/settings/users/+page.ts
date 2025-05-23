@@ -13,9 +13,7 @@ type User = {
 };
 
 export const load: PageLoad = async ({ fetch }) => {
-	const response = await loadFunctionFetch(fetch, `${PUBLIC_API_URL}/users`, {
-		credentials: "include"
-	});
+	const response = await loadFunctionFetch(fetch, `${PUBLIC_API_URL}/users`);
 
 	const users: User[] = await response.json();
 	return { users };

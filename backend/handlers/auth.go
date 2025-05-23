@@ -402,7 +402,6 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 	})
 
-	// Clear dislyze_refresh_token cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "dislyze_refresh_token",
 		Value:    "",
@@ -413,7 +412,6 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 	})
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -482,7 +480,7 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, pgx.ErrNoRows) {
 			errors.LogError(fmt.Errorf("AcceptInvite: token not found or expired for hash %s", hashedTokenStr))
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized) // Token invalid or expired
+			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(map[string]string{"error": "招待リンクが無効か、期限切れです。お手数ですが、招待者に再度依頼してください。"})
 			return
 		}

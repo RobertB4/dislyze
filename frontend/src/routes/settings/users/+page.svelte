@@ -12,7 +12,7 @@
 	import Badge from "$components/Badge.svelte";
 	import Select from "$components/Select.svelte";
 	import Alert from "$components/Alert.svelte";
-	import { me, meStore } from "$lib/stores/meStore";
+	import { mutationFetch } from "$lib/fetch";
 
 	let { data: pageData }: { data: PageData } = $props();
 
@@ -132,29 +132,14 @@
 	};
 
 	const handleResendInvite = async (userId: string) => {
-		try {
-			const response = await fetch(`${PUBLIC_API_URL}/users/${userId}/resend-invite`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				credentials: "include"
-			});
-
-			const responseData: { error?: string } = await response.json();
-			if (responseData.error) {
-				throw new KnownError(responseData.error);
+		const { success } = await mutationFetch(`${PUBLIC_API_URL}/users/${userId}/resend-invite`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
 			}
-
-			if (!response.ok) {
-				throw new Error(
-					`request to /users/${userId}/resend-invite failed with status ${response.status}`
-				);
-			}
-
+		});
+		if (success) {
 			toast.show("招待メールを送信しました。", "success");
-		} catch (err) {
-			toast.showError(err);
 		}
 	};
 

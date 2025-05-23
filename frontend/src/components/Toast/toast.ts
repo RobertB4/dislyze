@@ -1,7 +1,7 @@
-import { writable } from 'svelte/store';
-import { KnownError } from '$lib/errors';
+import { writable } from "svelte/store";
+import { KnownError } from "$lib/errors";
 
-export type ToastMode = 'success' | 'error' | 'info';
+export type ToastMode = "success" | "error" | "info";
 
 interface Toast {
 	id: number;
@@ -15,16 +15,16 @@ function createToastStore() {
 
 	return {
 		subscribe,
-		show: (textOrError: string | KnownError, mode: ToastMode = 'info') => {
+		show: (textOrError: string | KnownError, mode: ToastMode = "info") => {
 			const id = nextId++;
 			const text = textOrError instanceof KnownError ? textOrError.message : textOrError;
 			update((toasts) => [...toasts, { id, text, mode }]);
 			return id;
 		},
-		showError: (error: unknown) => {
+		showError: (error?: unknown) => {
 			const id = nextId++;
-			const text = error instanceof KnownError ? error.message : '予期せぬエラーが発生しました';
-			update((toasts) => [...toasts, { id, text, mode: 'error' }]);
+			const text = error instanceof KnownError ? error.message : "予期せぬエラーが発生しました";
+			update((toasts) => [...toasts, { id, text, mode: "error" }]);
 			return id;
 		},
 		remove: (id: number) => {
