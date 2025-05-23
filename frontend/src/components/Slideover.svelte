@@ -56,7 +56,7 @@
 										<button
 											type="button"
 											onclick={handleClose}
-											class="text-gray-400 hover:text-gray-500"
+											class="text-gray-400 hover:text-gray-500 cursor-pointer"
 										>
 											<span class="sr-only">Close panel</span>
 											<!-- Heroicon name: outline/x-mark -->

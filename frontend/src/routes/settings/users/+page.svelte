@@ -18,12 +18,12 @@
 	};
 </script>
 
-<Layout>
-	<div slot="buttons">
-		<Button type="button" variant="primary" on:click={() => (isSlideoverOpen = true)}
-			>ユーザーを追加</Button
-		>
-	</div>
+<Layout pageTitle="ユーザー管理">
+	{#snippet buttons()}
+		<Button type="button" variant="primary" on:click={() => (isSlideoverOpen = true)}>
+			ユーザーを追加
+		</Button>
+	{/snippet}
 
 	{#if isSlideoverOpen}
 		<Slideover

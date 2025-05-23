@@ -1,7 +1,7 @@
 <script lang="ts">
-	import Layout from '$components/Layout.svelte';
+	import Layout from "$components/Layout.svelte";
 </script>
 
-<Layout>
+<Layout pageTitle="Dashboard">
 	<h1>SvelteKit Frontend</h1>
 </Layout>

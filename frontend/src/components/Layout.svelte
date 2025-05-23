@@ -5,8 +5,16 @@
 	import { PUBLIC_API_URL } from "$env/static/public";
 	import { errorStore } from "$lib/errors";
 	import { slide } from "svelte/transition";
+	import type { Snippet } from "svelte";
 
-	let isMobileNavigationOpen = false;
+	let isMobileNavigationOpen = $state(false);
+
+	// Declare snippet props
+	let {
+		pageTitle,
+		buttons,
+		children
+	}: { pageTitle: string; buttons?: Snippet; children?: Snippet } = $props();
 
 	function toggleMobileNavigation() {
 		isMobileNavigationOpen = !isMobileNavigationOpen;
@@ -594,14 +602,16 @@
 					</svg>
 				</button>
 
-				<h1 class="text-2xl font-semibold text-gray-900 pr-2 hidden md:block">page title</h1>
+				<h1 class="text-2xl font-semibold text-gray-900 pr-2 hidden md:block">{pageTitle}</h1>
 			</div>
 			<div class="px-4 sm:px-6 md:px-8">
-				<slot name="buttons" />
+				{#if buttons}
+					{@render buttons()}
+				{/if}
 			</div>
 		</div>
 		<div class="py-6 px-4 sm:px-6 md:px-8">
-			<slot />
+			{@render children()}
 		</div>
 	</main>
 </div>
