@@ -24,25 +24,15 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 
 	if (url.pathname.startsWith("/auth")) {
 		// SCENARIO A: User is on an /auth page (e.g., /auth/login)
-		console.log("+layout.ts: On an auth path. Checking if user is already logged in...");
 		try {
 			const response = await loadFunctionFetch(fetch, `${PUBLIC_API_URL}/me`);
-			console.log("User is logged in, /me response status:", response.status);
-
 			if (response.ok) {
 				const user = (await response.json()) as User;
-				console.log("User object from /me:", user);
 				// Check for a valid user identifier (user_id from your meStore.ts User interface)
 				if (user && user.user_id) {
-					console.log(
-						"+layout.ts: User is logged in (id: ${user.user_id}). Redirecting from auth page to '/'."
-					);
 					throw redirect(307, "/"); // User is logged in, redirect from /auth page
 				}
 				// Got 200 OK but no valid user data from /me (e.g. API returns {} or specific non-error for no session)
-				console.log(
-					"+layout.ts: On auth path, /users/me successful but indicates no active session. Allowing auth page."
-				);
 				initialUser = null;
 			} else {
 				// Response was not .ok (e.g. 400, 422 from /users/me) and not an error loadFunctionFetch throws for.
@@ -56,9 +46,6 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 		} catch (err: unknown) {
 			// If loadFunctionFetch threw a redirect to /auth/login (e.g. from a 401 on /users/me)
 			if (isRedirect(err) && err.location === "/auth/login") {
-				console.log(
-					"+layout.ts: On auth path, /users/me led to 401 (redirect to login). Expected. Allowing auth page."
-				);
 				initialUser = null; // User not logged in, allow auth page
 			} else {
 				// For any other error (e.g., 500 server error on /users/me, network error from loadFunctionFetch)

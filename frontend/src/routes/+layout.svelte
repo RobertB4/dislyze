@@ -39,9 +39,6 @@
 				}
 			} else {
 				// No initialUser in data after mount, and no error page. Stop loading.
-				console.log(
-					"+layout.svelte: onMount - Fallback: no initialUser, no page error. Setting loading false."
-				);
 				setMeStoreLoading(false);
 			}
 		}

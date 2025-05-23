@@ -62,7 +62,6 @@
 				reset();
 				await invalidateAll();
 			} catch (err) {
-				console.log("catch", err);
 				toast.showError(err);
 			}
 		}

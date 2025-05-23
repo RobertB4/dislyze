@@ -41,9 +41,6 @@ export async function loadFunctionFetch(
 	}
 
 	if (response.status === 401) {
-		console.log(
-			`loadFunctionFetch: Received 401 from ${response.url}. Attempting logout before redirecting to login.`
-		);
 		try {
 			const logoutResponse = await loadEventFetch(`${PUBLIC_API_URL}/auth/logout`, {
 				method: "POST",
