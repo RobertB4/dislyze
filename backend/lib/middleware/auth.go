@@ -47,7 +47,7 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 		var initialTokenErr error
 
 		// 1. Try to get and validate existing access token from cookie
-		accessCookie, err := r.Cookie("access_token")
+		accessCookie, err := r.Cookie("dislyze_access_token")
 		if err == nil { // Access token cookie exists
 			claims, validationErr := jwt.ValidateToken(accessCookie.Value, []byte(m.env.JWTSecret))
 			if validationErr == nil { // Token is valid
@@ -55,7 +55,7 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 			} else {
 				initialTokenErr = validationErr
 				logger.LogAuthEvent(logger.AuthEvent{
-					EventType: "invalid_access_token",
+					EventType: "invalid_dislyze_access_token",
 					IPAddress: r.RemoteAddr,
 					UserAgent: r.UserAgent(),
 					Timestamp: time.Now(),
@@ -100,7 +100,7 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 }
 
 func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Request) (*jwt.Claims, error) {
-	refreshCookie, err := r.Cookie("refresh_token")
+	refreshCookie, err := r.Cookie("dislyze_refresh_token")
 	if err != nil {
 		return nil, errors.New("no refresh token")
 	}
@@ -194,7 +194,7 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
+		Name:     "dislyze_access_token",
 		Value:    newAccessTokenString,
 		Path:     "/",
 		HttpOnly: true,
@@ -204,7 +204,7 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 	})
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
+		Name:     "dislyze_refresh_token",
 		Value:    newRefreshTokenString,
 		Path:     "/",
 		HttpOnly: true,

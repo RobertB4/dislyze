@@ -154,9 +154,9 @@ func TestSignup(t *testing.T) {
 				var accessToken, refreshToken *http.Cookie
 				for _, cookie := range cookies {
 					switch cookie.Name {
-					case "access_token":
+					case "dislyze_access_token":
 						accessToken = cookie
-					case "refresh_token":
+					case "dislyze_refresh_token":
 						refreshToken = cookie
 					}
 				}
@@ -308,9 +308,9 @@ func TestLogin(t *testing.T) {
 				var accessToken, refreshToken *http.Cookie
 				for _, cookie := range cookies {
 					switch cookie.Name {
-					case "access_token":
+					case "dislyze_access_token":
 						accessToken = cookie
-					case "refresh_token":
+					case "dislyze_refresh_token":
 						refreshToken = cookie
 					}
 				}

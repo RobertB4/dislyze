@@ -74,7 +74,7 @@ func TestGetUsers_Integration(t *testing.T) {
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 				req.AddCookie(&http.Cookie{
-					Name:  "access_token",
+					Name:  "dislyze_access_token",
 					Value: accessToken,
 					Path:  "/",
 				})
@@ -237,7 +237,7 @@ func TestInviteUser_Integration(t *testing.T) {
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 				req.AddCookie(&http.Cookie{
-					Name:  "access_token",
+					Name:  "dislyze_access_token",
 					Value: accessToken,
 					Path:  "/",
 				})

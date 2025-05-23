@@ -102,9 +102,9 @@ func LoginUserAndGetTokens(t *testing.T, email string, password string) (string,
 	cookies := resp.Cookies()
 	for _, cookie := range cookies {
 		switch cookie.Name {
-		case "access_token":
+		case "dislyze_access_token":
 			accessTokenValue = cookie.Value
-		case "refresh_token":
+		case "dislyze_refresh_token":
 			refreshTokenValue = cookie.Value
 		}
 	}

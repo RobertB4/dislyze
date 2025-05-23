@@ -219,7 +219,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
+		Name:     "dislyze_access_token",
 		Value:    tokenPair.AccessToken,
 		Path:     "/",
 		HttpOnly: true,
@@ -229,7 +229,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	})
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
+		Name:     "dislyze_refresh_token",
 		Value:    tokenPair.RefreshToken,
 		Path:     "/",
 		HttpOnly: true,
@@ -363,7 +363,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
+		Name:     "dislyze_access_token",
 		Value:    tokenPair.AccessToken,
 		Path:     "/",
 		HttpOnly: true,
@@ -373,7 +373,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	})
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
+		Name:     "dislyze_refresh_token",
 		Value:    tokenPair.RefreshToken,
 		Path:     "/",
 		HttpOnly: true,
@@ -393,7 +393,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
+		Name:     "dislyze_access_token",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
@@ -402,9 +402,9 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 	})
 
-	// Clear refresh_token cookie
+	// Clear dislyze_refresh_token cookie
 	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
+		Name:     "dislyze_refresh_token",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
@@ -556,7 +556,7 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
+		Name:     "dislyze_access_token",
 		Value:    tokenPair.AccessToken,
 		Path:     "/",
 		HttpOnly: true,
@@ -566,7 +566,7 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 	})
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
+		Name:     "dislyze_refresh_token",
 		Value:    tokenPair.RefreshToken,
 		Path:     "/",
 		HttpOnly: true,
