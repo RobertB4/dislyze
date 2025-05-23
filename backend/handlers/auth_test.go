@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSignupRequest_Validate(t *testing.T) {
@@ -304,6 +306,89 @@ func TestLoginRequest_Validate(t *testing.T) {
 			err := tt.request.Validate()
 			if err != tt.wantErr {
 				t.Errorf("LoginRequest.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestAcceptInviteRequest_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		req     AcceptInviteRequest
+		wantErr bool
+		errText string
+	}{
+		{
+			name: "valid request",
+			req: AcceptInviteRequest{
+				Token:           "valid-token-string",
+				Password:        "password123",
+				PasswordConfirm: "password123",
+			},
+			wantErr: false,
+		},
+		{
+			name: "empty token",
+			req: AcceptInviteRequest{
+				Token:           " ", // Test with whitespace
+				Password:        "password123",
+				PasswordConfirm: "password123",
+			},
+			wantErr: true,
+			errText: "token is required",
+		},
+		{
+			name: "empty password",
+			req: AcceptInviteRequest{
+				Token:           "valid-token-string",
+				Password:        "",
+				PasswordConfirm: "password123",
+			},
+			wantErr: true,
+			errText: "password is required",
+		},
+		{
+			name: "password too short",
+			req: AcceptInviteRequest{
+				Token:           "valid-token-string",
+				Password:        "pass",
+				PasswordConfirm: "pass",
+			},
+			wantErr: true,
+			errText: "password must be at least 8 characters long",
+		},
+		{
+			name: "passwords do not match",
+			req: AcceptInviteRequest{
+				Token:           "valid-token-string",
+				Password:        "password123",
+				PasswordConfirm: "password456",
+			},
+			wantErr: true,
+			errText: "passwords do not match",
+		},
+		{
+			name: "password confirm empty when password is not",
+			req: AcceptInviteRequest{
+				Token:           "valid-token-string",
+				Password:        "password123",
+				PasswordConfirm: "",
+			},
+			wantErr: true,
+			errText: "passwords do not match",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.req.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errText != "" {
+					assert.EqualError(t, err, tt.errText)
+				}
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
