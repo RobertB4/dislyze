@@ -8,6 +8,7 @@
 	import { toast } from "$components/Toast/toast";
 	import { PUBLIC_API_URL } from "$env/static/public";
 	import { KnownError } from "$lib/errors";
+	import { invalidateAll } from "$app/navigation";
 
 	let { data: pageData }: { data: PageData } = $props();
 
@@ -50,12 +51,13 @@
 				console.log({ responseData });
 
 				if (responseData.error) {
-					throw new KnownError(responseData.error || "招待の送信に失敗しました。");
+					throw new KnownError(responseData.error);
 				}
 
 				toast.show("ユーザーを招待しました。", "success");
 				isSlideoverOpen = false;
 				reset();
+				await invalidateAll();
 			} catch (err) {
 				console.log("catch", err);
 				toast.showError(err);
@@ -96,6 +98,7 @@
 						error={$errors.email?.[0]}
 						required
 						placeholder="user@example.com"
+						variant="underlined"
 					/>
 					<Input
 						id="name"
@@ -106,6 +109,7 @@
 						error={$errors.name?.[0]}
 						required
 						placeholder="山田 太郎"
+						variant="underlined"
 					/>
 					<div>
 						<label for="role" class="block text-sm font-medium text-gray-700">役割</label>

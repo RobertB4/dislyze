@@ -1,44 +1,59 @@
 <script lang="ts">
-	export let type: "text" | "email" | "password" | "number" | "tel" | "url" = "text";
-	export let id: string;
-	export let name: string;
-	export let label: string;
-	export let placeholder = "";
-	export let required = false;
-	export let disabled = false;
-	export let error: string | undefined = undefined;
-	export let className = "";
-	export let value: string | number = "";
+	let {
+		type = "text" as "text" | "email" | "password" | "number" | "tel" | "url",
+		id,
+		name,
+		label,
+		placeholder = "",
+		required = false,
+		disabled = false,
+		error,
+		className = "",
+		value = $bindable("" as string | number),
+		variant = "default" as "default" | "underlined"
+	}: {
+		type?: "text" | "email" | "password" | "number" | "tel" | "url";
+		id: string;
+		name: string;
+		label: string;
+		placeholder?: string;
+		required?: boolean;
+		disabled?: boolean;
+		error?: string | undefined;
+		className?: string;
+		value?: string | number;
+		variant?: "default" | "underlined";
+	} = $props();
 
-	const baseStyles =
-		"appearance-none rounded-md relative block w-full px-3 py-2 border text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm";
-	const stateStyles = {
-		default: "border-gray-300 placeholder-gray-500",
-		error: "border-red-300 placeholder-red-300",
-		disabled: "bg-gray-100 cursor-not-allowed"
+	const variantStyles = {
+		default:
+			"appearance-none rounded-md relative block w-full px-3 py-2 border text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm",
+		underlined:
+			"appearance-none bg-transparent block w-full px-1 py-2 border-0 border-b-2 text-gray-900 focus:outline-none focus:ring-0 sm:text-sm" // Base for underlined
 	};
 
-	$: inputClass = `${baseStyles} ${error ? stateStyles.error : stateStyles.default} ${
-		disabled ? stateStyles.disabled : ""
-	} ${className}`;
+	const stateStyles = {
+		default: {
+			default: "border-gray-300 placeholder-gray-500",
+			error:
+				"border-red-300 placeholder-red-300 text-red-900 focus:border-red-500 focus:ring-red-500",
+			disabled: "border-gray-300 bg-gray-100 cursor-not-allowed"
+		},
+		underlined: {
+			default: "border-gray-300 placeholder-gray-500 focus:border-indigo-600",
+			error: "border-red-500 placeholder-red-400 text-red-700 focus:border-red-600",
+			disabled: "border-gray-300 bg-transparent cursor-not-allowed opacity-50"
+		}
+	};
+
+	const inputClass = $derived(
+		`${variantStyles[variant]} ${error ? stateStyles[variant].error : stateStyles[variant].default} ${disabled ? stateStyles[variant].disabled : ""} ${className}`
+	);
 </script>
 
 <div>
 	<label for={id} class="sr-only">{label}</label>
-	<input
-		{id}
-		{name}
-		{type}
-		{required}
-		{disabled}
-		{placeholder}
-		{value}
-		class={inputClass}
-		on:input
-		on:change
-		on:blur
-		on:focus
-	/>
+	<input {id} {name} {type} {required} {disabled} {placeholder} {value} class={inputClass} />
 	{#if error}
 		<p class="mt-1 text-sm text-red-600">{error}</p>
 	{/if}

@@ -22,6 +22,7 @@ import (
 	"lugia/lib/config"
 	libctx "lugia/lib/ctx"
 	"lugia/lib/errors"
+	"lugia/lib/jwt"
 	"lugia/queries"
 )
 
@@ -272,7 +273,7 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	subject := fmt.Sprintf("%sさんから%s様へのdislyzeへのご招待", inviterDBUser.Name, req.Name)
-	invitationLink := fmt.Sprintf("https://%s/accept-invite?token=%s&inviter_name=%s&invited_email=%s",
+	invitationLink := fmt.Sprintf("%s/auth/accept-invite?token=%s&inviter_name=%s&invited_email=%s",
 		h.env.FrontendURL,
 		plaintextToken,
 		url.QueryEscape(inviterDBUser.Name),
@@ -397,6 +398,7 @@ func (h *UsersHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, pgx.ErrNoRows) {
 			errors.LogError(fmt.Errorf("AcceptInvite: token not found or expired for hash %s", hashedTokenStr))
 			w.WriteHeader(http.StatusUnauthorized) // Token invalid or expired
+			json.NewEncoder(w).Encode(map[string]string{"error": "招待リンクが無効か、期限切れです。お手数ですが、招待者に再度依頼してください。"})
 			return
 		}
 		errors.LogError(fmt.Errorf("AcceptInvite: GetInvitationByTokenHash failed: %w", err))
@@ -420,6 +422,7 @@ func (h *UsersHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 		errors.LogError(fmt.Errorf("AcceptInvite: user %s status is '%s', expected 'pending_verification' for token %s", dbUser.ID.String(), dbUser.Status, hashedTokenStr))
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "このユーザーはすでに承諾済みです。"})
 		return
 	}
 
@@ -447,6 +450,46 @@ func (h *UsersHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tokenPair, err := jwt.GenerateTokenPair(dbUser.ID, invitationTokenRecord.TenantID, dbUser.Role, []byte(h.env.JWTSecret))
+	if err != nil {
+		errors.LogError(fmt.Errorf("AcceptInvite: failed to generate token pair: %w", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	_, err = qtx.CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
+		UserID:     dbUser.ID,
+		Jti:        tokenPair.JTI,
+		DeviceInfo: pgtype.Text{String: r.UserAgent(), Valid: true},
+		IpAddress:  pgtype.Text{String: r.RemoteAddr, Valid: true},
+		ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
+	})
+	if err != nil {
+		errors.LogError(fmt.Errorf("AcceptInvite: failed to store refresh token: %w", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    tokenPair.AccessToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   int(tokenPair.ExpiresIn),
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    tokenPair.RefreshToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   7 * 24 * 60 * 60, // 7 days
+	})
+
 	if err := tx.Commit(ctx); err != nil {
 		errors.LogError(fmt.Errorf("AcceptInvite: failed to commit transaction: %w", err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -454,4 +497,5 @@ func (h *UsersHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
