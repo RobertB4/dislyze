@@ -7,7 +7,6 @@
 	import Input from "$components/Input.svelte";
 	import { toast } from "$components/Toast/toast";
 	import { PUBLIC_API_URL } from "$env/static/public";
-	import { KnownError } from "$lib/errors";
 	import { invalidateAll } from "$app/navigation";
 	import Badge from "$components/Badge.svelte";
 	import Select from "$components/Select.svelte";
@@ -41,28 +40,19 @@
 			return errs;
 		},
 		onSubmit: async (values) => {
-			try {
-				const response = await fetch(`${PUBLIC_API_URL}/users/invite`, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json"
-					},
-					body: JSON.stringify(values),
-					credentials: "include"
-				});
+			const { success } = await mutationFetch(`${PUBLIC_API_URL}/users/invite`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify(values)
+			});
 
-				const responseData: { error?: string } = await response.json();
-
-				if (responseData.error) {
-					throw new KnownError(responseData.error);
-				}
-
+			if (success) {
 				toast.show("ユーザーを招待しました。", "success");
 				isSlideoverOpen = false;
 				reset();
 				await invalidateAll();
-			} catch (err) {
-				toast.showError(err);
 			}
 		}
 	});
@@ -91,32 +81,16 @@
 		onSubmit: async () => {
 			if (!userToDelete) return;
 
-			try {
-				const response = await fetch(`${PUBLIC_API_URL}/users/${userToDelete.id}`, {
-					method: "DELETE",
-					credentials: "include"
-				});
+			const { success } = await mutationFetch(`${PUBLIC_API_URL}/users/${userToDelete.id}`, {
+				method: "DELETE"
+			});
 
-				if (response.status === 204) {
-					toast.show("ユーザーを削除しました。", "success");
-					userToDelete = null;
-					resetDelete();
-					await invalidateAll();
-					return;
-				}
-
-				const responseData: { error?: string } = await response.json();
-				if (responseData.error) {
-					throw new KnownError(responseData.error);
-				}
-
-				if (!response.ok) {
-					throw new Error(
-						`request to /users/${userToDelete.id} failed with status ${response.status}`
-					);
-				}
-			} catch (err) {
-				toast.showError(err);
+			if (success) {
+				toast.show("ユーザーを削除しました。", "success");
+				userToDelete = null;
+				resetDelete();
+				await invalidateAll();
+				return;
 			}
 		}
 	});
@@ -138,6 +112,7 @@
 				"Content-Type": "application/json"
 			}
 		});
+
 		if (success) {
 			toast.show("招待メールを送信しました。", "success");
 		}

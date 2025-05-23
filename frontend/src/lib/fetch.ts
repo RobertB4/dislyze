@@ -77,17 +77,19 @@ export async function loadFunctionFetch(
 /**
  * For use in Svelte components for mutations (POST, PUT, DELETE).
  * Handles common error cases and 401 redirection.
+ * It is not needed to catch the error of this function unless there is a reason to.
  */
 export async function mutationFetch(
 	url: string | URL | Request,
 	options?: RequestInit
-): Promise<Response & { success: boolean }> {
-	let response: Response & { success: boolean };
+): Promise<{ response: Response; success: boolean }> {
+	let response: Response;
+	let success = false;
 	const requestOptions = options ?? {};
 	requestOptions.credentials = requestOptions.credentials ?? "include";
 
 	try {
-		response = (await fetch(url, requestOptions)) as Response & { success: boolean };
+		response = await fetch(url, requestOptions);
 	} catch (networkError) {
 		toast.showError();
 		throw new Error(`mutationFetch: Network error for URL ${url.toString()}: ${networkError}`);
@@ -121,7 +123,7 @@ export async function mutationFetch(
 			const body = await clonedResponse.json();
 			if (body && typeof body.error === "string") {
 				toast.showError(new KnownError(body.error));
-				response.success = false;
+				success = false;
 			}
 		} catch (jsonError) {
 			console.warn(
@@ -136,12 +138,12 @@ export async function mutationFetch(
 		!response.headers.get("content-type")?.includes("application/json")
 	) {
 		toast.showError();
-		response.success = false;
+		success = false;
 	}
 
 	if (response.status >= 200 && response.status <= 204) {
-		response.success = true;
+		success = true;
 	}
 
-	return response;
+	return { response, success };
 }

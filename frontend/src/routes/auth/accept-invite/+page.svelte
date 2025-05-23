@@ -6,7 +6,7 @@
 	import type { PageData } from "./$types";
 	import { toast } from "$components/Toast/toast";
 	import { goto } from "$app/navigation";
-	import { KnownError } from "$lib/errors";
+	import { mutationFetch } from "$lib/fetch";
 
 	let { data: pageData }: { data: PageData } = $props();
 
@@ -36,30 +36,21 @@
 			return errs;
 		},
 		onSubmit: async (values) => {
-			try {
-				const response = await fetch(`${PUBLIC_API_URL}/auth/accept-invite`, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json"
-					},
-					body: JSON.stringify({
-						token: pageData.token,
-						password: values.password,
-						password_confirm: values.password_confirm
-					}),
-					credentials: "include"
-				});
+			const { success } = await mutationFetch(`${PUBLIC_API_URL}/auth/accept-invite`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({
+					token: pageData.token,
+					password: values.password,
+					password_confirm: values.password_confirm
+				})
+			});
 
-				const responseData: { error?: string } = await response.json();
-
-				if (responseData.error) {
-					throw new KnownError(responseData.error);
-				}
-
+			if (success) {
 				toast.show("招待が承認されました。", "success");
 				goto("/");
-			} catch (err) {
-				toast.showError(err);
 			}
 		}
 	});
