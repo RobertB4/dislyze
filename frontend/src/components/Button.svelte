@@ -1,22 +1,22 @@
 <script lang="ts">
-	export let type: 'button' | 'submit' | 'reset' = 'button';
+	export let type: "button" | "submit" | "reset" = "button";
 	export let disabled = false;
 	export let loading = false;
-	export let variant: 'primary' | 'secondary' | 'danger' = 'primary';
+	export let variant: "primary" | "secondary" | "danger" = "primary";
 	export let fullWidth = false;
-	export let className = '';
+	export let className = "";
 
 	const baseStyles =
-		'group relative flex justify-center cursor-pointer py-2 px-4 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+		"group relative flex justify-center cursor-pointer py-2 px-4 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
 	const variantStyles = {
 		primary:
-			'border-transparent text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500',
-		secondary: 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-indigo-500',
-		danger: 'border-transparent text-white bg-red-600 hover:bg-red-700 focus:ring-red-500'
+			"border-transparent text-white bg-orange-600 hover:bg-orange-700 focus:ring-orange-500",
+		secondary: "border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-orange-500",
+		danger: "border-transparent text-white bg-red-600 hover:bg-red-700 focus:ring-red-500"
 	};
 
-	$: widthClass = fullWidth ? 'w-full' : '';
+	$: widthClass = fullWidth ? "w-full" : "";
 	$: buttonClass = `${baseStyles} ${variantStyles[variant]} ${widthClass} ${className}`;
 </script>
 

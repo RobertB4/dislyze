@@ -7,7 +7,7 @@
 	import Input from "$components/Input.svelte";
 	import { KnownError } from "$lib/errors";
 
-	const { form, errors, data, isValid, isSubmitting } = createForm({
+	const { form, errors, data, isSubmitting } = createForm({
 		initialValues: {
 			company_name: "",
 			user_name: "",
@@ -28,7 +28,7 @@
 				errors.company_name = "会社名は必須です";
 			}
 			if (!values.user_name) {
-				errors.user_name = "ユーザー名は必須です";
+				errors.user_name = "氏名は必須です";
 			}
 			if (!values.email) {
 				errors.email = "メールアドレスは必須です";
@@ -103,8 +103,8 @@
 					id="user_name"
 					name="user_name"
 					type="text"
-					label="お名前"
-					placeholder="お名前"
+					label="氏名"
+					placeholder="氏名"
 					required
 					bind:value={$data.user_name}
 					error={$errors.user_name?.[0]}
@@ -145,9 +145,7 @@
 			</div>
 
 			<div>
-				<Button type="submit" disabled={!$isValid} loading={$isSubmitting} fullWidth>
-					アカウントを作成
-				</Button>
+				<Button type="submit" loading={$isSubmitting} fullWidth>アカウントを作成</Button>
 			</div>
 		</form>
 	</div>

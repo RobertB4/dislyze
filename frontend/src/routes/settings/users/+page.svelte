@@ -9,6 +9,8 @@
 	import { PUBLIC_API_URL } from "$env/static/public";
 	import { KnownError } from "$lib/errors";
 	import { invalidateAll } from "$app/navigation";
+	import Badge from "$components/Badge.svelte";
+	import Select from "$components/Select.svelte";
 
 	let { data: pageData }: { data: PageData } = $props();
 
@@ -18,7 +20,7 @@
 		initialValues: {
 			email: "",
 			name: "",
-			role: "user"
+			role: "editor"
 		},
 		validate: (values) => {
 			const errs: Record<string, string> = {};
@@ -26,7 +28,7 @@
 			values.name = values.name.trim();
 
 			if (!values.name) {
-				errs.name = "名前は必須です";
+				errs.name = "氏名は必須です";
 			}
 			if (!values.email) {
 				errs.email = "メールアドレスは必須です";
@@ -97,32 +99,30 @@
 						bind:value={$data.email}
 						error={$errors.email?.[0]}
 						required
-						placeholder="user@example.com"
+						placeholder="メールアドレス"
 						variant="underlined"
 					/>
 					<Input
 						id="name"
 						name="name"
 						type="text"
-						label="名前"
+						label="氏名"
 						bind:value={$data.name}
 						error={$errors.name?.[0]}
 						required
-						placeholder="山田 太郎"
+						placeholder="氏名"
 						variant="underlined"
 					/>
-					<div>
-						<label for="role" class="block text-sm font-medium text-gray-700">役割</label>
-						<select
-							id="role"
-							name="role"
-							bind:value={$data.role}
-							class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-						>
-							<option value="user">一般ユーザー</option>
-							<option value="admin">管理者</option>
-						</select>
-					</div>
+					<Select
+						id="role"
+						name="role"
+						label="役割"
+						options={[
+							{ value: "editor", label: "編集者" },
+							{ value: "admin", label: "管理者" }
+						]}
+						bind:value={$data.role}
+					/>
 				</div>
 			</Slideover>
 		</form>
@@ -138,7 +138,7 @@
 								<th
 									scope="col"
 									class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
-									>名前</th
+									>氏名</th
 								>
 								<th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
 									>ステータス</th
@@ -161,7 +161,9 @@
 										class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6"
 										>{user.name}</td
 									>
-									<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{user.status}</td>
+									<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+										><Badge color="yellow">{user.status}</Badge> 招待メールを再送信</td
+									>
 									<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{user.email}</td>
 									<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{user.role}</td>
 									<td
@@ -170,6 +172,7 @@
 										<a href="#" class="text-indigo-600 hover:text-indigo-900"
 											>編集<span class="sr-only">, {user.name}</span></a
 										>
+										招待をキャンセル ユーザーを削除
 									</td>
 								</tr>
 							{/each}

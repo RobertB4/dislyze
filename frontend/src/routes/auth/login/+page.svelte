@@ -7,7 +7,7 @@
 	import Input from "$components/Input.svelte";
 	import { KnownError } from "$lib/errors";
 
-	const { form, errors, data, isValid, isSubmitting } = createForm({
+	const { form, errors, data, isSubmitting } = createForm({
 		initialValues: {
 			email: "",
 			password: ""
@@ -91,9 +91,7 @@
 			</div>
 
 			<div>
-				<Button type="submit" disabled={!$isValid} loading={$isSubmitting} fullWidth>
-					ログイン
-				</Button>
+				<Button type="submit" loading={$isSubmitting} fullWidth>ログイン</Button>
 			</div>
 		</form>
 	</div>

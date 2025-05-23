@@ -68,8 +68,8 @@ func (r *InviteUserRequest) Validate() error {
 	if r.Role == "" {
 		return fmt.Errorf("role is required")
 	}
-	if r.Role != "admin" && r.Role != "user" {
-		return fmt.Errorf("role is invalid, must be 'admin' or 'user'")
+	if r.Role != "admin" && r.Role != "editor" {
+		return fmt.Errorf("role is invalid, must be 'admin' or 'editor'")
 	}
 	return nil
 }

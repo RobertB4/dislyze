@@ -80,7 +80,7 @@ func TestMapDBUsersToResponse(t *testing.T) {
 					ID:        pUUID2,
 					Email:     "test2@example.com",
 					Name:      "",
-					Role:      "user",
+					Role:      "editor",
 					Status:    "active",
 					CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
 					UpdatedAt: pgtype.Timestamptz{Time: now, Valid: true},
@@ -91,7 +91,7 @@ func TestMapDBUsersToResponse(t *testing.T) {
 					ID:        uuid2Str,
 					Email:     "test2@example.com",
 					Name:      "",
-					Role:      "user",
+					Role:      "editor",
 					Status:    "active",
 					CreatedAt: now,
 					UpdatedAt: now,
@@ -106,7 +106,7 @@ func TestMapDBUsersToResponse(t *testing.T) {
 					ID:        pgtype.UUID{Bytes: uuidInvalidBytes, Valid: false},
 					Email:     "invalidid@example.com",
 					Name:      "Invalid",
-					Role:      "user",
+					Role:      "editor",
 					Status:    "active",
 					CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
 					UpdatedAt: pgtype.Timestamptz{Time: now, Valid: true},
@@ -122,7 +122,7 @@ func TestMapDBUsersToResponse(t *testing.T) {
 					ID:        pUUID1,
 					Email:     "user1@example.com",
 					Name:      "User One",
-					Role:      "user",
+					Role:      "editor",
 					Status:    "active",
 					CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
 					UpdatedAt: pgtype.Timestamptz{Time: now, Valid: true},
@@ -170,7 +170,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 			request: InviteUserRequest{
 				Email: "test@example.com",
 				Name:  "Test User",
-				Role:  "user",
+				Role:  "editor",
 			},
 			wantErr: nil,
 		},
@@ -179,7 +179,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 			request: InviteUserRequest{
 				Email: "",
 				Name:  "Test User",
-				Role:  "user",
+				Role:  "editor",
 			},
 			wantErr: fmt.Errorf("email is required"),
 		},
@@ -188,7 +188,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 			request: InviteUserRequest{
 				Email: "testexample.com",
 				Name:  "Test User",
-				Role:  "user",
+				Role:  "editor",
 			},
 			wantErr: fmt.Errorf("email is invalid"),
 		},
@@ -197,7 +197,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 			request: InviteUserRequest{
 				Email: "test@example.com",
 				Name:  "",
-				Role:  "user",
+				Role:  "editor",
 			},
 			wantErr: fmt.Errorf("name is required and cannot be only whitespace"),
 		},
@@ -206,7 +206,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 			request: InviteUserRequest{
 				Email: "test@example.com",
 				Name:  "   ",
-				Role:  "user",
+				Role:  "editor",
 			},
 			wantErr: fmt.Errorf("name is required and cannot be only whitespace"),
 		},
@@ -226,7 +226,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 				Name:  "Test User",
 				Role:  "guest",
 			},
-			wantErr: fmt.Errorf("role is invalid, must be 'admin' or 'user'"),
+			wantErr: fmt.Errorf("role is invalid, must be 'admin' or 'editor'"),
 		},
 		{
 			name: "role with mixed case (should be normalized and valid)",
@@ -235,14 +235,14 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 				Name:  "Test User",
 				Role:  "Admin",
 			},
-			wantErr: nil, // Expecting it to be normalized to lowercase "admin"
+			wantErr: nil, // Expecting it to be normalized to lowercase "editor"
 		},
 		{
 			name: "role with leading/trailing whitespace (should be normalized and valid)",
 			request: InviteUserRequest{
 				Email: "test@example.com",
 				Name:  "Test User With Spaces   ",
-				Role:  "  user  ",
+				Role:  "  editor  ",
 			},
 			wantErr: nil,
 		},
@@ -268,7 +268,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 			// Additionally, check if fields were trimmed as expected, for cases where no error is expected
 			if tt.wantErr == nil && tt.name == "role with leading/trailing whitespace (should be normalized and valid)" {
 				expectedTrimmedName := "Test User With Spaces"
-				expectedTrimmedRole := "user"
+				expectedTrimmedRole := "editor"
 				if reqCopy.Name != expectedTrimmedName {
 					t.Errorf("%s: Name not trimmed as expected: got %q, want %q", tt.name, reqCopy.Name, expectedTrimmedName)
 				}

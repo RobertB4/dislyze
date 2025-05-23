@@ -36,21 +36,21 @@ func TestGetUsers_Integration(t *testing.T) {
 			name:           "alpha_admin (Tenant A) gets users from Tenant Alpha",
 			loginUserKey:   "alpha_admin",
 			expectedStatus: http.StatusOK,
-			// Order by created_at ASC from setup.sql: alpha_admin, alpha_user, pending_user_valid_token
+			// Order by created_at ASC from setup.sql: alpha_admin, alpha_editor, pending_editor_valid_token
 			expectedUserEmails: []string{
 				setup.TestUsersData["alpha_admin"].Email,
-				setup.TestUsersData["alpha_user"].Email,
-				setup.TestUsersData["pending_user_valid_token"].Email,
+				setup.TestUsersData["alpha_editor"].Email,
+				setup.TestUsersData["pending_editor_valid_token"].Email,
 			},
 		},
 		{
-			name:           "alpha_user (Tenant A) gets users from Tenant Alpha",
-			loginUserKey:   "alpha_user",
+			name:           "alpha_editor (Tenant A) gets users from Tenant Alpha",
+			loginUserKey:   "alpha_editor",
 			expectedStatus: http.StatusOK,
 			expectedUserEmails: []string{
 				setup.TestUsersData["alpha_admin"].Email,
-				setup.TestUsersData["alpha_user"].Email,
-				setup.TestUsersData["pending_user_valid_token"].Email,
+				setup.TestUsersData["alpha_editor"].Email,
+				setup.TestUsersData["pending_editor_valid_token"].Email,
 			},
 		},
 		{
@@ -105,7 +105,7 @@ func TestGetUsers_Integration(t *testing.T) {
 							expectedName = seededUser.Name
 							expectedRole = seededUser.Role
 							expectedUserID = seededUser.UserID
-							if u.Email == setup.TestUsersData["pending_user_valid_token"].Email {
+							if u.Email == setup.TestUsersData["pending_editor_valid_token"].Email {
 								expectedStatus = "pending_verification"
 							} else {
 								expectedStatus = "active"
@@ -157,17 +157,17 @@ func TestInviteUser_Integration(t *testing.T) {
 			requestBody: handlers.InviteUserRequest{
 				Email: "new_invitee@example.com",
 				Name:  "New Invitee",
-				Role:  "user",
+				Role:  "editor",
 			},
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name:         "error when email already exists (alpha_admin invites existing alpha_user)",
+			name:         "error when email already exists (alpha_admin invites existing alpha_editor)",
 			loginUserKey: "alpha_admin",
 			requestBody: handlers.InviteUserRequest{
-				Email: setup.TestUsersData["alpha_user"].Email,
+				Email: setup.TestUsersData["alpha_editor"].Email,
 				Name:  "Duplicate Invitee",
-				Role:  "user",
+				Role:  "editor",
 			},
 			expectedStatus:   http.StatusConflict,
 			expectedErrorKey: "emailConflict",
@@ -178,32 +178,32 @@ func TestInviteUser_Integration(t *testing.T) {
 			requestBody: handlers.InviteUserRequest{
 				Email: "unauth_invitee@example.com",
 				Name:  "Unauth Invitee",
-				Role:  "user",
+				Role:  "editor",
 			},
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
 			name:           "validation error: missing email",
 			loginUserKey:   "alpha_admin",
-			requestBody:    handlers.InviteUserRequest{Email: "", Name: "Test Name", Role: "user"},
+			requestBody:    handlers.InviteUserRequest{Email: "", Name: "Test Name", Role: "editor"},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "validation error: invalid email format",
 			loginUserKey:   "alpha_admin",
-			requestBody:    handlers.InviteUserRequest{Email: "invalid-email", Name: "Test Name", Role: "user"},
+			requestBody:    handlers.InviteUserRequest{Email: "invalid-email", Name: "Test Name", Role: "editor"},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "validation error: missing name",
 			loginUserKey:   "alpha_admin",
-			requestBody:    handlers.InviteUserRequest{Email: "valid@example.com", Name: "", Role: "user"},
+			requestBody:    handlers.InviteUserRequest{Email: "valid@example.com", Name: "", Role: "editor"},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "validation error: name with only whitespace",
 			loginUserKey:   "alpha_admin",
-			requestBody:    handlers.InviteUserRequest{Email: "whitespace@example.com", Name: "   ", Role: "user"},
+			requestBody:    handlers.InviteUserRequest{Email: "whitespace@example.com", Name: "   ", Role: "editor"},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
