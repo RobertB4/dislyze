@@ -10,8 +10,7 @@ CREATE TABLE tenants (
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    plan VARCHAR(50) NOT NULL DEFAULT 'none' CHECK (plan IN ('none', 'basic', 'pro', 'enterprise')),
-    status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'pending_verification', 'suspended'))
+    plan VARCHAR(50) NOT NULL DEFAULT 'none' CHECK (plan IN ('none', 'basic', 'pro', 'enterprise'))
 );
 
 -- Create users table
@@ -25,7 +24,7 @@ CREATE TABLE users (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(50) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'pending_verification', 'suspended')),
-    UNIQUE(tenant_id, email)
+    UNIQUE(email)
 );
 
 -- Create refresh_tokens table

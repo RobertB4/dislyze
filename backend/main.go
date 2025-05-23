@@ -62,7 +62,11 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.NewAuthMiddleware(env, queries, authRateLimiter, dbConn).Authenticate)
 
+		r.Get("/me", usersHandler.GetMe)
+
 		r.Route("/users", func(r chi.Router) {
+			r.Use(middleware.RequireAdmin)
+
 			r.Get("/", usersHandler.GetUsers)
 			r.Post("/invite", usersHandler.InviteUser)
 			r.Post("/{userID}/resend-invite", usersHandler.ResendInvite)

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"dislyze/lib/config"
+	libctx "dislyze/lib/ctx"
 	"dislyze/lib/jwt"
 	"dislyze/lib/logger"
 	"dislyze/lib/ratelimit"
@@ -16,13 +17,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-)
-
-type contextKey string
-
-const (
-	TenantIDKey contextKey = "tenant_id"
-	UserIDKey   contextKey = "user_id"
 )
 
 type AuthMiddleware struct {
@@ -93,8 +87,9 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 		}
 
 		// 4. We have valid claims (either from initial token or from refresh). Populate context.
-		ctx := context.WithValue(r.Context(), TenantIDKey, finalClaims.TenantID)
-		ctx = context.WithValue(ctx, UserIDKey, finalClaims.UserID)
+		ctx := context.WithValue(r.Context(), libctx.TenantIDKey, finalClaims.TenantID)
+		ctx = context.WithValue(ctx, libctx.UserIDKey, finalClaims.UserID)
+		ctx = context.WithValue(ctx, libctx.UserRoleKey, finalClaims.Role)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

@@ -194,7 +194,6 @@
 		<form use:form class="space-y-6 p-1 flex flex-col h-full">
 			<Slideover
 				title="ユーザーを追加"
-				subtitle="新しいユーザーを招待します"
 				primaryButtonText="招待を送信"
 				primaryButtonTypeSubmit={true}
 				onClose={handleClose}
@@ -241,8 +240,7 @@
 	{#if userToDelete}
 		<form use:deleteForm class="space-y-6 p-1 flex flex-col h-full">
 			<Slideover
-				title="ユーザーの削除"
-				subtitle={`${userToDelete.name}（${userToDelete.email}）を削除しますか？`}
+				title="ユーザーを削除"
 				primaryButtonText="削除"
 				primaryButtonTypeSubmit={true}
 				onClose={handleDeleteModalClose}

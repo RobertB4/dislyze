@@ -80,6 +80,15 @@ type InviteUserResponse struct {
 	Error   string `json:"error,omitempty"`
 }
 
+type MeResponse struct {
+	TenantName string `json:"tenant_name"`
+	TenantPlan string `json:"tenant_plan"`
+	UserID     string `json:"user_id"`
+	Email      string `json:"email"`
+	UserName   string `json:"user_name"`
+	UserRole   string `json:"user_role"`
+}
+
 type UsersHandler struct {
 	dbConn                  *pgxpool.Pool
 	q                       *queries.Queries
@@ -590,4 +599,47 @@ func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := libctx.GetUserID(ctx)
+	tenantID := libctx.GetTenantID(ctx)
+
+	user, err := h.q.GetUserByID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			errors.LogError(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err))
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		errors.LogError(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	tenant, err := h.q.GetTenantByID(ctx, tenantID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			errors.LogError(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err))
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		errors.LogError(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	response := MeResponse{
+		TenantName: tenant.Name,
+		TenantPlan: tenant.Plan,
+		UserID:     user.ID.String(),
+		Email:      user.Email,
+		UserName:   user.Name,
+		UserRole:   user.Role,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }
