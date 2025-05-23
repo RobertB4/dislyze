@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,19 +12,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sendgrid/sendgrid-go"
 	"golang.org/x/crypto/bcrypt"
 
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
-
 	"lugia/lib/config"
 	libctx "lugia/lib/ctx"
 	"lugia/lib/errors"
+	"lugia/lib/ratelimit"
 	"lugia/queries"
 )
 
@@ -80,16 +81,18 @@ type InviteUserResponse struct {
 }
 
 type UsersHandler struct {
-	dbConn *pgxpool.Pool
-	q      *queries.Queries
-	env    *config.Env
+	dbConn      *pgxpool.Pool
+	q           *queries.Queries
+	env         *config.Env
+	rateLimiter *ratelimit.RateLimiter
 }
 
-func NewUsersHandler(dbConn *pgxpool.Pool, q *queries.Queries, env *config.Env) *UsersHandler {
+func NewUsersHandler(dbConn *pgxpool.Pool, q *queries.Queries, env *config.Env, rateLimiter *ratelimit.RateLimiter) *UsersHandler {
 	return &UsersHandler{
-		dbConn: dbConn,
-		q:      q,
-		env:    env,
+		dbConn:      dbConn,
+		q:           q,
+		env:         env,
+		rateLimiter: rateLimiter,
 	}
 }
 
@@ -257,7 +260,7 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	hash := sha256.Sum256([]byte(plaintextToken))
 	hashedTokenStr := fmt.Sprintf("%x", hash[:])
 
-	expiresAt := time.Now().Add(48 * time.Hour)
+	expiresAt := time.Now().Add(48 * time.Hour) // 2 days
 
 	_, err = qtx.CreateInvitationToken(ctx, &queries.CreateInvitationTokenParams{
 		TokenHash: hashedTokenStr,
@@ -326,5 +329,169 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
+func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	targetUserIDStr := chi.URLParam(r, "userID")
+
+	if !h.rateLimiter.Allow(targetUserIDStr) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		json.NewEncoder(w).Encode(map[string]string{"error": "招待メールの再送信は、ユーザーごとに5分間に1回のみ可能です。しばらくしてから再度お試しください。"})
+		return
+	}
+
+	var targetUserID pgtype.UUID
+	if err := targetUserID.Scan(targetUserIDStr); err != nil {
+		errors.LogError(fmt.Errorf("ResendInvite: invalid target userID format '%s': %w", targetUserIDStr, err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// TODO: Implement proper authorization: check if current user is admin of the target user's tenant.
+	// TODO: Implement specific rate limiting for this endpoint (e.g., per targetUserID).
+
+	invokerUserID := libctx.GetUserID(ctx)
+	invokerTenantID := libctx.GetTenantID(ctx)
+
+	invokerDBUser, err := h.q.GetUserByID(ctx, invokerUserID)
+	if err != nil {
+		errors.LogError(fmt.Errorf("ResendInvite: failed to get invoker's user details for UserID %s: %w", invokerUserID.String(), err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if invokerDBUser == nil {
+		errors.LogError(fmt.Errorf("ResendInvite: invoker user not found for UserID %s", invokerUserID.String()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	targetDBUser, err := h.q.GetUserByID(ctx, targetUserID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			errors.LogError(fmt.Errorf("ResendInvite: target user with ID %s not found: %w", targetUserIDStr, err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		errors.LogError(fmt.Errorf("ResendInvite: failed to get target user %s: %w", targetUserIDStr, err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if invokerTenantID != targetDBUser.TenantID {
+		errors.LogError(fmt.Errorf("ResendInvite: invoker %s (tenant %s) attempting to resend invite for user %s (tenant %s) in different tenant", invokerUserID.String(), invokerTenantID.String(), targetUserID.String(), targetDBUser.TenantID.String()))
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	if targetDBUser.Status != "pending_verification" {
+		errors.LogError(fmt.Errorf("ResendInvite: target user %s status is '%s', expected 'pending_verification'", targetUserIDStr, targetDBUser.Status))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	tx, err := h.dbConn.Begin(ctx)
+	if err != nil {
+		errors.LogError(fmt.Errorf("ResendInvite: failed to begin transaction: %w", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer func() {
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errors.Is(rbErr, pgx.ErrTxClosed) && !errors.Is(rbErr, sql.ErrTxDone) {
+			errors.LogError(fmt.Errorf("ResendInvite: failed to rollback transaction: %w", rbErr))
+		}
+	}()
+	qtx := h.q.WithTx(tx)
+
+	if err := qtx.DeleteInvitationTokensByUserIDAndTenantID(ctx, &queries.DeleteInvitationTokensByUserIDAndTenantIDParams{
+		UserID:   targetUserID,
+		TenantID: targetDBUser.TenantID,
+	}); err != nil {
+		errors.LogError(fmt.Errorf("ResendInvite: failed to delete existing invitation tokens for user %s: %w", targetUserIDStr, err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		errors.LogError(fmt.Errorf("ResendInvite: failed to generate random bytes for invitation token: %w", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	plaintextToken := base64.URLEncoding.EncodeToString(tokenBytes)
+	hash := sha256.Sum256([]byte(plaintextToken))
+	hashedTokenStr := fmt.Sprintf("%x", hash[:])
+	expiresAt := time.Now().Add(48 * time.Hour) // 2 days
+
+	_, err = qtx.CreateInvitationToken(ctx, &queries.CreateInvitationTokenParams{
+		TokenHash: hashedTokenStr,
+		TenantID:  targetDBUser.TenantID,
+		UserID:    targetUserID,
+		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
+	})
+	if err != nil {
+		errors.LogError(fmt.Errorf("ResendInvite: CreateInvitationToken failed for user %s: %w", targetUserIDStr, err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	subject := fmt.Sprintf("%sさんから%s様へのdislyzeへのご招待", invokerDBUser.Name, targetDBUser.Name)
+	invitationLink := fmt.Sprintf("%s/auth/accept-invite?token=%s&inviter_name=%s&invited_email=%s",
+		h.env.FrontendURL,
+		plaintextToken,
+		url.QueryEscape(invokerDBUser.Name),
+		url.QueryEscape(targetDBUser.Email))
+
+	plainTextContent := fmt.Sprintf("%s様、\n\n%sさんがあなたをdislyzeに招待しています。\n\n以下のリンクをクリックして登録を完了してください。\n%s\n\nこのメールにお心当たりがない場合は、無視してください。", targetDBUser.Name, invokerDBUser.Name, invitationLink)
+	htmlContent := fmt.Sprintf(`<p>%s様</p>
+	<p>%sさんがあなたをdislyzeに招待しています。</p>
+	<p>以下のリンクをクリックして登録を完了してください。</p>
+	<p><a href="%s">登録を完了する</a></p>
+	<p>このメールにお心当たりがない場合は、無視してください。</p>`, targetDBUser.Name, invokerDBUser.Name, invitationLink)
+
+	sgMailBody := SendGridMailRequestBody{
+		Personalizations: []SendGridPersonalization{
+			{
+				To:      []SendGridEmailAddress{{Email: targetDBUser.Email, Name: targetDBUser.Name}},
+				Subject: subject,
+			},
+		},
+		From:    SendGridEmailAddress{Email: sendGridFromEmail, Name: sendGridFromName},
+		Content: []SendGridContent{{Type: "text/plain", Value: plainTextContent}, {Type: "text/html", Value: htmlContent}},
+	}
+
+	bodyBytes, err := json.Marshal(sgMailBody)
+	if err != nil {
+		errors.LogError(fmt.Errorf("ResendInvite: failed to marshal SendGrid request body for user %s: %w", targetUserIDStr, err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	sendgridRequest := sendgrid.GetRequest(h.env.SendgridAPIKey, "/v3/mail/send", h.env.SendgridAPIUrl)
+	sendgridRequest.Method = "POST"
+	sendgridRequest.Body = bodyBytes
+	sgResponse, err := sendgrid.API(sendgridRequest)
+	if err != nil {
+		errors.LogError(fmt.Errorf("ResendInvite: SendGrid API call failed for user %s: %w.", targetUserIDStr, err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if sgResponse.StatusCode < 200 || sgResponse.StatusCode >= 300 {
+		errors.LogError(fmt.Errorf("ResendInvite: SendGrid API returned error status code %d for user %s. Body: %s.", sgResponse.StatusCode, targetUserIDStr, sgResponse.Body))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		errors.LogError(fmt.Errorf("ResendInvite: failed to commit transaction for user %s: %w", targetUserIDStr, err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }

@@ -18,6 +18,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
 	DeleteExpiredRefreshTokens(ctx context.Context) error
 	DeleteInvitationToken(ctx context.Context, id pgtype.UUID) error
+	DeleteInvitationTokensByUserIDAndTenantID(ctx context.Context, arg *DeleteInvitationTokensByUserIDAndTenantIDParams) error
 	ExistsUserWithEmail(ctx context.Context, email string) (bool, error)
 	GetInvitationByTokenHash(ctx context.Context, tokenHash string) (*InvitationToken, error)
 	GetRefreshTokenByJTI(ctx context.Context, jti pgtype.UUID) (*RefreshToken, error)

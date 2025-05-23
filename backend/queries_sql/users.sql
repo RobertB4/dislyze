@@ -26,3 +26,7 @@ WHERE id = $2 AND status = 'pending_verification';
 -- name: DeleteInvitationToken :exec
 DELETE FROM invitation_tokens
 WHERE id = $1;
+
+-- name: DeleteInvitationTokensByUserIDAndTenantID :exec
+DELETE FROM invitation_tokens
+WHERE user_id = $1 AND tenant_id = $2;

@@ -53,7 +53,7 @@
 			<p class="text-sm font-medium">{text}</p>
 			<button
 				type="button"
-				class="ml-4 inline-flex h-5 w-5 flex-shrink-0 rounded-md p-0.5 text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
+				class="ml-4 inline-flex h-5 w-5 flex-shrink-0 cursor-pointer rounded-md p-0.5 text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
 				onclick={closeToast}
 				aria-label="閉じる"
 			>

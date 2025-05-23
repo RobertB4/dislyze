@@ -69,6 +69,21 @@ func (q *Queries) DeleteInvitationToken(ctx context.Context, id pgtype.UUID) err
 	return err
 }
 
+const DeleteInvitationTokensByUserIDAndTenantID = `-- name: DeleteInvitationTokensByUserIDAndTenantID :exec
+DELETE FROM invitation_tokens
+WHERE user_id = $1 AND tenant_id = $2
+`
+
+type DeleteInvitationTokensByUserIDAndTenantIDParams struct {
+	UserID   pgtype.UUID
+	TenantID pgtype.UUID
+}
+
+func (q *Queries) DeleteInvitationTokensByUserIDAndTenantID(ctx context.Context, arg *DeleteInvitationTokensByUserIDAndTenantIDParams) error {
+	_, err := q.db.Exec(ctx, DeleteInvitationTokensByUserIDAndTenantID, arg.UserID, arg.TenantID)
+	return err
+}
+
 const GetInvitationByTokenHash = `-- name: GetInvitationByTokenHash :one
 SELECT id, tenant_id, user_id, token_hash, expires_at, created_at FROM invitation_tokens
 WHERE token_hash = $1 AND expires_at > CURRENT_TIMESTAMP

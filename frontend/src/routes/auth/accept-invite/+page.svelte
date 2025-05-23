@@ -12,7 +12,7 @@
 
 	const showForm = pageData.token && pageData.inviterName && pageData.invitedEmail;
 
-	const { form, data, errors, isValid, isSubmitting, reset } = createForm({
+	const { form, data, errors, isValid, isSubmitting } = createForm({
 		initialValues: {
 			email: pageData.invitedEmail || "",
 			password: "",

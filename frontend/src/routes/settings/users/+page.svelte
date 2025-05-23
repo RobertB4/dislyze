@@ -50,8 +50,6 @@
 
 				const responseData: { error?: string } = await response.json();
 
-				console.log({ responseData });
-
 				if (responseData.error) {
 					throw new KnownError(responseData.error);
 				}
@@ -72,16 +70,51 @@
 		reset();
 	};
 
-	const statusLabelMap: Record<string, string> = {
-		active: "有効",
-		pending_verification: "招待済み",
-		suspended: "停止中"
+	const handleResendInvite = async (userId: string) => {
+		try {
+			const response = await fetch(`${PUBLIC_API_URL}/users/${userId}/resend-invite`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				credentials: "include"
+			});
+
+			const responseData: { error?: string } = await response.json();
+			if (responseData.error) {
+				throw new KnownError(responseData.error);
+			}
+
+			if (!response.ok) {
+				throw new Error(
+					`request to /users/${userId}/resend-invite failed with status ${response.status}`
+				);
+			}
+
+			toast.show("招待メールを送信しました。", "success");
+		} catch (err) {
+			toast.showError(err);
+		}
 	};
 
-	const statusColorMap: Record<string, "green" | "yellow" | "red" | "orange" | "gray"> = {
-		active: "green",
-		pending_verification: "yellow",
-		suspended: "red"
+	const statusMap: Record<string, { label: string; color: "green" | "yellow" | "red" }> = {
+		active: {
+			label: "有効",
+			color: "green"
+		},
+		pending_verification: {
+			label: "招待済み",
+			color: "yellow"
+		},
+		suspended: {
+			label: "停止中",
+			color: "red"
+		}
+	};
+
+	const roleMap: Record<string, string> = {
+		admin: "管理者",
+		editor: "編集者"
 	};
 </script>
 
@@ -174,18 +207,21 @@
 										>{user.name}</td
 									>
 									<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
-										><Badge color={statusColorMap[user.status]}>{statusLabelMap[user.status]}</Badge
+										><Badge color={statusMap[user.status].color}
+											>{statusMap[user.status].label}</Badge
 										>
 										{#if user.status === "pending_verification"}
 											<Button
 												variant="link"
 												class="ml-2 text-sm text-indigo-600 hover:text-indigo-900"
-												>招待メールを再送信</Button
+												onclick={() => handleResendInvite(user.id)}>招待メールを再送信</Button
 											>
 										{/if}
 									</td>
 									<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{user.email}</td>
-									<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{user.role}</td>
+									<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+										>{roleMap[user.role]}</td
+									>
 									<td
 										class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6"
 									>

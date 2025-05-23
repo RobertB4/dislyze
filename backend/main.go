@@ -46,9 +46,10 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	}
 
 	rateLimiter := ratelimit.NewRateLimiter(60*time.Minute, rateLimit)
+	resendInviteRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, 1)
 
 	authHandler := handlers.NewAuthHandler(dbConn, env, rateLimiter, queries)
-	usersHandler := handlers.NewUsersHandler(dbConn, queries, env)
+	usersHandler := handlers.NewUsersHandler(dbConn, queries, env, resendInviteRateLimiter)
 
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/signup", authHandler.Signup)
@@ -63,6 +64,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		r.Route("/users", func(r chi.Router) {
 			r.Get("/", usersHandler.GetUsers)
 			r.Post("/invite", usersHandler.InviteUser)
+			r.Post("/{userID}/resend-invite", usersHandler.ResendInvite)
 		})
 	})
 
