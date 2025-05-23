@@ -362,9 +362,6 @@ func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Implement proper authorization: check if current user is admin of the target user's tenant.
-	// TODO: Implement specific rate limiting for this endpoint (e.g., per targetUserID).
-
 	invokerUserID := libctx.GetUserID(ctx)
 	invokerTenantID := libctx.GetTenantID(ctx)
 
@@ -525,9 +522,6 @@ func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
-	// TODO: Implement proper authorization: check if current user is admin of the target user's tenant.
-	// For now, we assume the authenticated user has permission to delete users.
 
 	invokerUserID := libctx.GetUserID(ctx)
 	invokerTenantID := libctx.GetTenantID(ctx)

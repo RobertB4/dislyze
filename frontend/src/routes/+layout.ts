@@ -2,7 +2,7 @@ import type { LayoutLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
 import { loadFunctionFetch } from "$lib/fetch";
 import { redirect, error as svelteKitError } from "@sveltejs/kit";
-import type { User } from "$lib/stores/meStore";
+import type { Me } from "$lib/stores/meStore";
 
 // Helper type guard to check if an error is a SvelteKit Redirect
 function isRedirect(error: unknown): error is import("@sveltejs/kit").Redirect {
@@ -20,14 +20,14 @@ export const ssr = false;
 export const prerender = false;
 
 export const load: LayoutLoad = async ({ fetch, url }) => {
-	let initialUser: User | null = null;
+	let initialUser: Me | null = null;
 
 	if (url.pathname.startsWith("/auth")) {
 		// SCENARIO A: User is on an /auth page (e.g., /auth/login)
 		try {
 			const response = await loadFunctionFetch(fetch, `${PUBLIC_API_URL}/me`);
 			if (response.ok) {
-				const user = (await response.json()) as User;
+				const user = (await response.json()) as Me;
 				// Check for a valid user identifier (user_id from your meStore.ts User interface)
 				if (user && user.user_id) {
 					throw redirect(307, "/"); // User is logged in, redirect from /auth page
@@ -71,7 +71,7 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 				);
 			}
 
-			initialUser = (await response.json()) as User;
+			initialUser = (await response.json()) as Me;
 		} catch (err: unknown) {
 			// This re-throws redirects (like 401 to /auth/login from loadFunctionFetch) & SvelteKit errors.
 			console.error("+layout.ts: Protected path, error/redirect during /users/me fetch:", err);

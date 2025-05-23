@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -16,7 +15,6 @@ func RequireAdmin(next http.Handler) http.Handler {
 		if userRole != "admin" {
 			errors.LogError(fmt.Errorf("Forbidden: Administrator access required. user_role: %s", userRole))
 			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(map[string]string{})
 			return
 		}
 
