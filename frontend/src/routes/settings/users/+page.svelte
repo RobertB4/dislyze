@@ -7,7 +7,7 @@
 	import Input from "$components/Input.svelte";
 	import { toast } from "$components/Toast/toast";
 	import { PUBLIC_API_URL } from "$env/static/public";
-	import { invalidateAll } from "$app/navigation";
+	import { invalidate } from "$app/navigation";
 	import Badge from "$components/Badge.svelte";
 	import Select from "$components/Select.svelte";
 	import Alert from "$components/Alert.svelte";
@@ -49,10 +49,10 @@
 			});
 
 			if (success) {
+				await invalidate(`${PUBLIC_API_URL}/users`);
+				reset();
 				toast.show("ユーザーを招待しました。", "success");
 				isSlideoverOpen = false;
-				reset();
-				await invalidateAll();
 			}
 		}
 	});
@@ -86,11 +86,10 @@
 			});
 
 			if (success) {
+				await invalidate(`${PUBLIC_API_URL}/users`);
+				resetDelete();
 				toast.show("ユーザーを削除しました。", "success");
 				userToDelete = null;
-				resetDelete();
-				await invalidateAll();
-				return;
 			}
 		}
 	});
