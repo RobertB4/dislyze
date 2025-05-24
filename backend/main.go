@@ -59,6 +59,8 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		r.Post("/logout", authHandler.Logout)
 		r.Post("/accept-invite", authHandler.AcceptInvite)
 		r.Post("/forgot-password", authHandler.ForgotPassword)
+		r.Post("/verify-reset-token", authHandler.VerifyResetToken)
+		r.Post("/reset-password", authHandler.ResetPassword)
 	})
 
 	r.Group(func(r chi.Router) {

@@ -94,6 +94,14 @@
 			<div>
 				<Button type="submit" loading={$isSubmitting} fullWidth>ログイン</Button>
 			</div>
+
+			<div class="flex items-center justify-center">
+				<div class="text-sm">
+					<a href="/auth/forgot-password" class="font-medium text-indigo-600 hover:text-indigo-500">
+						パスワードをお忘れですか？
+					</a>
+				</div>
+			</div>
 		</form>
 	</div>
 </main>

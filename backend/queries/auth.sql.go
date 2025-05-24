@@ -190,6 +190,25 @@ func (q *Queries) ExistsUserWithEmail(ctx context.Context, email string) (bool, 
 	return exists, err
 }
 
+const GetPasswordResetTokenByHash = `-- name: GetPasswordResetTokenByHash :one
+SELECT id, user_id, token_hash, expires_at, created_at, used_at FROM password_reset_tokens
+WHERE token_hash = $1
+`
+
+func (q *Queries) GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error) {
+	row := q.db.QueryRow(ctx, GetPasswordResetTokenByHash, tokenHash)
+	var i PasswordResetToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TokenHash,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UsedAt,
+	)
+	return &i, err
+}
+
 const GetRefreshTokenByJTI = `-- name: GetRefreshTokenByJTI :one
 SELECT id, user_id, jti, device_info, ip_address, expires_at, created_at, last_used_at, revoked_at FROM refresh_tokens 
 WHERE jti = $1 
@@ -300,6 +319,17 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error
 	return &i, err
 }
 
+const MarkPasswordResetTokenAsUsed = `-- name: MarkPasswordResetTokenAsUsed :exec
+UPDATE password_reset_tokens
+SET used_at = NOW()
+WHERE id = $1
+`
+
+func (q *Queries) MarkPasswordResetTokenAsUsed(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, MarkPasswordResetTokenAsUsed, id)
+	return err
+}
+
 const RevokeRefreshToken = `-- name: RevokeRefreshToken :exec
 UPDATE refresh_tokens 
 SET revoked_at = CURRENT_TIMESTAMP 
@@ -319,5 +349,21 @@ WHERE jti = $1
 
 func (q *Queries) UpdateRefreshTokenLastUsed(ctx context.Context, jti pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, UpdateRefreshTokenLastUsed, jti)
+	return err
+}
+
+const UpdateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE users
+SET password_hash = $2, updated_at = NOW()
+WHERE id = $1
+`
+
+type UpdateUserPasswordParams struct {
+	ID           pgtype.UUID
+	PasswordHash string
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg *UpdateUserPasswordParams) error {
+	_, err := q.db.Exec(ctx, UpdateUserPassword, arg.ID, arg.PasswordHash)
 	return err
 }

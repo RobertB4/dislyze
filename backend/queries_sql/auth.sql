@@ -84,3 +84,17 @@ INSERT INTO password_reset_tokens (
     $1, $2, $3
 )
 RETURNING *;
+
+-- name: GetPasswordResetTokenByHash :one
+SELECT * FROM password_reset_tokens
+WHERE token_hash = $1;
+
+-- name: UpdateUserPassword :exec
+UPDATE users
+SET password_hash = $2, updated_at = NOW()
+WHERE id = $1;
+
+-- name: MarkPasswordResetTokenAsUsed :exec
+UPDATE password_reset_tokens
+SET used_at = NOW()
+WHERE id = $1;

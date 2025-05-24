@@ -422,14 +422,12 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// AcceptInviteRequest defines the structure for the accept invitation request body.
 type AcceptInviteRequest struct {
 	Token           string `json:"token"`
 	Password        string `json:"password"`
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-// Validate checks if the AcceptInviteRequest fields are valid.
 func (r *AcceptInviteRequest) Validate() error {
 	r.Token = strings.TrimSpace(r.Token)
 
@@ -448,7 +446,6 @@ func (r *AcceptInviteRequest) Validate() error {
 	return nil
 }
 
-// AcceptInvite handles the process of a user accepting an invitation.
 func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -761,4 +758,253 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+}
+
+type VerifyResetTokenRequest struct {
+	Token string `json:"token"`
+}
+
+func (r *VerifyResetTokenRequest) Validate() error {
+	r.Token = strings.TrimSpace(r.Token)
+	if r.Token == "" {
+		return fmt.Errorf("token is required")
+	}
+	return nil
+}
+
+type VerifyResetTokenResponse struct {
+	Success bool   `json:"success"`
+	Email   string `json:"email,omitempty"`
+}
+
+func (h *AuthHandler) VerifyResetToken(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var req VerifyResetTokenRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		appErr := errors.New(err, "Failed to decode verify reset token request body", http.StatusBadRequest)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		appErr := errors.New(err, "Verify reset token validation failed", http.StatusBadRequest)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+		return
+	}
+
+	tokenHash := sha256.Sum256([]byte(req.Token))
+	hashedTokenStr := fmt.Sprintf("%x", tokenHash[:])
+
+	tokenRecord, err := h.queries.GetPasswordResetTokenByHash(ctx, hashedTokenStr)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			errors.LogError(errors.New(err, fmt.Sprintf("VerifyResetToken: Token hash not found: %s", hashedTokenStr), http.StatusBadRequest))
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+			return
+		}
+
+		appErr := errors.New(err, fmt.Sprintf("VerifyResetToken: Failed to query password reset token by hash %s", hashedTokenStr), http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+		return
+	}
+
+	if tokenRecord.UsedAt.Valid {
+		errors.LogError(errors.New(fmt.Errorf("VerifyResetToken: Token ID %s already used at %v", tokenRecord.ID, tokenRecord.UsedAt.Time), "Token already used", http.StatusBadRequest))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+		return
+	}
+
+	if time.Now().After(tokenRecord.ExpiresAt.Time) {
+		errors.LogError(errors.New(fmt.Errorf("VerifyResetToken: Token ID %s expired at %v", tokenRecord.ID, tokenRecord.ExpiresAt.Time), "Token expired", http.StatusBadRequest))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+		return
+	}
+
+	user, err := h.queries.GetUserByID(ctx, tokenRecord.UserID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			appErr := errors.New(err, fmt.Sprintf("VerifyResetToken: User ID %s for valid token %s not found", tokenRecord.UserID, tokenRecord.ID), http.StatusInternalServerError)
+			errors.LogError(appErr)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+			return
+		}
+		appErr := errors.New(err, fmt.Sprintf("VerifyResetToken: Failed to get user email for user ID %s", tokenRecord.UserID), http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: true, Email: user.Email})
+}
+
+type ResetPasswordRequest struct {
+	Token           string `json:"token"`
+	Password        string `json:"password"`
+	PasswordConfirm string `json:"password_confirm"`
+}
+
+func (r *ResetPasswordRequest) Validate() error {
+	r.Token = strings.TrimSpace(r.Token)
+	r.Password = strings.TrimSpace(r.Password)
+	r.PasswordConfirm = strings.TrimSpace(r.PasswordConfirm)
+
+	if r.Token == "" {
+		return fmt.Errorf("token is required")
+	}
+	if r.Password == "" {
+		return ErrPasswordRequired
+	}
+	if len(r.Password) < 8 {
+		return ErrPasswordTooShort
+	}
+	if r.Password != r.PasswordConfirm {
+		return ErrPasswordsDoNotMatch
+	}
+	return nil
+}
+
+type ResetPasswordResponse struct {
+	Success bool `json:"success"`
+}
+
+func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var req ResetPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		appErr := errors.New(err, "Failed to decode reset password request body", http.StatusBadRequest)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		appErr := errors.New(err, "Reset password validation failed", http.StatusBadRequest)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		return
+	}
+
+	tokenHash := sha256.Sum256([]byte(req.Token))
+	hashedTokenStr := fmt.Sprintf("%x", tokenHash[:])
+
+	tokenRecord, err := h.queries.GetPasswordResetTokenByHash(ctx, hashedTokenStr)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			errors.LogError(errors.New(err, fmt.Sprintf("ResetPassword: Token hash not found: %s", hashedTokenStr), http.StatusBadRequest))
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+			return
+		}
+		appErr := errors.New(err, fmt.Sprintf("ResetPassword: Failed to query password reset token by hash %s", hashedTokenStr), http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		return
+	}
+
+	if tokenRecord.UsedAt.Valid {
+		errors.LogError(errors.New(fmt.Errorf("ResetPassword: Token ID %s already used at %v", tokenRecord.ID, tokenRecord.UsedAt.Time), "Token already used", http.StatusBadRequest))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		return
+	}
+
+	if time.Now().After(tokenRecord.ExpiresAt.Time) {
+		errors.LogError(errors.New(fmt.Errorf("ResetPassword: Token ID %s expired at %v", tokenRecord.ID, tokenRecord.ExpiresAt.Time), "Token expired", http.StatusBadRequest))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		return
+	}
+
+	hashedNewPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		appErr := errors.New(err, "ResetPassword: Failed to hash new password", http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		return
+	}
+
+	tx, err := h.dbConn.Begin(ctx)
+	if err != nil {
+		appErr := errors.New(err, "ResetPassword: Failed to begin transaction", http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := h.queries.WithTx(tx)
+
+	if err := qtx.UpdateUserPassword(ctx, &queries.UpdateUserPasswordParams{
+		ID:           tokenRecord.UserID,
+		PasswordHash: string(hashedNewPassword),
+	}); err != nil {
+		appErr := errors.New(err, fmt.Sprintf("ResetPassword: Failed to update password for user ID %s", tokenRecord.UserID), http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		return
+	}
+
+	if err := qtx.MarkPasswordResetTokenAsUsed(ctx, tokenRecord.ID); err != nil {
+		appErr := errors.New(err, fmt.Sprintf("ResetPassword: Failed to mark reset token ID %s as used", tokenRecord.ID), http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		return
+	}
+
+	if err := qtx.DeleteRefreshTokensByUserID(ctx, tokenRecord.UserID); err != nil {
+		errors.LogError(errors.New(err, fmt.Sprintf("ResetPassword: Failed to delete refresh tokens for user ID %s, but password reset was successful", tokenRecord.UserID), http.StatusInternalServerError))
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		appErr := errors.New(err, "ResetPassword: Failed to commit transaction", http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(ResetPasswordResponse{Success: true})
 }
