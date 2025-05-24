@@ -7,8 +7,6 @@
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
-	// Effect to update the meStore based on initialUser from +layout.ts load function
-	// and clear it if a page error occurs.
 	$effect(() => {
 		if (data.initialUser) {
 			setMe(data.initialUser);

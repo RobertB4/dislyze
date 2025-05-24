@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
 	import { toast } from "$components/Toast/toast";
 	import { createForm } from "felte";
 	import { PUBLIC_API_URL } from "$env/static/public";
@@ -65,8 +64,7 @@
 					throw new KnownError(data.error);
 				}
 
-				toast.show("アカウントが正常に作成されました！", "success");
-				goto("/");
+				window.location.href = "/";
 			} catch (err) {
 				toast.showError(err);
 			}

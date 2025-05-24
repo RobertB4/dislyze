@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
 	import { toast } from "$components/Toast/toast";
 	import { createForm } from "felte";
 	import { PUBLIC_API_URL } from "$env/static/public";
@@ -45,7 +44,7 @@
 				if (data.error) {
 					throw new KnownError(data.error);
 				}
-				goto("/");
+				window.location.href = "/";
 			} catch (err) {
 				toast.showError(err);
 			}
