@@ -1,10 +1,11 @@
 package jwt
 
 import (
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"time"
+
+	"dislyze/lib/utils"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -65,12 +66,10 @@ func GenerateRefreshToken(userID pgtype.UUID, secret []byte) (string, pgtype.UUI
 		return "", pgtype.UUID{}, fmt.Errorf("secret cannot be empty")
 	}
 
-	var jti pgtype.UUID
-	jti.Bytes = [16]byte{}
-	if _, err := rand.Read(jti.Bytes[:]); err != nil {
-		return "", pgtype.UUID{}, fmt.Errorf("failed to generate jti: %w", err)
+	jti, err := utils.NewUUID()
+	if err != nil {
+		return "", pgtype.UUID{}, fmt.Errorf("failed to generate jti for refresh token: %w", err)
 	}
-	jti.Valid = true
 
 	now := time.Now()
 	claims := Claims{

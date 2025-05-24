@@ -17,9 +17,10 @@ services:
     image: yudppp/simple-sendgrid-mock-server
     container_name: test-sendgrid-mock
     ports:
-      - "17000:7000"
+      - "17000:17000"
     environment:
       - SENDGRID_API_KEY=sendgrid
+      - PORT=17000
   backend:
     container_name: test-backend
     build:
@@ -27,6 +28,7 @@ services:
       dockerfile: backend/test/Dockerfile
     environment:
       - APP_ENV=test
+      - PORT=13001
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=test_user
@@ -37,10 +39,10 @@ services:
       - RATE_LIMIT=5000
       - FRONTEND_URL=http://localhost:13000
       - SENDGRID_API_KEY=sendgrid
-      - SENDGRID_API_URL=http://test-sendgrid-mock:7000
+      - SENDGRID_API_URL=http://test-sendgrid-mock:17000
       - INITIAL_PW=password
     ports:
-      - "13001:3001"
+      - "13001:13001"
     depends_on:
       postgres:
         condition: service_healthy

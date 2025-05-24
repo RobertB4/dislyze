@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
@@ -18,6 +17,7 @@ import (
 	"dislyze/lib/errors"
 	"dislyze/lib/jwt"
 	"dislyze/lib/ratelimit"
+	"dislyze/lib/utils"
 	"dislyze/queries"
 
 	"github.com/jackc/pgx/v5"
@@ -644,16 +644,16 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var rawToken [16]byte
-	if _, randErr := rand.Read(rawToken[:]); randErr != nil {
-		appErr := errors.New(randErr, "ForgotPassword: Failed to generate reset token bytes", http.StatusInternalServerError)
+	resetTokenUUID, err := utils.NewUUID()
+	if err != nil {
+		appErr := errors.New(err, "ForgotPassword: Failed to generate reset token UUID", http.StatusInternalServerError)
 		errors.LogError(appErr)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
 		return
 	}
-	resetToken := fmt.Sprintf("%x-%x-%x-%x-%x", rawToken[0:4], rawToken[4:6], rawToken[6:8], rawToken[8:10], rawToken[10:16])
+	resetToken := resetTokenUUID.String()
 
 	tokenHash := sha256.Sum256([]byte(resetToken))
 	hashedTokenStr := fmt.Sprintf("%x", tokenHash[:])
