@@ -8,6 +8,8 @@ import (
 )
 
 type Env struct {
+	AppEnv         string
+	Port           string
 	DBHost         string
 	DBPort         string
 	DBUser         string
@@ -33,6 +35,8 @@ func LoadEnv() (*Env, error) {
 	env := &Env{}
 
 	required := map[string]*string{
+		"APP_ENV":          &env.AppEnv,
+		"PORT":             &env.Port,
 		"DB_HOST":          &env.DBHost,
 		"DB_PORT":          &env.DBPort,
 		"DB_USER":          &env.DBUser,

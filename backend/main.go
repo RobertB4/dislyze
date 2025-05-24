@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -103,8 +104,8 @@ func main() {
 	router := SetupRoutes(pool, env, appQueries)
 
 	go func() {
-		log.Printf("main: API listening on %s", ":1337")
-		serverErrors <- http.ListenAndServe(":1337", router)
+		log.Printf("main: API listening on :%s", env.Port)
+		serverErrors <- http.ListenAndServe(fmt.Sprintf(":%s", env.Port), router)
 	}()
 
 	select {

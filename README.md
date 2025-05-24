@@ -35,7 +35,7 @@ cd backend
 go run main.go
 ```
 
-The backend will start on http://localhost:1337
+The backend will start on http://localhost:3001
 
 ### Starting the Frontend
 
@@ -45,7 +45,7 @@ npm install    # or pnpm install
 npm run dev    # or pnpm dev
 ```
 
-The frontend will start on http://localhost:1338
+The frontend will start on http://localhost:3000
 
 ## Features
 

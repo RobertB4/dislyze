@@ -35,19 +35,19 @@ services:
       - DB_SSL_MODE=disable
       - JWT_SECRET=test_jwt_secret_key_for_testing_only
       - RATE_LIMIT=5000
-      - FRONTEND_URL=http://localhost:11338
+      - FRONTEND_URL=http://localhost:13000
       - SENDGRID_API_KEY=sendgrid
       - SENDGRID_API_URL=http://test-sendgrid-mock:3030
       - INITIAL_PW=password
     ports:
-      - "11337:1337"
+      - "13001:3001"
     depends_on:
       postgres:
         condition: service_healthy
       test-sendgrid-mock:
         condition: service_started
     healthcheck:
-      test: ["CMD", "wget", "--spider", "http://localhost:11337/health"]
+      test: ["CMD", "wget", "--spider", "http://localhost:13001/health"]
       interval: 5s
       timeout: 5s
       retries: 5

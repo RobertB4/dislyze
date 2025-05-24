@@ -21,7 +21,7 @@ COPY database /database
 RUN go build -o main ./main.go
 
 # Expose port
-EXPOSE 11337
+EXPOSE 13001
 
 # Run the application
 CMD ["./main"] 

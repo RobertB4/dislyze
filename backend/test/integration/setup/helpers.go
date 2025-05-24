@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	BaseURL = "http://backend:1337"
+	BaseURL = "http://backend:3001"
 )
 
 type LoginRequest struct {
