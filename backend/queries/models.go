@@ -35,7 +35,6 @@ type Tenant struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	Plan      string
-	Status    pgtype.Text
 }
 
 type User struct {

@@ -44,14 +44,9 @@ func TestGetUsers_Integration(t *testing.T) {
 			},
 		},
 		{
-			name:           "alpha_editor (Tenant A) gets users from Tenant Alpha",
+			name:           "alpha_editor (Tenant A) gets forbidden because they are not an admin",
 			loginUserKey:   "alpha_editor",
-			expectedStatus: http.StatusOK,
-			expectedUserEmails: []string{
-				setup.TestUsersData["alpha_admin"].Email,
-				setup.TestUsersData["alpha_editor"].Email,
-				setup.TestUsersData["pending_editor_valid_token"].Email,
-			},
+			expectedStatus: http.StatusForbidden,
 		},
 		{
 			name:               "beta_admin (Tenant B) gets users from Tenant Beta (only self)",

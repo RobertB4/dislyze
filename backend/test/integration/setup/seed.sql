@@ -1,6 +1,6 @@
-INSERT INTO tenants (id, name, plan, status, created_at, updated_at) VALUES
-('a0000000-0000-0000-0000-000000000001', 'Tenant Alpha', 'basic', 'active', '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00'),
-('a0000000-0000-0000-0000-000000000002', 'Tenant Beta', 'basic', 'active', '2024-01-01 10:01:00+00', '2024-01-01 10:01:00+00');
+INSERT INTO tenants (id, name, plan, created_at, updated_at) VALUES
+('a0000000-0000-0000-0000-000000000001', 'Tenant Alpha', 'basic', '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00'),
+('a0000000-0000-0000-0000-000000000002', 'Tenant Beta', 'basic', '2024-01-01 10:01:00+00', '2024-01-01 10:01:00+00');
 
 -- Password for all users is 'password123'
 INSERT INTO users (id, tenant_id, email, password_hash, name, role, status, created_at, updated_at) VALUES

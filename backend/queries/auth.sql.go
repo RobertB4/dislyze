@@ -55,21 +55,19 @@ func (q *Queries) CreateRefreshToken(ctx context.Context, arg *CreateRefreshToke
 const CreateTenant = `-- name: CreateTenant :one
 INSERT INTO tenants (
     name,
-    plan,
-    status
+    plan
 ) VALUES (
-    $1, $2, $3
-) RETURNING id, name, created_at, updated_at, plan, status
+    $1, $2
+) RETURNING id, name, created_at, updated_at, plan
 `
 
 type CreateTenantParams struct {
-	Name   string
-	Plan   string
-	Status pgtype.Text
+	Name string
+	Plan string
 }
 
 func (q *Queries) CreateTenant(ctx context.Context, arg *CreateTenantParams) (*Tenant, error) {
-	row := q.db.QueryRow(ctx, CreateTenant, arg.Name, arg.Plan, arg.Status)
+	row := q.db.QueryRow(ctx, CreateTenant, arg.Name, arg.Plan)
 	var i Tenant
 	err := row.Scan(
 		&i.ID,
@@ -77,7 +75,6 @@ func (q *Queries) CreateTenant(ctx context.Context, arg *CreateTenantParams) (*T
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Plan,
-		&i.Status,
 	)
 	return &i, err
 }
@@ -201,7 +198,7 @@ func (q *Queries) GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUI
 }
 
 const GetTenantByID = `-- name: GetTenantByID :one
-SELECT id, name, created_at, updated_at, plan, status FROM tenants
+SELECT id, name, created_at, updated_at, plan FROM tenants
 WHERE id = $1
 `
 
@@ -214,7 +211,6 @@ func (q *Queries) GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Plan,
-		&i.Status,
 	)
 	return &i, err
 }

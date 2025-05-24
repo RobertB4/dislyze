@@ -127,10 +127,6 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Re
 	tenant, err := qtx.CreateTenant(ctx, &queries.CreateTenantParams{
 		Name: req.CompanyName,
 		Plan: "basic",
-		Status: pgtype.Text{
-			String: "active",
-			Valid:  true,
-		},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tenant: %w", err)
