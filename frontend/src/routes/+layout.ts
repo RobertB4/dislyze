@@ -2,7 +2,8 @@ import type { LayoutLoad } from "./$types";
 import { PUBLIC_API_URL } from "$env/static/public";
 import { loadFunctionFetch } from "$lib/fetch";
 import { redirect, error as svelteKitError } from "@sveltejs/kit";
-import type { Me } from "$lib/stores/meStore";
+import { me, type Me } from "$lib/me";
+import { get } from "svelte/store";
 
 // Helper type guard to check if an error is a SvelteKit Redirect
 function isRedirect(error: unknown): error is import("@sveltejs/kit").Redirect {
@@ -20,6 +21,12 @@ export const ssr = false;
 export const prerender = false;
 
 export const load: LayoutLoad = async ({ fetch, url }) => {
+	if (typeof window !== "undefined") {
+		if (get(me)) {
+			return { initialUser: get(me) };
+		}
+	}
+
 	let initialUser: Me | null = null;
 
 	if (url.pathname.startsWith("/auth")) {
@@ -28,7 +35,7 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 			const response = await loadFunctionFetch(fetch, `${PUBLIC_API_URL}/me`);
 			if (response.ok) {
 				const user = (await response.json()) as Me;
-				// Check for a valid user identifier (user_id from your meStore.ts User interface)
+				// Check for a valid user identifier (user_id from your meS.ts Me interface)
 				if (user && user.user_id) {
 					throw redirect(307, "/"); // User is logged in, redirect from /auth page
 				}

@@ -10,7 +10,3 @@ export type Me = {
 };
 
 export const me = writable<Me>(null as any);
-
-export function setMe(user: Me) {
-	me.update(() => user);
-}

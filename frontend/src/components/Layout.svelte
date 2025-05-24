@@ -6,7 +6,7 @@
 	import { errorStore } from "$lib/errors";
 	import { slide, fade } from "svelte/transition";
 	import type { Snippet } from "svelte";
-	import { me } from "$lib/stores/meStore";
+	import { me } from "$lib/me";
 
 	let isMobileNavigationOpen = $state(false);
 

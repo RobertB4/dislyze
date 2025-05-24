@@ -1,7 +1,7 @@
 <script lang="ts">
 	import "../app.css";
 	import ToastContainer from "$components/Toast/ToastContainer.svelte";
-	import { setMe } from "$lib/stores/meStore";
+	import { me } from "$lib/me";
 	import type { LayoutData } from "./$types";
 	import type { Snippet } from "svelte";
 
@@ -9,7 +9,7 @@
 
 	$effect(() => {
 		if (data.initialUser) {
-			setMe(data.initialUser);
+			me.set(data.initialUser);
 		}
 	});
 </script>
