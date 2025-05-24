@@ -1,0 +1,13 @@
+FROM node:19.6.1-alpine
+
+EXPOSE 7000
+
+ENV SENDGRID_API_KEY YOUR_API_KEY
+ENV SESSION_COOKIE_SECRET YOUR_SECRET
+
+ADD . /app
+WORKDIR /app
+
+RUN npm install
+
+CMD ["node", "server.js"]
