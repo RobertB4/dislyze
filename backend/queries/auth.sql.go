@@ -11,6 +11,37 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const CreatePasswordResetToken = `-- name: CreatePasswordResetToken :one
+INSERT INTO password_reset_tokens (
+    user_id,
+    token_hash,
+    expires_at
+) VALUES (
+    $1, $2, $3
+)
+RETURNING id, user_id, token_hash, expires_at, created_at, used_at
+`
+
+type CreatePasswordResetTokenParams struct {
+	UserID    pgtype.UUID
+	TokenHash string
+	ExpiresAt pgtype.Timestamptz
+}
+
+func (q *Queries) CreatePasswordResetToken(ctx context.Context, arg *CreatePasswordResetTokenParams) (*PasswordResetToken, error) {
+	row := q.db.QueryRow(ctx, CreatePasswordResetToken, arg.UserID, arg.TokenHash, arg.ExpiresAt)
+	var i PasswordResetToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TokenHash,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UsedAt,
+	)
+	return &i, err
+}
+
 const CreateRefreshToken = `-- name: CreateRefreshToken :one
 INSERT INTO refresh_tokens (
     user_id,
@@ -133,6 +164,16 @@ WHERE expires_at < CURRENT_TIMESTAMP
 
 func (q *Queries) DeleteExpiredRefreshTokens(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, DeleteExpiredRefreshTokens)
+	return err
+}
+
+const DeletePasswordResetTokenByUserID = `-- name: DeletePasswordResetTokenByUserID :exec
+DELETE FROM password_reset_tokens
+WHERE user_id = $1
+`
+
+func (q *Queries) DeletePasswordResetTokenByUserID(ctx context.Context, userID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, DeletePasswordResetTokenByUserID, userID)
 	return err
 }
 

@@ -46,7 +46,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		log.Fatalf("Failed to convert env.RateLimit to int: %v", err)
 	}
 
-	authRateLimiter := ratelimit.NewRateLimiter(60*time.Minute, rateLimit)
+	authRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, rateLimit)
 	resendInviteRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, 1)
 	deleteUserRateLimiter := ratelimit.NewRateLimiter(1*time.Minute, 10)
 
@@ -58,6 +58,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		r.Post("/login", authHandler.Login)
 		r.Post("/logout", authHandler.Logout)
 		r.Post("/accept-invite", authHandler.AcceptInvite)
+		r.Post("/forgot-password", authHandler.ForgotPassword)
 	})
 
 	r.Group(func(r chi.Router) {

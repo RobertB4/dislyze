@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -21,6 +23,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/sendgrid/sendgrid-go"
 )
 
 var (
@@ -54,6 +57,14 @@ type LoginRequest struct {
 type LoginResponse struct {
 	Success bool   `json:"success"`
 	Error   string `json:"error,omitempty"`
+}
+
+type ForgotPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+type ForgotPasswordResponse struct {
+	Success bool `json:"success"`
 }
 
 type RefreshTokenInfo struct {
@@ -577,4 +588,177 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
+func (r *ForgotPasswordRequest) Validate() error {
+	r.Email = strings.TrimSpace(r.Email)
+	if r.Email == "" {
+		return ErrEmailRequired
+	}
+	if !strings.Contains(r.Email, "@") {
+		return fmt.Errorf("invalid email address format")
+	}
+	return nil
+}
+
+func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	if !h.rateLimiter.Allow(r.RemoteAddr) {
+		errors.LogError(errors.New(fmt.Errorf("rate limit exceeded for forgot password: %s", r.RemoteAddr), "Rate limit", http.StatusTooManyRequests))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		return
+	}
+
+	var req ForgotPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		appErr := errors.New(err, "Failed to decode forgot password request body", http.StatusBadRequest)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: false})
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		errors.LogError(errors.New(err, "Forgot password validation failed", http.StatusBadRequest))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: false})
+		return
+	}
+
+	user, err := h.queries.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			log.Printf("ForgotPassword: No user found for email %s", req.Email)
+		} else {
+			appErr := errors.New(err, fmt.Sprintf("ForgotPassword: Failed to get user by email %s", req.Email), http.StatusInternalServerError)
+			errors.LogError(appErr)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		return
+	}
+
+	var rawToken [16]byte
+	if _, randErr := rand.Read(rawToken[:]); randErr != nil {
+		appErr := errors.New(randErr, "ForgotPassword: Failed to generate reset token bytes", http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		return
+	}
+	resetToken := fmt.Sprintf("%x-%x-%x-%x-%x", rawToken[0:4], rawToken[4:6], rawToken[6:8], rawToken[8:10], rawToken[10:16])
+
+	tokenHash := sha256.Sum256([]byte(resetToken))
+	hashedTokenStr := fmt.Sprintf("%x", tokenHash[:])
+
+	expiresAt := time.Now().Add(30 * time.Minute)
+
+	tx, txErr := h.dbConn.Begin(ctx)
+	if txErr != nil {
+		appErr := errors.New(txErr, "ForgotPassword: Failed to begin transaction", http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := h.queries.WithTx(tx)
+
+	if err := qtx.DeletePasswordResetTokenByUserID(ctx, user.ID); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		appErr := errors.New(err, fmt.Sprintf("ForgotPassword: Failed to delete existing password reset token for user %s", user.ID), http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		return
+	}
+
+	_, createErr := qtx.CreatePasswordResetToken(ctx, &queries.CreatePasswordResetTokenParams{
+		UserID:    user.ID,
+		TokenHash: hashedTokenStr,
+		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
+	})
+	if createErr != nil {
+		appErr := errors.New(createErr, fmt.Sprintf("ForgotPassword: Failed to create password reset token for user %s", user.ID), http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		return
+	}
+
+	if commitErr := tx.Commit(ctx); commitErr != nil {
+		appErr := errors.New(commitErr, "ForgotPassword: Failed to commit transaction", http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		return
+	}
+
+	resetLink := fmt.Sprintf("%s/auth/reset-password?token=%s", h.env.FrontendURL, resetToken)
+
+	subject := "パスワードリセットのご案内 - dislyze"
+	plainTextContent := fmt.Sprintf("%s様\n\ndislyzeアカウントのパスワードリセットリクエストを受け付けました。\n\n以下のリンクをクリックして、パスワードを再設定してください。このリンクは30分間有効です。\n%s\n\nこのメールにお心当たりがない場合は、無視してください。",
+		user.Name, resetLink)
+	htmlContent := fmt.Sprintf("<p>%s様</p>\n<p>dislyzeアカウントのパスワードリセットリクエストを受け付けました。</p>\n<p>以下のリンクをクリックして、パスワードを再設定してください。このリンクは30分間有効です。</p>\n<p><a href=\"%s\">パスワードを再設定する</a></p>\n<p>このメールにお心当たりがない場合は、無視してください。</p>",
+		user.Name, resetLink)
+
+	sgMailBody := SendGridMailRequestBody{
+		Personalizations: []SendGridPersonalization{
+			{
+				To:      []SendGridEmailAddress{{Email: req.Email, Name: user.Name}},
+				Subject: subject,
+			},
+		},
+		From:    SendGridEmailAddress{Email: sendGridFromEmail, Name: sendGridFromName},
+		Content: []SendGridContent{{Type: "text/plain", Value: plainTextContent}, {Type: "text/html", Value: htmlContent}},
+	}
+
+	bodyBytes, err := json.Marshal(sgMailBody)
+	if err != nil {
+		appErr := errors.New(err, fmt.Sprintf("ForgotPassword: failed to marshal SendGrid request body for %s", req.Email), http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		return
+	}
+
+	sendgridRequest := sendgrid.GetRequest(h.env.SendgridAPIKey, "/v3/mail/send", h.env.SendgridAPIUrl)
+	sendgridRequest.Method = "POST"
+	sendgridRequest.Body = bodyBytes
+	sgResponse, err := sendgrid.API(sendgridRequest)
+	if err != nil {
+		appErr := errors.New(err, fmt.Sprintf("ForgotPassword: SendGrid API call failed for %s", req.Email), http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		return
+	}
+
+	if sgResponse.StatusCode < 200 || sgResponse.StatusCode >= 300 {
+		appErr := errors.New(fmt.Errorf("SendGrid API returned error status code: %d, Body: %s", sgResponse.StatusCode, sgResponse.Body), fmt.Sprintf("ForgotPassword: SendGrid API error for %s", req.Email), http.StatusInternalServerError)
+		errors.LogError(appErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		return
+	}
+
+	log.Printf("Password reset email successfully sent via SendGrid to user with id: %s", user.ID)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
 }

@@ -13,12 +13,14 @@ import (
 type Querier interface {
 	ActivateInvitedUser(ctx context.Context, arg *ActivateInvitedUserParams) error
 	CreateInvitationToken(ctx context.Context, arg *CreateInvitationTokenParams) (*InvitationToken, error)
+	CreatePasswordResetToken(ctx context.Context, arg *CreatePasswordResetTokenParams) (*PasswordResetToken, error)
 	CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error)
 	CreateTenant(ctx context.Context, arg *CreateTenantParams) (*Tenant, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
 	DeleteExpiredRefreshTokens(ctx context.Context) error
 	DeleteInvitationToken(ctx context.Context, id pgtype.UUID) error
 	DeleteInvitationTokensByUserIDAndTenantID(ctx context.Context, arg *DeleteInvitationTokensByUserIDAndTenantIDParams) error
+	DeletePasswordResetTokenByUserID(ctx context.Context, userID pgtype.UUID) error
 	DeleteRefreshTokensByUserID(ctx context.Context, userID pgtype.UUID) error
 	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	ExistsUserWithEmail(ctx context.Context, email string) (bool, error)
