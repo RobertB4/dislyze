@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"dislyze/lib/errors"
+	"dislyze/lib/errlib"
 	"dislyze/queries"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -140,7 +140,7 @@ func TestMapDBUsersToResponse(t *testing.T) {
 				if gotErr == nil {
 					t.Fatalf("mapDBUsersToResponse() error = nil, wantErr %v", tt.wantErr)
 				}
-				if !errors.Is(gotErr, ErrInvalidUserDataFromDB) {
+				if !errlib.Is(gotErr, ErrInvalidUserDataFromDB) {
 					t.Errorf("mapDBUsersToResponse() gotErr (%v) does not wrap expected ErrInvalidUserDataFromDB", gotErr)
 				}
 				if gotErr.Error() != tt.wantErr.Error() {

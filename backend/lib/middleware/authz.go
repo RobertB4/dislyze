@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	libctx "dislyze/lib/ctx"
-	"dislyze/lib/errors"
+	"dislyze/lib/errlib"
 )
 
 func RequireAdmin(next http.Handler) http.Handler {
@@ -13,7 +13,7 @@ func RequireAdmin(next http.Handler) http.Handler {
 		userRole := libctx.GetUserRole(r.Context())
 
 		if userRole != "admin" {
-			errors.LogError(fmt.Errorf("Forbidden: Administrator access required. user_role: %s", userRole))
+			errlib.LogError(fmt.Errorf("Forbidden: Administrator access required. user_role: %s", userRole))
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
