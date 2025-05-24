@@ -21,8 +21,9 @@ import (
 
 	"dislyze/lib/config"
 	libctx "dislyze/lib/ctx"
-	"dislyze/lib/errors"
+	"dislyze/lib/errlib"
 	"dislyze/lib/ratelimit"
+	"dislyze/lib/responder"
 	"dislyze/queries"
 )
 
@@ -142,27 +143,23 @@ func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	dbUsers, err := h.q.GetUsersByTenantID(r.Context(), rawTenantID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode([]User{})
+		if errlib.Is(err, pgx.ErrNoRows) {
+			responder.RespondWithJSON(w, http.StatusOK, []User{})
 			return
 		}
-		errors.LogError(err)
-		http.Error(w, "An internal error occurred.", http.StatusInternalServerError)
+		appErr := errlib.New(err, http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	responseUsers, mapErr := mapDBUsersToResponse(dbUsers)
 	if mapErr != nil {
-		errors.LogError(err)
-		http.Error(w, "An internal error occurred.", http.StatusInternalServerError)
+		appErr := errlib.New(mapErr, http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(responseUsers)
+	responder.RespondWithJSON(w, http.StatusOK, responseUsers)
 }
 
 type SendGridEmailAddress struct {
@@ -191,15 +188,15 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 
 	var req InviteUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errors.LogError(fmt.Errorf("InviteUser: failed to decode request: %w", err))
-		w.WriteHeader(http.StatusBadRequest)
+		appErr := errlib.New(fmt.Errorf("InviteUser: failed to decode request: %w", err), http.StatusBadRequest, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 	defer r.Body.Close()
 
 	if err := req.Validate(); err != nil {
-		errors.LogError(fmt.Errorf("InviteUser: validation failed: %w", err))
-		w.WriteHeader(http.StatusBadRequest)
+		appErr := errlib.New(fmt.Errorf("InviteUser: validation failed: %w", err), http.StatusBadRequest, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
@@ -208,40 +205,39 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 
 	inviterDBUser, err := h.q.GetUserByID(ctx, inviterUserID)
 	if err != nil {
-		errors.LogError(fmt.Errorf("InviteUser: failed to get inviter's user details for UserID %s: %w", inviterUserID.String(), err))
+		appErr := errlib.New(fmt.Errorf("InviteUser: failed to get inviter's user details for UserID %s: %w", inviterUserID.String(), err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
 	}
 
 	_, err = h.q.GetUserByEmail(ctx, req.Email)
 	if err == nil {
-		// User found, email already exists
-		errors.LogError(fmt.Errorf("InviteUser: attempt to invite existing email: %s", req.Email))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(map[string]string{"error": "このメールアドレスは既に使用されています。"})
+		appErr := errlib.New(fmt.Errorf("InviteUser: attempt to invite existing email: %s", req.Email), http.StatusConflict, "このメールアドレスは既に使用されています。")
+		responder.RespondWithError(w, appErr)
 		return
 	}
-	if !errors.Is(err, pgx.ErrNoRows) {
-		errors.LogError(fmt.Errorf("InviteUser: GetUserByEmail failed: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+	if !errlib.Is(err, pgx.ErrNoRows) {
+		appErr := errlib.New(fmt.Errorf("InviteUser: GetUserByEmail failed: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	hashedInitialPassword, err := bcrypt.GenerateFromPassword([]byte(h.env.InitialPW), bcrypt.DefaultCost)
 	if err != nil {
-		errors.LogError(fmt.Errorf("InviteUser: failed to hash initial password: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("InviteUser: failed to hash initial password: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		errors.LogError(fmt.Errorf("InviteUser: failed to begin transaction: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("InviteUser: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 	defer func() {
-		if rbErr := tx.Rollback(ctx); rbErr != nil && !errors.Is(rbErr, pgx.ErrTxClosed) && !errors.Is(rbErr, sql.ErrTxDone) {
-			errors.LogError(fmt.Errorf("InviteUser: failed to rollback transaction: %w", rbErr))
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
+			errlib.LogError(fmt.Errorf("InviteUser: failed to rollback transaction: %w", rbErr))
 		}
 	}()
 	qtx := h.q.WithTx(tx)
@@ -255,15 +251,15 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 		Status:       "pending_verification",
 	})
 	if err != nil {
-		errors.LogError(fmt.Errorf("InviteUser: InviteUserToTenant failed: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("InviteUser: InviteUserToTenant failed: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
-		errors.LogError(fmt.Errorf("InviteUser: failed to generate random bytes for invitation token: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("InviteUser: failed to generate random bytes for invitation token: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 	plaintextToken := base64.URLEncoding.EncodeToString(tokenBytes)
@@ -280,8 +276,8 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 	if err != nil {
-		errors.LogError(fmt.Errorf("InviteUser: CreateInvitationToken failed: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("InviteUser: CreateInvitationToken failed: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
@@ -312,8 +308,8 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 
 	bodyBytes, err := json.Marshal(sgMailBody)
 	if err != nil {
-		errors.LogError(fmt.Errorf("InviteUser: failed to marshal SendGrid request body: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("InviteUser: failed to marshal SendGrid request body: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
@@ -322,25 +318,24 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	sendgridRequest.Body = bodyBytes
 	response, err := sendgrid.API(sendgridRequest)
 	if err != nil {
-		errors.LogError(fmt.Errorf("InviteUser: SendGrid API call failed: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("InviteUser: SendGrid API call failed: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		errors.LogError(fmt.Errorf("InviteUser: SendGrid API returned error status code: %d, Body: %s", response.StatusCode, response.Body))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("InviteUser: SendGrid API returned error status code: %d, Body: %s", response.StatusCode, response.Body), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		errors.LogError(fmt.Errorf("InviteUser: failed to commit transaction: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("InviteUser: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+	responder.RespondWithJSON(w, http.StatusCreated, map[string]bool{"success": true})
 }
 
 func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
@@ -349,16 +344,15 @@ func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
 	targetUserIDStr := chi.URLParam(r, "userID")
 
 	if !h.resendInviteRateLimiter.Allow(targetUserIDStr) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusTooManyRequests)
-		json.NewEncoder(w).Encode(map[string]string{"error": "招待メールの再送信は、ユーザーごとに5分間に1回のみ可能です。しばらくしてから再度お試しください。"})
+		appErr := errlib.New(fmt.Errorf("rate limit exceeded for user %s resend invite", targetUserIDStr), http.StatusTooManyRequests, "招待メールの再送信は、ユーザーごとに5分間に1回のみ可能です。しばらくしてから再度お試しください。")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	var targetUserID pgtype.UUID
 	if err := targetUserID.Scan(targetUserIDStr); err != nil {
-		errors.LogError(fmt.Errorf("ResendInvite: invalid target userID format '%s': %w", targetUserIDStr, err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("ResendInvite: invalid target userID format '%s': %w", targetUserIDStr, err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
@@ -367,49 +361,49 @@ func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
 
 	invokerDBUser, err := h.q.GetUserByID(ctx, invokerUserID)
 	if err != nil {
-		errors.LogError(fmt.Errorf("ResendInvite: failed to get invoker's user details for UserID %s: %w", invokerUserID.String(), err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("ResendInvite: failed to get invoker's user details for UserID %s: %w", invokerUserID.String(), err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 	if invokerDBUser == nil {
-		errors.LogError(fmt.Errorf("ResendInvite: invoker user not found for UserID %s", invokerUserID.String()))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("ResendInvite: invoker user not found for UserID %s", invokerUserID.String()), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	targetDBUser, err := h.q.GetUserByID(ctx, targetUserID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			errors.LogError(fmt.Errorf("ResendInvite: target user with ID %s not found: %w", targetUserIDStr, err))
-			w.WriteHeader(http.StatusInternalServerError)
+		if errlib.Is(err, pgx.ErrNoRows) {
+			appErr := errlib.New(fmt.Errorf("ResendInvite: target user with ID %s not found: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
+			responder.RespondWithError(w, appErr)
 			return
 		}
-		errors.LogError(fmt.Errorf("ResendInvite: failed to get target user %s: %w", targetUserIDStr, err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("ResendInvite: failed to get target user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if invokerTenantID != targetDBUser.TenantID {
-		errors.LogError(fmt.Errorf("ResendInvite: invoker %s (tenant %s) attempting to resend invite for user %s (tenant %s) in different tenant", invokerUserID.String(), invokerTenantID.String(), targetUserID.String(), targetDBUser.TenantID.String()))
-		w.WriteHeader(http.StatusForbidden)
+		appErr := errlib.New(fmt.Errorf("ResendInvite: invoker %s (tenant %s) attempting to resend invite for user %s (tenant %s) in different tenant", invokerUserID.String(), invokerTenantID.String(), targetUserID.String(), targetDBUser.TenantID.String()), http.StatusForbidden, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if targetDBUser.Status != "pending_verification" {
-		errors.LogError(fmt.Errorf("ResendInvite: target user %s status is '%s', expected 'pending_verification'", targetUserIDStr, targetDBUser.Status))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("ResendInvite: target user %s status is '%s', expected 'pending_verification'", targetUserIDStr, targetDBUser.Status), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		errors.LogError(fmt.Errorf("ResendInvite: failed to begin transaction: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("ResendInvite: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 	defer func() {
-		if rbErr := tx.Rollback(ctx); rbErr != nil && !errors.Is(rbErr, pgx.ErrTxClosed) && !errors.Is(rbErr, sql.ErrTxDone) {
-			errors.LogError(fmt.Errorf("ResendInvite: failed to rollback transaction: %w", rbErr))
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
+			errlib.LogError(fmt.Errorf("ResendInvite: failed to rollback transaction: %w", rbErr))
 		}
 	}()
 	qtx := h.q.WithTx(tx)
@@ -418,15 +412,15 @@ func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
 		UserID:   targetUserID,
 		TenantID: targetDBUser.TenantID,
 	}); err != nil {
-		errors.LogError(fmt.Errorf("ResendInvite: failed to delete existing invitation tokens for user %s: %w", targetUserIDStr, err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("ResendInvite: failed to delete existing invitation tokens for user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
-		errors.LogError(fmt.Errorf("ResendInvite: failed to generate random bytes for invitation token: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("ResendInvite: failed to generate random bytes for invitation token: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 	plaintextToken := base64.URLEncoding.EncodeToString(tokenBytes)
@@ -441,8 +435,8 @@ func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 	if err != nil {
-		errors.LogError(fmt.Errorf("ResendInvite: CreateInvitationToken failed for user %s: %w", targetUserIDStr, err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("ResendInvite: CreateInvitationToken failed for user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
@@ -473,8 +467,8 @@ func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
 
 	bodyBytes, err := json.Marshal(sgMailBody)
 	if err != nil {
-		errors.LogError(fmt.Errorf("ResendInvite: failed to marshal SendGrid request body for user %s: %w", targetUserIDStr, err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("ResendInvite: failed to marshal SendGrid request body for user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
@@ -483,25 +477,24 @@ func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
 	sendgridRequest.Body = bodyBytes
 	sgResponse, err := sendgrid.API(sendgridRequest)
 	if err != nil {
-		errors.LogError(fmt.Errorf("ResendInvite: SendGrid API call failed for user %s: %w.", targetUserIDStr, err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("ResendInvite: SendGrid API call failed for user %s: %w.", targetUserIDStr, err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if sgResponse.StatusCode < 200 || sgResponse.StatusCode >= 300 {
-		errors.LogError(fmt.Errorf("ResendInvite: SendGrid API returned error status code %d for user %s. Body: %s.", sgResponse.StatusCode, targetUserIDStr, sgResponse.Body))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("ResendInvite: SendGrid API returned error status code %d for user %s. Body: %s.", sgResponse.StatusCode, targetUserIDStr, sgResponse.Body), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		errors.LogError(fmt.Errorf("ResendInvite: failed to commit transaction for user %s: %w", targetUserIDStr, err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("ResendInvite: failed to commit transaction for user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+	responder.RespondWithJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
 
 func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -510,16 +503,15 @@ func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	targetUserIDStr := chi.URLParam(r, "userID")
 
 	if !h.deleteUserRateLimiter.Allow(targetUserIDStr) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusTooManyRequests)
-		json.NewEncoder(w).Encode(map[string]string{"error": "ユーザー削除の操作は制限されています。しばらくしてから再度お試しください。"})
+		appErr := errlib.New(fmt.Errorf("rate limit exceeded for user %s delete", targetUserIDStr), http.StatusTooManyRequests, "ユーザー削除の操作は制限されています。しばらくしてから再度お試しください。")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	var targetUserID pgtype.UUID
 	if err := targetUserID.Scan(targetUserIDStr); err != nil {
-		errors.LogError(fmt.Errorf("DeleteUser: invalid target userID format '%s': %w", targetUserIDStr, err))
-		w.WriteHeader(http.StatusBadRequest)
+		appErr := errlib.New(fmt.Errorf("DeleteUser: invalid target userID format '%s': %w", targetUserIDStr, err), http.StatusBadRequest, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
@@ -528,39 +520,37 @@ func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	targetDBUser, err := h.q.GetUserByID(ctx, targetUserID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			errors.LogError(fmt.Errorf("DeleteUser: target user with ID %s not found: %w", targetUserIDStr, err))
-			w.WriteHeader(http.StatusNotFound)
+		if errlib.Is(err, pgx.ErrNoRows) {
+			appErr := errlib.New(fmt.Errorf("DeleteUser: target user with ID %s not found: %w", targetUserIDStr, err), http.StatusNotFound, "")
+			responder.RespondWithError(w, appErr)
 			return
 		}
-		errors.LogError(fmt.Errorf("DeleteUser: failed to get target user %s: %w", targetUserIDStr, err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("DeleteUser: failed to get target user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if invokerTenantID != targetDBUser.TenantID {
-		errors.LogError(fmt.Errorf("DeleteUser: invoker %s (tenant %s) attempting to delete user %s (tenant %s) in different tenant", invokerUserID.String(), invokerTenantID.String(), targetUserID.String(), targetDBUser.TenantID.String()))
-		w.WriteHeader(http.StatusForbidden)
+		appErr := errlib.New(fmt.Errorf("DeleteUser: invoker %s (tenant %s) attempting to delete user %s (tenant %s) in different tenant", invokerUserID.String(), invokerTenantID.String(), targetUserID.String(), targetDBUser.TenantID.String()), http.StatusForbidden, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if invokerUserID == targetUserID {
-		errors.LogError(fmt.Errorf("DeleteUser: user %s attempting to delete themselves", invokerUserID.String()))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(map[string]string{"error": "自分自身を削除することはできません。"})
+		appErr := errlib.New(fmt.Errorf("DeleteUser: user %s attempting to delete themselves", invokerUserID.String()), http.StatusConflict, "自分自身を削除することはできません。")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		errors.LogError(fmt.Errorf("DeleteUser: failed to begin transaction: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("DeleteUser: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 	defer func() {
-		if rbErr := tx.Rollback(ctx); rbErr != nil && !errors.Is(rbErr, pgx.ErrTxClosed) && !errors.Is(rbErr, sql.ErrTxDone) {
-			errors.LogError(fmt.Errorf("DeleteUser: failed to rollback transaction: %w", rbErr))
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
+			errlib.LogError(fmt.Errorf("DeleteUser: failed to rollback transaction: %w", rbErr))
 		}
 	}()
 	qtx := h.q.WithTx(tx)
@@ -569,30 +559,30 @@ func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		UserID:   targetUserID,
 		TenantID: targetDBUser.TenantID,
 	}); err != nil {
-		errors.LogError(fmt.Errorf("DeleteUser: failed to delete invitation tokens for user %s: %w", targetUserIDStr, err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("DeleteUser: failed to delete invitation tokens for user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if err := qtx.DeleteRefreshTokensByUserID(ctx, targetUserID); err != nil {
-		errors.LogError(fmt.Errorf("DeleteUser: failed to delete refresh tokens for user %s: %w", targetUserIDStr, err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("DeleteUser: failed to delete refresh tokens for user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if err := qtx.DeleteUser(ctx, targetUserID); err != nil {
-		errors.LogError(fmt.Errorf("DeleteUser: failed to delete user %s: %w", targetUserIDStr, err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("DeleteUser: failed to delete user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		errors.LogError(fmt.Errorf("DeleteUser: failed to commit transaction for user %s: %w", targetUserIDStr, err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("DeleteUser: failed to commit transaction for user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	responder.RespondWithJSON(w, http.StatusNoContent, nil)
 }
 
 func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
@@ -602,25 +592,25 @@ func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.q.GetUserByID(ctx, userID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			errors.LogError(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err))
-			w.WriteHeader(http.StatusNotFound)
+		if errlib.Is(err, pgx.ErrNoRows) {
+			appErr := errlib.New(fmt.Errorf("GetMe: user not found %s: %w", userID.String(), err), http.StatusNotFound, "")
+			responder.RespondWithError(w, appErr)
 			return
 		}
-		errors.LogError(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	tenant, err := h.q.GetTenantByID(ctx, tenantID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			errors.LogError(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err))
-			w.WriteHeader(http.StatusNotFound)
+		if errlib.Is(err, pgx.ErrNoRows) {
+			appErr := errlib.New(fmt.Errorf("GetMe: tenant not found %s for user %s: %w", tenantID.String(), userID.String(), err), http.StatusNotFound, "")
+			responder.RespondWithError(w, appErr)
 			return
 		}
-		errors.LogError(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
@@ -633,7 +623,5 @@ func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		UserRole:   user.Role,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	responder.RespondWithJSON(w, http.StatusOK, response)
 }

@@ -14,9 +14,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"dislyze/lib/config"
-	"dislyze/lib/errors"
+	"dislyze/lib/errlib"
 	"dislyze/lib/jwt"
 	"dislyze/lib/ratelimit"
+	"dislyze/lib/responder"
 	"dislyze/lib/utils"
 	"dislyze/queries"
 
@@ -180,48 +181,40 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Re
 
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	if !h.rateLimiter.Allow(r.RemoteAddr) {
-		appErr := errors.New(fmt.Errorf("rate limit exceeded for signup"), "Too many requests", http.StatusTooManyRequests)
-		errors.LogError(appErr)
-		http.Error(w, "Too many requests, please try again later.", http.StatusTooManyRequests)
+		appErr := errlib.New(fmt.Errorf("rate limit exceeded for signup"), http.StatusTooManyRequests, "Too many requests, please try again later.")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	var req SignupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errors.New(err, "Failed to decode request body", http.StatusBadRequest)
-		errors.LogError(appErr)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		appErr := errlib.New(err, http.StatusBadRequest, "Invalid request body")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		response := SignupResponse{Error: err.Error()}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		appErr := errlib.New(err, http.StatusBadRequest, err.Error())
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	exists, err := h.queries.ExistsUserWithEmail(r.Context(), req.Email)
 	if err != nil {
-		appErr := errors.New(err, "Failed to check if user exists", http.StatusInternalServerError)
-		errors.LogError(appErr)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		appErr := errlib.New(err, http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 	if exists {
-		response := SignupResponse{Error: ErrUserAlreadyExists.Error()}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		appErr := errlib.New(ErrUserAlreadyExists, http.StatusBadRequest, ErrUserAlreadyExists.Error())
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	tokenPair, err := h.signup(r.Context(), &req, r)
 	if err != nil {
-		appErr := errors.New(err, "Failed to create user", http.StatusInternalServerError)
-		errors.LogError(appErr)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		appErr := errlib.New(err, http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
@@ -245,13 +238,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   7 * 24 * 60 * 60, // 7 days
 	})
 
-	response := SignupResponse{
-		Success: true,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	responder.RespondWithJSON(w, http.StatusOK, SignupResponse{Success: true})
 }
 
 func (r *LoginRequest) Validate() error {
@@ -270,7 +257,7 @@ func (r *LoginRequest) Validate() error {
 func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Request) (*jwt.TokenPair, error) {
 	user, err := h.queries.GetUserByEmail(ctx, req.Email)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errlib.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("メールアドレスまたはパスワードが正しくありません")
 		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
@@ -302,11 +289,11 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 	qtx := h.queries.WithTx(tx)
 
 	existingToken, err := qtx.GetRefreshTokenByUserID(ctx, user.ID)
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	if err != nil && !errlib.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("failed to check existing refresh token: %w", err)
 	}
 
-	if !errors.Is(err, pgx.ErrNoRows) {
+	if !errlib.Is(err, pgx.ErrNoRows) {
 		err = qtx.UpdateRefreshTokenLastUsed(ctx, existingToken.Jti)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update refresh token last used: %w", err)
@@ -338,34 +325,28 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if !h.rateLimiter.Allow(r.RemoteAddr) {
-		appErr := errors.New(fmt.Errorf("rate limit exceeded for login"), "Too many requests", http.StatusTooManyRequests)
-		errors.LogError(appErr)
-		http.Error(w, "Too many requests, please try again later.", http.StatusTooManyRequests)
+		appErr := errlib.New(fmt.Errorf("rate limit exceeded for login"), http.StatusTooManyRequests, "Too many requests, please try again later.")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errors.New(err, "Failed to decode request body", http.StatusBadRequest)
-		errors.LogError(appErr)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		appErr := errlib.New(err, http.StatusBadRequest, "Invalid request body")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		response := LoginResponse{Error: err.Error()}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		appErr := errlib.New(err, http.StatusBadRequest, err.Error())
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	tokenPair, err := h.login(r.Context(), &req, r)
 	if err != nil {
-		response := LoginResponse{Error: err.Error()}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(response)
+		appErr := errlib.New(err, http.StatusUnauthorized, err.Error())
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
@@ -389,13 +370,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   7 * 24 * 60 * 60, // 7 days
 	})
 
-	response := LoginResponse{
-		Success: true,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	responder.RespondWithJSON(w, http.StatusOK, LoginResponse{Success: true})
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -419,7 +394,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 	})
 
-	w.WriteHeader(http.StatusOK)
+	responder.RespondWithJSON(w, http.StatusOK, nil)
 }
 
 type AcceptInviteRequest struct {
@@ -451,15 +426,15 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 
 	var req AcceptInviteRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		errors.LogError(fmt.Errorf("AcceptInvite: failed to decode request: %w", err))
-		w.WriteHeader(http.StatusBadRequest)
+		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to decode request: %w", err), http.StatusBadRequest, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 	defer r.Body.Close()
 
 	if err := req.Validate(); err != nil {
-		errors.LogError(fmt.Errorf("AcceptInvite: validation failed: %w", err))
-		w.WriteHeader(http.StatusBadRequest)
+		appErr := errlib.New(fmt.Errorf("AcceptInvite: validation failed: %w", err), http.StatusBadRequest, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
@@ -468,55 +443,51 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		errors.LogError(fmt.Errorf("AcceptInvite: failed to begin transaction: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 	defer func() {
-		if rbErr := tx.Rollback(ctx); rbErr != nil && !errors.Is(rbErr, pgx.ErrTxClosed) && !errors.Is(rbErr, sql.ErrTxDone) {
-			errors.LogError(fmt.Errorf("AcceptInvite: failed to rollback transaction: %w", rbErr))
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
+			errlib.LogError(fmt.Errorf("AcceptInvite: failed to rollback transaction: %w", rbErr))
 		}
 	}()
 	qtx := h.queries.WithTx(tx)
 
 	invitationTokenRecord, err := qtx.GetInvitationByTokenHash(ctx, hashedTokenStr)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			errors.LogError(fmt.Errorf("AcceptInvite: token not found or expired for hash %s", hashedTokenStr))
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{"error": "招待リンクが無効か、期限切れです。お手数ですが、招待者に再度依頼してください。"})
+		if errlib.Is(err, pgx.ErrNoRows) {
+			appErr := errlib.New(fmt.Errorf("AcceptInvite: token not found or expired for hash %s: %w", hashedTokenStr, err), http.StatusUnauthorized, "招待リンクが無効か、期限切れです。お手数ですが、招待者に再度依頼してください。")
+			responder.RespondWithError(w, appErr)
 			return
 		}
-		errors.LogError(fmt.Errorf("AcceptInvite: GetInvitationByTokenHash failed: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("AcceptInvite: GetInvitationByTokenHash failed: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	dbUser, err := qtx.GetUserByID(ctx, invitationTokenRecord.UserID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			errors.LogError(fmt.Errorf("AcceptInvite: user for valid token not found, userID: %s", invitationTokenRecord.UserID.String()))
-			w.WriteHeader(http.StatusInternalServerError)
+		if errlib.Is(err, pgx.ErrNoRows) {
+			appErr := errlib.New(fmt.Errorf("AcceptInvite: user for valid token not found, userID: %s: %w", invitationTokenRecord.UserID, err), http.StatusInternalServerError, "")
+			responder.RespondWithError(w, appErr)
 			return
 		}
-		errors.LogError(fmt.Errorf("AcceptInvite: GetUserByID failed: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("AcceptInvite: GetUserByID failed: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if dbUser.Status != "pending_verification" {
-		errors.LogError(fmt.Errorf("AcceptInvite: user %s status is '%s', expected 'pending_verification' for token %s", dbUser.ID.String(), dbUser.Status, hashedTokenStr))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "このユーザーはすでに承諾済みです。"})
+		appErr := errlib.New(fmt.Errorf("AcceptInvite: user %s status is '%s', expected 'pending_verification' for token %s", dbUser.ID.String(), dbUser.Status, hashedTokenStr), http.StatusUnauthorized, "このユーザーはすでに承諾済みです。")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	hashedNewPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		errors.LogError(fmt.Errorf("AcceptInvite: failed to hash new password: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to hash new password: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
@@ -525,22 +496,22 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 		ID:           invitationTokenRecord.UserID,
 	})
 	if err != nil {
-		errors.LogError(fmt.Errorf("AcceptInvite: ActivateInvitedUser failed: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("AcceptInvite: ActivateInvitedUser failed: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	err = qtx.DeleteInvitationToken(ctx, invitationTokenRecord.ID)
 	if err != nil {
-		errors.LogError(fmt.Errorf("AcceptInvite: failed to delete used invitation token ID %s: %w", invitationTokenRecord.ID.String(), err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to delete used invitation token ID %s: %w", invitationTokenRecord.ID.String(), err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	tokenPair, err := jwt.GenerateTokenPair(dbUser.ID, invitationTokenRecord.TenantID, dbUser.Role, []byte(h.env.JWTSecret))
 	if err != nil {
-		errors.LogError(fmt.Errorf("AcceptInvite: failed to generate token pair: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to generate token pair: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
@@ -552,8 +523,8 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
 	})
 	if err != nil {
-		errors.LogError(fmt.Errorf("AcceptInvite: failed to store refresh token: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to store refresh token: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
@@ -578,13 +549,12 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := tx.Commit(ctx); err != nil {
-		errors.LogError(fmt.Errorf("AcceptInvite: failed to commit transaction: %w", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+	responder.RespondWithJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
 
 func (r *ForgotPasswordRequest) Validate() error {
@@ -602,52 +572,44 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	if !h.rateLimiter.Allow(r.RemoteAddr) {
-		errors.LogError(errors.New(fmt.Errorf("rate limit exceeded for forgot password: %s", r.RemoteAddr), "Rate limit", http.StatusTooManyRequests))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		internalErr := errlib.New(fmt.Errorf("rate limit exceeded for forgot password: %s", r.RemoteAddr), http.StatusTooManyRequests, "Rate limit for forgot password")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
 		return
 	}
 
 	var req ForgotPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errors.New(err, "Failed to decode forgot password request body", http.StatusBadRequest)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: false})
+		internalErr := errlib.New(err, http.StatusBadRequest, "Failed to decode forgot password request body")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusBadRequest, ForgotPasswordResponse{Success: false})
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		errors.LogError(errors.New(err, "Forgot password validation failed", http.StatusBadRequest))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: false})
+		internalErr := errlib.New(err, http.StatusBadRequest, "Forgot password validation failed")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusBadRequest, ForgotPasswordResponse{Success: false})
 		return
 	}
 
 	user, err := h.queries.GetUserByEmail(ctx, req.Email)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errlib.Is(err, pgx.ErrNoRows) {
 			log.Printf("ForgotPassword: No user found for email %s", req.Email)
 		} else {
-			appErr := errors.New(err, fmt.Sprintf("ForgotPassword: Failed to get user by email %s", req.Email), http.StatusInternalServerError)
-			errors.LogError(appErr)
+			internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: Failed to get user by email %s", req.Email))
+			errlib.LogError(internalErr)
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
 		return
 	}
 
 	resetTokenUUID, err := utils.NewUUID()
 	if err != nil {
-		appErr := errors.New(err, "ForgotPassword: Failed to generate reset token UUID", http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		internalErr := errlib.New(err, http.StatusInternalServerError, "ForgotPassword: Failed to generate reset token UUID")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
 		return
 	}
 	resetToken := resetTokenUUID.String()
@@ -659,23 +621,19 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	tx, txErr := h.dbConn.Begin(ctx)
 	if txErr != nil {
-		appErr := errors.New(txErr, "ForgotPassword: Failed to begin transaction", http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		internalErr := errlib.New(txErr, http.StatusInternalServerError, "ForgotPassword: Failed to begin transaction")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
 		return
 	}
 	defer tx.Rollback(ctx)
 
 	qtx := h.queries.WithTx(tx)
 
-	if err := qtx.DeletePasswordResetTokenByUserID(ctx, user.ID); err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		appErr := errors.New(err, fmt.Sprintf("ForgotPassword: Failed to delete existing password reset token for user %s", user.ID), http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+	if err := qtx.DeletePasswordResetTokenByUserID(ctx, user.ID); err != nil && !errlib.Is(err, pgx.ErrNoRows) {
+		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: Failed to delete existing password reset token for user %s", user.ID))
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
 		return
 	}
 
@@ -685,20 +643,16 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 	if createErr != nil {
-		appErr := errors.New(createErr, fmt.Sprintf("ForgotPassword: Failed to create password reset token for user %s", user.ID), http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		internalErr := errlib.New(createErr, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: Failed to create password reset token for user %s", user.ID))
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
 		return
 	}
 
 	if commitErr := tx.Commit(ctx); commitErr != nil {
-		appErr := errors.New(commitErr, "ForgotPassword: Failed to commit transaction", http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		internalErr := errlib.New(commitErr, http.StatusInternalServerError, "ForgotPassword: Failed to commit transaction")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
 		return
 	}
 
@@ -723,11 +677,9 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	bodyBytes, err := json.Marshal(sgMailBody)
 	if err != nil {
-		appErr := errors.New(err, fmt.Sprintf("ForgotPassword: failed to marshal SendGrid request body for %s", req.Email), http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: failed to marshal SendGrid request body for %s", req.Email))
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
 		return
 	}
 
@@ -736,28 +688,22 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	sendgridRequest.Body = bodyBytes
 	sgResponse, err := sendgrid.API(sendgridRequest)
 	if err != nil {
-		appErr := errors.New(err, fmt.Sprintf("ForgotPassword: SendGrid API call failed for %s", req.Email), http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: SendGrid API call failed for %s", req.Email))
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
 		return
 	}
 
 	if sgResponse.StatusCode < 200 || sgResponse.StatusCode >= 300 {
-		appErr := errors.New(fmt.Errorf("SendGrid API returned error status code: %d, Body: %s", sgResponse.StatusCode, sgResponse.Body), fmt.Sprintf("ForgotPassword: SendGrid API error for %s", req.Email), http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+		internalErr := errlib.New(fmt.Errorf("SendGrid API returned error status code: %d, Body: %s", sgResponse.StatusCode, sgResponse.Body), http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: SendGrid API error for %s", req.Email))
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
 		return
 	}
 
 	log.Printf("Password reset email successfully sent via SendGrid to user with id: %s", user.ID)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ForgotPasswordResponse{Success: true})
+	responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
 }
 
 type VerifyResetTokenRequest struct {
@@ -782,20 +728,16 @@ func (h *AuthHandler) VerifyResetToken(w http.ResponseWriter, r *http.Request) {
 
 	var req VerifyResetTokenRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errors.New(err, "Failed to decode verify reset token request body", http.StatusBadRequest)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+		internalErr := errlib.New(err, http.StatusBadRequest, "Failed to decode verify reset token request body")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusBadRequest, VerifyResetTokenResponse{Success: false})
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		appErr := errors.New(err, "Verify reset token validation failed", http.StatusBadRequest)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+		internalErr := errlib.New(err, http.StatusBadRequest, "Verify reset token validation failed")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusBadRequest, VerifyResetTokenResponse{Success: false})
 		return
 	}
 
@@ -804,59 +746,47 @@ func (h *AuthHandler) VerifyResetToken(w http.ResponseWriter, r *http.Request) {
 
 	tokenRecord, err := h.queries.GetPasswordResetTokenByHash(ctx, hashedTokenStr)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			errors.LogError(errors.New(err, fmt.Sprintf("VerifyResetToken: Token hash not found: %s", hashedTokenStr), http.StatusBadRequest))
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+		if errlib.Is(err, pgx.ErrNoRows) {
+			internalErr := errlib.New(err, http.StatusBadRequest, fmt.Sprintf("VerifyResetToken: Token hash not found: %s", hashedTokenStr))
+			errlib.LogError(internalErr)
+			responder.RespondWithJSON(w, http.StatusBadRequest, VerifyResetTokenResponse{Success: false})
 			return
 		}
-
-		appErr := errors.New(err, fmt.Sprintf("VerifyResetToken: Failed to query password reset token by hash %s", hashedTokenStr), http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("VerifyResetToken: Failed to query password reset token by hash %s", hashedTokenStr))
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusInternalServerError, VerifyResetTokenResponse{Success: false})
 		return
 	}
 
 	if tokenRecord.UsedAt.Valid {
-		errors.LogError(errors.New(fmt.Errorf("VerifyResetToken: Token ID %s already used at %v", tokenRecord.ID, tokenRecord.UsedAt.Time), "Token already used", http.StatusBadRequest))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+		internalErr := errlib.New(fmt.Errorf("VerifyResetToken: Token ID %s already used at %v", tokenRecord.ID, tokenRecord.UsedAt.Time), http.StatusBadRequest, "Token already used")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusBadRequest, VerifyResetTokenResponse{Success: false})
 		return
 	}
 
 	if time.Now().After(tokenRecord.ExpiresAt.Time) {
-		errors.LogError(errors.New(fmt.Errorf("VerifyResetToken: Token ID %s expired at %v", tokenRecord.ID, tokenRecord.ExpiresAt.Time), "Token expired", http.StatusBadRequest))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+		internalErr := errlib.New(fmt.Errorf("VerifyResetToken: Token ID %s expired at %v", tokenRecord.ID, tokenRecord.ExpiresAt.Time), http.StatusBadRequest, "Token expired")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusBadRequest, VerifyResetTokenResponse{Success: false})
 		return
 	}
 
 	user, err := h.queries.GetUserByID(ctx, tokenRecord.UserID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			appErr := errors.New(err, fmt.Sprintf("VerifyResetToken: User ID %s for valid token %s not found", tokenRecord.UserID, tokenRecord.ID), http.StatusInternalServerError)
-			errors.LogError(appErr)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+		if errlib.Is(err, pgx.ErrNoRows) {
+			internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("VerifyResetToken: User ID %s for valid token %s not found", tokenRecord.UserID, tokenRecord.ID))
+			errlib.LogError(internalErr)
+			responder.RespondWithJSON(w, http.StatusInternalServerError, VerifyResetTokenResponse{Success: false})
 			return
 		}
-		appErr := errors.New(err, fmt.Sprintf("VerifyResetToken: Failed to get user email for user ID %s", tokenRecord.UserID), http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: false})
+		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("VerifyResetToken: Failed to get user email for user ID %s", tokenRecord.UserID))
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusInternalServerError, VerifyResetTokenResponse{Success: false})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(VerifyResetTokenResponse{Success: true, Email: user.Email})
+	responder.RespondWithJSON(w, http.StatusOK, VerifyResetTokenResponse{Success: true, Email: user.Email})
 }
 
 type ResetPasswordRequest struct {
@@ -894,20 +824,16 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	var req ResetPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errors.New(err, "Failed to decode reset password request body", http.StatusBadRequest)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		internalErr := errlib.New(err, http.StatusBadRequest, "Failed to decode reset password request body")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusBadRequest, ResetPasswordResponse{Success: false})
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		appErr := errors.New(err, "Reset password validation failed", http.StatusBadRequest)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		internalErr := errlib.New(err, http.StatusBadRequest, "Reset password validation failed")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusBadRequest, ResetPasswordResponse{Success: false})
 		return
 	}
 
@@ -916,54 +842,45 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	tokenRecord, err := h.queries.GetPasswordResetTokenByHash(ctx, hashedTokenStr)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			errors.LogError(errors.New(err, fmt.Sprintf("ResetPassword: Token hash not found: %s", hashedTokenStr), http.StatusBadRequest))
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		if errlib.Is(err, pgx.ErrNoRows) {
+			internalErr := errlib.New(err, http.StatusBadRequest, fmt.Sprintf("ResetPassword: Token hash not found: %s", hashedTokenStr))
+			errlib.LogError(internalErr)
+			responder.RespondWithJSON(w, http.StatusBadRequest, ResetPasswordResponse{Success: false})
 			return
 		}
-		appErr := errors.New(err, fmt.Sprintf("ResetPassword: Failed to query password reset token by hash %s", hashedTokenStr), http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to query password reset token by hash %s", hashedTokenStr))
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusInternalServerError, ResetPasswordResponse{Success: false})
 		return
 	}
 
 	if tokenRecord.UsedAt.Valid {
-		errors.LogError(errors.New(fmt.Errorf("ResetPassword: Token ID %s already used at %v", tokenRecord.ID, tokenRecord.UsedAt.Time), "Token already used", http.StatusBadRequest))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		internalErr := errlib.New(fmt.Errorf("ResetPassword: Token ID %s already used at %v", tokenRecord.ID, tokenRecord.UsedAt.Time), http.StatusBadRequest, "Token already used")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusBadRequest, ResetPasswordResponse{Success: false})
 		return
 	}
 
 	if time.Now().After(tokenRecord.ExpiresAt.Time) {
-		errors.LogError(errors.New(fmt.Errorf("ResetPassword: Token ID %s expired at %v", tokenRecord.ID, tokenRecord.ExpiresAt.Time), "Token expired", http.StatusBadRequest))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		internalErr := errlib.New(fmt.Errorf("ResetPassword: Token ID %s expired at %v", tokenRecord.ID, tokenRecord.ExpiresAt.Time), http.StatusBadRequest, "Token expired")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusBadRequest, ResetPasswordResponse{Success: false})
 		return
 	}
 
 	hashedNewPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		appErr := errors.New(err, "ResetPassword: Failed to hash new password", http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		internalErr := errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to hash new password")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusInternalServerError, ResetPasswordResponse{Success: false})
 		return
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		appErr := errors.New(err, "ResetPassword: Failed to begin transaction", http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		internalErr := errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to begin transaction")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusInternalServerError, ResetPasswordResponse{Success: false})
 		return
 	}
 	defer tx.Rollback(ctx)
@@ -974,37 +891,29 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		ID:           tokenRecord.UserID,
 		PasswordHash: string(hashedNewPassword),
 	}); err != nil {
-		appErr := errors.New(err, fmt.Sprintf("ResetPassword: Failed to update password for user ID %s", tokenRecord.UserID), http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to update password for user ID %s", tokenRecord.UserID))
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusInternalServerError, ResetPasswordResponse{Success: false})
 		return
 	}
 
 	if err := qtx.MarkPasswordResetTokenAsUsed(ctx, tokenRecord.ID); err != nil {
-		appErr := errors.New(err, fmt.Sprintf("ResetPassword: Failed to mark reset token ID %s as used", tokenRecord.ID), http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to mark reset token ID %s as used", tokenRecord.ID))
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusInternalServerError, ResetPasswordResponse{Success: false})
 		return
 	}
 
 	if err := qtx.DeleteRefreshTokensByUserID(ctx, tokenRecord.UserID); err != nil {
-		errors.LogError(errors.New(err, fmt.Sprintf("ResetPassword: Failed to delete refresh tokens for user ID %s, but password reset was successful", tokenRecord.UserID), http.StatusInternalServerError))
+		errlib.LogError(errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to delete refresh tokens for user ID %s, but password reset was successful", tokenRecord.UserID)))
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		appErr := errors.New(err, "ResetPassword: Failed to commit transaction", http.StatusInternalServerError)
-		errors.LogError(appErr)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ResetPasswordResponse{Success: false})
+		internalErr := errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to commit transaction")
+		errlib.LogError(internalErr)
+		responder.RespondWithJSON(w, http.StatusInternalServerError, ResetPasswordResponse{Success: false})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ResetPasswordResponse{Success: true})
+	responder.RespondWithJSON(w, http.StatusOK, ResetPasswordResponse{Success: true})
 }
