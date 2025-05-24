@@ -5,6 +5,7 @@
 	import Button from "$components/Button.svelte";
 	import Input from "$components/Input.svelte";
 	import { KnownError } from "$lib/errors";
+	import { goto } from "$app/navigation";
 
 	const { form, errors, data, isSubmitting } = createForm({
 		initialValues: {
@@ -64,7 +65,13 @@
 					throw new KnownError(data.error);
 				}
 
-				window.location.href = "/";
+				// svelte 5s rendering bugs when using goto while an input is focused
+				const activeElement = document.activeElement;
+				if (activeElement instanceof HTMLInputElement) {
+					activeElement.blur();
+				}
+
+				goto("/");
 			} catch (err) {
 				toast.showError(err);
 			}
