@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from "$app/state";
-	import { goto } from "$app/navigation";
+	import { safeGoto } from "$lib/routing";
 	import { PUBLIC_API_URL } from "$env/static/public";
 	import Button from "$components/Button.svelte";
 
@@ -13,11 +13,11 @@
 		} catch (logoutError) {
 			console.error("Logout attempt from error page failed:", logoutError);
 		}
-		goto("/auth/login");
+		safeGoto("/auth/login");
 	}
 
 	function handleGoHome() {
-		goto("/");
+		safeGoto("/");
 	}
 </script>
 

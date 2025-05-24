@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
 	import EmptyAvatar from "$components/EmptyAvatar.svelte";
 	import { PUBLIC_API_URL } from "$env/static/public";
@@ -7,6 +6,7 @@
 	import { slide, fade } from "svelte/transition";
 	import type { Snippet } from "svelte";
 	import { me } from "$lib/me";
+	import { safeGoto } from "$lib/routing";
 
 	let isMobileNavigationOpen = $state(false);
 
@@ -32,7 +32,7 @@
 				errorStore.setError(500, "処理中に予期せぬエラーが発生しました。");
 			}
 
-			goto("/auth/login");
+			safeGoto("/auth/login");
 		} catch (logoutError) {
 			console.error("Logout request failed:", logoutError);
 			errorStore.setError(500, "処理中に予期せぬエラーが発生しました。");

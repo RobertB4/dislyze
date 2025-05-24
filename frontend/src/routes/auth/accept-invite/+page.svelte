@@ -5,7 +5,7 @@
 	import { createForm } from "felte";
 	import type { PageData } from "./$types";
 	import { toast } from "$components/Toast/toast";
-	import { goto } from "$app/navigation";
+	import { safeGoto } from "$lib/routing";
 	import { mutationFetch } from "$lib/fetch";
 
 	let { data: pageData }: { data: PageData } = $props();
@@ -50,7 +50,7 @@
 
 			if (success) {
 				toast.show("招待が承認されました。", "success");
-				goto("/");
+				safeGoto("/");
 			}
 		}
 	});
