@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM --platform=linux/amd64 node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -11,6 +11,7 @@ COPY test/vite.e2e.config.ts ./vite.config.ts
 
 COPY tsconfig.json ./
 
+RUN rm -rf node_modules package-lock.json || true
 RUN npm install --no-frozen-lockfile
 
 COPY . .

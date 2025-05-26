@@ -9,6 +9,8 @@ cd "$SCRIPT_DIR" # Ensure we are in frontend/test
 cleanup() {
   echo "Cleaning up E2E environment..."
   docker compose -f "$COMPOSE_FILE" down -v --remove-orphans
+  echo "Pruning dangling Docker images..."
+  docker image prune -f --filter "dangling=true" || true
 }
 
 trap cleanup EXIT SIGINT SIGTERM
