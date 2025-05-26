@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { page } from "$app/state";
 	import { safeGoto } from "$lib/routing";
-	import { PUBLIC_API_URL } from "$env/static/public";
 	import Button from "$components/Button.svelte";
 
 	async function handleReturnToLogin() {
 		try {
-			await fetch(`${PUBLIC_API_URL}/auth/logout`, {
+			await fetch(`/api/auth/logout`, {
 				method: "POST",
 				credentials: "include"
 			});

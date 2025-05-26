@@ -1,5 +1,4 @@
 import type { LayoutLoad } from "./$types";
-import { PUBLIC_API_URL } from "$env/static/public";
 import { loadFunctionFetch } from "$lib/fetch";
 import { redirect, error as svelteKitError } from "@sveltejs/kit";
 import { me, type Me } from "$lib/me";
@@ -32,7 +31,7 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 	if (url.pathname.startsWith("/auth")) {
 		// SCENARIO A: User is on an /auth page (e.g., /auth/login)
 		try {
-			const response = await loadFunctionFetch(fetch, `${PUBLIC_API_URL}/me`);
+			const response = await loadFunctionFetch(fetch, `/api/me`);
 			if (response.ok) {
 				const user = (await response.json()) as Me;
 				// Check for a valid user identifier (user_id from your meS.ts Me interface)
@@ -63,7 +62,7 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 	} else {
 		// SCENARIO B: User is on a protected page (NOT /auth)
 		try {
-			const response = await loadFunctionFetch(fetch, `${PUBLIC_API_URL}/me`);
+			const response = await loadFunctionFetch(fetch, `/api/me`);
 
 			if (!response.ok) {
 				// loadFunctionFetch throws for 401,403,404,5xx.

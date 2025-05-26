@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { toast } from "$components/Toast/toast";
 	import { createForm } from "felte";
-	import { PUBLIC_API_URL } from "$env/static/public";
 	import Button from "$components/Button.svelte";
 	import Input from "$components/Input.svelte";
 	import type { PageData } from "./$types";
@@ -38,7 +37,7 @@
 		},
 		onSubmit: async (values) => {
 			try {
-				const response = await fetch(`${PUBLIC_API_URL}/auth/reset-password`, {
+				const response = await fetch(`/api/auth/reset-password`, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json"

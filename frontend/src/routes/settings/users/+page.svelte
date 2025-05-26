@@ -6,7 +6,6 @@
 	import { createForm } from "felte";
 	import Input from "$components/Input.svelte";
 	import { toast } from "$components/Toast/toast";
-	import { PUBLIC_API_URL } from "$env/static/public";
 	import { invalidate } from "$app/navigation";
 	import Badge from "$components/Badge.svelte";
 	import Select from "$components/Select.svelte";
@@ -40,7 +39,7 @@
 			return errs;
 		},
 		onSubmit: async (values) => {
-			const { success } = await mutationFetch(`${PUBLIC_API_URL}/users/invite`, {
+			const { success } = await mutationFetch(`/api/users/invite`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json"
@@ -49,7 +48,7 @@
 			});
 
 			if (success) {
-				await invalidate(`${PUBLIC_API_URL}/users`);
+				await invalidate(`/api/users`);
 				reset();
 				toast.show("ユーザーを招待しました。", "success");
 				isSlideoverOpen = false;
@@ -81,12 +80,12 @@
 		onSubmit: async () => {
 			if (!userToDelete) return;
 
-			const { success } = await mutationFetch(`${PUBLIC_API_URL}/users/${userToDelete.id}`, {
+			const { success } = await mutationFetch(`/api/users/${userToDelete.id}`, {
 				method: "DELETE"
 			});
 
 			if (success) {
-				await invalidate(`${PUBLIC_API_URL}/users`);
+				await invalidate(`/api/users`);
 				resetDelete();
 				toast.show("ユーザーを削除しました。", "success");
 				userToDelete = null;
@@ -105,7 +104,7 @@
 	};
 
 	const handleResendInvite = async (userId: string) => {
-		const { success } = await mutationFetch(`${PUBLIC_API_URL}/users/${userId}/resend-invite`, {
+		const { success } = await mutationFetch(`/api/users/${userId}/resend-invite`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"

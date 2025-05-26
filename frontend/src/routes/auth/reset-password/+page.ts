@@ -1,6 +1,5 @@
 import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
-import { PUBLIC_API_URL } from "$env/static/public";
 
 export const load: PageLoad = async ({ url, fetch }) => {
 	const token = url.searchParams.get("token");
@@ -13,7 +12,7 @@ export const load: PageLoad = async ({ url, fetch }) => {
 	}
 
 	try {
-		const response = await fetch(`${PUBLIC_API_URL}/auth/verify-reset-token`, {
+		const response = await fetch(`/api/auth/verify-reset-token`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"

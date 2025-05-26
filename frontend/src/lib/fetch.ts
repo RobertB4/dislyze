@@ -1,5 +1,4 @@
 import { redirect, error as svelteKitError } from "@sveltejs/kit";
-import { PUBLIC_API_URL } from "$env/static/public";
 import { KnownError } from "./errors";
 import { toast } from "$components/Toast/toast";
 
@@ -44,7 +43,7 @@ export async function loadFunctionFetch(
 
 	if (response.status === 401) {
 		try {
-			const logoutResponse = await loadEventFetch(`${PUBLIC_API_URL}/auth/logout`, {
+			const logoutResponse = await loadEventFetch(`/api/auth/logout`, {
 				method: "POST",
 				credentials: "include"
 			});
@@ -97,7 +96,7 @@ export async function mutationFetch(
 
 	if (response.status === 401) {
 		try {
-			const logoutResponse = await fetch(`${PUBLIC_API_URL}/auth/logout`, {
+			const logoutResponse = await fetch(`/api/auth/logout`, {
 				method: "POST",
 				credentials: "include"
 			});

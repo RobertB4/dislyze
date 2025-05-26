@@ -1,7 +1,5 @@
 <script lang="ts">
 	import Button from "$components/Button.svelte";
-	import Input from "$components/Input.svelte";
-	import { PUBLIC_API_URL } from "$env/static/public";
 	import { createForm } from "felte";
 	import type { PageData } from "./$types";
 	import { toast } from "$components/Toast/toast";
@@ -36,7 +34,7 @@
 			return errs;
 		},
 		onSubmit: async (values) => {
-			const { success } = await mutationFetch(`${PUBLIC_API_URL}/auth/accept-invite`, {
+			const { success } = await mutationFetch(`/api/auth/accept-invite`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json"

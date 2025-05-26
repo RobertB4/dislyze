@@ -7,9 +7,7 @@ services:
     ports:
       - "23000:23000"
     environment:
-    # SvelteKit sets environment variables at build time, which leads to values
-    # set here being ignored. Environment variables are set in frontend/.env.e2e.
-      - PUBLIC_API_URL=http://backend:23001
+      - API_URL=http://backend:23001
     depends_on:
       - backend
     container_name: frontend_e2e
@@ -36,6 +34,7 @@ services:
       # Using container IP for frontend. Vite returns 403 for requests from http://frontend:23000
       - FRONTEND_URL=http://172.18.0.4:23000
       - INITIAL_PW=e2e_initial_password
+      - TRUSTED_PROXIES=172.18.0.4,frontend,127.0.0.1,localhost
     depends_on:
       postgres:
         condition: service_healthy

@@ -1,5 +1,4 @@
 import type { PageLoad } from "./$types";
-import { PUBLIC_API_URL } from "$env/static/public";
 import { loadFunctionFetch } from "$lib/fetch";
 
 type User = {
@@ -13,7 +12,7 @@ type User = {
 };
 
 export const load: PageLoad = async ({ fetch }) => {
-	const response = await loadFunctionFetch(fetch, `${PUBLIC_API_URL}/users`);
+	const response = await loadFunctionFetch(fetch, `/api/users`);
 
 	const users: User[] = await response.json();
 	return { users };

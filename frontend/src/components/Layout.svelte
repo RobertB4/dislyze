@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { page } from "$app/state";
 	import EmptyAvatar from "$components/EmptyAvatar.svelte";
-	import { PUBLIC_API_URL } from "$env/static/public";
 	import { errorStore } from "$lib/errors";
 	import { slide, fade } from "svelte/transition";
 	import type { Snippet } from "svelte";
@@ -23,7 +22,7 @@
 
 	async function handleLogout() {
 		try {
-			const res = await fetch(`${PUBLIC_API_URL}/auth/logout`, {
+			const res = await fetch(`/api/auth/logout`, {
 				method: "POST",
 				credentials: "include"
 			});
