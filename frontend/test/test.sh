@@ -6,6 +6,19 @@ COMPOSE_FILE="./docker-compose.e2e.yml"
 SCRIPT_DIR=$(dirname "$0")
 cd "$SCRIPT_DIR" # Ensure we are in frontend/test
 
+CI_MODE=false # Default CI mode to false
+
+# Parse arguments for --ci flag
+if [[ " $@[@] " =~ " --ci " ]]; then # Check if --ci is among the arguments
+  CI_MODE=true
+fi
+
+if [ "$CI_MODE" = true ]; then
+  echo "CI mode requested. CI environment variable will be set to true."
+else
+  echo "CI mode not requested. CI environment variable will be set to false (or use host CI if already set and true)."
+fi
+
 cleanup() {
   echo "Cleaning up E2E environment..."
   docker compose -f "$COMPOSE_FILE" down -v --remove-orphans
@@ -46,7 +59,6 @@ done
 # Health check for Backend (backend:23001)
 echo "Checking Backend (http://backend:23001/health)..."
 for i in $(seq 1 $MAX_RETRIES); do
-  # Use curl from within the playwright container as it has network access to other services
   if docker compose -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null http://backend:23001/health; then
     echo "Backend is ready."
     break
@@ -87,9 +99,9 @@ echo "All services are healthy."
 # The /app directory in the playwright container is the frontend/ directory on the host
 # The config file is at /app/test/playwright.e2e.config.ts
 # package.json is at /app/package.json
-echo "Running Playwright E2E tests..."
+echo "Running Playwright E2E tests... (CI Mode: $CI_MODE)"
 docker compose -f "$COMPOSE_FILE" exec -T \
-  -e CI="${CI:-false}" \
+  -e CI="${CI_MODE}" \
   -e PLAYWRIGHT_HEADED="${PLAYWRIGHT_HEADED:-false}" \
   playwright npx playwright test --config test/playwright.e2e.config.js
 
@@ -100,7 +112,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 if [ $TEST_EXIT_CODE -eq 0 ]; then
-  echo -e "${GREEN}E2E tests passed successfully.${NC}"
+  echo -e "${GREEN}✅ E2E tests passed successfully.${NC}"
 else
   echo -e "${RED}E2E tests failed with exit code $TEST_EXIT_CODE.${NC}"
 fi

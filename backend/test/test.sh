@@ -34,7 +34,7 @@ if [ $TEST_EXIT_CODE -ne 0 ]; then
     echo -e "${RED}❌ Tests failed! logs:${NC}"
     docker compose -f docker-compose.test.yml logs backend
 else
-    echo -e "${GREEN}✅ All tests passed!${NC}"
+    echo -e "${GREEN}✅ Integration tests passed successfully.${NC}"
 fi
 
 echo "🧹 Cleaning up..."
