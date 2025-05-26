@@ -2,19 +2,22 @@ FROM --platform=linux/amd64 node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json ./
-COPY package-lock.json ./
+COPY frontend/package.json ./
+COPY frontend/package-lock.json ./
 
 # Use E2E specific configurations by copying them to default config file names
-COPY test/svelte.e2e.config.js ./svelte.config.js
-COPY test/vite.e2e.config.ts ./vite.config.ts
+COPY frontend/test/svelte.e2e.config.js ./svelte.config.js
+COPY frontend/test/vite.e2e.config.ts ./vite.config.ts
+COPY frontend/tsconfig.json ./
 
-COPY tsconfig.json ./
+# Copy the E2E-specific .env file to .env for the build
+COPY frontend/.env.e2e ./.env
 
 RUN rm -rf node_modules package-lock.json || true
 RUN npm install --no-frozen-lockfile
 
-COPY . .
+# Copy the rest of the frontend application source code
+COPY frontend/. .
 
 RUN npm run build
 

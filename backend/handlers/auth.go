@@ -34,7 +34,7 @@ var (
 	ErrPasswordRequired    = fmt.Errorf("パスワードは必須です")
 	ErrPasswordTooShort    = fmt.Errorf("パスワードは8文字以上である必要があります")
 	ErrPasswordsDoNotMatch = fmt.Errorf("パスワードが一致しません")
-	ErrUserAlreadyExists   = fmt.Errorf("このメールアドレスは既に登録されています")
+	ErrUserAlreadyExists   = fmt.Errorf("このメールアドレスは既に使用されています。")
 )
 
 type SignupRequest struct {

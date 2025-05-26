@@ -215,7 +215,7 @@ func TestSignupDuplicateEmail(t *testing.T) {
 	err = json.NewDecoder(resp2.Body).Decode(&response)
 	assert.NoError(t, err)
 	assert.False(t, response.Success)
-	assert.Equal(t, "このメールアドレスは既に登録されています", response.Error)
+	assert.Equal(t, "このメールアドレスは既に使用されています。", response.Error)
 }
 
 func TestLogin(t *testing.T) {

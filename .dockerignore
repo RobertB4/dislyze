@@ -1,0 +1,57 @@
+# IDE & OS specific
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Build artifacts & local dependencies
+**/node_modules/
+**/dist/
+**/build/
+**/target/
+**/out/
+**/coverage/
+*.log
+npm-debug.log*
+yarn-error.log
+
+# SvelteKit environment files. See frontend/.env.e2e for E2E specific environment variables.
+frontend/.env
+
+# Test results (if not intended to be committed or copied to images)
+**/test-results/
+
+# Go specific (if applicable, some might be backend specific)
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Frontend specific (if applicable)
+.svelte-kit/
+
+# Backend specific (if applicable)
+# (e.g., compiled binaries if not built in Docker)
+
+# Docker
+# Avoid including Dockerfiles or compose files if they are specific to a sub-project
+# and the main context is the root, unless needed for a root build.
+# Generally, Docker build context will handle this, but can be explicit.
+
+# Secrets and sensitive files
+*.pem
+*.key
+*.secret
+*.secrets
+
+# Temporary files
+*~
+*.swp
+*.swo
+
+# Large media files (if not versioned with LFS)
+# *.mp4
+# *.mov
+# *.zip
+# *.gz 

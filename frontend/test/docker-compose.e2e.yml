@@ -2,11 +2,13 @@ services:
   frontend:
     platform: linux/amd64
     build:
-      context: ../ # frontend directory
-      dockerfile: ./test/Dockerfile.frontend.e2e
+      context: ../../  # Project root
+      dockerfile: ./frontend/test/Dockerfile.frontend.e2e # Path to Dockerfile from new context
     ports:
       - "23000:23000"
     environment:
+    # SvelteKit sets environment variables at build time, which leads to values
+    # set here being ignored. Environment variables are set in frontend/.env.e2e.
       - PUBLIC_API_URL=http://backend:23001
     depends_on:
       - backend
@@ -19,13 +21,21 @@ services:
     ports:
       - "23001:23001"
     environment:
+      - APP_ENV=e2e
+      - PORT=23001
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=testuser_e2e
       - DB_PASSWORD=testpassword_e2e
       - DB_NAME=testdb_e2e
       - DB_SSL_MODE=disable
-      - PORT=23001
+      - JWT_SECRET=e2e_super_secret_jwt_key_placeholder
+      - RATE_LIMIT=1000 # Higher limit for E2E tests
+      - SENDGRID_API_KEY=e2e_fake_sendgrid_key
+      - SENDGRID_API_URL=http://mock-sendgrid:1234
+      # Using container IP for frontend. Vite returns 403 for requests from http://frontend:23000
+      - FRONTEND_URL=http://172.18.0.4:23000
+      - INITIAL_PW=e2e_initial_password
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,13 +57,13 @@ services:
     container_name: postgres_e2e
 
   playwright:
-    image: mcr.microsoft.com/playwright:latest
+    image: mcr.microsoft.com/playwright:v1.52.0-jammy
     working_dir: /app # This is frontend/
     volumes:
       - ../:/app
       - ./test-results:/app/test/test-results
     environment:
-      # Using direct container IP for frontend as a workaround for Vite's Host header sensitivity.
+      # Using container IP for frontend. Vite returns 403 for requests from http://frontend:23000
       - PLAYWRIGHT_BASE_URL=http://172.18.0.4:23000 
       - CI=${CI:-false}
       - PLAYWRIGHT_HEADED=${PLAYWRIGHT_HEADED:-false}
