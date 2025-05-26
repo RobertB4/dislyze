@@ -1,0 +1,63 @@
+services:
+  frontend:
+    build:
+      context: ../ # frontend directory
+      dockerfile: ./test/Dockerfile.frontend.e2e
+    ports:
+      - "23000:23000"
+    environment:
+      - PUBLIC_API_URL=http://backend:23001
+    depends_on:
+      - backend
+    container_name: frontend_e2e
+
+  backend:
+    build:
+      context: ../../ # Project root
+      dockerfile: ./frontend/test/Dockerfile.backend.e2e
+    ports:
+      - "23001:23001"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=testuser_e2e
+      - DB_PASSWORD=testpassword_e2e
+      - DB_NAME=testdb_e2e
+      - DB_SSL_MODE=disable
+      - PORT=23001
+    depends_on:
+      postgres:
+        condition: service_healthy
+    container_name: backend_e2e
+
+  postgres:
+    image: postgres:17-alpine
+    ports:
+      - "25432:5432"
+    environment:
+      - POSTGRES_USER=testuser_e2e
+      - POSTGRES_PASSWORD=testpassword_e2e
+      - POSTGRES_DB=testdb_e2e
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser_e2e -d testdb_e2e -q"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    container_name: postgres_e2e
+
+  playwright:
+    image: mcr.microsoft.com/playwright:latest
+    working_dir: /app # This is frontend/
+    volumes:
+      - ../:/app
+      - ./test-results:/app/test/test-results
+    environment:
+      # Using direct container IP for frontend as a workaround for Vite's Host header sensitivity.
+      - PLAYWRIGHT_BASE_URL=http://172.18.0.4:23000 
+      - CI=${CI:-false}
+      - PLAYWRIGHT_HEADED=${PLAYWRIGHT_HEADED:-false}
+    command: sleep infinity
+    depends_on:
+      - frontend
+    user: pwuser
+    container_name: playwright_e2e

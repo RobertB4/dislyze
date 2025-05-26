@@ -1,0 +1,21 @@
+FROM golang:1.23-alpine
+
+WORKDIR /app
+
+# Context is project root, so paths are relative to <project_root>
+COPY backend/go.mod ./
+COPY backend/go.sum ./
+
+RUN go mod download
+
+# Context is project root, so copy backend/ subdirectory into /app
+COPY backend/ .
+
+# Context is project root, so 'database' is directly accessible
+COPY database /database
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o main ./main.go
+
+EXPOSE 23001
+
+CMD ["/app/main"] 
