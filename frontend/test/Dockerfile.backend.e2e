@@ -2,6 +2,9 @@ FROM golang:1.23-alpine
 
 WORKDIR /app
 
+# Install postgresql-client for psql
+RUN apk add --no-cache postgresql-client
+
 # Context is project root, so paths are relative to <project_root>
 COPY backend/go.mod ./
 COPY backend/go.sum ./

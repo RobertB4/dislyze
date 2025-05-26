@@ -59,7 +59,10 @@ for i in $(seq 1 $MAX_RETRIES); do
   fi
 done
 
-echo "Backend is ready."
+# Seed the E2E database
+echo "Seeding E2E database..."
+docker compose -f "$COMPOSE_FILE" exec -T backend sh -c 'PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f /database/seed.sql'
+echo "E2E database seeded."
 
 # Health check for Frontend (frontend:23000)
 # Sending requests directly to the container IP (e.g., http://172.18.0.4:23000) as Vite

@@ -62,7 +62,7 @@ func CloseDB(pool *pgxpool.Pool) {
 func SeedDB(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 
-	seedSQL, err := os.ReadFile("setup/seed.sql")
+	seedSQL, err := os.ReadFile("/database/seed.sql")
 	if err != nil {
 		t.Fatalf("Failed to read seed.sql: %v", err)
 	}
