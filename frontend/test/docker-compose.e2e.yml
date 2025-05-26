@@ -60,14 +60,22 @@ services:
     working_dir: /app # This is frontend/
     volumes:
       - ../:/app
+      - ../../database:/database
       - ./test-results:/app/test/test-results
     environment:
-      # Using container IP for frontend. Vite returns 403 for requests from http://frontend:23000
-      - PLAYWRIGHT_BASE_URL=http://172.18.0.4:23000 
+      - PLAYWRIGHT_BASE_URL=http://172.18.0.4:23000
+      - DB_HOST=postgres 
+      - DB_USER=testuser_e2e
+      - DB_PASSWORD=testpassword_e2e
+      - DB_NAME=testdb_e2e
+      - DB_PORT=5432 # Internal port of the postgres service
+      - DB_SSL_MODE=disable
       - CI=${CI:-false}
       - PLAYWRIGHT_HEADED=${PLAYWRIGHT_HEADED:-false}
     command: sleep infinity
     depends_on:
       - frontend
+      - backend
+      - postgres
     user: pwuser
     container_name: playwright_e2e
