@@ -76,10 +76,19 @@
 	<div class="max-w-md w-full space-y-8">
 		<div>
 			<img src="/logofull.png" alt="Dislyze Logo" class="mx-auto h-12 w-auto" />
-			<h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">アカウントを作成</h2>
+			<h2
+				data-testid="signup-heading"
+				class="mt-6 text-center text-3xl font-extrabold text-gray-900"
+			>
+				アカウントを作成
+			</h2>
 			<p class="mt-2 text-center text-sm text-gray-600">
 				または
-				<a href="/auth/login" class="font-medium text-indigo-600 hover:text-indigo-500">
+				<a
+					data-testid="login-link"
+					href="/auth/login"
+					class="font-medium text-indigo-600 hover:text-indigo-500"
+				>
 					既存のアカウントにログイン
 				</a>
 			</p>
@@ -144,7 +153,9 @@
 			</div>
 
 			<div>
-				<Button type="submit" loading={$isSubmitting} fullWidth>アカウントを作成</Button>
+				<Button dataTestId="signup-submit-button" type="submit" loading={$isSubmitting} fullWidth
+					>アカウントを作成</Button
+				>
 			</div>
 		</form>
 	</div>

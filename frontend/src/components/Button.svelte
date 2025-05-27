@@ -12,7 +12,8 @@
 		fullWidth = false,
 		class: customClass = "",
 		onclick,
-		children
+		children,
+		dataTestId = undefined
 	}: {
 		type?: ButtonType;
 		disabled?: boolean;
@@ -22,6 +23,7 @@
 		class?: string;
 		onclick?: (event: MouseEvent) => void;
 		children: Snippet;
+		dataTestId?: string;
 	} = $props();
 
 	const baseStyles = $derived(
@@ -45,7 +47,7 @@
 	);
 </script>
 
-<button {type} {disabled} class={buttonClass} {onclick}>
+<button {type} {disabled} class={buttonClass} {onclick} data-testid={dataTestId}>
 	{#if loading && variant !== "link"}
 		<span class="absolute left-0 inset-y-0 flex items-center pl-3">
 			<svg

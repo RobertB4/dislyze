@@ -48,15 +48,10 @@ export async function resetAndSeedDatabase(): Promise<void> {
 		console.log("Starting database seeding...");
 		await executeSqlFile(seedFilePath);
 		console.log("Database seeded.");
+		await pool.end();
 	} catch (error) {
 		console.error("Critical error during database reset/seed process:", error);
 		await pool.end().catch(console.error);
 		throw error;
 	}
-}
-
-export async function closeDbPool(): Promise<void> {
-	console.log("Closing database connection pool...");
-	await pool.end();
-	console.log("Database connection pool closed.");
 }

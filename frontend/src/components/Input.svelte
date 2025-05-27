@@ -55,6 +55,6 @@
 	<label for={id} class="sr-only">{label}</label>
 	<input {id} {name} {type} {required} {disabled} {placeholder} {value} class={inputClass} />
 	{#if error}
-		<p class="mt-1 text-sm text-red-600">{error}</p>
+		<p data-testid={`${id}-error`} class="mt-1 text-sm text-red-600">{error}</p>
 	{/if}
 </div>

@@ -8,12 +8,14 @@
 		text,
 		mode = "info" as ToastMode,
 		onClose,
-		autocloseDuration = 5000
+		autocloseDuration = 5000,
+		dataTestId
 	}: {
 		text: string;
 		mode?: ToastMode;
 		onClose: () => void;
 		autocloseDuration?: number;
+		dataTestId?: string;
 	} = $props();
 
 	let visible = $state(false);
@@ -38,6 +40,7 @@
 
 {#if visible}
 	<div
+		data-testid={dataTestId}
 		class="fixed left-4 bottom-4 z-50 min-w-[300px] max-w-[400px] rounded-lg shadow-lg"
 		transition:slide={{ duration: 300 }}
 		role="alert"
