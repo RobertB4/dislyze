@@ -74,12 +74,14 @@ services:
       - ../:/app
       - ../../database:/database
       - ./test-results:/app/test/test-results
+    ports:
+      - "8080:8080"
     environment:
-      - DB_HOST=postgres 
+      - DB_HOST=postgres
       - DB_USER=testuser_e2e
       - DB_PASSWORD=testpassword_e2e
       - DB_NAME=testdb_e2e
-      - DB_PORT=5432 # Internal port of the postgres service
+      - DB_PORT=5432
       - DB_SSL_MODE=disable
       - CI=${CI:-false}
       - PLAYWRIGHT_HEADED=${PLAYWRIGHT_HEADED:-false}

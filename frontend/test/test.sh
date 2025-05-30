@@ -6,17 +6,32 @@ COMPOSE_FILE="./docker-compose.e2e.yml"
 SCRIPT_DIR=$(dirname "$0")
 cd "$SCRIPT_DIR" # Ensure we are in frontend/test
 
-CI_MODE=false # Default CI mode to false
+CI_MODE=false
+UI_MODE=false
 
-# Parse arguments for --ci flag
-if [[ " $@ " =~ " --ci " ]]; then # Check if --ci is among the arguments
-  CI_MODE=true
-fi
+
+for arg in "$@"
+do
+    case $arg in
+        --ci)
+        CI_MODE=true
+        shift
+        ;;
+        --ui)
+        UI_MODE=true
+        shift
+        ;;
+    esac
+done
 
 if [ "$CI_MODE" = true ]; then
   echo "CI mode requested. CI environment variable will be set to true."
 else
   echo "CI mode not requested. CI environment variable will be set to false (or use host CI if already set and true)."
+fi
+
+if [ "$UI_MODE" = true ]; then
+  echo "Playwright UI mode requested. Attempting to listen on all interfaces."
 fi
 
 cleanup() {
@@ -36,7 +51,7 @@ echo "Starting frontend service to determine its IP..."
 docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans frontend
 
 # Step 2: Determine Frontend IP dynamically
-FRONTEND_CONTAINER_NAME="frontend_e2e" # From docker-compose.e2e.yml container_name
+FRONTEND_CONTAINER_NAME="frontend_e2e"
 FRONTEND_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$FRONTEND_CONTAINER_NAME")
 
 if [ -z "$FRONTEND_IP" ]; then
@@ -123,15 +138,28 @@ done
 echo "All services are healthy."
 
 # Run Playwright E2E tests
-# The /app directory in the playwright container is the frontend/ directory on the host
-# The config file is at /app/test/playwright.e2e.config.ts
-# package.json is at /app/package.json
-echo "Running Playwright E2E tests targeting ${DYNAMIC_FRONTEND_URL} (CI Mode: $CI_MODE)..."
+echo "Running Playwright E2E tests targeting ${DYNAMIC_FRONTEND_URL} (CI Mode: $CI_MODE, UI Mode: $UI_MODE)..."
+
+PLAYWRIGHT_COMMAND_BASE="npx playwright test"
+PLAYWRIGHT_COMMAND_ARGS="--config test/playwright.e2e.config.js"
+
+DOCKER_EXEC_ENV_VARS=("-e" "CI=${CI_MODE}")
+DOCKER_EXEC_ENV_VARS+=("-e" "PLAYWRIGHT_HEADED=false")
+DOCKER_EXEC_ENV_VARS+=("-e" "PLAYWRIGHT_BASE_URL=${DYNAMIC_FRONTEND_URL}")
+
+COMMAND_PREFIX=""
+
+if [ "$UI_MODE" = true ]; then
+  PLAYWRIGHT_COMMAND_ARGS="$PLAYWRIGHT_COMMAND_ARGS --ui --ui-host 0.0.0.0 --ui-port 8080"
+  # Ensure xvfb-run prefix is active for UI mode
+  COMMAND_PREFIX="xvfb-run --auto-servernum --server-args='-screen 0 1280x1024x24' "
+fi
+
+COMMAND_TO_RUN="${COMMAND_PREFIX}${PLAYWRIGHT_COMMAND_BASE} ${PLAYWRIGHT_COMMAND_ARGS}"
+
 docker compose -f "$COMPOSE_FILE" exec -T \
-  -e CI="${CI_MODE}" \
-  -e PLAYWRIGHT_HEADED="${PLAYWRIGHT_HEADED:-false}" \
-  -e PLAYWRIGHT_BASE_URL="${DYNAMIC_FRONTEND_URL}" \
-  playwright npx playwright test --config test/playwright.e2e.config.js
+  $(printf " %s" "${DOCKER_EXEC_ENV_VARS[@]}") \
+  playwright sh -c "$COMMAND_TO_RUN"
 
 TEST_EXIT_CODE=$?
 
