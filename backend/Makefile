@@ -7,5 +7,11 @@ test-unit:
 test-integration:
 	cd test && sh test.sh
 
+lint:
+	golangci-lint run --timeout 5m
+
+build:
+	build -o main ./main.go
+
 sqlc:
 	sqlc generate
