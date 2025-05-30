@@ -362,3 +362,82 @@ func createTestUser(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
+
+func TestLoginLogoutAndVerifyMeEndpoint(t *testing.T) {
+	pool := setup.InitDB(t)
+	setup.CleanupDB(t, pool)
+	defer setup.CloseDB(pool)
+
+	createTestUser(t)
+
+	client := &http.Client{}
+
+	// 1. Log in
+	loginPayload := setup.LoginRequest{
+		Email:    "test@example.com",
+		Password: "password123",
+	}
+	loginBody, err := json.Marshal(loginPayload)
+	assert.NoError(t, err)
+
+	loginReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/login", setup.BaseURL), bytes.NewBuffer(loginBody))
+	assert.NoError(t, err)
+	loginReq.Header.Set("Content-Type", "application/json")
+
+	loginResp, err := client.Do(loginReq)
+	assert.NoError(t, err)
+	defer loginResp.Body.Close()
+	assert.Equal(t, http.StatusOK, loginResp.StatusCode, "Login request failed")
+
+	loginCookies := loginResp.Cookies()
+	assert.NotEmpty(t, loginCookies, "Expected cookies from successful login")
+
+	// 2. Call /me and confirm 200 OK (when logged in)
+	meReqLoggedIn, err := http.NewRequest("GET", fmt.Sprintf("%s/me", setup.BaseURL), nil)
+	assert.NoError(t, err)
+	for _, cookie := range loginCookies {
+		meReqLoggedIn.AddCookie(cookie)
+	}
+
+	meRespLoggedIn, err := client.Do(meReqLoggedIn)
+	assert.NoError(t, err)
+	defer meRespLoggedIn.Body.Close()
+	assert.Equal(t, http.StatusOK, meRespLoggedIn.StatusCode, "/me endpoint should return 200 OK when logged in")
+
+	// 3. Log out
+	logoutReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/logout", setup.BaseURL), nil)
+	assert.NoError(t, err)
+	for _, cookie := range loginCookies {
+		logoutReq.AddCookie(cookie)
+	}
+
+	logoutResp, err := client.Do(logoutReq)
+	assert.NoError(t, err)
+	defer logoutResp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, logoutResp.StatusCode, "Logout request should return 200 OK")
+
+	var accessTokenCleared, refreshTokenCleared bool
+	for _, cookie := range logoutResp.Cookies() {
+		if cookie.Name == "dislyze_access_token" {
+			assert.Equal(t, -1, cookie.MaxAge, "Access token cookie should be cleared")
+			accessTokenCleared = true
+		}
+		if cookie.Name == "dislyze_refresh_token" {
+			assert.Equal(t, -1, cookie.MaxAge, "Refresh token cookie should be cleared")
+			refreshTokenCleared = true
+		}
+	}
+	assert.True(t, accessTokenCleared, "Access token clear instruction not found in Set-Cookie header")
+	assert.True(t, refreshTokenCleared, "Refresh token clear instruction not found in Set-Cookie header")
+
+	// 4. Call /me and confirm 401 Unauthorized (after logout, no cookies sent)
+	meReqLoggedOut, err := http.NewRequest("GET", fmt.Sprintf("%s/me", setup.BaseURL), nil)
+	assert.NoError(t, err)
+
+	meRespLoggedOut, err := client.Do(meReqLoggedOut)
+	assert.NoError(t, err)
+	defer meRespLoggedOut.Body.Close()
+
+	assert.Equal(t, http.StatusUnauthorized, meRespLoggedOut.StatusCode, "/me endpoint should return 401 Unauthorized after logout and no cookies sent")
+}
