@@ -17,39 +17,39 @@ export const TestUsersData = {
 		role: "editor",
 		status: "active"
 	},
-	pending_user_valid_token: {
-		email: "pending_user_valid_token@example.com",
+	pending_editor_valid_token: {
+		email: "pending_editor_valid_token@example.com",
 		plainTextPassword: "password",
 		userID: "b0000000-0000-0000-0000-000000000003",
 		tenantID: "a0000000-0000-0000-0000-000000000001",
-		name: "Pending User Valid Token",
+		name: "Pending Editor Valid Token",
 		role: "editor",
 		status: "pending_verification"
 	},
-	suspended_user: {
-		email: "suspended_user@example.com",
+	suspended_editor: {
+		email: "suspended_editor@example.com",
 		plainTextPassword: "password123",
 		userID: "b0000000-0000-0000-0000-000000000004",
 		tenantID: "a0000000-0000-0000-0000-000000000001",
-		name: "Suspended User",
+		name: "Suspended Editor",
 		role: "editor",
 		status: "suspended"
 	},
-	pending_user_for_rate_limit_test: {
-		email: "pending_user_for_rate_limit_test@example.com",
+	pending_editor_for_rate_limit_test: {
+		email: "pending_editor_for_rate_limit_test@example.com",
 		plainTextPassword: "password",
 		userID: "b0000000-0000-0000-0000-000000000005",
 		tenantID: "a0000000-0000-0000-0000-000000000001",
-		name: "Pending User Rate Limit Test",
+		name: "Pending Editor Rate Limit Test",
 		role: "editor",
 		status: "pending_verification"
 	},
-	pending_user_tenant_A_for_x_tenant_test: {
-		email: "pending_user_tenant_A_for_x_tenant_test@example.com",
+	pending_editor_tenant_A_for_x_tenant_test: {
+		email: "pending_editor_tenant_A_for_x_tenant_test@example.com",
 		plainTextPassword: "password",
 		userID: "b0000000-0000-0000-0000-000000000006",
 		tenantID: "a0000000-0000-0000-0000-000000000001",
-		name: "PendingXT User",
+		name: "PendingXT Editor",
 		role: "editor",
 		status: "pending_verification"
 	},

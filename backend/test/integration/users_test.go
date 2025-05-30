@@ -46,10 +46,10 @@ func TestGetUsers_Integration(t *testing.T) {
 			expectedUserEmails: []string{
 				setup.TestUsersData["alpha_admin"].Email,
 				setup.TestUsersData["alpha_editor"].Email,
-				setup.TestUsersData["pending_user_valid_token"].Email,
-				setup.TestUsersData["suspended_user"].Email,
-				setup.TestUsersData["pending_user_for_rate_limit_test"].Email,
-				setup.TestUsersData["pending_user_tenant_A_for_x_tenant_test"].Email,
+				setup.TestUsersData["pending_editor_valid_token"].Email,
+				setup.TestUsersData["suspended_editor"].Email,
+				setup.TestUsersData["pending_editor_for_rate_limit_test"].Email,
+				setup.TestUsersData["pending_editor_tenant_A_for_x_tenant_test"].Email,
 			},
 		},
 		{
@@ -424,9 +424,9 @@ func TestResendInvite_Integration(t *testing.T) {
 		isRateLimitTest      bool               // Indicates if this is the multi-call rate limit test
 	}{
 		{
-			name:          "successful resend by admin for pending user (pending_user_valid_token)",
+			name:          "successful resend by admin for pending user (pending_editor_valid_token)",
 			loginUserKey:  "alpha_admin",
-			targetUserKey: "pending_user_valid_token",
+			targetUserKey: "pending_editor_valid_token",
 			preTestSetup: func(t *testing.T) {
 				setup.CleanupDB(t, pool)
 				setup.SeedDB(t, pool)
@@ -443,7 +443,7 @@ func TestResendInvite_Integration(t *testing.T) {
 				var countOldToken int
 				err = pool.QueryRow(ctx, "SELECT COUNT(*) FROM invitation_tokens WHERE token_hash = $1 AND user_id = $2", initialTokenHashForPendingUser, targetUser.UserID).Scan(&countOldToken)
 				assert.NoError(t, err, "DB query for old token count failed")
-				assert.Equal(t, 0, countOldToken, "Old token for pending_user_valid_token should be deleted from DB")
+				assert.Equal(t, 0, countOldToken, "Old token for pending_editor_valid_token should be deleted from DB")
 
 				email, err := getLatestEmailFromSendgridMock(t, targetUser.Email)
 				assert.NoError(t, err, "Failed to get email from SendGrid mock")
@@ -540,7 +540,7 @@ func TestResendInvite_Integration(t *testing.T) {
 		{
 			name:           "target user not pending - suspended",
 			loginUserKey:   "alpha_admin",
-			targetUserKey:  "suspended_user", // A suspended user
+			targetUserKey:  "suspended_editor",
 			expectedStatus: http.StatusInternalServerError,
 			preTestSetup: func(t *testing.T) {
 				setup.CleanupDB(t, pool)
@@ -549,8 +549,8 @@ func TestResendInvite_Integration(t *testing.T) {
 		},
 		{
 			name:            "invoker not admin",
-			loginUserKey:    "alpha_editor", // Non-admin
-			targetUserKey:   "pending_user_valid_token",
+			loginUserKey:    "alpha_editor",
+			targetUserKey:   "pending_editor_valid_token",
 			expectedStatus:  http.StatusForbidden,
 			expectForbidden: true,
 			preTestSetup: func(t *testing.T) {
@@ -560,7 +560,7 @@ func TestResendInvite_Integration(t *testing.T) {
 		},
 		{
 			name:           "unauthenticated request",
-			targetUserKey:  "pending_user_valid_token",
+			targetUserKey:  "pending_editor_valid_token",
 			expectedStatus: http.StatusUnauthorized,
 			expectUnauth:   true,
 			preTestSetup: func(t *testing.T) {
@@ -570,8 +570,8 @@ func TestResendInvite_Integration(t *testing.T) {
 		},
 		{
 			name:            "invoker and target in different tenants",
-			loginUserKey:    "beta_admin",                              // Tenant B
-			targetUserKey:   "pending_user_tenant_A_for_x_tenant_test", // Tenant A
+			loginUserKey:    "beta_admin",                                // Tenant B
+			targetUserKey:   "pending_editor_tenant_A_for_x_tenant_test", // Tenant A
 			expectedStatus:  http.StatusForbidden,
 			expectForbidden: true,
 			preTestSetup: func(t *testing.T) {
@@ -592,7 +592,7 @@ func TestResendInvite_Integration(t *testing.T) {
 		{
 			name:            "rate limit: first call OK, second call TooManyRequests",
 			loginUserKey:    "alpha_admin",
-			targetUserKey:   "pending_user_for_rate_limit_test",
+			targetUserKey:   "pending_editor_for_rate_limit_test",
 			isRateLimitTest: true,
 			preTestSetup: func(t *testing.T) {
 				setup.CleanupDB(t, pool)
