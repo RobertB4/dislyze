@@ -41,16 +41,24 @@ export const load: PageLoad = async ({ url, fetch }) => {
 			email: result.email as string
 		};
 	} catch (e) {
+		// checking if error is a SvelteKit error
 		if (
 			e &&
 			typeof e === "object" &&
 			"status" in e &&
 			typeof e.status === "number" &&
-			"message" in e &&
-			typeof e.message === "string"
+			"body" in e
 		) {
+			const body = e.body as { message?: string };
+			if (!body.message) {
+				throw error(
+					503,
+					"サーバーとの通信中に問題が発生しました。お手数ですが、時間をおいて再度お試しください。"
+				);
+			}
+
 			// Re-throw SvelteKit errors explicitly
-			throw error(e.status, e.message);
+			throw error(e.status, body.message);
 		}
 		console.error("Error in /auth/reset-password load function:", e);
 		throw error(

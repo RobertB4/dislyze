@@ -24,10 +24,10 @@
 	<div
 		class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-base-100 bg-opacity-90 p-4 text-center backdrop-blur-sm"
 	>
-		<h1 class="mb-4 text-4xl font-bold text-red-500">
+		<h1 data-testid="error-title" class="mb-4 text-4xl font-bold text-red-500">
 			エラーが発生しました ({page.status})
 		</h1>
-		<p class="mb-8 text-lg text-base-content">
+		<p data-testid="error-message" class="mb-8 text-lg text-base-content">
 			{page.error.message || "予期せぬエラーが発生しました。"}
 		</p>
 		<div class="flex space-x-4">
