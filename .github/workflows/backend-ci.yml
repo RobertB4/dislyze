@@ -1,5 +1,3 @@
-\
-# .github/workflows/backend-ci.yml
 name: Backend CI
 
 on: [push]
