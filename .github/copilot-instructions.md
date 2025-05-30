@@ -1,4 +1,5 @@
-If you don't know something, ask clarifying questions.
+NEVER ASSUME. ALWAYS CONFIRM. This means reading related code or asking clarifying questions BEFORE coming up with a plan.
+It's ok not to know something. It is NOT ok to make wrong assumptions.
 
 Think step-by-step: describe your plan for the code structure, endpoints, and data flow in pseudocode, written out in detail.
 

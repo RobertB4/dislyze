@@ -45,6 +45,15 @@ type ForgotPasswordResponse struct {
 	Success bool `json:"success"`
 }
 
+type VerifyResetTokenRequest struct {
+	Token string `json:"token"`
+}
+
+type VerifyResetTokenResponse struct {
+	Success bool   `json:"success"`
+	Email   string `json:"email,omitempty"`
+}
+
 func TestSignup(t *testing.T) {
 	pool := setup.InitDB(t)
 	setup.CleanupDB(t, pool)
@@ -757,5 +766,171 @@ func TestForgotPassword(t *testing.T) {
 			assert.True(t, dbExpiresAt2.Time.Before(time.Now().Add(35*time.Minute)), "Token 2 expiry should be around 30 mins") // Check within a reasonable window
 			assert.False(t, dbUsedAt2.Valid, "Token 2 should not be used yet")
 		}
+	})
+}
+
+func TestVerifyResetToken(t *testing.T) {
+	pool := setup.InitDB(t)
+	setup.CleanupDB(t, pool)
+	setup.SeedDB(t, pool)
+	defer setup.CloseDB(pool)
+
+	client := &http.Client{}
+	ctx := context.Background()
+
+	// Helper function to make a /auth/forgot-password request and get the raw token
+	getRawResetToken := func(userEmail string) string {
+		payload := ForgotPasswordRequest{Email: userEmail}
+		body, err := json.Marshal(payload)
+		assert.NoError(t, err)
+		fpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/forgot-password", setup.BaseURL), bytes.NewBuffer(body))
+		assert.NoError(t, err)
+		fpReq.Header.Set("Content-Type", "application/json")
+		fpResp, err := client.Do(fpReq)
+		assert.NoError(t, err)
+		defer fpResp.Body.Close()
+		assert.Equal(t, http.StatusOK, fpResp.StatusCode)
+
+		email, err := getLatestEmailFromSendgridMock(t, userEmail)
+		assert.NoError(t, err)
+		rawToken, err := extractResetTokenFromEmail(t, email)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, rawToken)
+		return rawToken
+	}
+
+	t.Run("TestVerifyResetToken_ValidToken", func(t *testing.T) {
+		testUser := setup.TestUsersData["alpha_admin"]
+		rawToken := getRawResetToken(testUser.Email)
+		fmt.Println("Raw token for user:", testUser.Email, "is", rawToken)
+
+		verifyPayload := VerifyResetTokenRequest{Token: rawToken}
+		verifyBody, err := json.Marshal(verifyPayload)
+		assert.NoError(t, err)
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/verify-reset-token", setup.BaseURL), bytes.NewBuffer(verifyBody))
+		assert.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		var apiResp VerifyResetTokenResponse
+		err = json.NewDecoder(resp.Body).Decode(&apiResp)
+		assert.NoError(t, err)
+		assert.True(t, apiResp.Success)
+		assert.Equal(t, testUser.Email, apiResp.Email)
+
+		// Verify DB token is not marked as used
+		hash := sha256.Sum256([]byte(rawToken))
+		hashedTokenStr := hex.EncodeToString(hash[:])
+		var dbUsedAt pgtype.Timestamptz
+		err = pool.QueryRow(ctx, "SELECT used_at FROM password_reset_tokens WHERE token_hash = $1", hashedTokenStr).Scan(&dbUsedAt)
+		assert.NoError(t, err, "Token should still exist")
+		assert.False(t, dbUsedAt.Valid, "Token should not be marked as used after verification")
+	})
+
+	t.Run("TestVerifyResetToken_InvalidToken_NonExistent", func(t *testing.T) {
+		verifyPayload := VerifyResetTokenRequest{Token: "non-existent-token-string"}
+		verifyBody, err := json.Marshal(verifyPayload)
+		assert.NoError(t, err)
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/verify-reset-token", setup.BaseURL), bytes.NewBuffer(verifyBody))
+		assert.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		var apiResp VerifyResetTokenResponse
+		err = json.NewDecoder(resp.Body).Decode(&apiResp)
+		assert.NoError(t, err)
+		assert.False(t, apiResp.Success)
+		assert.Empty(t, apiResp.Email)
+	})
+
+	t.Run("TestVerifyResetToken_ExpiredToken", func(t *testing.T) {
+		testUser := setup.TestUsersData["alpha_editor"] // Changed from gamma_no_access
+		rawToken := getRawResetToken(testUser.Email)
+
+		// Manually expire the token in the DB
+		hash := sha256.Sum256([]byte(rawToken))
+		hashedTokenStr := hex.EncodeToString(hash[:])
+		_, err := pool.Exec(ctx, "UPDATE password_reset_tokens SET expires_at = $1 WHERE token_hash = $2", time.Now().Add(-1*time.Hour), hashedTokenStr)
+		assert.NoError(t, err, "Failed to manually expire token")
+
+		verifyPayload := VerifyResetTokenRequest{Token: rawToken}
+		verifyBody, err := json.Marshal(verifyPayload)
+		assert.NoError(t, err)
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/verify-reset-token", setup.BaseURL), bytes.NewBuffer(verifyBody))
+		assert.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		var apiResp VerifyResetTokenResponse
+		err = json.NewDecoder(resp.Body).Decode(&apiResp)
+		assert.NoError(t, err)
+		assert.False(t, apiResp.Success)
+		assert.Empty(t, apiResp.Email)
+	})
+
+	t.Run("TestVerifyResetToken_AlreadyUsedToken", func(t *testing.T) {
+		testUser := setup.TestUsersData["beta_admin"]
+		rawToken := getRawResetToken(testUser.Email)
+
+		// Manually mark the token as used in the DB
+		hash := sha256.Sum256([]byte(rawToken))
+		hashedTokenStr := hex.EncodeToString(hash[:])
+		_, err := pool.Exec(ctx, "UPDATE password_reset_tokens SET used_at = $1 WHERE token_hash = $2", time.Now(), hashedTokenStr)
+		assert.NoError(t, err, "Failed to manually mark token as used")
+
+		verifyPayload := VerifyResetTokenRequest{Token: rawToken}
+		verifyBody, err := json.Marshal(verifyPayload)
+		assert.NoError(t, err)
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/verify-reset-token", setup.BaseURL), bytes.NewBuffer(verifyBody))
+		assert.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		var apiResp VerifyResetTokenResponse
+		err = json.NewDecoder(resp.Body).Decode(&apiResp)
+		assert.NoError(t, err)
+		assert.False(t, apiResp.Success)
+		assert.Empty(t, apiResp.Email)
+	})
+
+	t.Run("TestVerifyResetToken_EmptyToken", func(t *testing.T) {
+		verifyPayload := VerifyResetTokenRequest{Token: ""}
+		verifyBody, err := json.Marshal(verifyPayload)
+		assert.NoError(t, err)
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/verify-reset-token", setup.BaseURL), bytes.NewBuffer(verifyBody))
+		assert.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		var apiResp VerifyResetTokenResponse
+		err = json.NewDecoder(resp.Body).Decode(&apiResp)
+		assert.NoError(t, err)
+		assert.False(t, apiResp.Success)
+		assert.Empty(t, apiResp.Email)
 	})
 }
