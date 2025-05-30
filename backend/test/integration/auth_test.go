@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"testing"
@@ -52,6 +53,18 @@ type VerifyResetTokenRequest struct {
 type VerifyResetTokenResponse struct {
 	Success bool   `json:"success"`
 	Email   string `json:"email,omitempty"`
+}
+
+type ResetPasswordRequest struct {
+	Token           string `json:"token"`
+	Password        string `json:"password"`
+	PasswordConfirm string `json:"password_confirm"`
+}
+
+// ResetPasswordResponse defines the structure for the reset password response body.
+// Success: Indicates whether the password reset operation was successful.
+type ResetPasswordResponse struct {
+	Success bool `json:"success"`
 }
 
 func TestSignup(t *testing.T) {
@@ -542,14 +555,38 @@ func extractResetTokenFromEmail(t *testing.T, email *SendgridMockEmail) (string,
 	t.Helper()
 	for _, content := range email.Content {
 		if content.Type == "text/html" {
-			re := regexp.MustCompile(`reset-password\?token=([a-zA-Z0-9-_.]+)`)
+			re := regexp.MustCompile(`href="[^"]*/reset-password\?token=([a-zA-Z0-9\-_.%]+)"`)
 			matches := re.FindStringSubmatch(content.Value)
 			if len(matches) > 1 {
-				return matches[1], nil
+				decodedToken, err := url.QueryUnescape(matches[1])
+				if err != nil {
+					return "", fmt.Errorf("failed to decode reset token from email: %w", err)
+				}
+				return decodedToken, nil
 			}
 		}
 	}
 	return "", fmt.Errorf("reset token not found in email HTML content")
+}
+
+func attemptLogin(t *testing.T, email string, password string) *http.Response {
+	t.Helper()
+	client := &http.Client{}
+
+	loginPayload := setup.LoginRequest{
+		Email:    email,
+		Password: password,
+	}
+	loginBody, err := json.Marshal(loginPayload)
+	assert.NoError(t, err, "Failed to marshal login payload in attemptLogin")
+
+	loginReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/login", setup.BaseURL), bytes.NewBuffer(loginBody))
+	assert.NoError(t, err, "Failed to create login request in attemptLogin")
+	loginReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(loginReq)
+	assert.NoError(t, err, "Failed to execute login request in attemptLogin")
+	return resp
 }
 
 func TestForgotPassword(t *testing.T) {
@@ -854,7 +891,7 @@ func TestVerifyResetToken(t *testing.T) {
 	})
 
 	t.Run("TestVerifyResetToken_ExpiredToken", func(t *testing.T) {
-		testUser := setup.TestUsersData["alpha_editor"] // Changed from gamma_no_access
+		testUser := setup.TestUsersData["alpha_editor"]
 		rawToken := getRawResetToken(testUser.Email)
 
 		// Manually expire the token in the DB
@@ -932,5 +969,322 @@ func TestVerifyResetToken(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, apiResp.Success)
 		assert.Empty(t, apiResp.Email)
+	})
+}
+
+func TestResetPassword(t *testing.T) {
+	pool := setup.InitDB(t)
+	setup.CleanupDB(t, pool)
+	setup.SeedDB(t, pool)
+	defer setup.CloseDB(pool)
+
+	client := &http.Client{}
+	ctx := context.Background()
+
+	getRawResetTokenForTest := func(t *testing.T, userEmail string) string {
+		t.Helper()
+		payload := ForgotPasswordRequest{Email: userEmail}
+		body, err := json.Marshal(payload)
+		assert.NoError(t, err, "Failed to marshal forgot password payload")
+
+		fpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/forgot-password", setup.BaseURL), bytes.NewBuffer(body))
+		assert.NoError(t, err, "Failed to create forgot password request")
+		fpReq.Header.Set("Content-Type", "application/json")
+
+		fpResp, err := client.Do(fpReq)
+		assert.NoError(t, err, "Failed to execute forgot password request")
+		defer fpResp.Body.Close()
+		assert.Equal(t, http.StatusOK, fpResp.StatusCode, "Forgot password request did not return OK")
+
+		emailContent, err := getLatestEmailFromSendgridMock(t, userEmail)
+		assert.NoError(t, err, "Failed to get latest email from Sendgrid mock")
+
+		rawToken, err := extractResetTokenFromEmail(t, emailContent)
+		assert.NoError(t, err, "Failed to extract reset token from email")
+		assert.NotEmpty(t, rawToken, "Extracted reset token should not be empty")
+		return rawToken
+	}
+
+	t.Run("_ValidTokenAndMatchingPasswords_Successful", func(t *testing.T) {
+		testUser := setup.TestUsersData["alpha_admin"]
+		originalPassword := testUser.PlainTextPassword
+		fmt.Println("test user: ", testUser.Email, "original password: ", originalPassword)
+		newPassword := "newSecurePassword123"
+		rawToken := getRawResetTokenForTest(t, testUser.Email)
+
+		resetPayload := ResetPasswordRequest{
+			Token:           rawToken,
+			Password:        newPassword,
+			PasswordConfirm: newPassword,
+		}
+		resetBody, err := json.Marshal(resetPayload)
+		assert.NoError(t, err)
+		resetReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/reset-password", setup.BaseURL), bytes.NewBuffer(resetBody))
+		assert.NoError(t, err)
+		resetReq.Header.Set("Content-Type", "application/json")
+		resetResp, err := client.Do(resetReq)
+		assert.NoError(t, err)
+		defer resetResp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resetResp.StatusCode, "Reset password should succeed")
+		var apiResp ResetPasswordResponse
+		err = json.NewDecoder(resetResp.Body).Decode(&apiResp)
+		assert.NoError(t, err)
+		assert.True(t, apiResp.Success, "API success should be true for successful password reset")
+
+		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
+		defer oldLoginResp.Body.Close()
+		assert.Equal(t, http.StatusUnauthorized, oldLoginResp.StatusCode, "Login with old password should fail after reset")
+
+		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
+		defer newLoginResp.Body.Close()
+		assert.Equal(t, http.StatusOK, newLoginResp.StatusCode, "Login with new password should succeed after reset")
+
+		hash := sha256.Sum256([]byte(rawToken))
+		hashedTokenStr := hex.EncodeToString(hash[:])
+		var dbUsedAt pgtype.Timestamptz
+		err = pool.QueryRow(ctx, "SELECT used_at FROM password_reset_tokens WHERE token_hash = $1", hashedTokenStr).Scan(&dbUsedAt)
+		assert.NoError(t, err, "Token should still exist in DB after successful reset")
+		assert.True(t, dbUsedAt.Valid, "Token should be marked as used after successful reset")
+	})
+
+	t.Run("_InvalidToken_NonExistent", func(t *testing.T) {
+		testUser := setup.TestUsersData["alpha_editor"]
+		originalPassword := testUser.PlainTextPassword
+		newPassword := "attemptedNewPass1"
+
+		resetPayload := ResetPasswordRequest{
+			Token:           "this-token-does-not-exist-12345",
+			Password:        newPassword,
+			PasswordConfirm: newPassword,
+		}
+		resetBody, err := json.Marshal(resetPayload)
+		assert.NoError(t, err)
+		resetReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/reset-password", setup.BaseURL), bytes.NewBuffer(resetBody))
+		assert.NoError(t, err)
+		resetReq.Header.Set("Content-Type", "application/json")
+		resetResp, err := client.Do(resetReq)
+		assert.NoError(t, err)
+		defer resetResp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with non-existent token should fail")
+
+		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
+		defer newLoginResp.Body.Close()
+		assert.Equal(t, http.StatusUnauthorized, newLoginResp.StatusCode, "Login with new (attempted) password should fail")
+
+		fmt.Println("Original password for user: ", testUser.Email, "is", originalPassword)
+		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
+		defer oldLoginResp.Body.Close()
+		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode, "Login with old password should still succeed")
+	})
+
+	t.Run("_ExpiredToken", func(t *testing.T) {
+		testUser := setup.TestUsersData["beta_admin"]
+		originalPassword := testUser.PlainTextPassword
+		newPassword := "attemptedNewPass2"
+		rawToken := getRawResetTokenForTest(t, testUser.Email)
+
+		hash := sha256.Sum256([]byte(rawToken))
+		hashedTokenStr := hex.EncodeToString(hash[:])
+		_, err := pool.Exec(ctx, "UPDATE password_reset_tokens SET expires_at = $1 WHERE token_hash = $2", time.Now().Add(-1*time.Hour), hashedTokenStr)
+		assert.NoError(t, err, "Failed to manually expire token")
+
+		resetPayload := ResetPasswordRequest{
+			Token:           rawToken,
+			Password:        newPassword,
+			PasswordConfirm: newPassword,
+		}
+		resetBody, err := json.Marshal(resetPayload)
+		assert.NoError(t, err)
+		resetReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/reset-password", setup.BaseURL), bytes.NewBuffer(resetBody))
+		assert.NoError(t, err)
+		resetReq.Header.Set("Content-Type", "application/json")
+		resetResp, err := client.Do(resetReq)
+		assert.NoError(t, err)
+		defer resetResp.Body.Close()
+		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with expired token should fail")
+
+		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
+		defer newLoginResp.Body.Close()
+		assert.Equal(t, http.StatusUnauthorized, newLoginResp.StatusCode)
+
+		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
+		defer oldLoginResp.Body.Close()
+		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
+	})
+
+	t.Run("_AlreadyUsedToken", func(t *testing.T) {
+		testUser := setup.TestUsersData["alpha_editor"]
+		originalPassword := testUser.PlainTextPassword
+		newPassword := "attemptedNewPass3"
+		rawToken := getRawResetTokenForTest(t, testUser.Email)
+
+		hash := sha256.Sum256([]byte(rawToken))
+		hashedTokenStr := hex.EncodeToString(hash[:])
+		_, err := pool.Exec(ctx, "UPDATE password_reset_tokens SET used_at = $1 WHERE token_hash = $2", time.Now(), hashedTokenStr)
+		assert.NoError(t, err, "Failed to manually mark token as used")
+
+		resetPayload := ResetPasswordRequest{
+			Token:           rawToken,
+			Password:        newPassword,
+			PasswordConfirm: newPassword,
+		}
+		resetBody, err := json.Marshal(resetPayload)
+		assert.NoError(t, err)
+		resetReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/reset-password", setup.BaseURL), bytes.NewBuffer(resetBody))
+		assert.NoError(t, err)
+		resetReq.Header.Set("Content-Type", "application/json")
+		resetResp, err := client.Do(resetReq)
+		assert.NoError(t, err)
+		defer resetResp.Body.Close()
+		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with used token should fail")
+
+		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
+		defer newLoginResp.Body.Close()
+		assert.Equal(t, http.StatusUnauthorized, newLoginResp.StatusCode)
+
+		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
+		defer oldLoginResp.Body.Close()
+		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
+	})
+
+	t.Run("_EmptyToken", func(t *testing.T) {
+		testUser := setup.TestUsersData["alpha_editor"]
+		originalPassword := testUser.PlainTextPassword
+		newPassword := "attemptedNewPass4"
+
+		resetPayload := ResetPasswordRequest{
+			Token:           "",
+			Password:        newPassword,
+			PasswordConfirm: newPassword,
+		}
+		resetBody, err := json.Marshal(resetPayload)
+		assert.NoError(t, err)
+		resetReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/reset-password", setup.BaseURL), bytes.NewBuffer(resetBody))
+		assert.NoError(t, err)
+		resetReq.Header.Set("Content-Type", "application/json")
+		resetResp, err := client.Do(resetReq)
+		assert.NoError(t, err)
+		defer resetResp.Body.Close()
+		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with empty token should fail")
+
+		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
+		defer newLoginResp.Body.Close()
+		assert.Equal(t, http.StatusUnauthorized, newLoginResp.StatusCode)
+
+		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
+		defer oldLoginResp.Body.Close()
+		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
+	})
+
+	t.Run("_MissingPassword", func(t *testing.T) {
+		testUser := setup.TestUsersData["beta_admin"]
+		originalPassword := testUser.PlainTextPassword
+		rawToken := getRawResetTokenForTest(t, testUser.Email)
+
+		resetPayload := ResetPasswordRequest{
+			Token:           rawToken,
+			Password:        "",
+			PasswordConfirm: "",
+		}
+		resetBody, err := json.Marshal(resetPayload)
+		assert.NoError(t, err)
+		resetReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/reset-password", setup.BaseURL), bytes.NewBuffer(resetBody))
+		assert.NoError(t, err)
+		resetReq.Header.Set("Content-Type", "application/json")
+		resetResp, err := client.Do(resetReq)
+		assert.NoError(t, err)
+		defer resetResp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with missing password should fail")
+
+		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
+		defer oldLoginResp.Body.Close()
+		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
+
+		hash := sha256.Sum256([]byte(rawToken))
+		hashedTokenStr := hex.EncodeToString(hash[:])
+		var dbUsedAt pgtype.Timestamptz
+		err = pool.QueryRow(ctx, "SELECT used_at FROM password_reset_tokens WHERE token_hash = $1", hashedTokenStr).Scan(&dbUsedAt)
+		assert.NoError(t, err, "Token should still exist after failed reset due to missing password")
+		assert.False(t, dbUsedAt.Valid, "Token should NOT be marked as used after failed reset due to missing password")
+	})
+
+	t.Run("_PasswordTooShort", func(t *testing.T) {
+		testUser := setup.TestUsersData["alpha_editor"]
+		originalPassword := testUser.PlainTextPassword
+		newPassword := "short"
+		rawToken := getRawResetTokenForTest(t, testUser.Email)
+
+		resetPayload := ResetPasswordRequest{
+			Token:           rawToken,
+			Password:        newPassword,
+			PasswordConfirm: newPassword,
+		}
+		resetBody, err := json.Marshal(resetPayload)
+		assert.NoError(t, err)
+		resetReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/reset-password", setup.BaseURL), bytes.NewBuffer(resetBody))
+		assert.NoError(t, err)
+		resetReq.Header.Set("Content-Type", "application/json")
+		resetResp, err := client.Do(resetReq)
+		assert.NoError(t, err)
+		defer resetResp.Body.Close()
+		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with short password should fail")
+
+		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
+		defer newLoginResp.Body.Close()
+		assert.Equal(t, http.StatusUnauthorized, newLoginResp.StatusCode)
+
+		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
+		defer oldLoginResp.Body.Close()
+		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
+
+		hash := sha256.Sum256([]byte(rawToken))
+		hashedTokenStr := hex.EncodeToString(hash[:])
+		var dbUsedAt pgtype.Timestamptz
+		err = pool.QueryRow(ctx, "SELECT used_at FROM password_reset_tokens WHERE token_hash = $1", hashedTokenStr).Scan(&dbUsedAt)
+		assert.NoError(t, err, "Token should still exist after failed reset due to short password")
+		assert.False(t, dbUsedAt.Valid, "Token should NOT be marked as used after failed reset due to short password")
+	})
+
+	t.Run("_PasswordsDoNotMatch", func(t *testing.T) {
+		testUser := setup.TestUsersData["alpha_editor"]
+		originalPassword := testUser.PlainTextPassword
+		rawToken := getRawResetTokenForTest(t, testUser.Email)
+
+		resetPayload := ResetPasswordRequest{
+			Token:           rawToken,
+			Password:        "newValidPass123",
+			PasswordConfirm: "anotherValidPass456",
+		}
+		resetBody, err := json.Marshal(resetPayload)
+		assert.NoError(t, err)
+		resetReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/reset-password", setup.BaseURL), bytes.NewBuffer(resetBody))
+		assert.NoError(t, err)
+		resetReq.Header.Set("Content-Type", "application/json")
+		resetResp, err := client.Do(resetReq)
+		assert.NoError(t, err)
+		defer resetResp.Body.Close()
+		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with mismatching passwords should fail")
+
+		newLoginResp1 := attemptLogin(t, testUser.Email, "newValidPass123")
+		defer newLoginResp1.Body.Close()
+		assert.Equal(t, http.StatusUnauthorized, newLoginResp1.StatusCode)
+
+		newLoginResp2 := attemptLogin(t, testUser.Email, "anotherValidPass456")
+		defer newLoginResp2.Body.Close()
+		assert.Equal(t, http.StatusUnauthorized, newLoginResp2.StatusCode)
+
+		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
+		defer oldLoginResp.Body.Close()
+		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
+
+		hash := sha256.Sum256([]byte(rawToken))
+		hashedTokenStr := hex.EncodeToString(hash[:])
+		var dbUsedAt pgtype.Timestamptz
+		err = pool.QueryRow(ctx, "SELECT used_at FROM password_reset_tokens WHERE token_hash = $1", hashedTokenStr).Scan(&dbUsedAt)
+		assert.NoError(t, err, "Token should still exist after failed reset due to mismatching passwords")
+		assert.False(t, dbUsedAt.Valid, "Token should NOT be marked as used after failed reset due to mismatching passwords")
 	})
 }
