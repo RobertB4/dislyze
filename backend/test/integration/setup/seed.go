@@ -1,7 +1,7 @@
 package setup
 
-// TestUsersData provides easy access to details of users seeded by seed.sql
-var TestUsersData = map[string]struct {
+// UserTestData defines the structure for individual test user data.
+type UserTestData struct {
 	Email             string
 	PlainTextPassword string
 	UserID            string
@@ -9,7 +9,10 @@ var TestUsersData = map[string]struct {
 	Name              string
 	Role              string
 	Status            string
-}{
+}
+
+// TestUsersData provides easy access to details of users seeded by seed.sql
+var TestUsersData = map[string]UserTestData{
 	"alpha_admin": {
 		Email:             "alpha_admin@example.com",
 		PlainTextPassword: "password123",
