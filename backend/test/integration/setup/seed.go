@@ -30,7 +30,7 @@ var TestUsersData = map[string]struct {
 	},
 	"pending_user_valid_token": {
 		Email:             "pending_user_valid_token@example.com",
-		PlainTextPassword: "password", // Initial password before activation
+		PlainTextPassword: "password",
 		UserID:            "b0000000-0000-0000-0000-000000000003",
 		TenantID:          "a0000000-0000-0000-0000-000000000001",
 		Name:              "Pending User Valid Token",
@@ -54,5 +54,23 @@ var TestUsersData = map[string]struct {
 		Name:              "Beta Admin",
 		Role:              "admin",
 		Status:            "active",
+	},
+	"pending_user_for_rate_limit_test": {
+		Email:             "pending_user_for_rate_limit_test@example.com",
+		PlainTextPassword: "password",
+		UserID:            "b0000000-0000-0000-0000-000000000006",
+		TenantID:          "a0000000-0000-0000-0000-000000000001",
+		Name:              "Pending User Rate Limit Test",
+		Role:              "editor",
+		Status:            "pending_verification",
+	},
+	"pending_user_tenant_A_for_x_tenant_test": {
+		Email:             "pending_user_tenant_A_for_x_tenant_test@example.com",
+		PlainTextPassword: "password",
+		UserID:            "b0000000-0000-0000-0000-000000000007",
+		TenantID:          "a0000000-0000-0000-0000-000000000001",
+		Name:              "PendingXT User",
+		Role:              "editor",
+		Status:            "pending_verification",
 	},
 }
