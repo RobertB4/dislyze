@@ -11,7 +11,7 @@ const dbConfig: PoolConfig = {
 	ssl: process.env.DB_SSL_MODE === "require"
 };
 
-const pool = new Pool(dbConfig);
+export const pool = new Pool(dbConfig);
 
 pool.on("error", (err) => {
 	console.error("Unexpected error on idle client in pg pool", err);
@@ -48,10 +48,8 @@ export async function resetAndSeedDatabase(): Promise<void> {
 		console.log("Starting database seeding...");
 		await executeSqlFile(seedFilePath);
 		console.log("Database seeded.");
-		await pool.end();
 	} catch (error) {
 		console.error("Critical error during database reset/seed process:", error);
-		await pool.end().catch(console.error);
 		throw error;
 	}
 }

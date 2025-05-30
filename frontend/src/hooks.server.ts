@@ -115,7 +115,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 						const clientCookieString = buildCookieString(name, value, options);
 						finalResponseHeaders.append("Set-Cookie", clientCookieString);
 						console.log(
-							`[HOOK] Setting cookie for client: ${name} (Manually added: ${clientCookieString}) with options:`,
+							`[HOOK] Setting cookie for client: ${name} with options:`,
 							JSON.stringify(options, null, 2)
 						);
 					}

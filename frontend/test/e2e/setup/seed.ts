@@ -17,23 +17,32 @@ export const TestUsersData = {
 		role: "editor",
 		status: "active"
 	},
-	beta_admin: {
-		email: "beta_admin@example.com",
-		plainTextPassword: "password123",
-		userID: "b0000000-0000-0000-0000-000000000003",
-		tenantID: "a0000000-0000-0000-0000-000000000002",
-		name: "Beta Admin",
-		role: "admin",
-		status: "active"
-	},
 	pending_editor_valid_token: {
 		email: "pending_user_valid_token@example.com",
 		plainTextPassword: "password123", // seed.sql comment says 'password123', Go file says 'password'. Assuming seed.sql is source of truth for hash.
-		userID: "b0000000-0000-0000-0000-000000000004",
+		userID: "b0000000-0000-0000-0000-000000000003",
 		tenantID: "a0000000-0000-0000-0000-000000000001",
 		name: "Pending User Valid Token",
 		role: "editor",
 		status: "pending_verification" // As per seed.sql
+	},
+	suspended_user: {
+		email: "suspended_user@example.com",
+		plainTextPassword: "password123",
+		userID: "b0000000-0000-0000-0000-000000000004",
+		tenantID: "a0000000-0000-0000-0000-000000000001",
+		name: "Suspended User",
+		role: "editor",
+		status: "suspended"
+	},
+	beta_admin: {
+		email: "beta_admin@example.com",
+		plainTextPassword: "password123",
+		userID: "b0000000-0000-0000-0000-000000000005",
+		tenantID: "a0000000-0000-0000-0000-000000000002",
+		name: "Beta Admin",
+		role: "admin",
+		status: "active"
 	}
 } as const;
 

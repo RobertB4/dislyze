@@ -9,7 +9,7 @@
 			text={t.text}
 			mode={t.mode}
 			onClose={() => toast.remove(t.id)}
-			dataTestId={`toast-${t.id}`}
+			data-testid={`toast-${t.id}`}
 		/>
 	{/each}
 </div>

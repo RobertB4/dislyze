@@ -9,13 +9,13 @@
 		mode = "info" as ToastMode,
 		onClose,
 		autocloseDuration = 5000,
-		dataTestId
+		"data-testid": dataTestId
 	}: {
 		text: string;
 		mode?: ToastMode;
 		onClose: () => void;
 		autocloseDuration?: number;
-		dataTestId?: string;
+		"data-testid"?: string;
 	} = $props();
 
 	let visible = $state(false);

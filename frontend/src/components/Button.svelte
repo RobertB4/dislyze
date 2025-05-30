@@ -13,7 +13,7 @@
 		class: customClass = "",
 		onclick,
 		children,
-		dataTestId = undefined
+		"data-testid": dataTestId = undefined
 	}: {
 		type?: ButtonType;
 		disabled?: boolean;
@@ -23,7 +23,7 @@
 		class?: string;
 		onclick?: (event: MouseEvent) => void;
 		children: Snippet;
-		dataTestId?: string;
+		"data-testid"?: string;
 	} = $props();
 
 	const baseStyles = $derived(

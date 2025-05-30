@@ -4,6 +4,7 @@ const headed = process.env.PLAYWRIGHT_HEADED ? process.env.PLAYWRIGHT_HEADED ===
 
 export default defineConfig({
 	testDir: "./e2e", // Relative to this config file
+	globalTeardown: "./e2e/setup/globalTeardown.ts",
 	fullyParallel: true,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI === "true" ? 1 : 0,

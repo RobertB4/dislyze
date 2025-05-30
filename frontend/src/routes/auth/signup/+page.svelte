@@ -153,7 +153,7 @@
 			</div>
 
 			<div>
-				<Button dataTestId="signup-submit-button" type="submit" loading={$isSubmitting} fullWidth
+				<Button data-testid="signup-submit-button" type="submit" loading={$isSubmitting} fullWidth
 					>アカウントを作成</Button
 				>
 			</div>
