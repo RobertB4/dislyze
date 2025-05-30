@@ -38,11 +38,10 @@ app.use(
 );
 
 app.get("/", function (req, res) {
-  // only using this on localhost, no need to add login page
-  // if (!req.session.user) {
-  //   res.render("login");
-  //   return;
-  // }
+  if (!req.session.user) {
+    res.render("login");
+    return;
+  }
   res.render("index", {
     data: store
   });

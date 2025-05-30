@@ -12,6 +12,15 @@ services:
       - backend
     container_name: frontend_e2e
 
+  mock-sendgrid:
+    image: yudppp/simple-sendgrid-mock-server
+    container_name: mock-sendgrid_e2e
+    ports:
+      - "27000:27000"
+    environment:
+      - SENDGRID_API_KEY=e2e_fake_sendgrid_key
+      - PORT=27000
+
   backend:
     build:
       context: ../../ # Project root
@@ -30,14 +39,17 @@ services:
       - JWT_SECRET=e2e_super_secret_jwt_key_placeholder
       - RATE_LIMIT=1000 # Higher limit for E2E tests
       - SENDGRID_API_KEY=e2e_fake_sendgrid_key
-      - SENDGRID_API_URL=http://mock-sendgrid:1234
+      - SENDGRID_API_URL=http://mock-sendgrid:27000
       # Using container IP for frontend. Vite returns 403 for requests from http://frontend:23000
-      - FRONTEND_URL=http://172.18.0.4:23000
+      # frontend ip address retrieved and passed from test.sh
+      - FRONTEND_URL=${DYNAMIC_FRONTEND_URL}
       - INITIAL_PW=e2e_initial_password
       - TRUSTED_PROXIES=172.18.0.4,frontend,127.0.0.1,localhost
     depends_on:
       postgres:
         condition: service_healthy
+      mock-sendgrid:
+        condition: service_started
     container_name: backend_e2e
 
   postgres:
@@ -63,7 +75,6 @@ services:
       - ../../database:/database
       - ./test-results:/app/test/test-results
     environment:
-      - PLAYWRIGHT_BASE_URL=http://172.18.0.4:23000
       - DB_HOST=postgres 
       - DB_USER=testuser_e2e
       - DB_PASSWORD=testpassword_e2e

@@ -74,7 +74,12 @@
 			<a href="/">
 				<img src="/logofull.png" alt="Dislyze Logo" class="mx-auto h-12 w-auto" />
 			</a>
-			<h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">新しいパスワードを設定</h2>
+			<h2
+				data-testid="reset-password-heading"
+				class="mt-6 text-center text-3xl font-extrabold text-gray-900"
+			>
+				新しいパスワードを設定
+			</h2>
 		</div>
 
 		{#if data.email && data.token}
@@ -111,16 +116,22 @@
 				</div>
 
 				<div>
-					<Button type="submit" loading={$isSubmitting} fullWidth>パスワードをリセット</Button>
+					<Button
+						data-testid="reset-password-submit-button"
+						type="submit"
+						loading={$isSubmitting}
+						fullWidth>パスワードをリセット</Button
+					>
 				</div>
 			</form>
 		{:else}
 			<!-- This part should ideally not be reached if the load function correctly throws errors -->
 			<div class="text-center py-4">
-				<p class="text-red-600">
+				<p data-testid="reset-password-token-error-message" class="text-red-600">
 					リセットトークンの読み込み中にエラーが発生しました。リンクが正しいか確認してください。
 				</p>
 				<a
+					data-testid="reset-password-retry-link"
 					href="/auth/forgot-password"
 					class="mt-4 font-medium text-indigo-600 hover:text-indigo-500"
 				>
@@ -129,7 +140,11 @@
 			</div>
 		{/if}
 		<div class="text-sm text-center">
-			<a href="/auth/login" class="font-medium text-indigo-600 hover:text-indigo-500">
+			<a
+				data-testid="reset-password-back-to-login-link"
+				href="/auth/login"
+				class="font-medium text-indigo-600 hover:text-indigo-500"
+			>
 				ログインページに戻る
 			</a>
 		</div>

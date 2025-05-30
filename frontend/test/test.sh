@@ -9,7 +9,7 @@ cd "$SCRIPT_DIR" # Ensure we are in frontend/test
 CI_MODE=false # Default CI mode to false
 
 # Parse arguments for --ci flag
-if [[ " $@[@] " =~ " --ci " ]]; then # Check if --ci is among the arguments
+if [[ " $@ " =~ " --ci " ]]; then # Check if --ci is among the arguments
   CI_MODE=true
 fi
 
@@ -31,14 +31,33 @@ trap cleanup EXIT SIGINT SIGTERM
 echo "Performing initial cleanup..."
 docker compose -f "$COMPOSE_FILE" down -v --remove-orphans || true
 
-# Build and start all services in detached mode
-echo "Building and starting E2E services..."
-docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans
+# Step 1: Start frontend service first to get its IP
+echo "Starting frontend service to determine its IP..."
+docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans frontend
+
+# Step 2: Determine Frontend IP dynamically
+FRONTEND_CONTAINER_NAME="frontend_e2e" # From docker-compose.e2e.yml container_name
+FRONTEND_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$FRONTEND_CONTAINER_NAME")
+
+if [ -z "$FRONTEND_IP" ]; then
+  echo "Error: Could not determine IP address for frontend container ($FRONTEND_CONTAINER_NAME)."
+  exit 1
+fi
+echo "Frontend container ($FRONTEND_CONTAINER_NAME) IP address: $FRONTEND_IP"
+
+# Step 3: Export the dynamic URL for the backend and Playwright
+export DYNAMIC_FRONTEND_URL="http://${FRONTEND_IP}:23000"
+echo "Exported DYNAMIC_FRONTEND_URL=${DYNAMIC_FRONTEND_URL}"
+
+# Step 4: Build and start other E2E services.
+# The DYNAMIC_FRONTEND_URL will be available to the docker-compose command for the backend.
+# We use --no-deps to avoid restarting the frontend if it's already up.
+echo "Building and starting other E2E services (backend, postgres, mock-sendgrid, playwright)..."
+docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans --no-deps backend postgres mock-sendgrid playwright
 
 # Health checks
 echo "Waiting for services to be healthy..."
-
-MAX_RETRIES=30 #
+MAX_RETRIES=30
 RETRY_INTERVAL=5
 
 # Health check for Postgres
@@ -52,6 +71,21 @@ for i in $(seq 1 $MAX_RETRIES); do
   sleep $RETRY_INTERVAL
   if [ "$i" -eq "$MAX_RETRIES" ]; then
     echo "Postgres health check failed after $MAX_RETRIES retries."
+    exit 1
+  fi
+done
+
+# Health check for Mock Sendgrid (mock-sendgrid:27000)
+echo "Checking Mock Sendgrid (http://mock-sendgrid:27000/)..."
+for i in $(seq 1 $MAX_RETRIES); do
+  if docker compose -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null http://mock-sendgrid:27000/; then
+    echo "Mock Sendgrid is ready."
+    break
+  fi
+  echo "Mock Sendgrid not ready, retrying in $RETRY_INTERVAL seconds... ($i/$MAX_RETRIES)"
+  sleep $RETRY_INTERVAL
+  if [ "$i" -eq "$MAX_RETRIES" ]; then
+    echo "Mock Sendgrid health check failed after $MAX_RETRIES retries."
     exit 1
   fi
 done
@@ -71,12 +105,10 @@ for i in $(seq 1 $MAX_RETRIES); do
   fi
 done
 
-# Health check for Frontend (frontend:23000)
-# Sending requests directly to the container IP (e.g., http://172.18.0.4:23000) as Vite
-# was returning 403 when accessed via service name (http://frontend:23000) presumably due to Host header handling.
-echo "Checking Frontend (http://172.18.0.4:23000)..."
+# Health check for Frontend (using the dynamically obtained IP)
+echo "Checking Frontend (${DYNAMIC_FRONTEND_URL})..."
 for i in $(seq 1 $MAX_RETRIES); do
-  if docker compose -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null http://172.18.0.4:23000; then
+  if docker compose -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null "${DYNAMIC_FRONTEND_URL}"; then
     echo "Frontend is ready."
     break
   fi
@@ -94,10 +126,11 @@ echo "All services are healthy."
 # The /app directory in the playwright container is the frontend/ directory on the host
 # The config file is at /app/test/playwright.e2e.config.ts
 # package.json is at /app/package.json
-echo "Running Playwright E2E tests... (CI Mode: $CI_MODE)"
+echo "Running Playwright E2E tests targeting ${DYNAMIC_FRONTEND_URL} (CI Mode: $CI_MODE)..."
 docker compose -f "$COMPOSE_FILE" exec -T \
   -e CI="${CI_MODE}" \
   -e PLAYWRIGHT_HEADED="${PLAYWRIGHT_HEADED:-false}" \
+  -e PLAYWRIGHT_BASE_URL="${DYNAMIC_FRONTEND_URL}" \
   playwright npx playwright test --config test/playwright.e2e.config.js
 
 TEST_EXIT_CODE=$?
@@ -112,4 +145,4 @@ else
   echo -e "${RED}E2E tests failed with exit code $TEST_EXIT_CODE.${NC}"
 fi
 
-exit $TEST_EXIT_CODE 
+exit $TEST_EXIT_CODE

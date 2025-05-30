@@ -36,11 +36,12 @@ func TestGetUsers_Integration(t *testing.T) {
 			name:           "alpha_admin (Tenant A) gets users from Tenant Alpha",
 			loginUserKey:   "alpha_admin",
 			expectedStatus: http.StatusOK,
-			// Order by created_at ASC from setup.sql: alpha_admin, alpha_editor, pending_editor_valid_token
+			// Order by created_at ASC from seed.sql: alpha_admin, alpha_editor, pending_user_valid_token, suspended_user
 			expectedUserEmails: []string{
 				setup.TestUsersData["alpha_admin"].Email,
 				setup.TestUsersData["alpha_editor"].Email,
-				setup.TestUsersData["pending_editor_valid_token"].Email,
+				setup.TestUsersData["pending_user_valid_token"].Email,
+				setup.TestUsersData["suspended_user"].Email,
 			},
 		},
 		{
@@ -100,11 +101,7 @@ func TestGetUsers_Integration(t *testing.T) {
 							expectedName = seededUser.Name
 							expectedRole = seededUser.Role
 							expectedUserID = seededUser.UserID
-							if u.Email == setup.TestUsersData["pending_editor_valid_token"].Email {
-								expectedStatus = "pending_verification"
-							} else {
-								expectedStatus = "active"
-							}
+							expectedStatus = seededUser.Status
 							foundInTestData = true
 							break
 						}

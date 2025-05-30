@@ -8,12 +8,12 @@ export const TestUsersData = {
 		role: "admin",
 		status: "active"
 	},
-	alpha_user: {
-		email: "alpha_user@example.com",
+	alpha_editor: {
+		email: "alpha_editor@example.com",
 		plainTextPassword: "password123",
 		userID: "b0000000-0000-0000-0000-000000000002",
 		tenantID: "a0000000-0000-0000-0000-000000000001",
-		name: "Alpha User",
+		name: "Alpha Editor",
 		role: "editor",
 		status: "active"
 	},

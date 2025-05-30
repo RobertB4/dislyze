@@ -47,7 +47,7 @@
 			<a href="/">
 				<img src="/logofull.png" alt="Dislyze Logo" class="mx-auto h-12 w-auto" />
 			</a>
-			<h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+			<h2 data-testid="forgot-password-heading" class="mt-6 text-center text-3xl font-extrabold text-gray-900">
 				パスワードをお忘れですか？
 			</h2>
 			<p class="mt-2 text-center text-sm text-gray-600">
@@ -70,13 +70,13 @@
 			</div>
 
 			<div>
-				<Button type="submit" loading={$isSubmitting} fullWidth>
+				<Button data-testid="forgot-password-submit-button" type="submit" loading={$isSubmitting} fullWidth>
 					パスワードリセットをリクエスト
 				</Button>
 			</div>
 		</form>
 		<div class="text-sm text-center">
-			<a href="/auth/login" class="font-medium text-indigo-600 hover:text-indigo-500">
+			<a data-testid="back-to-login-link" href="/auth/login" class="font-medium text-indigo-600 hover:text-indigo-500">
 				ログインページに戻る
 			</a>
 		</div>

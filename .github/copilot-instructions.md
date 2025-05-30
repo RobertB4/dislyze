@@ -6,7 +6,7 @@ Confirm the plan, then write code!
 
 Implement proper error handling
 
-Any user facing text should be written in Japanese. Internal logs should be in English.
+Language: Copilot chat responses should be writtein in English. Any user facing text in our apps should be written in Japanese. Internal logs on the backend should be in English.
 
 Implement input validation for API endpoints.
 
