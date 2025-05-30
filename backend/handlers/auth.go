@@ -194,7 +194,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := req.Validate(); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, err.Error())
+		appErr := errlib.New(err, http.StatusBadRequest, "")
 		responder.RespondWithError(w, appErr)
 		return
 	}
@@ -338,7 +338,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := req.Validate(); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, err.Error())
+		appErr := errlib.New(err, http.StatusBadRequest, "")
 		responder.RespondWithError(w, appErr)
 		return
 	}

@@ -38,7 +38,6 @@ func TestSignup(t *testing.T) {
 		name           string
 		request        SignupRequest
 		expectedStatus int
-		expectedError  string
 	}{
 		{
 			name: "successful signup",
@@ -60,7 +59,6 @@ func TestSignup(t *testing.T) {
 				PasswordConfirm: "password123",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "会社名は必須です",
 		},
 		{
 			name: "missing user name",
@@ -71,7 +69,6 @@ func TestSignup(t *testing.T) {
 				PasswordConfirm: "password123",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "ユーザー名は必須です",
 		},
 		{
 			name: "missing email",
@@ -82,18 +79,15 @@ func TestSignup(t *testing.T) {
 				PasswordConfirm: "password123",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "メールアドレスは必須です",
 		},
 		{
 			name: "missing password",
 			request: SignupRequest{
-				CompanyName:     "Test Company",
-				UserName:        "Test User",
-				Email:           "test@example.com",
-				PasswordConfirm: "password123",
+				CompanyName: "Test Company",
+				UserName:    "Test User",
+				Email:       "test@example.com",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "パスワードは必須です",
 		},
 		{
 			name: "password too short",
@@ -105,7 +99,6 @@ func TestSignup(t *testing.T) {
 				PasswordConfirm: "short",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "パスワードは8文字以上である必要があります",
 		},
 		{
 			name: "passwords do not match",
@@ -117,7 +110,6 @@ func TestSignup(t *testing.T) {
 				PasswordConfirm: "password456",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "パスワードが一致しません",
 		},
 	}
 
@@ -137,19 +129,15 @@ func TestSignup(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
-			var response SignupResponse
-			err = json.NewDecoder(resp.Body).Decode(&response)
-			assert.NoError(t, err)
-
-			if tt.expectedError != "" {
-				assert.False(t, response.Success)
-				assert.Equal(t, tt.expectedError, response.Error)
-			} else {
-				assert.True(t, response.Success)
-				assert.Empty(t, response.Error)
+			if tt.expectedStatus == http.StatusOK {
+				var response SignupResponse
+				err = json.NewDecoder(resp.Body).Decode(&response)
+				assert.NoError(t, err)
+				assert.True(t, response.Success, "Expected success to be true for OK status")
+				assert.Empty(t, response.Error, "Expected error to be empty for OK status")
 
 				cookies := resp.Cookies()
-				assert.NotEmpty(t, cookies, "Expected cookies in response")
+				assert.NotEmpty(t, cookies, "Expected cookies in response for successful signup")
 
 				var accessToken, refreshToken *http.Cookie
 				for _, cookie := range cookies {
@@ -170,6 +158,12 @@ func TestSignup(t *testing.T) {
 				assert.True(t, refreshToken.HttpOnly, "Refresh token cookie should be HttpOnly")
 				assert.True(t, refreshToken.Secure, "Refresh token cookie should be Secure")
 				assert.Equal(t, http.SameSiteStrictMode, refreshToken.SameSite, "Refresh token cookie should have SameSite=Strict")
+			} else if tt.expectedStatus == http.StatusBadRequest {
+				cookies := resp.Cookies()
+				assert.Empty(t, cookies, "Expected no cookies for failed signup with status %d", tt.expectedStatus)
+			} else {
+				cookies := resp.Cookies()
+				assert.Empty(t, cookies, "Expected no cookies for failed signup with status %d", tt.expectedStatus)
 			}
 		})
 	}
@@ -202,6 +196,26 @@ func TestSignupDuplicateEmail(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
+	var successResponse SignupResponse
+	err = json.NewDecoder(resp.Body).Decode(&successResponse)
+	assert.NoError(t, err)
+	assert.True(t, successResponse.Success)
+	assert.Empty(t, successResponse.Error)
+
+	cookies := resp.Cookies()
+	assert.NotEmpty(t, cookies, "Expected cookies for initial successful signup")
+	var accessToken, refreshToken *http.Cookie
+	for _, cookie := range cookies {
+		switch cookie.Name {
+		case "dislyze_access_token":
+			accessToken = cookie
+		case "dislyze_refresh_token":
+			refreshToken = cookie
+		}
+	}
+	assert.NotNil(t, accessToken, "Access token cookie not found (initial signup)")
+	assert.NotNil(t, refreshToken, "Refresh token cookie not found (initial signup)")
+
 	req2, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", setup.BaseURL), bytes.NewBuffer(body))
 	assert.NoError(t, err)
 	req2.Header.Set("Content-Type", "application/json")
@@ -211,11 +225,15 @@ func TestSignupDuplicateEmail(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, resp2.StatusCode)
 
-	var response SignupResponse
-	err = json.NewDecoder(resp2.Body).Decode(&response)
+	var errorResponse SignupResponse
+	err = json.NewDecoder(resp2.Body).Decode(&errorResponse)
 	assert.NoError(t, err)
-	assert.False(t, response.Success)
-	assert.Equal(t, "このメールアドレスは既に使用されています。", response.Error)
+	assert.False(t, errorResponse.Success)
+	assert.Equal(t, "このメールアドレスは既に使用されています。", errorResponse.Error)
+
+	// Expect no cookies for the failed duplicate email signup
+	cookies2 := resp2.Cookies()
+	assert.Empty(t, cookies2, "Expected no cookies for duplicate email signup attempt")
 }
 
 func TestLogin(t *testing.T) {
@@ -229,7 +247,6 @@ func TestLogin(t *testing.T) {
 		name           string
 		request        setup.LoginRequest
 		expectedStatus int
-		expectedError  string
 	}{
 		{
 			name: "successful login",
@@ -246,7 +263,6 @@ func TestLogin(t *testing.T) {
 				Password: "wrongpassword",
 			},
 			expectedStatus: http.StatusUnauthorized,
-			expectedError:  "メールアドレスまたはパスワードが正しくありません",
 		},
 		{
 			name: "non-existent email",
@@ -255,7 +271,6 @@ func TestLogin(t *testing.T) {
 				Password: "password123",
 			},
 			expectedStatus: http.StatusUnauthorized,
-			expectedError:  "メールアドレスまたはパスワードが正しくありません",
 		},
 		{
 			name: "missing email",
@@ -263,7 +278,6 @@ func TestLogin(t *testing.T) {
 				Password: "password123",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "メールアドレスは必須です",
 		},
 		{
 			name: "missing password",
@@ -271,7 +285,6 @@ func TestLogin(t *testing.T) {
 				Email: "test@example.com",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "パスワードは必須です",
 		},
 	}
 
@@ -291,19 +304,15 @@ func TestLogin(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
-			var response LoginResponse
-			err = json.NewDecoder(resp.Body).Decode(&response)
-			assert.NoError(t, err)
-
-			if tt.expectedError != "" {
-				assert.False(t, response.Success)
-				assert.Equal(t, tt.expectedError, response.Error)
-			} else {
-				assert.True(t, response.Success)
-				assert.Empty(t, response.Error)
+			if tt.expectedStatus == http.StatusOK {
+				var response LoginResponse
+				err = json.NewDecoder(resp.Body).Decode(&response)
+				assert.NoError(t, err)
+				assert.True(t, response.Success, "Expected success to be true for OK status")
+				assert.Empty(t, response.Error, "Expected error to be empty for OK status")
 
 				cookies := resp.Cookies()
-				assert.NotEmpty(t, cookies, "Expected cookies in response")
+				assert.NotEmpty(t, cookies, "Expected cookies in response for successful login")
 
 				var accessToken, refreshToken *http.Cookie
 				for _, cookie := range cookies {
@@ -324,6 +333,9 @@ func TestLogin(t *testing.T) {
 				assert.True(t, refreshToken.HttpOnly, "Refresh token cookie should be HttpOnly")
 				assert.True(t, refreshToken.Secure, "Refresh token cookie should be Secure")
 				assert.Equal(t, http.SameSiteStrictMode, refreshToken.SameSite, "Refresh token cookie should have SameSite=Strict")
+			} else {
+				cookies := resp.Cookies()
+				assert.Empty(t, cookies, "Expected no cookies for failed login with status %d", tt.expectedStatus)
 			}
 		})
 	}

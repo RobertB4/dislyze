@@ -11,3 +11,5 @@ Language: Copilot chat responses should be writtein in English. Any user facing 
 Implement input validation for API endpoints.
 
 Always add loading and error states to data fetching components
+
+Do not any comments that explain WHAT you did. Only explain comments that explain WHY you did something.
