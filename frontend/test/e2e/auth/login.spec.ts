@@ -82,10 +82,8 @@ test.describe("Auth - Login Page", () => {
 	});
 
 	test("should display error for pending verification account", async ({ page }) => {
-		await page.locator("#email").fill(TestUsersData.pending_editor_valid_token.email);
-		await page
-			.locator("#password")
-			.fill(TestUsersData.pending_editor_valid_token.plainTextPassword);
+		await page.locator("#email").fill(TestUsersData.pending_user_valid_token.email);
+		await page.locator("#password").fill(TestUsersData.pending_user_valid_token.plainTextPassword);
 		await page.getByTestId("login-submit-button").click();
 
 		const toastMessage = page.getByTestId("toast-0");
