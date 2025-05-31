@@ -8,6 +8,7 @@ package queries
 import (
 	"context"
 
+	"dislyze/queries_pregeneration"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -134,7 +135,7 @@ type GetUsersByTenantIDRow struct {
 	ID        pgtype.UUID
 	Email     string
 	Name      string
-	Role      string
+	Role      queries_pregeneration.UserRole
 	Status    string
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
@@ -179,7 +180,7 @@ type InviteUserToTenantParams struct {
 	Email        string
 	PasswordHash string
 	Name         string
-	Role         string
+	Role         queries_pregeneration.UserRole
 	Status       string
 }
 

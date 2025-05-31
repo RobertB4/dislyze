@@ -5,6 +5,7 @@
 package queries
 
 import (
+	"dislyze/queries_pregeneration"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -52,7 +53,7 @@ type User struct {
 	Email        string
 	PasswordHash string
 	Name         string
-	Role         string
+	Role         queries_pregeneration.UserRole
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 	Status       string

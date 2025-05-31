@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"dislyze/lib/utils"
+	"dislyze/queries_pregeneration"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -35,7 +36,7 @@ type TokenPair struct {
 	JTI          pgtype.UUID
 }
 
-func GenerateAccessToken(userID, tenantID pgtype.UUID, role string, secret []byte) (string, int64, *Claims, error) {
+func GenerateAccessToken(userID, tenantID pgtype.UUID, role queries_pregeneration.UserRole, secret []byte) (string, int64, *Claims, error) {
 	if len(secret) == 0 {
 		return "", 0, nil, fmt.Errorf("secret cannot be empty")
 	}
@@ -44,7 +45,7 @@ func GenerateAccessToken(userID, tenantID pgtype.UUID, role string, secret []byt
 	claims := &Claims{
 		UserID:   userID,
 		TenantID: tenantID,
-		Role:     role,
+		Role:     role.String(),
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(15 * time.Minute)), // Access token expires in 15 minutes
@@ -91,7 +92,7 @@ func GenerateRefreshToken(userID pgtype.UUID, secret []byte) (string, pgtype.UUI
 	return refreshToken, jti, nil
 }
 
-func GenerateTokenPair(userID, tenantID pgtype.UUID, role string, secret []byte) (*TokenPair, error) {
+func GenerateTokenPair(userID, tenantID pgtype.UUID, role queries_pregeneration.UserRole, secret []byte) (*TokenPair, error) {
 	accessToken, expiresIn, _, err := GenerateAccessToken(userID, tenantID, role, secret)
 	if err != nil {
 		return nil, err

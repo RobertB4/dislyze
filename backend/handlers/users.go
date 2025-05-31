@@ -25,6 +25,7 @@ import (
 	"dislyze/lib/ratelimit"
 	"dislyze/lib/responder"
 	"dislyze/queries"
+	"dislyze/queries_pregeneration"
 )
 
 var (
@@ -37,25 +38,25 @@ const (
 )
 
 type User struct {
-	ID        string    `json:"id"`
-	Email     string    `json:"email"`
-	Name      string    `json:"name,omitempty"`
-	Role      string    `json:"role"`
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        string                         `json:"id"`
+	Email     string                         `json:"email"`
+	Name      string                         `json:"name,omitempty"`
+	Role      queries_pregeneration.UserRole `json:"role"`
+	Status    string                         `json:"status"`
+	CreatedAt time.Time                      `json:"created_at"`
+	UpdatedAt time.Time                      `json:"updated_at"`
 }
 
 type InviteUserRequest struct {
-	Email string `json:"email"`
-	Name  string `json:"name"`
-	Role  string `json:"role"`
+	Email string                         `json:"email"`
+	Name  string                         `json:"name"`
+	Role  queries_pregeneration.UserRole `json:"role"`
 }
 
 func (r *InviteUserRequest) Validate() error {
 	r.Email = strings.TrimSpace(r.Email)
 	r.Name = strings.TrimSpace(r.Name)
-	r.Role = strings.TrimSpace(strings.ToLower(r.Role))
+	r.Role = queries_pregeneration.UserRole(strings.TrimSpace(strings.ToLower(r.Role.String())))
 
 	if r.Email == "" {
 		return fmt.Errorf("email is required")
@@ -624,7 +625,7 @@ func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		UserID:     user.ID.String(),
 		Email:      user.Email,
 		UserName:   user.Name,
-		UserRole:   user.Role,
+		UserRole:   user.Role.String(),
 	}
 
 	responder.RespondWithJSON(w, http.StatusOK, response)

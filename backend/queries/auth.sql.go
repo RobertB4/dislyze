@@ -8,6 +8,7 @@ package queries
 import (
 	"context"
 
+	"dislyze/queries_pregeneration"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -128,7 +129,7 @@ type CreateUserParams struct {
 	Email        string
 	PasswordHash string
 	Name         string
-	Role         string
+	Role         queries_pregeneration.UserRole
 	Status       string
 }
 
