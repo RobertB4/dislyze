@@ -35,3 +35,7 @@ test-results
 *.swp
 *.swo
 .DS_Store 
+
+# build directories
+*/build
+*/dist
