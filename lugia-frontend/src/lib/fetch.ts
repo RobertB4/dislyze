@@ -36,6 +36,11 @@ export async function loadFunctionFetch(
 		);
 	}
 
+	if (response.status === 404) {
+		console.error(`loadFunctionFetch: Not found for URL ${response.url}`);
+		throw svelteKitError(404, "ページが見つかりません。");
+	}
+
 	if (response.status === 403) {
 		console.error(`loadFunctionFetch: Forbidden for URL ${response.url}`);
 		throw svelteKitError(403, "権限がありません。");
@@ -126,6 +131,9 @@ export async function mutationFetch(
 			const body = (await clonedResponse.json()) as { error?: string };
 			if (body && typeof body.error === "string") {
 				toast.showError(new KnownError(body.error));
+				success = false;
+			} else {
+				toast.showError();
 				success = false;
 			}
 		} catch (jsonError) {
