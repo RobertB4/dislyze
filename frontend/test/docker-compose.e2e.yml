@@ -7,9 +7,9 @@ services:
     ports:
       - "23000:23000"
     environment:
-      - API_URL=http://backend:23001
+      - API_URL=http://lugia-backend:23001
     depends_on:
-      - backend
+      - lugia-backend
     container_name: frontend_e2e
 
   mock-sendgrid:
@@ -21,7 +21,7 @@ services:
       - SENDGRID_API_KEY=e2e_fake_sendgrid_key
       - PORT=27000
 
-  backend:
+  lugia-backend:
     build:
       context: ../../ # Project root
       dockerfile: ./frontend/test/Dockerfile.backend.e2e
@@ -50,7 +50,7 @@ services:
         condition: service_healthy
       mock-sendgrid:
         condition: service_started
-    container_name: backend_e2e
+    container_name: lugia-backend-e2e
 
   postgres:
     image: postgres:17-alpine
@@ -88,7 +88,7 @@ services:
     command: sleep infinity
     depends_on:
       - frontend
-      - backend
+      - lugia-backend
       - postgres
     user: pwuser
     container_name: playwright_e2e

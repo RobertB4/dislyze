@@ -67,8 +67,8 @@ echo "Exported DYNAMIC_FRONTEND_URL=${DYNAMIC_FRONTEND_URL}"
 # Step 4: Build and start other E2E services.
 # The DYNAMIC_FRONTEND_URL will be available to the docker-compose command for the backend.
 # We use --no-deps to avoid restarting the frontend if it's already up.
-echo "Building and starting other E2E services (backend, postgres, mock-sendgrid, playwright)..."
-docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans --no-deps backend postgres mock-sendgrid playwright
+echo "Building and starting other E2E services (lugia-backend, postgres, mock-sendgrid, playwright)..."
+docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans --no-deps lugia-backend postgres mock-sendgrid playwright
 
 # Health checks
 echo "Waiting for services to be healthy..."
@@ -105,17 +105,17 @@ for i in $(seq 1 $MAX_RETRIES); do
   fi
 done
 
-# Health check for Backend (backend:23001)
-echo "Checking Backend (http://backend:23001/health)..."
+# Health check for Backend (lugia-backend:23001)
+echo "Checking Backend (http://lugia-backend:23001/health)..."
 for i in $(seq 1 $MAX_RETRIES); do
-  if docker compose -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null http://backend:23001/health; then
-    echo "Backend is ready."
+  if docker compose -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null http://lugia-backend:23001/health; then
+    echo "Lugia Backend is ready."
     break
   fi
-  echo "Backend not ready, retrying in $RETRY_INTERVAL seconds... ($i/$MAX_RETRIES)"
+  echo "Lugia Backend not ready, retrying in $RETRY_INTERVAL seconds... ($i/$MAX_RETRIES)"
   sleep $RETRY_INTERVAL
   if [ "$i" -eq "$MAX_RETRIES" ]; then
-    echo "Backend health check failed after $MAX_RETRIES retries."
+    echo "Lugia Backend health check failed after $MAX_RETRIES retries."
     exit 1
   fi
 done

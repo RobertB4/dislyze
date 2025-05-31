@@ -3,7 +3,7 @@ name: Backend Integration Tests
 on:
   push:
     paths:
-      - 'backend/**'
+      - 'lugia-backend/**'
       - 'database/**'
       - '.github/workflows/backend-integration-tests.yml'
 
@@ -17,5 +17,5 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run integration tests
-        working-directory: ./backend
+        working-directory: ./lugia-backend
         run: make test-integration

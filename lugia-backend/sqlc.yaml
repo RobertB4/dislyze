@@ -1,0 +1,21 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "./queries_pregeneration"
+    schema: "../database/migrations"
+    gen:
+      go:
+        package: "queries"
+        out: "queries"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_exported_queries: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: true
+        overrides:
+          - go_type:
+              type: "UserRole"
+              import: "lugia/queries_pregeneration"
+            column: "users.role"

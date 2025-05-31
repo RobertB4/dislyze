@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: test-postgres
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: test_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d test_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "15432:5432"
+  mock-sendgrid:
+    image: yudppp/simple-sendgrid-mock-server
+    container_name: mock-sendgrid
+    ports:
+      - "17000:17000"
+    environment:
+      - SENDGRID_API_KEY=sendgrid
+      - PORT=17000
+  lugia-backend:
+    container_name: lugia-backend-integration
+    build:
+      context: ../..
+      dockerfile: lugia-backend/test/Dockerfile
+    environment:
+      - APP_ENV=test
+      - PORT=13001
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=test_user
+      - DB_PASSWORD=test_password
+      - DB_NAME=test_db
+      - DB_SSL_MODE=disable
+      - JWT_SECRET=test_jwt_secret_key_for_testing_only
+      - AUTH_RATE_LIMIT=1000
+      - FRONTEND_URL=http://localhost:13000
+      - SENDGRID_API_KEY=sendgrid
+      - SENDGRID_API_URL=http://mock-sendgrid:17000
+      - INITIAL_PW=password
+    ports:
+      - "13001:13001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mock-sendgrid:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:13001/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: ["./main"]

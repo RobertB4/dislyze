@@ -6,7 +6,7 @@ This monorepo contains a Go backend server and a SvelteKit frontend application.
 
 ```
 .
-├── backend/         # Go HTTP server
+├── lugia-backend/         # Go HTTP server
 │   ├── main.go     # Server entry point
 │   └── go.mod      # Go module file
 │

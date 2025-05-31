@@ -6,13 +6,13 @@ WORKDIR /app
 RUN apk add --no-cache postgresql-client
 
 # Context is project root, so paths are relative to <project_root>
-COPY backend/go.mod ./
-COPY backend/go.sum ./
+COPY lugia-backend/go.mod ./
+COPY lugia-backend/go.sum ./
 
 RUN go mod download
 
-# Context is project root, so copy backend/ subdirectory into /app
-COPY backend/ .
+# Context is project root, so copy lugia-backend/ subdirectory into /app
+COPY lugia-backend/ .
 
 # Context is project root, so 'database' is directly accessible
 COPY database /database

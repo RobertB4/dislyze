@@ -16,5 +16,5 @@ Always add loading and error states to data fetching components
 Do not any comments that explain WHAT you did. Only explain comments that explain WHY you did something.
 
 Project structure:
-./backend - Golang backend code
+./lugia-backend - Golang backend code
 ./frontend - SvelteKit frontend code

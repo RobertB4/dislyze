@@ -3,7 +3,7 @@ name: Backend CI
 on:
   push:
     paths:
-      - 'backend/**'
+      - 'lugia-backend/**'
       - 'database/**'
       - '.github/workflows/backend-ci.yml'
 
@@ -35,40 +35,40 @@ jobs:
         run: go install github.com/securego/gosec/v2/cmd/gosec@latest
 
       # All subsequent Go-related commands are run from the backend directory
-      - name: Change to backend directory
-        run: cd backend
+      - name: Change to lugia-backend directory
+        run: cd lugia-backend
         working-directory: .
 
       - name: Verify Go Modules (go mod tidy)
-        working-directory: ./backend
+        working-directory: ./lugia-backend
         run: |
           go mod tidy
           # Fail if go.mod or go.sum differs after tidy
           git diff --exit-code go.mod go.sum
 
       - name: Build application
-        working-directory: ./backend
+        working-directory: ./lugia-backend
         run: make build
 
       - name: Run govulncheck for vulnerability scanning
-        working-directory: ./backend
+        working-directory: ./lugia-backend
         run: govulncheck ./...
 
       - name: Run go vet
-        working-directory: ./backend
+        working-directory: ./lugia-backend
         run: go vet ./...
 
       - name: Run gosec SAST scan
-        working-directory: ./backend
+        working-directory: ./lugia-backend
         run: gosec -exclude-dir=queries ./...
 
       - name: Lint Go code (golangci-lint)
         uses: golangci/golangci-lint-action@v7
         with:
-          version: v2.1 
-          working-directory: ./backend
+          version: v2.1
+          working-directory: ./lugia-backend
           args: --fast-only
 
       - name: Run unit tests
-        working-directory: ./backend
+        working-directory: ./lugia-backend
         run: make test-unit

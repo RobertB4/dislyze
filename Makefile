@@ -2,7 +2,7 @@ dev:
 	make -j3 dev-backend dev-frontend dev-sendgrid-mock
 
 dev-backend:
-	cd backend && make dev
+	cd lugia-backend && make dev
 
 dev-frontend:
 	cd frontend && npm run dev
