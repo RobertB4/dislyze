@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -108,17 +109,35 @@ func main() {
 
 	router := SetupRoutes(pool, env, appQueries)
 
+	server := &http.Server{
+		Addr:         fmt.Sprintf(":%s", env.Port),
+		Handler:      router,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
 	go func() {
-		log.Printf("main: API listening on :%s", env.Port)
-		serverErrors <- http.ListenAndServe(fmt.Sprintf(":%s", env.Port), router)
+		log.Printf("main: API listening on %s", server.Addr)
+		serverErrors <- server.ListenAndServe()
 	}()
 
 	select {
 	case err := <-serverErrors:
-		log.Fatalf("Error starting server: %v", err)
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Error starting server: %v", err)
+		}
 
 	case sig := <-sigChan:
 		log.Printf("main: %v : Start shutdown", sig)
-		os.Exit(0)
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer shutdownCancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("main: Graceful shutdown failed: %v", err)
+		} else {
+			log.Printf("main: Server gracefully stopped")
+		}
 	}
+	log.Printf("main: Shutdown complete")
 }
