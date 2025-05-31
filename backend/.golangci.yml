@@ -11,15 +11,6 @@ linters:
   disable:
     - gocyclo
 
-settings:
-  gocyclo:
-    min-complexity: 15
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-  govet:
-    check-shadowing: true
-
 run:
   timeout: 5m
   tests: true
