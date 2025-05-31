@@ -74,7 +74,7 @@
 			</div>
 
 			<form class="mt-8 space-y-6" use:form>
-				<div class="rounded-md shadow-sm space-y-4">
+				<div class="rounded-md space-y-4">
 					<Input
 						id="email"
 						name="email"

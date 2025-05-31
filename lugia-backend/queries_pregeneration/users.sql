@@ -2,7 +2,7 @@
 SELECT id, email, name, role, status, created_at, updated_at
 FROM users
 WHERE tenant_id = $1
-ORDER BY created_at ASC; 
+ORDER BY created_at DESC; 
 
 -- name: InviteUserToTenant :one
 INSERT INTO users (tenant_id, email, password_hash, name, role, status)
