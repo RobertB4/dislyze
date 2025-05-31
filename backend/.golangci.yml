@@ -11,7 +11,7 @@ linters:
   disable:
     - gocyclo
 
-linters-settings:
+settings:
   gocyclo:
     min-complexity: 15
   errcheck:
@@ -21,18 +21,12 @@ linters-settings:
     check-shadowing: true
 
 run:
-  deadline: 5m
+  timeout: 5m
   tests: true
   modules-download-mode: readonly
 
 issues:
-  exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-dirs:
-    - vendor
-
-output:
-  format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
+  exclude-rules:
+    - path: vendor
