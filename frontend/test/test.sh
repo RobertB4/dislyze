@@ -146,9 +146,6 @@ if [ $CHOWN_EXIT_CODE -ne 0 ]; then
 fi
 echo "/app ownership changed successfully."
 
-echo "Installing project Playwright dependencies in Playwright container..."
-# Make npm ci verbose and capture its exit code
-docker compose -f "$COMPOSE_FILE" exec -T playwright npm ci --no-audit --no-fund
 NPM_CI_EXIT_CODE=$?
 
 if [ $NPM_CI_EXIT_CODE -ne 0 ]; then
