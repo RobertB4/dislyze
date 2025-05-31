@@ -138,7 +138,15 @@ done
 echo "All services are healthy."
 
 echo "Installing project Playwright dependencies in Playwright container..."
-docker compose -f "$COMPOSE_FILE" exec -T playwright npm ci --silent --no-audit --no-fund
+# Make npm ci verbose and capture its exit code
+docker compose -f "$COMPOSE_FILE" exec -T playwright npm ci --no-audit --no-fund
+NPM_CI_EXIT_CODE=$?
+
+if [ $NPM_CI_EXIT_CODE -ne 0 ]; then
+  echo "Error: npm ci in Playwright container failed with exit code $NPM_CI_EXIT_CODE."
+  exit $NPM_CI_EXIT_CODE
+fi
+echo "npm ci completed successfully in Playwright container."
 
 # Run Playwright E2E tests
 echo "Running Playwright E2E tests targeting ${DYNAMIC_FRONTEND_URL} (CI Mode: $CI_MODE, UI Mode: $UI_MODE)..."
