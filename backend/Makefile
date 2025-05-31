@@ -8,7 +8,7 @@ test-unit:
 	go test `go list ./... | grep -v test`
 
 test-integration:
-	cd test && sh test.sh
+	cd test && bash test.sh
 
 lint:
 	golangci-lint run --timeout 5m

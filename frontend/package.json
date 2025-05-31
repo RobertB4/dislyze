@@ -14,7 +14,7 @@
 		"lint": "prettier --check './src/**/*.{js,ts,svelte}' && eslint './src/**/*.{js,ts,svelte}'",
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
-		"test-e2e": "cd test && sh test.sh"
+		"test-e2e": "cd test && bash test.sh"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
