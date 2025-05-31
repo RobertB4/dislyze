@@ -11,9 +11,10 @@ type User = {
 	updated_at: string;
 };
 
-export const load: PageLoad = async ({ fetch }) => {
-	const response = await loadFunctionFetch(fetch, `/api/users`);
+export const load: PageLoad = ({ fetch }) => {
+	const usersPromise: Promise<User[]> = loadFunctionFetch(fetch, `/api/users`).then((res) =>
+		res.json()
+	);
 
-	const users: User[] = await response.json();
-	return { users };
+	return { usersPromise };
 };

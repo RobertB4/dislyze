@@ -1,4 +1,7 @@
-<script lang="ts">
+<script
+	lang="ts"
+	generics="PromisesMap extends Record<string, Promise<any>> = Record<string, Promise<any>>"
+>
 	import { page } from "$app/state";
 	import EmptyAvatar from "$components/EmptyAvatar.svelte";
 	import { errorStore } from "$lib/errors";
@@ -9,12 +12,18 @@
 
 	let isMobileNavigationOpen = $state(false);
 
-	// Declare snippet props
-	let {
-		pageTitle,
-		buttons,
-		children
-	}: { pageTitle: string; buttons?: Snippet; children: Snippet } = $props();
+	type ResolvedObject<T extends Record<string, Promise<any>>> = {
+		[K in keyof T]: T[K] extends Promise<infer U> ? U : never;
+	};
+
+	type LayoutProps = {
+		pageTitle: string;
+		promises?: PromisesMap;
+		buttons?: Snippet;
+		children: Snippet<[ResolvedObject<PromisesMap>]>;
+	};
+
+	let { pageTitle, promises, buttons, children }: LayoutProps = $props();
 
 	function toggleMobileNavigation() {
 		isMobileNavigationOpen = !isMobileNavigationOpen;
@@ -37,6 +46,55 @@
 			errorStore.setError(500, "処理中に予期せぬエラーが発生しました。");
 		}
 	}
+
+	const getResolvedPromises = $derived(async () => {
+		try {
+			if (!promises || Object.keys(promises).length === 0) {
+				return {} as ResolvedObject<PromisesMap>;
+			}
+			const keys = Object.keys(promises);
+			const promiseValues = Object.values(promises);
+
+			const results = await Promise.all(promiseValues);
+
+			const resolvedObject: Record<string, any> = {};
+			keys.forEach((key, index) => {
+				resolvedObject[key] = results[index];
+			});
+			return resolvedObject as ResolvedObject<PromisesMap>;
+		} catch (e) {
+			console.error("Error resolving promises in Layout:", e);
+			let status = 500;
+			let message = "処理中に予期せぬエラーが発生しました。";
+
+			const err = e as { status?: number; message?: string; body?: { message?: string } };
+
+			if (err.status) {
+				status = err.status;
+			}
+
+			if (err.message) {
+				message = err.message;
+			}
+
+			if (err.body?.message) {
+				message = err.body.message;
+			}
+
+			if (e instanceof Error) {
+				message = e.message;
+			}
+
+			// Use a microtask to ensure navigation happens after the current processing cycle
+			Promise.resolve().then(() => {
+				safeGoto(`/error?status=${status}&message=${encodeURIComponent(message)}`);
+			});
+
+			// Return an empty object. The navigation should ideally prevent children from rendering
+			// or attempting to use potentially incomplete data.
+			return {} as ResolvedObject<PromisesMap>;
+		}
+	});
 </script>
 
 {#if !$me}
@@ -592,7 +650,33 @@
 				</div>
 			</div>
 			<div class="py-6 px-4 sm:px-6 md:px-8">
-				{@render children()}
+				{#await getResolvedPromises()}
+					<div class="flex justify-center items-center p-6 text-gray-500">
+						<svg
+							class="animate-spin -ml-1 mr-3 h-5 w-5"
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+						>
+							<circle
+								class="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								stroke-width="4"
+							></circle>
+							<path
+								class="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+							></path>
+						</svg>
+						<span>読み込み中...</span>
+					</div>
+				{:then resolvedData}
+					{@render children(resolvedData)}
+				{/await}
 			</div>
 		</main>
 	</div>
