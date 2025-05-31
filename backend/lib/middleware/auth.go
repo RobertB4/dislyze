@@ -10,6 +10,7 @@ import (
 
 	"dislyze/lib/config"
 	libctx "dislyze/lib/ctx"
+	"dislyze/lib/errlib"
 	"dislyze/lib/jwt"
 	"dislyze/lib/logger"
 	"dislyze/lib/ratelimit"
@@ -114,7 +115,11 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(r.Context())
+	defer func() {
+		if rErr := tx.Rollback(r.Context()); rErr != nil && !errors.Is(rErr, pgx.ErrTxClosed) {
+			errlib.LogError(fmt.Errorf("failed to rollback transaction in handleRefreshToken: %w", rErr))
+		}
+	}()
 
 	qtx := m.db.WithTx(tx)
 
@@ -235,5 +240,7 @@ func (m *AuthMiddleware) handleAuthError(w http.ResponseWriter, r *http.Request,
 	})
 
 	w.WriteHeader(http.StatusUnauthorized)
-	json.NewEncoder(w).Encode(map[string]string{})
+	if encodeErr := json.NewEncoder(w).Encode(map[string]string{}); encodeErr != nil {
+		errlib.LogError(errlib.New(encodeErr, http.StatusInternalServerError, "failed to encode empty JSON response in handleAuthError"))
+	}
 }

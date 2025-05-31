@@ -132,7 +132,11 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Re
 	if err != nil {
 		return nil, fmt.Errorf("failed to start transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if rErr := tx.Rollback(ctx); rErr != nil && !errlib.Is(rErr, pgx.ErrTxClosed) {
+			errlib.LogError(fmt.Errorf("failed to rollback transaction in signup: %w", rErr))
+		}
+	}()
 
 	qtx := h.queries.WithTx(tx)
 

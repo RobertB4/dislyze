@@ -33,7 +33,9 @@ func RespondWithError(w http.ResponseWriter, err error) {
 	w.WriteHeader(responseStatusCode)
 
 	if responseUserMessage != "" {
-		json.NewEncoder(w).Encode(map[string]string{"error": responseUserMessage})
+		if err := json.NewEncoder(w).Encode(map[string]string{"error": responseUserMessage}); err != nil {
+			errlib.LogError(errlib.New(err, http.StatusInternalServerError, "failed to encode error response"))
+		}
 	}
 }
 

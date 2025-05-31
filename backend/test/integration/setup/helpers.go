@@ -92,7 +92,11 @@ func LoginUserAndGetTokens(t *testing.T, email string, password string) (string,
 
 	resp, err := client.Do(req)
 	assert.NoError(t, err, "Failed to execute login request")
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			t.Logf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Login request failed for user %s. Status: %s", email, resp.Status)
 

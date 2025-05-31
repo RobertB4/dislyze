@@ -8,6 +8,7 @@ linters:
     - ineffassign
     - unused
     - misspell
+  disable:
     - gocyclo
 
 linters-settings:
