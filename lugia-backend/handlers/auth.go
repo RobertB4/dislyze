@@ -185,7 +185,7 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Re
 
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	if !h.rateLimiter.Allow(r.RemoteAddr) {
-		appErr := errlib.New(fmt.Errorf("rate limit exceeded for signup"), http.StatusTooManyRequests, "Too many requests, please try again later.")
+		appErr := errlib.New(fmt.Errorf("rate limit exceeded for signup"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
 		responder.RespondWithError(w, appErr)
 		return
 	}
@@ -333,7 +333,7 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if !h.rateLimiter.Allow(r.RemoteAddr) {
-		appErr := errlib.New(fmt.Errorf("rate limit exceeded for login"), http.StatusTooManyRequests, "Too many requests, please try again later.")
+		appErr := errlib.New(fmt.Errorf("rate limit exceeded for login"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
 		responder.RespondWithError(w, appErr)
 		return
 	}
