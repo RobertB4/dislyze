@@ -5,7 +5,7 @@ dev-backend:
 	cd lugia-backend && make dev
 
 dev-frontend:
-	cd frontend && npm run dev
+	cd lugia-frontend && npm run dev
 
 dev-sendgrid-mock:
 	cd sendgrid-mock && SENDGRID_API_KEY=sendgrid npm run start

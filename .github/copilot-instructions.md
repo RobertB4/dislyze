@@ -17,4 +17,4 @@ Do not any comments that explain WHAT you did. Only explain comments that explai
 
 Project structure:
 ./lugia-backend - Golang backend code
-./frontend - SvelteKit frontend code
+./lugia-frontend - SvelteKit frontend code

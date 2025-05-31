@@ -4,7 +4,7 @@ set -e
 
 COMPOSE_FILE="./docker-compose.e2e.yml"
 SCRIPT_DIR=$(dirname "$0")
-cd "$SCRIPT_DIR" # Ensure we are in frontend/test
+cd "$SCRIPT_DIR" # Ensure we are in lugia-frontend/test
 
 CI_MODE=false
 UI_MODE=false
@@ -46,19 +46,19 @@ trap cleanup EXIT SIGINT SIGTERM
 echo "Performing initial cleanup..."
 docker compose -f "$COMPOSE_FILE" down -v --remove-orphans || true
 
-# Step 1: Start frontend service first to get its IP
-echo "Starting frontend service to determine its IP..."
-docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans frontend
+# Step 1: Start lugia-frontend service first to get its IP
+echo "Starting lugia-frontend service to determine its IP..."
+docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans lugia-frontend
 
-# Step 2: Determine Frontend IP dynamically
-FRONTEND_CONTAINER_NAME="frontend_e2e"
+# Step 2: Determine lugia-frontend IP dynamically
+FRONTEND_CONTAINER_NAME="lugia-frontend-e2e"
 FRONTEND_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$FRONTEND_CONTAINER_NAME")
 
 if [ -z "$FRONTEND_IP" ]; then
-  echo "Error: Could not determine IP address for frontend container ($FRONTEND_CONTAINER_NAME)."
+  echo "Error: Could not determine IP address for lugia-frontend container ($FRONTEND_CONTAINER_NAME)."
   exit 1
 fi
-echo "Frontend container ($FRONTEND_CONTAINER_NAME) IP address: $FRONTEND_IP"
+echo "lugia-frontend container ($FRONTEND_CONTAINER_NAME) IP address: $FRONTEND_IP"
 
 # Step 3: Export the dynamic URL for the backend and Playwright
 export DYNAMIC_FRONTEND_URL="http://${FRONTEND_IP}:23000"
@@ -66,7 +66,7 @@ echo "Exported DYNAMIC_FRONTEND_URL=${DYNAMIC_FRONTEND_URL}"
 
 # Step 4: Build and start other E2E services.
 # The DYNAMIC_FRONTEND_URL will be available to the docker-compose command for the backend.
-# We use --no-deps to avoid restarting the frontend if it's already up.
+# We use --no-deps to avoid restarting the lugia-frontend if it's already up.
 echo "Building and starting other E2E services (lugia-backend, postgres, mock-sendgrid, playwright)..."
 docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans --no-deps lugia-backend postgres mock-sendgrid playwright
 
@@ -106,31 +106,31 @@ for i in $(seq 1 $MAX_RETRIES); do
 done
 
 # Health check for Backend (lugia-backend:23001)
-echo "Checking Backend (http://lugia-backend:23001/health)..."
+echo "Checking lugia-backend (http://lugia-backend:23001/health)..."
 for i in $(seq 1 $MAX_RETRIES); do
   if docker compose -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null http://lugia-backend:23001/health; then
-    echo "Lugia Backend is ready."
+    echo "lugia-backend is ready."
     break
   fi
-  echo "Lugia Backend not ready, retrying in $RETRY_INTERVAL seconds... ($i/$MAX_RETRIES)"
+  echo "lugia-backend not ready, retrying in $RETRY_INTERVAL seconds... ($i/$MAX_RETRIES)"
   sleep $RETRY_INTERVAL
   if [ "$i" -eq "$MAX_RETRIES" ]; then
-    echo "Lugia Backend health check failed after $MAX_RETRIES retries."
+    echo "lugia-backend health check failed after $MAX_RETRIES retries."
     exit 1
   fi
 done
 
-# Health check for Frontend (using the dynamically obtained IP)
-echo "Checking Frontend (${DYNAMIC_FRONTEND_URL})..."
+# Health check for lugia-frontend (using the dynamically obtained IP)
+echo "Checking lugia-frontend (${DYNAMIC_FRONTEND_URL})..."
 for i in $(seq 1 $MAX_RETRIES); do
   if docker compose -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null "${DYNAMIC_FRONTEND_URL}"; then
-    echo "Frontend is ready."
+    echo "lugia-frontend is ready."
     break
   fi
-  echo "Frontend not ready, retrying in $RETRY_INTERVAL seconds... ($i/$MAX_RETRIES)"
+  echo "lugia-frontend not ready, retrying in $RETRY_INTERVAL seconds... ($i/$MAX_RETRIES)"
   sleep $RETRY_INTERVAL
   if [ "$i" -eq "$MAX_RETRIES" ]; then
-    echo "Frontend health check failed after $MAX_RETRIES retries."
+    echo "lugia-frontend health check failed after $MAX_RETRIES retries."
     exit 1
   fi
 done

@@ -10,7 +10,7 @@ This monorepo contains a Go backend server and a SvelteKit frontend application.
 │   ├── main.go     # Server entry point
 │   └── go.mod      # Go module file
 │
-└── frontend/       # SvelteKit application
+└── lugia-frontend/       # SvelteKit application
     ├── src/        # Source code
     ├── static/     # Static assets
     └── package.json # Node.js dependencies
@@ -31,7 +31,7 @@ This monorepo contains a Go backend server and a SvelteKit frontend application.
 ### Starting the Backend
 
 ```bash
-cd backend
+cd lugia-backend
 go run main.go
 ```
 
@@ -40,7 +40,7 @@ The backend will start on http://localhost:3001
 ### Starting the Frontend
 
 ```bash
-cd frontend
+cd lugia-frontend
 npm install    # or pnpm install
 npm run dev    # or pnpm dev
 ```
@@ -60,6 +60,6 @@ The frontend will start on http://localhost:3000
 ## Development Tools
 
 - Go linting: `cd backend && golangci-lint run`
-- Frontend linting: `cd frontend && npm run lint`
-- Frontend testing: `cd frontend && npm run test`
-- Frontend E2E tests: `cd frontend && npm run test:e2e` 
+- Frontend linting: `cd lugia-frontend && npm run lint`
+- Frontend testing: `cd lugia-frontend && npm run test`
+- Frontend E2E tests: `cd lugia-frontend && npm run test:e2e` 

@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-lint-test:
-    name: Build, Lint & Test Backend
+    name: Build, Lint & Test lugia-backend
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

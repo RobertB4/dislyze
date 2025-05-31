@@ -15,8 +15,8 @@
 npm-debug.log*
 yarn-error.log
 
-# SvelteKit environment files. See frontend/.env.e2e for E2E specific environment variables.
-frontend/.env
+# SvelteKit environment files. See lugia-frontend/.env.e2e for E2E specific environment variables.
+lugia-frontend/.env
 
 # Test results (if not intended to be committed or copied to images)
 **/test-results/

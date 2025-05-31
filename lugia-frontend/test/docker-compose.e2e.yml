@@ -1,16 +1,16 @@
 services:
-  frontend:
+  lugia-frontend:
     platform: linux/amd64
     build:
       context: ../../  # Project root
-      dockerfile: ./frontend/test/Dockerfile.frontend.e2e # Path to Dockerfile from new context
+      dockerfile: ./lugia-frontend/test/Dockerfile.frontend.e2e # Path to Dockerfile from new context
     ports:
       - "23000:23000"
     environment:
       - API_URL=http://lugia-backend:23001
     depends_on:
       - lugia-backend
-    container_name: frontend_e2e
+    container_name: lugia-frontend-e2e
 
   mock-sendgrid:
     image: yudppp/simple-sendgrid-mock-server
@@ -24,7 +24,7 @@ services:
   lugia-backend:
     build:
       context: ../../ # Project root
-      dockerfile: ./frontend/test/Dockerfile.backend.e2e
+      dockerfile: ./lugia-frontend/test/Dockerfile.backend.e2e
     ports:
       - "23001:23001"
     environment:
@@ -40,11 +40,11 @@ services:
       - AUTH_RATE_LIMIT=1000 # Higher limit for E2E tests
       - SENDGRID_API_KEY=e2e_fake_sendgrid_key
       - SENDGRID_API_URL=http://mock-sendgrid:27000
-      # Using container IP for frontend. Vite returns 403 for requests from http://frontend:23000
+      # Using container IP for frontend. Vite returns 403 for requests from http://lugia-frontend:23000
       # frontend ip address retrieved and passed from test.sh
       - FRONTEND_URL=${DYNAMIC_FRONTEND_URL}
       - INITIAL_PW=e2e_initial_password
-      - TRUSTED_PROXIES=172.18.0.4,frontend,127.0.0.1,localhost
+      - TRUSTED_PROXIES=172.18.0.4,lugia-frontend,127.0.0.1,localhost
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,7 +69,7 @@ services:
 
   playwright:
     image: mcr.microsoft.com/playwright:v1.52.0-jammy
-    working_dir: /app # This is frontend/
+    working_dir: /app # This is lugia-frontend/
     volumes:
       - ../:/app
       - ../../database:/database
@@ -87,7 +87,7 @@ services:
       - PLAYWRIGHT_HEADED=${PLAYWRIGHT_HEADED:-false}
     command: sleep infinity
     depends_on:
-      - frontend
+      - lugia-frontend
       - lugia-backend
       - postgres
     user: pwuser
