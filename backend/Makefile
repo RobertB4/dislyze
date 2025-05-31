@@ -11,7 +11,7 @@ lint:
 	golangci-lint run --timeout 5m
 
 build:
-	build -o main ./main.go
+	go build -o main ./main.go
 
 sqlc:
 	sqlc generate
