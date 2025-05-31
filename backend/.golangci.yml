@@ -11,7 +11,7 @@ linters:
   disable:
     - gocyclo
 
-settings:
+linters-settings:
   gocyclo:
     min-complexity: 15
   errcheck:
@@ -28,5 +28,5 @@ run:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-rules:
-    - path: vendor
+  exclude-dirs:
+    - vendor
