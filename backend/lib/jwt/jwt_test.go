@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"dislyze/queries_pregeneration"
 	"testing"
 	"time"
 
@@ -18,14 +19,14 @@ func TestGenerateTokenPair(t *testing.T) {
 		Bytes: [16]byte{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1},
 		Valid: true,
 	}
-	role := "admin"
+	role := queries_pregeneration.UserRole("admin")
 	secret := []byte("test-secret-key")
 
 	tests := []struct {
 		name     string
 		userID   pgtype.UUID
 		tenantID pgtype.UUID
-		role     string
+		role     queries_pregeneration.UserRole
 		secret   []byte
 		wantErr  bool
 	}{
@@ -83,7 +84,7 @@ func TestValidateToken(t *testing.T) {
 		Bytes: [16]byte{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1},
 		Valid: true,
 	}
-	role := "admin"
+	role := queries_pregeneration.UserRole("admin")
 	secret := []byte("test-secret-key")
 
 	now := time.Now()

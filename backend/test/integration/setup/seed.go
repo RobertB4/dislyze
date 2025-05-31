@@ -1,5 +1,7 @@
 package setup
 
+import "dislyze/queries_pregeneration"
+
 // UserTestData defines the structure for individual test user data.
 type UserTestData struct {
 	Email             string
@@ -7,7 +9,7 @@ type UserTestData struct {
 	UserID            string
 	TenantID          string
 	Name              string
-	Role              string
+	Role              queries_pregeneration.UserRole
 	Status            string
 }
 
@@ -19,7 +21,7 @@ var TestUsersData = map[string]UserTestData{
 		UserID:            "b0000000-0000-0000-0000-000000000001",
 		TenantID:          "a0000000-0000-0000-0000-000000000001",
 		Name:              "Alpha Admin",
-		Role:              "admin",
+		Role:              queries_pregeneration.AdminRole,
 		Status:            "active",
 	},
 	"alpha_editor": {
@@ -28,7 +30,7 @@ var TestUsersData = map[string]UserTestData{
 		UserID:            "b0000000-0000-0000-0000-000000000002",
 		TenantID:          "a0000000-0000-0000-0000-000000000001",
 		Name:              "Alpha Editor",
-		Role:              "editor",
+		Role:              queries_pregeneration.EditorRole,
 		Status:            "active",
 	},
 	"pending_editor_valid_token": {
@@ -37,7 +39,7 @@ var TestUsersData = map[string]UserTestData{
 		UserID:            "b0000000-0000-0000-0000-000000000003",
 		TenantID:          "a0000000-0000-0000-0000-000000000001",
 		Name:              "Pending Editor Valid Token",
-		Role:              "editor",
+		Role:              queries_pregeneration.EditorRole,
 		Status:            "pending_verification",
 	},
 	"suspended_editor": {
@@ -46,7 +48,7 @@ var TestUsersData = map[string]UserTestData{
 		UserID:            "b0000000-0000-0000-0000-000000000004",
 		TenantID:          "a0000000-0000-0000-0000-000000000001",
 		Name:              "Suspended Editor",
-		Role:              "editor",
+		Role:              queries_pregeneration.EditorRole,
 		Status:            "suspended",
 	},
 	"pending_editor_for_rate_limit_test": {
@@ -55,7 +57,7 @@ var TestUsersData = map[string]UserTestData{
 		UserID:            "b0000000-0000-0000-0000-000000000005",
 		TenantID:          "a0000000-0000-0000-0000-000000000001",
 		Name:              "Pending Editor Rate Limit Test",
-		Role:              "editor",
+		Role:              queries_pregeneration.EditorRole,
 		Status:            "pending_verification",
 	},
 	"pending_editor_tenant_A_for_x_tenant_test": {
@@ -64,7 +66,7 @@ var TestUsersData = map[string]UserTestData{
 		UserID:            "b0000000-0000-0000-0000-000000000006",
 		TenantID:          "a0000000-0000-0000-0000-000000000001",
 		Name:              "PendingXT Editor",
-		Role:              "editor",
+		Role:              queries_pregeneration.EditorRole,
 		Status:            "pending_verification",
 	},
 	"beta_admin": {
@@ -73,7 +75,7 @@ var TestUsersData = map[string]UserTestData{
 		UserID:            "b0000000-0000-0000-0000-000000000007",
 		TenantID:          "a0000000-0000-0000-0000-000000000002",
 		Name:              "Beta Admin",
-		Role:              "admin",
+		Role:              queries_pregeneration.AdminRole,
 		Status:            "active",
 	},
 }

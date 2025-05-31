@@ -22,10 +22,10 @@ var (
 )
 
 type Claims struct {
-	UserID   pgtype.UUID `json:"user_id"`
-	TenantID pgtype.UUID `json:"tenant_id"`
-	Role     string      `json:"role"`
-	JTI      pgtype.UUID `json:"jti"`
+	UserID   pgtype.UUID                    `json:"user_id"`
+	TenantID pgtype.UUID                    `json:"tenant_id"`
+	Role     queries_pregeneration.UserRole `json:"role"`
+	JTI      pgtype.UUID                    `json:"jti"`
 	jwt.RegisteredClaims
 }
 
@@ -45,7 +45,7 @@ func GenerateAccessToken(userID, tenantID pgtype.UUID, role queries_pregeneratio
 	claims := &Claims{
 		UserID:   userID,
 		TenantID: tenantID,
-		Role:     role.String(),
+		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(15 * time.Minute)), // Access token expires in 15 minutes

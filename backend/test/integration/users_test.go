@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"dislyze/handlers"
+	"dislyze/queries_pregeneration"
 	"dislyze/test/integration/setup"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -107,7 +108,8 @@ func TestGetUsers_Integration(t *testing.T) {
 					actualEmails[i] = u.Email
 					assert.NotEmpty(t, u.ID, "User ID should not be empty for user %s", u.Email)
 
-					var expectedName, expectedRole, expectedUserID, expectedStatus string
+					var expectedName, expectedUserID, expectedStatus string
+					var expectedRole queries_pregeneration.UserRole
 					foundInTestData := false
 					for _, seededUser := range setup.TestUsersData {
 						if seededUser.Email == u.Email {
@@ -145,7 +147,7 @@ type testUserDetail struct {
 	UserID            string
 	TenantID          string
 	Name              string
-	Role              string
+	Role              queries_pregeneration.UserRole
 	Status            string
 }
 
