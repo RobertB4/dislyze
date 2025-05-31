@@ -5,16 +5,57 @@ import svelte from 'eslint-plugin-svelte';
 import globals from 'globals';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript-eslint';
-import svelteConfig from './svelte.config.js';
-const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
+const gitignorePath = fileURLToPath(new URL('../.gitignore', import.meta.url));
 
 export default ts.config(
 	includeIgnoreFile(gitignorePath),
 	js.configs.recommended,
-	...ts.configs.recommended,
+	...ts.configs.recommendedTypeChecked,
+	{
+		files: [
+			'eslint.config.js',
+			'vite.config.js',
+			'svelte.config.js',
+			'tailwind.config.js',
+			'playwright.config.js',
+			'vitest-setup-client.ts',
+			'*.config.js',
+			'*.config.ts'
+		],
+		extends: [ts.configs.disableTypeChecked],
+		rules: {}
+	},
+	{
+		files: ['src/**/*.ts'],
+		languageOptions: {
+			parser: ts.parser,
+			parserOptions: {
+				project: true,
+				tsconfigRootDir: import.meta.dirname,
+			},
+		},
+		rules: {
+			'@typescript-eslint/no-unsafe-assignment': 'off',
+			'@typescript-eslint/no-explicit-any': 'off',
+			'@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+
+		},
+	},
+
 	...svelte.configs.recommended,
 	prettier,
 	...svelte.configs.prettier,
+	{
+		files: ['**/*.svelte', 'src/**/*.svelte.ts', 'src/**/*.svelte.js'], 
+		languageOptions: {
+			parserOptions: {
+				projectService: true, // For type-aware linting in <script lang="ts">
+				extraFileExtensions: ['.svelte'],
+				parser: ts.parser, 
+			}
+		},
+		rules: {}
+	},
 	{
 		languageOptions: {
 			globals: {
@@ -22,23 +63,5 @@ export default ts.config(
 				...globals.node
 			}
 		}
-	},
-	{
-		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
-		ignores: ['eslint.config.js', 'svelte.config.js'],
-
-		languageOptions: {
-			parserOptions: {
-				projectService: true,
-				extraFileExtensions: ['.svelte'],
-				parser: ts.parser,
-				svelteConfig
-			}
-		}
-	},
-	{
-		rules: {
-			'@typescript-eslint/no-explicit-any': 'off'
-		}
-	},
+	}
 );
