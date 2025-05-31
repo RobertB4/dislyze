@@ -27,7 +27,7 @@ jobs:
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
       - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@2.1.6
 
       # All subsequent Go-related commands are run from the backend directory
       - name: Change to backend directory
@@ -41,6 +41,14 @@ jobs:
           # Fail if go.mod or go.sum differs after tidy
           git diff --exit-code go.mod go.sum
 
+      - name: Build application
+        working-directory: ./backend
+        run: make build
+
+      - name: Run govulncheck for vulnerability scanning
+        working-directory: ./backend
+        run: govulncheck ./...
+
       - name: Run go vet
         working-directory: ./backend
         run: go vet ./...
@@ -52,11 +60,3 @@ jobs:
       - name: Run unit tests
         working-directory: ./backend
         run: make test-unit
-
-      - name: Run govulncheck for vulnerability scanning
-        working-directory: ./backend
-        run: govulncheck ./...
-
-      - name: Build application
-        working-directory: ./backend
-        run: make build
