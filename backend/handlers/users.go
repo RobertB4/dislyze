@@ -192,7 +192,11 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 		responder.RespondWithError(w, appErr)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			errlib.LogError(fmt.Errorf("InviteUser: failed to close request body: %w", err))
+		}
+	}()
 
 	if err := req.Validate(); err != nil {
 		appErr := errlib.New(fmt.Errorf("InviteUser: validation failed: %w", err), http.StatusBadRequest, "")

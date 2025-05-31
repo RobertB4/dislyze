@@ -163,7 +163,11 @@ func TestSignup(t *testing.T) {
 			client := &http.Client{}
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Logf("Error closing response body: %v", err)
+				}
+			}()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -230,7 +234,11 @@ func TestSignupDuplicateEmail(t *testing.T) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	assert.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			t.Logf("Error closing response body: %v", err)
+		}
+	}()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -259,7 +267,11 @@ func TestSignupDuplicateEmail(t *testing.T) {
 	req2.Header.Set("Content-Type", "application/json")
 	resp2, err := client.Do(req2)
 	assert.NoError(t, err)
-	defer resp2.Body.Close()
+	defer func() {
+		if err := resp2.Body.Close(); err != nil {
+			t.Logf("Error closing response body for resp2: %v", err)
+		}
+	}()
 
 	assert.Equal(t, http.StatusBadRequest, resp2.StatusCode)
 
@@ -338,7 +350,11 @@ func TestLogin(t *testing.T) {
 			client := &http.Client{}
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Logf("Error closing response body: %v", err)
+				}
+			}()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -396,7 +412,11 @@ func createTestUser(t *testing.T) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	assert.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			t.Logf("Error closing response body: %v", err)
+		}
+	}()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
@@ -424,7 +444,11 @@ func TestLoginLogoutAndVerifyMeEndpoint(t *testing.T) {
 
 	loginResp, err := client.Do(loginReq)
 	assert.NoError(t, err)
-	defer loginResp.Body.Close()
+	defer func() {
+		if err := loginResp.Body.Close(); err != nil {
+			t.Logf("Error closing loginResp body: %v", err)
+		}
+	}()
 	assert.Equal(t, http.StatusOK, loginResp.StatusCode, "Login request failed")
 
 	loginCookies := loginResp.Cookies()
@@ -439,7 +463,11 @@ func TestLoginLogoutAndVerifyMeEndpoint(t *testing.T) {
 
 	meRespLoggedIn, err := client.Do(meReqLoggedIn)
 	assert.NoError(t, err)
-	defer meRespLoggedIn.Body.Close()
+	defer func() {
+		if err := meRespLoggedIn.Body.Close(); err != nil {
+			t.Logf("Error closing meRespLoggedIn body: %v", err)
+		}
+	}()
 	assert.Equal(t, http.StatusOK, meRespLoggedIn.StatusCode, "/me endpoint should return 200 OK when logged in")
 
 	// 3. Log out
@@ -451,7 +479,11 @@ func TestLoginLogoutAndVerifyMeEndpoint(t *testing.T) {
 
 	logoutResp, err := client.Do(logoutReq)
 	assert.NoError(t, err)
-	defer logoutResp.Body.Close()
+	defer func() {
+		if err := logoutResp.Body.Close(); err != nil {
+			t.Logf("Error closing logoutResp body: %v", err)
+		}
+	}()
 
 	assert.Equal(t, http.StatusOK, logoutResp.StatusCode, "Logout request should return 200 OK")
 
@@ -475,7 +507,11 @@ func TestLoginLogoutAndVerifyMeEndpoint(t *testing.T) {
 
 	meRespLoggedOut, err := client.Do(meReqLoggedOut)
 	assert.NoError(t, err)
-	defer meRespLoggedOut.Body.Close()
+	defer func() {
+		if err := meRespLoggedOut.Body.Close(); err != nil {
+			t.Logf("Error closing meRespLoggedOut body: %v", err)
+		}
+	}()
 
 	assert.Equal(t, http.StatusUnauthorized, meRespLoggedOut.StatusCode, "/me endpoint should return 401 Unauthorized after logout and no cookies sent")
 }
@@ -521,7 +557,11 @@ func getLatestEmailFromSendgridMock(t *testing.T, expectedRecipientEmail string)
 			time.Sleep(500 * time.Millisecond)
 			continue
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body in getLatestEmailFromSendgridMock: %v", err)
+			}
+		}()
 
 		if resp.StatusCode != http.StatusOK {
 			lastErr = fmt.Errorf("sendgrid-mock returned status %d", resp.StatusCode)
@@ -609,7 +649,11 @@ func TestForgotPassword(t *testing.T) {
 
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		var apiResp ForgotPasswordResponse
@@ -665,7 +709,11 @@ func TestForgotPassword(t *testing.T) {
 
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		var apiResp ForgotPasswordResponse
@@ -685,7 +733,11 @@ func TestForgotPassword(t *testing.T) {
 
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		var apiResp ForgotPasswordResponse
@@ -705,7 +757,11 @@ func TestForgotPassword(t *testing.T) {
 
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		var apiResp ForgotPasswordResponse
@@ -726,7 +782,11 @@ func TestForgotPassword(t *testing.T) {
 		req1.Header.Set("Content-Type", "application/json")
 		resp1, err := client.Do(req1)
 		assert.NoError(t, err)
-		defer resp1.Body.Close()
+		defer func() {
+			if err := resp1.Body.Close(); err != nil {
+				t.Logf("Error closing resp1 body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusOK, resp1.StatusCode)
 
 		email1, err := getLatestEmailFromSendgridMock(t, testUser.Email)
@@ -764,7 +824,11 @@ func TestForgotPassword(t *testing.T) {
 		req2.Header.Set("Content-Type", "application/json")
 		resp2, err := client.Do(req2)
 		assert.NoError(t, err)
-		defer resp2.Body.Close()
+		defer func() {
+			if err := resp2.Body.Close(); err != nil {
+				t.Logf("Error closing resp2 body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusOK, resp2.StatusCode)
 
 		email2, err := getLatestEmailFromSendgridMock(t, testUser.Email)
@@ -825,7 +889,11 @@ func TestVerifyResetToken(t *testing.T) {
 		fpReq.Header.Set("Content-Type", "application/json")
 		fpResp, err := client.Do(fpReq)
 		assert.NoError(t, err)
-		defer fpResp.Body.Close()
+		defer func() {
+			if err := fpResp.Body.Close(); err != nil {
+				t.Logf("Error closing fpResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusOK, fpResp.StatusCode)
 
 		email, err := getLatestEmailFromSendgridMock(t, userEmail)
@@ -851,7 +919,11 @@ func TestVerifyResetToken(t *testing.T) {
 
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		var apiResp VerifyResetTokenResponse
@@ -880,7 +952,11 @@ func TestVerifyResetToken(t *testing.T) {
 
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		var apiResp VerifyResetTokenResponse
@@ -910,7 +986,11 @@ func TestVerifyResetToken(t *testing.T) {
 
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		var apiResp VerifyResetTokenResponse
@@ -940,7 +1020,11 @@ func TestVerifyResetToken(t *testing.T) {
 
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		var apiResp VerifyResetTokenResponse
@@ -961,7 +1045,11 @@ func TestVerifyResetToken(t *testing.T) {
 
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		var apiResp VerifyResetTokenResponse
@@ -993,7 +1081,11 @@ func TestResetPassword(t *testing.T) {
 
 		fpResp, err := client.Do(fpReq)
 		assert.NoError(t, err, "Failed to execute forgot password request")
-		defer fpResp.Body.Close()
+		defer func() {
+			if err := fpResp.Body.Close(); err != nil {
+				t.Logf("Error closing fpResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusOK, fpResp.StatusCode, "Forgot password request did not return OK")
 
 		emailContent, err := getLatestEmailFromSendgridMock(t, userEmail)
@@ -1024,7 +1116,11 @@ func TestResetPassword(t *testing.T) {
 		resetReq.Header.Set("Content-Type", "application/json")
 		resetResp, err := client.Do(resetReq)
 		assert.NoError(t, err)
-		defer resetResp.Body.Close()
+		defer func() {
+			if err := resetResp.Body.Close(); err != nil {
+				t.Logf("Error closing resetResp body: %v", err)
+			}
+		}()
 
 		assert.Equal(t, http.StatusOK, resetResp.StatusCode, "Reset password should succeed")
 		var apiResp ResetPasswordResponse
@@ -1033,11 +1129,19 @@ func TestResetPassword(t *testing.T) {
 		assert.True(t, apiResp.Success, "API success should be true for successful password reset")
 
 		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
-		defer oldLoginResp.Body.Close()
+		defer func() {
+			if err := oldLoginResp.Body.Close(); err != nil {
+				t.Logf("Error closing oldLoginResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusUnauthorized, oldLoginResp.StatusCode, "Login with old password should fail after reset")
 
 		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
-		defer newLoginResp.Body.Close()
+		defer func() {
+			if err := newLoginResp.Body.Close(); err != nil {
+				t.Logf("Error closing newLoginResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusOK, newLoginResp.StatusCode, "Login with new password should succeed after reset")
 
 		hash := sha256.Sum256([]byte(rawToken))
@@ -1065,17 +1169,29 @@ func TestResetPassword(t *testing.T) {
 		resetReq.Header.Set("Content-Type", "application/json")
 		resetResp, err := client.Do(resetReq)
 		assert.NoError(t, err)
-		defer resetResp.Body.Close()
+		defer func() {
+			if err := resetResp.Body.Close(); err != nil {
+				t.Logf("Error closing resetResp body: %v", err)
+			}
+		}()
 
 		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with non-existent token should fail")
 
 		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
-		defer newLoginResp.Body.Close()
+		defer func() {
+			if err := newLoginResp.Body.Close(); err != nil {
+				t.Logf("Error closing newLoginResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusUnauthorized, newLoginResp.StatusCode, "Login with new (attempted) password should fail")
 
 		fmt.Println("Original password for user: ", testUser.Email, "is", originalPassword)
 		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
-		defer oldLoginResp.Body.Close()
+		defer func() {
+			if err := oldLoginResp.Body.Close(); err != nil {
+				t.Logf("Error closing oldLoginResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode, "Login with old password should still succeed")
 	})
 
@@ -1102,15 +1218,27 @@ func TestResetPassword(t *testing.T) {
 		resetReq.Header.Set("Content-Type", "application/json")
 		resetResp, err := client.Do(resetReq)
 		assert.NoError(t, err)
-		defer resetResp.Body.Close()
+		defer func() {
+			if err := resetResp.Body.Close(); err != nil {
+				t.Logf("Error closing resetResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with expired token should fail")
 
 		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
-		defer newLoginResp.Body.Close()
+		defer func() {
+			if err := newLoginResp.Body.Close(); err != nil {
+				t.Logf("Error closing newLoginResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusUnauthorized, newLoginResp.StatusCode)
 
 		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
-		defer oldLoginResp.Body.Close()
+		defer func() {
+			if err := oldLoginResp.Body.Close(); err != nil {
+				t.Logf("Error closing oldLoginResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
 	})
 
@@ -1137,15 +1265,27 @@ func TestResetPassword(t *testing.T) {
 		resetReq.Header.Set("Content-Type", "application/json")
 		resetResp, err := client.Do(resetReq)
 		assert.NoError(t, err)
-		defer resetResp.Body.Close()
+		defer func() {
+			if err := resetResp.Body.Close(); err != nil {
+				t.Logf("Error closing resetResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with used token should fail")
 
 		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
-		defer newLoginResp.Body.Close()
+		defer func() {
+			if err := newLoginResp.Body.Close(); err != nil {
+				t.Logf("Error closing newLoginResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusUnauthorized, newLoginResp.StatusCode)
 
 		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
-		defer oldLoginResp.Body.Close()
+		defer func() {
+			if err := oldLoginResp.Body.Close(); err != nil {
+				t.Logf("Error closing oldLoginResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
 	})
 
@@ -1166,15 +1306,27 @@ func TestResetPassword(t *testing.T) {
 		resetReq.Header.Set("Content-Type", "application/json")
 		resetResp, err := client.Do(resetReq)
 		assert.NoError(t, err)
-		defer resetResp.Body.Close()
+		defer func() {
+			if err := resetResp.Body.Close(); err != nil {
+				t.Logf("Error closing resetResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with empty token should fail")
 
 		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
-		defer newLoginResp.Body.Close()
+		defer func() {
+			if err := newLoginResp.Body.Close(); err != nil {
+				t.Logf("Error closing newLoginResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusUnauthorized, newLoginResp.StatusCode)
 
 		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
-		defer oldLoginResp.Body.Close()
+		defer func() {
+			if err := oldLoginResp.Body.Close(); err != nil {
+				t.Logf("Error closing oldLoginResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
 	})
 
@@ -1195,12 +1347,19 @@ func TestResetPassword(t *testing.T) {
 		resetReq.Header.Set("Content-Type", "application/json")
 		resetResp, err := client.Do(resetReq)
 		assert.NoError(t, err)
-		defer resetResp.Body.Close()
-
+		defer func() {
+			if err := resetResp.Body.Close(); err != nil {
+				t.Logf("Error closing resetResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with missing password should fail")
 
 		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
-		defer oldLoginResp.Body.Close()
+		defer func() {
+			if err := oldLoginResp.Body.Close(); err != nil {
+				t.Logf("Error closing oldLoginResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
 
 		hash := sha256.Sum256([]byte(rawToken))
@@ -1229,15 +1388,27 @@ func TestResetPassword(t *testing.T) {
 		resetReq.Header.Set("Content-Type", "application/json")
 		resetResp, err := client.Do(resetReq)
 		assert.NoError(t, err)
-		defer resetResp.Body.Close()
+		defer func() {
+			if err := resetResp.Body.Close(); err != nil {
+				t.Logf("Error closing resetResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with short password should fail")
 
 		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
-		defer newLoginResp.Body.Close()
+		defer func() {
+			if err := newLoginResp.Body.Close(); err != nil {
+				t.Logf("Error closing newLoginResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusUnauthorized, newLoginResp.StatusCode)
 
 		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
-		defer oldLoginResp.Body.Close()
+		defer func() {
+			if err := oldLoginResp.Body.Close(); err != nil {
+				t.Logf("Error closing oldLoginResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
 
 		hash := sha256.Sum256([]byte(rawToken))
@@ -1265,19 +1436,35 @@ func TestResetPassword(t *testing.T) {
 		resetReq.Header.Set("Content-Type", "application/json")
 		resetResp, err := client.Do(resetReq)
 		assert.NoError(t, err)
-		defer resetResp.Body.Close()
+		defer func() {
+			if err := resetResp.Body.Close(); err != nil {
+				t.Logf("Error closing resetResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with mismatching passwords should fail")
 
 		newLoginResp1 := attemptLogin(t, testUser.Email, "newValidPass123")
-		defer newLoginResp1.Body.Close()
+		defer func() {
+			if err := newLoginResp1.Body.Close(); err != nil {
+				t.Logf("Error closing newLoginResp1 body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusUnauthorized, newLoginResp1.StatusCode)
 
 		newLoginResp2 := attemptLogin(t, testUser.Email, "anotherValidPass456")
-		defer newLoginResp2.Body.Close()
+		defer func() {
+			if err := newLoginResp2.Body.Close(); err != nil {
+				t.Logf("Error closing newLoginResp2 body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusUnauthorized, newLoginResp2.StatusCode)
 
 		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
-		defer oldLoginResp.Body.Close()
+		defer func() {
+			if err := oldLoginResp.Body.Close(); err != nil {
+				t.Logf("Error closing oldLoginResp body: %v", err)
+			}
+		}()
 		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
 
 		hash := sha256.Sum256([]byte(rawToken))

@@ -288,7 +288,11 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 	if err != nil {
 		return nil, fmt.Errorf("failed to start transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
+			errlib.LogError(fmt.Errorf("login: failed to rollback transaction: %w", rbErr))
+		}
+	}()
 
 	qtx := h.queries.WithTx(tx)
 
@@ -434,7 +438,11 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 		responder.RespondWithError(w, appErr)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			errlib.LogError(fmt.Errorf("AcceptInvite: failed to close request body: %w", err))
+		}
+	}()
 
 	if err := req.Validate(); err != nil {
 		appErr := errlib.New(fmt.Errorf("AcceptInvite: validation failed: %w", err), http.StatusBadRequest, "")
@@ -630,7 +638,11 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
 		return
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
+			errlib.LogError(fmt.Errorf("ForgotPassword: failed to rollback transaction: %w", rbErr))
+		}
+	}()
 
 	qtx := h.queries.WithTx(tx)
 
@@ -887,7 +899,11 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		responder.RespondWithJSON(w, http.StatusInternalServerError, ResetPasswordResponse{Success: false})
 		return
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
+			errlib.LogError(fmt.Errorf("ResetPassword: failed to rollback transaction: %w", rbErr))
+		}
+	}()
 
 	qtx := h.queries.WithTx(tx)
 

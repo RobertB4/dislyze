@@ -87,7 +87,11 @@ func TestGetUsers_Integration(t *testing.T) {
 
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Logf("Error closing response body: %v", err)
+				}
+			}()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -260,7 +264,11 @@ func TestInviteUser_Integration(t *testing.T) {
 
 			resp, err := client.Do(req)
 			assert.NoError(t, err, "Failed to execute request for test: %s", tt.name)
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Logf("Error closing response body: %v", err)
+				}
+			}()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Status code mismatch for test: %s. Body: %s - expected: %d, actual: %d", tt.name, string(payloadBytes), tt.expectedStatus, resp.StatusCode)
 
@@ -378,7 +386,11 @@ func TestAcceptInvite_Integration(t *testing.T) {
 
 			resp, err := client.Do(req)
 			assert.NoError(t, err, "Test: %s, Failed to execute request", tt.name)
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Logf("Error closing response body: %v", err)
+				}
+			}()
 
 			bodyBytes, _ := io.ReadAll(resp.Body)
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Test: %s, Expected status %d, got %d. Body: %s", tt.name, tt.expectedStatus, resp.StatusCode, string(bodyBytes))
@@ -498,7 +510,11 @@ func TestResendInvite_Integration(t *testing.T) {
 
 				acceptInviteResp, err := client.Do(acceptInviteReq)
 				assert.NoError(t, err, "Failed to execute AcceptInvite request")
-				defer acceptInviteResp.Body.Close()
+				defer func() {
+					if err := acceptInviteResp.Body.Close(); err != nil {
+						t.Logf("Error closing acceptInviteResp body: %v", err)
+					}
+				}()
 
 				acceptInviteBodyBytes, _ := io.ReadAll(acceptInviteResp.Body)
 				assert.Equal(t, http.StatusOK, acceptInviteResp.StatusCode, "AcceptInvite request failed. Body: %s", string(acceptInviteBodyBytes))
@@ -656,7 +672,7 @@ func TestResendInvite_Integration(t *testing.T) {
 			}
 			assert.NotEmpty(t, targetUserID, "Target User ID must be set for test '%s'", tt.name)
 
-			firstCallActualStatus := -1 // Default to an invalid status
+			var firstCallActualStatus int
 			var finalResp *http.Response
 			var finalBodyBytes []byte
 
@@ -674,7 +690,11 @@ func TestResendInvite_Integration(t *testing.T) {
 
 			firstBodyBytes, errRead := io.ReadAll(firstResp.Body)
 			assert.NoError(t, errRead)
-			firstResp.Body.Close()
+			defer func() {
+				if err := firstResp.Body.Close(); err != nil {
+					t.Logf("Error closing firstResp body: %v", err)
+				}
+			}()
 			firstResp.Body = io.NopCloser(bytes.NewBuffer(firstBodyBytes))
 			firstCallActualStatus = firstResp.StatusCode
 
@@ -697,7 +717,11 @@ func TestResendInvite_Integration(t *testing.T) {
 
 				secondBodyBytes, errReadSecond := io.ReadAll(secondResp.Body)
 				assert.NoError(t, errReadSecond)
-				secondResp.Body.Close()
+				defer func() {
+					if err := secondResp.Body.Close(); err != nil {
+						t.Logf("Error closing secondResp body: %v", err)
+					}
+				}()
 				secondResp.Body = io.NopCloser(bytes.NewBuffer(secondBodyBytes))
 
 				finalResp = secondResp
@@ -726,9 +750,12 @@ func TestResendInvite_Integration(t *testing.T) {
 				assert.Equal(t, "招待メールの再送信は、ユーザーごとに5分間に1回のみ可能です。しばらくしてから再度お試しください。", errResp.Error, "Rate limit error message mismatch for test: %s", tt.name)
 			}
 
-			// Ensure the final response body is closed if it hasn't been by custom assertions or other logic
 			if finalResp != nil && finalResp.Body != nil {
-				finalResp.Body.Close()
+				defer func() {
+					if err := finalResp.Body.Close(); err != nil {
+						t.Logf("Error closing finalResp body: %v", err)
+					}
+				}()
 			}
 		})
 	}
@@ -806,7 +833,11 @@ func TestGetMe_Integration(t *testing.T) {
 
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Logf("Error closing response body: %v", err)
+				}
+			}()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -963,7 +994,11 @@ func TestDeleteUser_Integration(t *testing.T) {
 
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Logf("Error closing response body: %v", err)
+				}
+			}()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Unexpected status code for test: %s", tt.name)
 
