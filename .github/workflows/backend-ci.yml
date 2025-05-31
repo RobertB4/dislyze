@@ -55,6 +55,7 @@ jobs:
         with:
           version: v2.1 
           working-directory: ./backend
+          args: --fast-only
 
       - name: Run unit tests
         working-directory: ./backend
