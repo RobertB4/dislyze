@@ -15,6 +15,7 @@ import (
 	"dislyze/lib/logger"
 	"dislyze/lib/ratelimit"
 	"dislyze/queries"
+	"dislyze/queries_pregeneration"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -91,7 +92,7 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 		// 4. We have valid claims (either from initial token or from refresh). Populate context.
 		ctx := context.WithValue(r.Context(), libctx.TenantIDKey, finalClaims.TenantID)
 		ctx = context.WithValue(ctx, libctx.UserIDKey, finalClaims.UserID)
-		ctx = context.WithValue(ctx, libctx.UserRoleKey, finalClaims.Role)
+		ctx = context.WithValue(ctx, libctx.UserRoleKey, queries_pregeneration.UserRole(finalClaims.Role))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

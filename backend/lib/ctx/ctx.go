@@ -2,6 +2,7 @@ package ctx
 
 import (
 	"context"
+	"dislyze/queries_pregeneration"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -24,10 +25,10 @@ func GetUserID(ctx context.Context) pgtype.UUID {
 	return userID
 }
 
-func GetUserRole(ctx context.Context) string {
-	userRole, ok := ctx.Value(UserRoleKey).(string)
+func GetUserRole(ctx context.Context) queries_pregeneration.UserRole {
+	userRole, ok := ctx.Value(UserRoleKey).(queries_pregeneration.UserRole)
 	if !ok {
-		return ""
+		return queries_pregeneration.UserRole("")
 	}
 	return userRole
 }

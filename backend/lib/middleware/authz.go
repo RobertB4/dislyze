@@ -6,13 +6,14 @@ import (
 
 	libctx "dislyze/lib/ctx"
 	"dislyze/lib/errlib"
+	"dislyze/queries_pregeneration"
 )
 
 func RequireAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userRole := libctx.GetUserRole(r.Context())
 
-		if userRole != "admin" {
+		if userRole != queries_pregeneration.AdminRole {
 			errlib.LogError(fmt.Errorf("Forbidden: Administrator access required. user_role: %s", userRole))
 			w.WriteHeader(http.StatusForbidden)
 			return

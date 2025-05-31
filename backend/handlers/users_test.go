@@ -8,6 +8,7 @@ import (
 
 	"dislyze/lib/errlib"
 	"dislyze/queries"
+	"dislyze/queries_pregeneration"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -266,7 +267,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 			// Additionally, check if fields were trimmed as expected, for cases where no error is expected
 			if tt.wantErr == nil && tt.name == "role with leading/trailing whitespace (should be normalized and valid)" {
 				expectedTrimmedName := "Test User With Spaces"
-				expectedTrimmedRole := "editor"
+				expectedTrimmedRole := queries_pregeneration.EditorRole
 				if reqCopy.Name != expectedTrimmedName {
 					t.Errorf("%s: Name not trimmed as expected: got %q, want %q", tt.name, reqCopy.Name, expectedTrimmedName)
 				}
