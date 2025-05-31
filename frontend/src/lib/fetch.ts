@@ -10,7 +10,7 @@ import { toast } from "$components/Toast/toast";
  */
 export async function loadFunctionFetch(
 	loadEventFetch: typeof fetch,
-	url: string | URL | Request,
+	url: string,
 	options?: RequestInit
 ): Promise<Response> {
 	let response: Response;
@@ -79,7 +79,7 @@ export async function loadFunctionFetch(
  * It is not needed to catch the error of this function unless there is a reason to.
  */
 export async function mutationFetch(
-	url: string | URL | Request,
+	url: string,
 	options?: RequestInit
 ): Promise<{ response: Response; success: boolean }> {
 	let response: Response;
@@ -91,7 +91,9 @@ export async function mutationFetch(
 		response = await fetch(url, requestOptions);
 	} catch (networkError) {
 		toast.showError();
-		throw new Error(`mutationFetch: Network error for URL ${url.toString()}: ${networkError}`);
+		throw new Error(
+			`mutationFetch: Network error for URL ${url.toString()}: ${networkError as string}`
+		);
 	}
 
 	if (response.status === 401) {
@@ -107,7 +109,9 @@ export async function mutationFetch(
 			}
 		} catch (logoutAttemptError) {
 			toast.showError();
-			throw new Error(`mutationFetch: Logout attempt network error: ${logoutAttemptError}`);
+			throw new Error(
+				`mutationFetch: Logout attempt network error: ${logoutAttemptError as string}`
+			);
 		}
 
 		window.location.href = "/auth/login";
@@ -119,7 +123,7 @@ export async function mutationFetch(
 	) {
 		try {
 			const clonedResponse = response.clone();
-			const body = await clonedResponse.json();
+			const body = (await clonedResponse.json()) as { error?: string };
 			if (body && typeof body.error === "string") {
 				toast.showError(new KnownError(body.error));
 				success = false;

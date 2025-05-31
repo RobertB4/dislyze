@@ -62,7 +62,7 @@
 		}
 
 		if (!listElement) return;
-		const items = Array.from(listElement.querySelectorAll('li[role="option"]')) as HTMLLIElement[];
+		const items: HTMLLIElement[] = Array.from(listElement.querySelectorAll('li[role="option"]'));
 		const activeElement = document.activeElement as HTMLLIElement;
 		let currentIndex = items.indexOf(activeElement);
 
@@ -170,7 +170,7 @@
 					: undefined}
 				onkeydown={handleKeydown}
 			>
-				{#each options as option, i (option.value)}
+				{#each options as option (option.value)}
 					{@const isSelected = value === option.value}
 					{@const isFocused = false}
 					<li

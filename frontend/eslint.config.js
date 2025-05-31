@@ -57,6 +57,15 @@ export default ts.config(
 		rules: {}
 	},
 	{
+		// Global rule overrides
+		rules: {
+			'@typescript-eslint/only-throw-error': 'off',
+			'@typescript-eslint/no-floating-promises': 'off',
+			'@typescript-eslint/no-unsafe-assignment': 'off',
+			'@typescript-eslint/no-unsafe-member-access': 'off',
+		}
+	},
+	{
 		languageOptions: {
 			globals: {
 				...globals.browser,

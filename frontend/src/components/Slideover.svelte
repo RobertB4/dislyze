@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Button from "$components/Button.svelte";
-	import { onDestroy, onMount } from "svelte";
+	import { onDestroy, onMount, type Snippet } from "svelte";
 	import { slide } from "svelte/transition";
 
 	let {
@@ -13,6 +13,16 @@
 		loading = false,
 		widthClass = "",
 		children
+	}: {
+		onClose: () => void;
+		title: string;
+		subtitle?: string;
+		primaryButtonText?: string;
+		primaryButtonTypeSubmit?: boolean;
+		onPrimaryClick?: () => void;
+		loading?: boolean;
+		widthClass?: string;
+		children: Snippet;
 	} = $props();
 
 	let widthCss = $derived(widthClass ? widthClass : "max-w-2xl");

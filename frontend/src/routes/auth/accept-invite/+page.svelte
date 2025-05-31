@@ -5,6 +5,7 @@
 	import { toast } from "$components/Toast/toast";
 	import { safeGoto } from "$lib/routing";
 	import { mutationFetch } from "$lib/fetch";
+	import Input from "$components/Input.svelte";
 
 	let { data: pageData }: { data: PageData } = $props();
 

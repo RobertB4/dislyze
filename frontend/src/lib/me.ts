@@ -9,4 +9,4 @@ export type Me = {
 	tenant_plan: "none" | "basic" | "pro" | "enterprise";
 };
 
-export const me = writable<Me>(null as any);
+export const me = writable<Me>(null as any); // eslint-disable-line

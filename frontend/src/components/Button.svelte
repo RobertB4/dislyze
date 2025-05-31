@@ -13,7 +13,7 @@
 		class: customClass = "",
 		onclick,
 		children,
-		"data-testid": dataTestId = undefined
+		"data-testid": dataTestId
 	}: {
 		type?: ButtonType;
 		disabled?: boolean;

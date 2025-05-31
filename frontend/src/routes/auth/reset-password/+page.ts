@@ -34,11 +34,11 @@ export const load: PageLoad = async ({ url, fetch }) => {
 			}
 		}
 
-		const result = await response.json();
+		const result = (await response.json()) as { email: string };
 
 		return {
 			token,
-			email: result.email as string
+			email: result.email
 		};
 	} catch (e) {
 		// checking if error is a SvelteKit error

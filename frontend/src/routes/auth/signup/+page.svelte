@@ -58,7 +58,7 @@
 					credentials: "include"
 				});
 
-				const data = await response.json();
+				const data = (await response.json()) as { error?: string };
 
 				if (data.error) {
 					throw new KnownError(data.error);

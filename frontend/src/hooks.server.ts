@@ -2,8 +2,18 @@ import { API_URL } from "$env/static/private";
 import type { Handle } from "@sveltejs/kit";
 import { dev } from "$app/environment";
 
-function buildCookieString(name: string, value: string, options: any): string {
-	let parts = [`${name}=${encodeURIComponent(value)}`];
+type CookieOptions = {
+	path: string;
+	httpOnly: boolean;
+	maxAge?: number;
+	sameSite?: "strict" | "lax" | "none";
+	secure: boolean;
+	domain?: string;
+	expires?: Date;
+};
+
+function buildCookieString(name: string, value: string, options: CookieOptions): string {
+	const parts = [`${name}=${encodeURIComponent(value)}`];
 	if (options.path) parts.push(`Path=${options.path}`);
 	if (options.domain) parts.push(`Domain=${options.domain}`);
 	if (options.maxAge !== undefined) parts.push(`Max-Age=${options.maxAge}`);
@@ -67,15 +77,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 					const [name, ...valueParts] = nameValue.split("=");
 					const value = valueParts.join("=");
 
-					const options: {
-						path: string;
-						httpOnly: boolean;
-						maxAge?: number;
-						sameSite?: "strict" | "lax" | "none";
-						secure: boolean;
-						domain?: string;
-						expires?: Date;
-					} = {
+					const options: CookieOptions = {
 						path: "/",
 						httpOnly: false,
 						secure: !dev

@@ -59,6 +59,7 @@
 					);
 				}
 			} catch (err) {
+				console.error("Error resetting password:", err);
 				toast.show(
 					"パスワードのリセット中にエラーが発生しました。ネットワーク接続を確認してください。",
 					"error"
