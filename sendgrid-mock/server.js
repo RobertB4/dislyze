@@ -38,10 +38,10 @@ app.use(
 );
 
 app.get("/", function (req, res) {
-  if (!req.session.user) {
-    res.render("login");
-    return;
-  }
+  // if (!req.session.user) {
+  //   res.render("login");
+  //   return;
+  // }
   res.render("index", {
     data: store
   });

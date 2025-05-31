@@ -11,6 +11,7 @@
 	import Select from "$components/Select.svelte";
 	import Alert from "$components/Alert.svelte";
 	import { mutationFetch } from "$lib/fetch";
+	import Skeleton from "./Skeleton.svelte";
 
 	let { data: pageData }: { data: PageData } = $props();
 
@@ -151,6 +152,10 @@
 		<Button type="button" variant="primary" onclick={() => (isSlideoverOpen = true)}>
 			ユーザーを追加
 		</Button>
+	{/snippet}
+
+	{#snippet skeleton()}
+		<Skeleton />
 	{/snippet}
 
 	{#snippet children({ users })}

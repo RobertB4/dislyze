@@ -21,9 +21,10 @@
 		promises?: PromisesMap;
 		buttons?: Snippet;
 		children: Snippet<[ResolvedObject<PromisesMap>]>;
+		skeleton?: Snippet;
 	};
 
-	let { pageTitle, promises, buttons, children }: LayoutProps = $props();
+	let { pageTitle, promises, buttons, children, skeleton }: LayoutProps = $props();
 
 	function toggleMobileNavigation() {
 		isMobileNavigationOpen = !isMobileNavigationOpen;
@@ -67,7 +68,12 @@
 			let status = 500;
 			let message = "処理中に予期せぬエラーが発生しました。";
 
-			const err = e as { status?: number; message?: string; body?: { message?: string } };
+			const err = e as {
+				status?: number;
+				message?: string;
+				body?: { message?: string };
+				location?: string;
+			};
 
 			if (err.status) {
 				status = err.status;
@@ -83,6 +89,13 @@
 
 			if (e instanceof Error) {
 				message = e.message;
+			}
+
+			if (err.location) {
+				Promise.resolve().then(() => {
+					safeGoto(err.location!);
+				});
+				return {} as ResolvedObject<PromisesMap>;
 			}
 
 			// Use a microtask to ensure navigation happens after the current processing cycle
@@ -651,29 +664,7 @@
 			</div>
 			<div class="py-6 px-4 sm:px-6 md:px-8">
 				{#await getResolvedPromises()}
-					<div class="flex justify-center items-center p-6 text-gray-500">
-						<svg
-							class="animate-spin -ml-1 mr-3 h-5 w-5"
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
-						>
-							<circle
-								class="opacity-25"
-								cx="12"
-								cy="12"
-								r="10"
-								stroke="currentColor"
-								stroke-width="4"
-							></circle>
-							<path
-								class="opacity-75"
-								fill="currentColor"
-								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-							></path>
-						</svg>
-						<span>読み込み中...</span>
-					</div>
+					{@render skeleton?.()}
 				{:then resolvedData}
 					{@render children(resolvedData)}
 				{/await}
