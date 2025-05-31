@@ -19,7 +19,7 @@ This monorepo contains a Go backend server and a SvelteKit frontend application.
 ## Requirements
 
 ### Backend
-- Go 1.23 or higher
+- Go 1.24 or higher
 - golangci-lint (for development)
 
 ### Frontend
