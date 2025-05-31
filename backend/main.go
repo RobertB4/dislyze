@@ -44,7 +44,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		}
 	})
 
-	rateLimit, err := strconv.Atoi(env.RateLimit)
+	rateLimit, err := strconv.Atoi(env.AuthRateLimit)
 	if err != nil {
 		log.Fatalf("Failed to convert env.RateLimit to int: %v", err)
 	}

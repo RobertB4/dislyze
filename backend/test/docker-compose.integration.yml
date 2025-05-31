@@ -36,7 +36,7 @@ services:
       - DB_NAME=test_db
       - DB_SSL_MODE=disable
       - JWT_SECRET=test_jwt_secret_key_for_testing_only
-      - RATE_LIMIT=5000
+      - AUTH_RATE_LIMIT=1000
       - FRONTEND_URL=http://localhost:13000
       - SENDGRID_API_KEY=sendgrid
       - SENDGRID_API_URL=http://mock-sendgrid:17000

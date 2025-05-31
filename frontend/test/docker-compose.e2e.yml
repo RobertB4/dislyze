@@ -37,7 +37,7 @@ services:
       - DB_NAME=testdb_e2e
       - DB_SSL_MODE=disable
       - JWT_SECRET=e2e_super_secret_jwt_key_placeholder
-      - RATE_LIMIT=1000 # Higher limit for E2E tests
+      - AUTH_RATE_LIMIT=1000 # Higher limit for E2E tests
       - SENDGRID_API_KEY=e2e_fake_sendgrid_key
       - SENDGRID_API_URL=http://mock-sendgrid:27000
       # Using container IP for frontend. Vite returns 403 for requests from http://frontend:23000

@@ -17,7 +17,7 @@ type Env struct {
 	DBName         string
 	DBSSLMode      string
 	JWTSecret      string
-	RateLimit      string
+	AuthRateLimit  string
 	FrontendURL    string
 	InitialPW      string
 	SendgridAPIKey string
@@ -44,7 +44,7 @@ func LoadEnv() (*Env, error) {
 		"DB_NAME":          &env.DBName,
 		"DB_SSL_MODE":      &env.DBSSLMode,
 		"JWT_SECRET":       &env.JWTSecret,
-		"RATE_LIMIT":       &env.RateLimit,
+		"AUTH_RATE_LIMIT":  &env.AuthRateLimit,
 		"FRONTEND_URL":     &env.FrontendURL,
 		"INITIAL_PW":       &env.InitialPW,
 		"SENDGRID_API_KEY": &env.SendgridAPIKey,
