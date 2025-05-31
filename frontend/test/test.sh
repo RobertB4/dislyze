@@ -137,6 +137,9 @@ done
 
 echo "All services are healthy."
 
+echo "Installing project Playwright dependencies in Playwright container..."
+docker compose -f "$COMPOSE_FILE" exec -T playwright npm ci --silent --no-audit --no-fund
+
 # Run Playwright E2E tests
 echo "Running Playwright E2E tests targeting ${DYNAMIC_FRONTEND_URL} (CI Mode: $CI_MODE, UI Mode: $UI_MODE)..."
 
