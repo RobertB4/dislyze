@@ -137,6 +137,15 @@ done
 
 echo "All services are healthy."
 
+echo "Changing ownership of /app in Playwright container to pwuser..."
+docker compose -f "$COMPOSE_FILE" exec -T -u root playwright chown -R pwuser:pwuser /app
+CHOWN_EXIT_CODE=$?
+if [ $CHOWN_EXIT_CODE -ne 0 ]; then
+  echo "Error: chown in Playwright container failed with exit code $CHOWN_EXIT_CODE."
+  exit $CHOWN_EXIT_CODE
+fi
+echo "/app ownership changed successfully."
+
 echo "Installing project Playwright dependencies in Playwright container..."
 # Make npm ci verbose and capture its exit code
 docker compose -f "$COMPOSE_FILE" exec -T playwright npm ci --no-audit --no-fund
