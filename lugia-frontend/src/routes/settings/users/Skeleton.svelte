@@ -1,5 +1,4 @@
 <div class="animate-pulse">
-	<!-- Table Skeleton -->
 	<div class="overflow-hidden shadow ring-1 ring-black/5 sm:rounded-lg">
 		<div class="min-w-full divide-y divide-gray-300">
 			<div class="bg-gray-50">

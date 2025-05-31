@@ -12,11 +12,14 @@
 	import Alert from "$components/Alert.svelte";
 	import { mutationFetch } from "$lib/fetch";
 	import Skeleton from "./Skeleton.svelte";
+	import type { User } from "./+page";
+	import { me } from "$lib/me";
 
 	let { data: pageData }: { data: PageData } = $props();
 
 	let isSlideoverOpen = $state(false);
 	let userToDelete = $state<{ id: string; name: string; email: string } | null>(null);
+	let userToEdit = $state<User | null>(null);
 
 	const { form, data, errors, isSubmitting, reset } = createForm({
 		initialValues: {
@@ -94,6 +97,36 @@
 		}
 	});
 
+	const {
+		form: editForm,
+		data: editFormData,
+		isSubmitting: isEditing,
+		setInitialValues: setEditFormInitialValues,
+		reset: resetEditForm
+	} = createForm({
+		initialValues: {
+			role: "editor"
+		},
+		onSubmit: async (values) => {
+			if (!userToEdit) return;
+
+			const { success } = await mutationFetch(`/api/users/${userToEdit.id}`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({ role: values.role })
+			});
+
+			if (success) {
+				await invalidate(`/api/users`);
+				toast.show("ユーザーの役割を更新しました。", "success");
+				userToEdit = null;
+				resetEditForm();
+			}
+		}
+	});
+
 	const handleClose = () => {
 		isSlideoverOpen = false;
 		reset();
@@ -102,6 +135,16 @@
 	const handleDeleteModalClose = () => {
 		userToDelete = null;
 		resetDelete();
+	};
+
+	const handleEditModalOpen = (user: User) => {
+		setEditFormInitialValues({ role: user.role });
+		userToEdit = user;
+	};
+
+	const handleEditModalClose = () => {
+		userToEdit = null;
+		resetEditForm();
 	};
 
 	const handleResendInvite = async (userId: string) => {
@@ -238,6 +281,34 @@
 			</form>
 		{/if}
 
+		{#if userToEdit}
+			<form use:editForm class="space-y-6 p-1 flex flex-col h-full">
+				<Slideover
+					title="ユーザー権限を編集"
+					primaryButtonText="保存"
+					primaryButtonTypeSubmit={true}
+					onClose={handleEditModalClose}
+					loading={$isEditing}
+				>
+					<div class="flex-grow space-y-6">
+						<p>
+							<strong>{userToEdit.name}</strong> ({userToEdit.email}) の役割を編集
+						</p>
+						<Select
+							id="edit-role"
+							name="role"
+							label="役割"
+							options={[
+								{ value: "editor", label: roleMap["editor"] },
+								{ value: "admin", label: roleMap["admin"] }
+							]}
+							bind:value={$editFormData.role}
+						/>
+					</div>
+				</Slideover>
+			</form>
+		{/if}
+
 		<div class="mt-8 flow-root">
 			<div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
 				<div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
@@ -290,16 +361,28 @@
 										<td
 											class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6"
 										>
-											{#if user.status === "pending_verification"}
+											{#if $me.user_id !== user.id}
+												{#if user.status === "pending_verification"}
+													<Button
+														variant="link"
+														class="mr-4 text-sm text-red-600 hover:text-red-900"
+														onclick={() => handleDeleteUser(user)}>招待をキャンセル</Button
+													>
+												{:else}
+													<Button
+														variant="link"
+														class="mr-4 text-sm text-red-600 hover:text-red-900"
+														onclick={() => handleDeleteUser(user)}>削除</Button
+													>
+												{/if}
 												<Button
 													variant="link"
-													class="mr-4 text-sm text-red-600 hover:text-red-900"
-													onclick={() => handleDeleteUser(user)}>招待をキャンセル</Button
+													class="text-indigo-600 hover:text-indigo-900"
+													onclick={() => handleEditModalOpen(user)}
 												>
+													権限編集<span class="sr-only">, {user.name}</span>
+												</Button>
 											{/if}
-											<a href="#" class="text-indigo-600 hover:text-indigo-900"
-												>編集<span class="sr-only">, {user.name}</span></a
-											>
 										</td>
 									</tr>
 								{/each}

@@ -1,11 +1,11 @@
 import type { PageLoad } from "./$types";
 import { loadFunctionFetch } from "$lib/fetch";
 
-type User = {
+export type User = {
 	id: string;
 	email: string;
 	name: string;
-	role: string;
+	role: "admin" | "editor";
 	status: string;
 	created_at: string;
 	updated_at: string;

@@ -343,6 +343,64 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	responder.RespondWithJSON(w, http.StatusCreated, map[string]bool{"success": true})
 }
 
+type UpdateUserRoleRequest struct {
+	Role queries_pregeneration.UserRole `json:"role"`
+}
+
+func (r *UpdateUserRoleRequest) Validate() error {
+	r.Role = queries_pregeneration.UserRole(strings.TrimSpace(strings.ToLower(string(r.Role)))) // Ensure string conversion for ToLower
+	if r.Role == "" {
+		return fmt.Errorf("role is required")
+	}
+	if r.Role != queries_pregeneration.UserRole("admin") && r.Role != queries_pregeneration.UserRole("editor") {
+		return fmt.Errorf("invalid role specified, must be 'admin' or 'editor'")
+	}
+	return nil
+}
+
+func (h *UsersHandler) UpdateUserPermissions(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userIDStr := chi.URLParam(r, "userID")
+	if userIDStr == "" {
+		responder.RespondWithError(w, errlib.New(fmt.Errorf("user ID is required"), http.StatusBadRequest, ""))
+		return
+	}
+
+	var pgxUserID pgtype.UUID
+	if err := pgxUserID.Scan(userIDStr); err != nil {
+		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
+		return
+	}
+
+	var req UpdateUserRoleRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
+		return
+	}
+	defer r.Body.Close()
+
+	if err := req.Validate(); err != nil {
+		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
+		return
+	}
+
+	tenantID := libctx.GetTenantID(ctx)
+
+	params := queries.UpdateUserRoleParams{
+		Role:     req.Role,
+		ID:       pgxUserID,
+		TenantID: tenantID,
+	}
+
+	err := h.q.UpdateUserRole(ctx, &params)
+	if err != nil {
+		responder.RespondWithError(w, errlib.New(fmt.Errorf("Error updating user role: %v, params: %+v\\n", err, params), http.StatusInternalServerError, ""))
+		return
+	}
+
+	responder.RespondWithJSON(w, http.StatusOK, map[string]bool{"success": true})
+}
+
 func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

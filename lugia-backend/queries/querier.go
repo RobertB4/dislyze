@@ -37,6 +37,7 @@ type Querier interface {
 	RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error
 	UpdateRefreshTokenLastUsed(ctx context.Context, jti pgtype.UUID) error
 	UpdateUserPassword(ctx context.Context, arg *UpdateUserPasswordParams) error
+	UpdateUserRole(ctx context.Context, arg *UpdateUserRoleParams) error
 }
 
 var _ Querier = (*Queries)(nil)

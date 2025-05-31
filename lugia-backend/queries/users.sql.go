@@ -197,3 +197,20 @@ func (q *Queries) InviteUserToTenant(ctx context.Context, arg *InviteUserToTenan
 	err := row.Scan(&id)
 	return id, err
 }
+
+const UpdateUserRole = `-- name: UpdateUserRole :exec
+UPDATE users
+SET role = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2 AND tenant_id = $3
+`
+
+type UpdateUserRoleParams struct {
+	Role     queries_pregeneration.UserRole
+	ID       pgtype.UUID
+	TenantID pgtype.UUID
+}
+
+func (q *Queries) UpdateUserRole(ctx context.Context, arg *UpdateUserRoleParams) error {
+	_, err := q.db.Exec(ctx, UpdateUserRole, arg.Role, arg.ID, arg.TenantID)
+	return err
+}

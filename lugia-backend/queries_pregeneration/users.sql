@@ -38,3 +38,8 @@ WHERE user_id = $1;
 -- name: DeleteUser :exec
 DELETE FROM users
 WHERE id = $1;
+
+-- name: UpdateUserRole :exec
+UPDATE users
+SET role = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2 AND tenant_id = $3;
