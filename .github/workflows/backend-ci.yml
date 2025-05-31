@@ -55,7 +55,7 @@ jobs:
 
       - name: Run govulncheck for vulnerability scanning
         working-directory: ./backend
-        run: govulncheck ./... -show verbose
+        run: govulncheck -v ./...
 
       - name: Build application
         working-directory: ./backend
