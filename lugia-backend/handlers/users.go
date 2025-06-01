@@ -165,12 +165,12 @@ func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	dbUsers, err := h.q.GetUsersByTenantID(ctx, &queries.GetUsersByTenantIDParams{
 		TenantID: rawTenantID,
 		Column2:  searchTerm,
-		Limit:    int32(paginationParams.Limit),
-		Offset:   int32(paginationParams.Offset),
+		Limit:    paginationParams.Limit,
+		Offset:   paginationParams.Offset,
 	})
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			paginationMetadata := pagination.CalculateMetadata(paginationParams.Page, paginationParams.Limit, int(totalCount))
+			paginationMetadata := pagination.CalculateMetadata(paginationParams.Page, paginationParams.Limit, totalCount)
 			response := GetUsersResponse{
 				Users:      []User{},
 				Pagination: paginationMetadata,
@@ -190,7 +190,7 @@ func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	paginationMetadata := pagination.CalculateMetadata(paginationParams.Page, paginationParams.Limit, int(totalCount))
+	paginationMetadata := pagination.CalculateMetadata(paginationParams.Page, paginationParams.Limit, totalCount)
 
 	response := GetUsersResponse{
 		Users:      responseUsers,

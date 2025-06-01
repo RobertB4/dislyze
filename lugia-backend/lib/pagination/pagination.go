@@ -3,6 +3,8 @@ package pagination
 import (
 	"net/http"
 	"strconv"
+
+	"lugia/lib/conversions"
 )
 
 type PaginationMetadata struct {
@@ -16,8 +18,8 @@ type PaginationMetadata struct {
 
 type QueryParams struct {
 	Page   int
-	Limit  int
-	Offset int
+	Limit  int32
+	Offset int32
 }
 
 func CalculatePagination(r *http.Request) QueryParams {
@@ -40,23 +42,37 @@ func CalculatePagination(r *http.Request) QueryParams {
 		}
 	}
 
+	limit32, err := conversions.SafeInt32(limit)
+	if err != nil {
+		// Fallback to safe default if conversion fails
+		limit32 = 50
+	}
+
+	offset32, err := conversions.SafeInt32((page - 1) * limit)
+	if err != nil {
+		// Fallback to safe default if conversion fails
+		offset32 = 0
+	}
+
 	return QueryParams{
 		Page:   page,
-		Limit:  limit,
-		Offset: (page - 1) * limit,
+		Limit:  limit32,
+		Offset: offset32,
 	}
 }
 
-func CalculateMetadata(page, limit, total int) PaginationMetadata {
-	totalPages := (total + limit - 1) / limit
+func CalculateMetadata(page int, limit int32, total int64) PaginationMetadata {
+	localLimit := int(limit)
+	localTotal := int(total)
+	totalPages := (localTotal + localLimit - 1) / localLimit
 	if totalPages == 0 {
 		totalPages = 1
 	}
 
 	return PaginationMetadata{
 		Page:       page,
-		Limit:      limit,
-		Total:      total,
+		Limit:      localLimit,
+		Total:      localTotal,
 		TotalPages: totalPages,
 		HasNext:    page < totalPages,
 		HasPrev:    page > 1,
