@@ -38,6 +38,5 @@
 	role="menu"
 	tabindex={0}
 	class="inline-flex rounded-full px-3 py-1 text-xs font-semibold leading-5 {colorClass()} {customClass}"
-	data-testid={dataTestid}
-	>{@render children()}</span
+	data-testid={dataTestid}>{@render children()}</span
 >

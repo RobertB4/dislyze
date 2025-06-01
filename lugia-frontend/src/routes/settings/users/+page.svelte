@@ -391,7 +391,6 @@
 								{ value: "admin", label: roleMap["admin"] }
 							]}
 							bind:value={$editFormData.role}
-							data-testid="edit-role-select"
 						/>
 					</div>
 				</Slideover>

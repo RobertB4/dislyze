@@ -469,7 +469,7 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 	invitationTokenRecord, err := qtx.GetInvitationByTokenHash(ctx, hashedTokenStr)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			appErr := errlib.New(fmt.Errorf("AcceptInvite: token not found or expired for hash %s: %w", hashedTokenStr, err), http.StatusUnauthorized, "招待リンクが無効か、期限切れです。お手数ですが、招待者に再度依頼してください。")
+			appErr := errlib.New(fmt.Errorf("AcceptInvite: token not found or expired for hash %s: %w", hashedTokenStr, err), http.StatusBadRequest, "招待リンクが無効か、期限切れです。お手数ですが、招待者に再度依頼してください。")
 			responder.RespondWithError(w, appErr)
 			return
 		}
@@ -491,7 +491,7 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if dbUser.Status != "pending_verification" {
-		appErr := errlib.New(fmt.Errorf("AcceptInvite: user %s status is '%s', expected 'pending_verification' for token %s", dbUser.ID.String(), dbUser.Status, hashedTokenStr), http.StatusUnauthorized, "このユーザーはすでに承諾済みです。")
+		appErr := errlib.New(fmt.Errorf("AcceptInvite: user %s status is '%s', expected 'pending_verification' for token %s", dbUser.ID.String(), dbUser.Status, hashedTokenStr), http.StatusBadRequest, "このユーザーはすでに承諾済みです。")
 		responder.RespondWithError(w, appErr)
 		return
 	}

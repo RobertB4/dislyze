@@ -95,7 +95,12 @@
 		</div>
 		<div class="ml-3">
 			{#if title}
-				<h3 class="text-sm font-medium {typeClasses[type]}" data-testid={dataTestid ? `${dataTestid}-title` : undefined}>{title}</h3>
+				<h3
+					class="text-sm font-medium {typeClasses[type]}"
+					data-testid={dataTestid ? `${dataTestid}-title` : undefined}
+				>
+					{title}
+				</h3>
 			{/if}
 			<div class="text-sm {typeClasses[type]}">
 				{@render children()}

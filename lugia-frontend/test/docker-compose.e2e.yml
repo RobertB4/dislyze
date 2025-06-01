@@ -1,6 +1,5 @@
 services:
   lugia-frontend:
-    platform: linux/amd64
     build:
       context: ../../  # Project root
       dockerfile: ./lugia-frontend/test/Dockerfile.frontend.e2e # Path to Dockerfile from new context

@@ -63,9 +63,14 @@
 
 		{#if showForm}
 			<div>
-				<h2 class="mt-6 text-center text-2xl font-extrabold text-gray-900">招待の承認</h2>
+				<h2
+					class="mt-6 text-center text-2xl font-extrabold text-gray-900"
+					data-testid="accept-invite-title"
+				>
+					招待の承認
+				</h2>
 				{#if pageData.inviterName}
-					<p class="mt-2 text-center text-sm text-gray-600">
+					<p class="mt-2 text-center text-sm text-gray-600" data-testid="inviter-message">
 						{pageData.inviterName}さんがあなたを招待しました。
 						<br />
 						アカウントのパスワードを設定してください。
@@ -73,7 +78,7 @@
 				{/if}
 			</div>
 
-			<form class="mt-8 space-y-6" use:form>
+			<form class="mt-8 space-y-6" use:form data-testid="accept-invite-form">
 				<div class="rounded-md space-y-4">
 					<Input
 						id="email"
@@ -106,21 +111,31 @@
 				</div>
 
 				<div>
-					<Button type="submit" disabled={!$isValid} loading={$isSubmitting} fullWidth>
+					<Button
+						type="submit"
+						disabled={!$isValid}
+						loading={$isSubmitting}
+						fullWidth
+						data-testid="submit-button"
+					>
 						招待を承認する
 					</Button>
 				</div>
 			</form>
 		{:else}
-			<div class="text-center">
-				<h2 class="mt-6 text-2xl font-bold text-red-600">エラー</h2>
-				<p class="mt-2 text-lg text-red-500">
+			<div class="text-center" data-testid="error-state">
+				<h2 class="mt-6 text-2xl font-bold text-red-600" data-testid="error-title">エラー</h2>
+				<p class="mt-2 text-lg text-red-500" data-testid="error-message">
 					招待リンクが無効か、期限切れです。
 					<br />
 					お手数ですが、招待者に再度依頼してください。
 				</p>
 				<div class="mt-6">
-					<a href="/auth/login" class="text-indigo-600 hover:text-indigo-500 font-medium">
+					<a
+						href="/auth/login"
+						class="text-indigo-600 hover:text-indigo-500 font-medium"
+						data-testid="login-link"
+					>
 						ログインページへ戻る
 					</a>
 				</div>

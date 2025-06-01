@@ -302,7 +302,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 	setup.SeedDB(t, pool)
 
 	const (
-		plainValidTokenForAccept       = "accept-invite-plain-valid-token-for-testing-123"
+		plainValidTokenForAccept       = "26U7PPxCPCFwWifs8gMD73Gq4tLIBlKBgroHOpkb1bQ"
 		plainNonExistentTokenForAccept = "accept-invite-plain-nonexistent-token-for-testing-456"
 		plainExpiredTokenForAccept     = "accept-invite-plain-expired-token-for-testing-789"
 		plainTokenForActiveUserAccept  = "accept-invite-plain-token-for-active-user-000"
@@ -332,7 +332,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 				Password:        newPasswordForAcceptInvite,
 				PasswordConfirm: newPasswordForAcceptInvite,
 			},
-			expectedStatus: http.StatusUnauthorized,
+			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "validation error - password mismatch",
@@ -368,7 +368,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 				Password:        newPasswordForAcceptInvite,
 				PasswordConfirm: newPasswordForAcceptInvite,
 			},
-			expectedStatus: http.StatusUnauthorized,
+			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "user status not pending_verification (e.g., already active)",
@@ -377,7 +377,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 				Password:        newPasswordForAcceptInvite,
 				PasswordConfirm: newPasswordForAcceptInvite,
 			},
-			expectedStatus: http.StatusUnauthorized,
+			expectedStatus: http.StatusBadRequest,
 		},
 	}
 

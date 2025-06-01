@@ -11,8 +11,7 @@
 		id,
 		name,
 		placeholder = "選択してください",
-		class: customClass = "",
-		"data-testid": dataTestid
+		class: customClass = ""
 	}: {
 		label: string;
 		options: Option[];
@@ -21,7 +20,6 @@
 		name?: string;
 		placeholder?: string;
 		class?: string;
-		"data-testid"?: string;
 	} = $props();
 
 	let isOpen = $state(false);
@@ -125,7 +123,7 @@
 
 <svelte:window onclick={handleClickOutside} />
 
-<div class={customClass} data-testid={dataTestid}>
+<div class={customClass}>
 	<label for={id} class="block text-sm/6 font-medium text-gray-900">{label}</label>
 	<div class="relative mt-2">
 		<button
@@ -139,10 +137,9 @@
 			aria-labelledby="{id}-label"
 			onclick={toggleDropdown}
 			onkeydown={handleKeydown}
-			data-testid={dataTestid ? `${dataTestid}-button` : undefined}
 		>
 			<span
-				id="{id}-label"
+				data-testid="{id}-label"
 				class="col-start-1 row-start-1 truncate pr-6 {value ? '' : 'text-gray-500'}"
 				>{selectedLabel}</span
 			>
@@ -172,13 +169,13 @@
 					? id + "-option-" + value
 					: undefined}
 				onkeydown={handleKeydown}
-				data-testid={dataTestid ? `${dataTestid}-list` : undefined}
+				data-testid={`${id}-list`}
 			>
 				{#each options as option (option.value)}
 					{@const isSelected = value === option.value}
 					{@const isFocused = false}
 					<li
-						id="{id}-option-{option.value}"
+						data-testid="{id}-option-{option.value}"
 						role="option"
 						aria-selected={isSelected}
 						tabindex="-1"
@@ -190,7 +187,6 @@
 						onkeydown={() => {}}
 						onmouseenter={(e) => (e.target as HTMLLIElement).focus()}
 						animate:flip={{ duration: 200 }}
-						data-testid={dataTestid ? `${dataTestid}-option-${option.value}` : undefined}
 					>
 						<span class="block truncate {isSelected ? 'font-semibold' : 'font-normal'}"
 							>{option.label}</span
