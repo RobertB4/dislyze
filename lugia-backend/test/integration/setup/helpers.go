@@ -42,15 +42,19 @@ func InitDB(t *testing.T) *pgxpool.Pool {
 func CleanupDB(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 
+	t.Log("CleanupDB: Starting database cleanup")
+
 	deleteSQL, err := os.ReadFile("/database/delete.sql")
 	if err != nil {
-		t.Fatalf("Failed to read delete.sql: %v", err)
+		t.Fatalf("CleanupDB: Failed to read delete.sql: %v", err)
 	}
 
 	_, err = pool.Exec(context.Background(), string(deleteSQL))
 	if err != nil {
-		t.Fatalf("Failed to execute delete.sql: %v", err)
+		t.Fatalf("CleanupDB: Failed to execute delete.sql: %v", err)
 	}
+
+	t.Log("CleanupDB: Database cleanup completed successfully")
 }
 
 func CloseDB(pool *pgxpool.Pool) {
@@ -62,15 +66,19 @@ func CloseDB(pool *pgxpool.Pool) {
 func SeedDB(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 
+	t.Log("SeedDB: Starting database seeding")
+
 	seedSQL, err := os.ReadFile("/database/seed.sql")
 	if err != nil {
-		t.Fatalf("Failed to read seed.sql: %v", err)
+		t.Fatalf("SeedDB: Failed to read seed.sql: %v", err)
 	}
 
 	_, err = pool.Exec(context.Background(), string(seedSQL))
 	if err != nil {
-		t.Fatalf("Failed to execute seed.sql: %v", err)
+		t.Fatalf("SeedDB: Failed to execute seed.sql: %v", err)
 	}
+
+	t.Log("SeedDB: Database seeding completed successfully")
 }
 
 func LoginUserAndGetTokens(t *testing.T, email string, password string) (string, string) {

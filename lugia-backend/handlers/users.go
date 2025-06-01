@@ -366,35 +366,56 @@ func (h *UsersHandler) UpdateUserPermissions(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var pgxUserID pgtype.UUID
-	if err := pgxUserID.Scan(userIDStr); err != nil {
-		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
+	var targetUserID pgtype.UUID
+	if err := targetUserID.Scan(userIDStr); err != nil {
+		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: invalid target userID format '%s': %w", userIDStr, err), http.StatusBadRequest, ""))
 		return
 	}
 
 	var req UpdateUserRoleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
+		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: failed to decode request: %w", err), http.StatusBadRequest, ""))
 		return
 	}
 	defer r.Body.Close()
 
 	if err := req.Validate(); err != nil {
-		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
+		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: validation failed: %w", err), http.StatusBadRequest, ""))
 		return
 	}
 
-	tenantID := libctx.GetTenantID(ctx)
+	requestingUserID := libctx.GetUserID(ctx)
+	requestingTenantID := libctx.GetTenantID(ctx)
+
+	if requestingUserID == targetUserID {
+		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: user %s attempting to update their own role", requestingUserID.String()), http.StatusBadRequest, ""))
+		return
+	}
+
+	targetUser, err := h.q.GetUserByID(ctx, targetUserID)
+	if err != nil {
+		if errlib.Is(err, pgx.ErrNoRows) {
+			responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: target user with ID %s not found: %w", userIDStr, err), http.StatusNotFound, ""))
+			return
+		}
+		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: failed to get target user %s: %w", userIDStr, err), http.StatusInternalServerError, ""))
+		return
+	}
+
+	if requestingTenantID != targetUser.TenantID {
+		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: requesting user %s (tenant %s) attempting to update user %s (tenant %s) in different tenant", requestingUserID.String(), requestingTenantID.String(), targetUserID.String(), targetUser.TenantID.String()), http.StatusForbidden, ""))
+		return
+	}
 
 	params := queries.UpdateUserRoleParams{
 		Role:     req.Role,
-		ID:       pgxUserID,
-		TenantID: tenantID,
+		ID:       targetUserID,
+		TenantID: requestingTenantID,
 	}
 
-	err := h.q.UpdateUserRole(ctx, &params)
+	err = h.q.UpdateUserRole(ctx, &params)
 	if err != nil {
-		responder.RespondWithError(w, errlib.New(fmt.Errorf("Error updating user role: %v, params: %+v\\n", err, params), http.StatusInternalServerError, ""))
+		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: failed to update user role: %w", err), http.StatusInternalServerError, ""))
 		return
 	}
 
