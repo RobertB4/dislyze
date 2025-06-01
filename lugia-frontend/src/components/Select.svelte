@@ -11,7 +11,8 @@
 		id,
 		name,
 		placeholder = "選択してください",
-		class: customClass = ""
+		class: customClass = "",
+		"data-testid": dataTestid
 	}: {
 		label: string;
 		options: Option[];
@@ -20,6 +21,7 @@
 		name?: string;
 		placeholder?: string;
 		class?: string;
+		"data-testid"?: string;
 	} = $props();
 
 	let isOpen = $state(false);
@@ -123,7 +125,7 @@
 
 <svelte:window onclick={handleClickOutside} />
 
-<div class={customClass}>
+<div class={customClass} data-testid={dataTestid}>
 	<label for={id} class="block text-sm/6 font-medium text-gray-900">{label}</label>
 	<div class="relative mt-2">
 		<button
@@ -137,6 +139,7 @@
 			aria-labelledby="{id}-label"
 			onclick={toggleDropdown}
 			onkeydown={handleKeydown}
+			data-testid={dataTestid ? `${dataTestid}-button` : undefined}
 		>
 			<span
 				id="{id}-label"
@@ -169,6 +172,7 @@
 					? id + "-option-" + value
 					: undefined}
 				onkeydown={handleKeydown}
+				data-testid={dataTestid ? `${dataTestid}-list` : undefined}
 			>
 				{#each options as option (option.value)}
 					{@const isSelected = value === option.value}
@@ -186,6 +190,7 @@
 						onkeydown={() => {}}
 						onmouseenter={(e) => (e.target as HTMLLIElement).focus()}
 						animate:flip={{ duration: 200 }}
+						data-testid={dataTestid ? `${dataTestid}-option-${option.value}` : undefined}
 					>
 						<span class="block truncate {isSelected ? 'font-semibold' : 'font-normal'}"
 							>{option.label}</span

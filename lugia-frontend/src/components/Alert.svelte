@@ -6,11 +6,13 @@
 	let {
 		type = "info" as AlertType,
 		title = "" as string,
-		children
+		children,
+		"data-testid": dataTestid
 	}: {
 		type?: AlertType;
 		title?: string;
 		children: Snippet;
+		"data-testid"?: string;
 	} = $props();
 
 	const baseClasses = "rounded-md p-4";
@@ -22,7 +24,7 @@
 	});
 </script>
 
-<div class="{baseClasses} {typeClasses[type]}">
+<div class="{baseClasses} {typeClasses[type]}" data-testid={dataTestid}>
 	<div class="flex">
 		<div class="flex-shrink-0">
 			{#if type === "danger"}
@@ -93,7 +95,7 @@
 		</div>
 		<div class="ml-3">
 			{#if title}
-				<h3 class="text-sm font-medium {typeClasses[type]}">{title}</h3>
+				<h3 class="text-sm font-medium {typeClasses[type]}" data-testid={dataTestid ? `${dataTestid}-title` : undefined}>{title}</h3>
 			{/if}
 			<div class="text-sm {typeClasses[type]}">
 				{@render children()}

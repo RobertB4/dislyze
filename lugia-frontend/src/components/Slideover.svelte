@@ -12,6 +12,7 @@
 		onPrimaryClick = undefined,
 		loading = false,
 		widthClass = "",
+		"data-testid": dataTestid,
 		children
 	}: {
 		onClose: () => void;
@@ -22,6 +23,7 @@
 		onPrimaryClick?: () => void;
 		loading?: boolean;
 		widthClass?: string;
+		"data-testid"?: string;
 		children: Snippet;
 	} = $props();
 
@@ -43,7 +45,13 @@
 	};
 </script>
 
-<div class="relative z-10" aria-labelledby="Slideover" role="dialog" aria-modal="true">
+<div
+	class="relative z-10"
+	aria-labelledby="Slideover"
+	role="dialog"
+	aria-modal="true"
+	data-testid={dataTestid}
+>
 	<div class="fixed inset-0 bg-gray-500 opacity-75"></div>
 
 	<div class="fixed inset-0 overflow-hidden">
@@ -52,6 +60,7 @@
 				<div
 					class="pointer-events-auto w-screen {widthCss}"
 					transition:slide|global={{ axis: "x", duration: 750 }}
+					data-testid={dataTestid ? `${dataTestid}-panel` : ""}
 				>
 					<div class="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
 						<div class="flex-1">
@@ -67,6 +76,7 @@
 											type="button"
 											onclick={handleClose}
 											class="text-gray-400 hover:text-gray-500 cursor-pointer"
+											data-testid={dataTestid ? `${dataTestid}-close-button` : ""}
 										>
 											<span class="sr-only">Close panel</span>
 											<!-- Heroicon name: outline/x-mark -->
@@ -90,7 +100,10 @@
 								</div>
 							</div>
 
-							<div class="px-4 sm:px-6 sm:py-5">
+							<div
+								class="px-4 sm:px-6 sm:py-5"
+								data-testid={dataTestid ? `${dataTestid}-content` : ""}
+							>
 								{@render children()}
 							</div>
 						</div>
@@ -102,10 +115,16 @@
 									<Button
 										type={primaryButtonTypeSubmit ? "submit" : "button"}
 										{loading}
-										onclick={onPrimaryClick}>{primaryButtonText}</Button
+										onclick={onPrimaryClick}
+										data-testid={dataTestid ? `${dataTestid}-primary-button` : ""}
+										>{primaryButtonText}</Button
 									>
 								{/if}
-								<Button variant="secondary" onclick={handleClose}>キャンセル</Button>
+								<Button
+									variant="secondary"
+									onclick={handleClose}
+									data-testid={dataTestid ? `${dataTestid}-cancel-button` : ""}>キャンセル</Button
+								>
 							</div>
 						</div>
 					</div>
