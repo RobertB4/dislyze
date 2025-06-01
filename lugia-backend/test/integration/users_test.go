@@ -44,14 +44,14 @@ func TestGetUsers_Integration(t *testing.T) {
 			name:           "alpha_admin (Tenant A) gets users from Tenant Alpha",
 			loginUserKey:   "alpha_admin",
 			expectedStatus: http.StatusOK,
-			// Order by created_at ASC from seed.sql
+			// Order by created_at DESC from seed.sql
 			expectedUserEmails: []string{
-				setup.TestUsersData["alpha_admin"].Email,
-				setup.TestUsersData["alpha_editor"].Email,
-				setup.TestUsersData["pending_editor_valid_token"].Email,
-				setup.TestUsersData["suspended_editor"].Email,
-				setup.TestUsersData["pending_editor_for_rate_limit_test"].Email,
 				setup.TestUsersData["pending_editor_tenant_A_for_x_tenant_test"].Email,
+				setup.TestUsersData["pending_editor_for_rate_limit_test"].Email,
+				setup.TestUsersData["suspended_editor"].Email,
+				setup.TestUsersData["pending_editor_valid_token"].Email,
+				setup.TestUsersData["alpha_editor"].Email,
+				setup.TestUsersData["alpha_admin"].Email,
 			},
 		},
 		{
