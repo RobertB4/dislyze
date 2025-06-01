@@ -20,7 +20,7 @@ sleep 5
 
 echo "🧪 Running tests..."
 # Run tests
-docker compose -f docker-compose.integration.yml exec lugia-backend go test ./test/integration/... -v
+docker compose -f docker-compose.integration.yml exec lugia-backend go test ./test/integration/... -json
 
 # Capture the exit code
 TEST_EXIT_CODE=$?

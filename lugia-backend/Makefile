@@ -5,7 +5,7 @@ dev:
 	$(HOME)/go/bin/air
 
 test-unit:
-	go test `go list ./... | grep -v test`
+	go test `go list ./... | grep -v test` -json
 
 test-integration:
 	cd test && bash test.sh

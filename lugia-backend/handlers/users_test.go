@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -273,6 +274,112 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 				}
 				if reqCopy.Role != expectedTrimmedRole {
 					t.Errorf("%s: Role not trimmed/lowercased as expected: got %q, want %q", tt.name, reqCopy.Role, expectedTrimmedRole)
+				}
+			}
+		})
+	}
+}
+
+func TestUpdateUserRoleRequest_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		request UpdateUserRoleRequest
+		wantErr error
+	}{
+		{
+			name: "valid admin role using queries_pregeneration constant",
+			request: UpdateUserRoleRequest{
+				Role: queries_pregeneration.AdminRole,
+			},
+			wantErr: nil,
+		},
+		{
+			name: "valid editor role using queries_pregeneration constant",
+			request: UpdateUserRoleRequest{
+				Role: queries_pregeneration.EditorRole,
+			},
+			wantErr: nil,
+		},
+		{
+			name: "valid admin role",
+			request: UpdateUserRoleRequest{
+				Role: "admin",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "valid editor role",
+			request: UpdateUserRoleRequest{
+				Role: "editor",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "empty role",
+			request: UpdateUserRoleRequest{
+				Role: "",
+			},
+			wantErr: fmt.Errorf("role is required"),
+		},
+		{
+			name: "invalid role value",
+			request: UpdateUserRoleRequest{
+				Role: "invalidrole",
+			},
+			wantErr: fmt.Errorf("invalid role specified, must be 'admin' or 'editor'"),
+		},
+		{
+			name: "role with mixed case (should be normalized and valid)",
+			request: UpdateUserRoleRequest{
+				Role: "Admin",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "role with mixed case editor (should be normalized and valid)",
+			request: UpdateUserRoleRequest{
+				Role: "EDITOR",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "role with leading/trailing whitespace (should be normalized and valid)",
+			request: UpdateUserRoleRequest{
+				Role: "  admin  ",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "role with only whitespace",
+			request: UpdateUserRoleRequest{
+				Role: "   ",
+			},
+			wantErr: fmt.Errorf("role is required"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reqCopy := tt.request
+			gotErr := reqCopy.Validate()
+
+			if tt.wantErr != nil {
+				if gotErr == nil {
+					t.Errorf("%s: Validate() error = nil, wantErr %v", tt.name, tt.wantErr)
+					return
+				}
+				if gotErr.Error() != tt.wantErr.Error() {
+					t.Errorf("%s: Validate() error message = %q, wantErrMsg %q", tt.name, gotErr.Error(), tt.wantErr.Error())
+				}
+			} else if gotErr != nil {
+				t.Errorf("%s: Validate() unexpected error = %v", tt.name, gotErr)
+			}
+
+			// Additionally, check if role was normalized as expected for cases where no error is expected
+			if tt.wantErr == nil {
+				expectedRole := queries_pregeneration.UserRole(strings.TrimSpace(strings.ToLower(string(tt.request.Role))))
+				if reqCopy.Role != expectedRole {
+					t.Errorf("%s: Role not normalized as expected: got %q, want %q", tt.name, reqCopy.Role, expectedRole)
 				}
 			}
 		})
