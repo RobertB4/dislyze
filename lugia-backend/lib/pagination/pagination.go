@@ -31,8 +31,12 @@ func CalculatePagination(r *http.Request) QueryParams {
 	}
 
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
-			limit = l
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+			if l > 100 {
+				limit = 100
+			} else {
+				limit = l
+			}
 		}
 	}
 
