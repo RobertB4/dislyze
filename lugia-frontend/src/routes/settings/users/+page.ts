@@ -26,7 +26,6 @@ export type GetUsersResponse = {
 };
 
 export const load: PageLoad = ({ fetch, url }) => {
-	console.log("running load function");
 	const searchParams = url.searchParams;
 	const page = parseInt(searchParams.get("page") || "1", 10);
 	const limit = parseInt(searchParams.get("limit") || "2", 10);
