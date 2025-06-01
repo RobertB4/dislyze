@@ -1,8 +1,11 @@
 import type { LayoutLoad } from "./$types";
 import { loadFunctionFetch } from "$lib/fetch";
 import { redirect, error as svelteKitError } from "@sveltejs/kit";
-import { me, type Me } from "$lib/me";
+import { meCache, type Me } from "$lib/meCache";
 import { get } from "svelte/store";
+
+export const ssr = false;
+export const prerender = false;
 
 // Helper type guard to check if an error is a SvelteKit Redirect
 function isRedirect(error: unknown): error is import("@sveltejs/kit").Redirect {
@@ -16,17 +19,14 @@ function isRedirect(error: unknown): error is import("@sveltejs/kit").Redirect {
 	);
 }
 
-export const ssr = false;
-export const prerender = false;
-
 export const load: LayoutLoad = async ({ fetch, url }) => {
 	if (typeof window !== "undefined") {
-		if (get(me)) {
-			return { initialUser: get(me) };
+		if (get(meCache)) {
+			return { me: get(meCache) };
 		}
 	}
 
-	let initialUser: Me | null = null;
+	let me: Me = null as any;
 
 	if (url.pathname.startsWith("/auth")) {
 		// SCENARIO A: User is on an /auth page (e.g., /auth/login)
@@ -39,7 +39,7 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 					throw redirect(307, "/"); // User is logged in, redirect from /auth page
 				}
 				// Got 200 OK but no valid user data from /me (e.g. API returns {} or specific non-error for no session)
-				initialUser = null;
+				me = null as any;
 			} else {
 				// Response was not .ok (e.g. 400, 422 from /users/me) and not an error loadFunctionFetch throws for.
 				// For an /auth path, this is unexpected if /me is supposed to 401 for unauthenticated.
@@ -47,12 +47,12 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 				console.warn(
 					`+layout.ts: On auth path, /users/me returned !ok (${response.status}). Assuming not logged in. Allowing auth page render.`
 				);
-				initialUser = null;
+				me = null as any;
 			}
 		} catch (err: unknown) {
 			// If loadFunctionFetch threw a redirect to /auth/login (e.g. from a 401 on /users/me)
 			if (isRedirect(err) && err.location === "/auth/login") {
-				initialUser = null; // User not logged in, allow auth page
+				me = null as any; // User not logged in, allow auth page
 			} else {
 				// For any other error (e.g., 500 server error on /users/me, network error from loadFunctionFetch)
 				console.error("+layout.ts: On auth path, unexpected error during /users/me fetch:", err);
@@ -77,12 +77,12 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 				);
 			}
 
-			initialUser = (await response.json()) as Me;
+			me = await response.json();
 		} catch (err: unknown) {
 			// This re-throws redirects (like 401 to /auth/login from loadFunctionFetch) & SvelteKit errors.
 			console.error("+layout.ts: Protected path, error/redirect during /users/me fetch:", err);
 			throw err;
 		}
 	}
-	return { initialUser };
+	return { me };
 };

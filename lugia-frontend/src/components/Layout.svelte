@@ -7,8 +7,8 @@
 	import { errorStore } from "$lib/errors";
 	import { slide, fade } from "svelte/transition";
 	import type { Snippet } from "svelte";
-	import { me } from "$lib/me";
 	import { safeGoto } from "$lib/routing";
+	import type { Me } from "$lib/meCache";
 
 	let isMobileNavigationOpen = $state(false);
 
@@ -17,6 +17,7 @@
 	};
 
 	type LayoutProps = {
+		me: Me;
 		pageTitle: string;
 		promises?: PromisesMap;
 		buttons?: Snippet;
@@ -24,7 +25,7 @@
 		skeleton?: Snippet;
 	};
 
-	let { pageTitle, promises, buttons, children, skeleton }: LayoutProps = $props();
+	let { me, pageTitle, promises, buttons, children, skeleton }: LayoutProps = $props();
 
 	function toggleMobileNavigation() {
 		isMobileNavigationOpen = !isMobileNavigationOpen;
@@ -110,7 +111,7 @@
 	});
 </script>
 
-{#if !$me}
+{#if !me}
 	<div></div>
 {:else}
 	{#if isMobileNavigationOpen}
@@ -541,7 +542,7 @@
 			</div>
 
 			<nav class="px-2 pb-2">
-				{#if $me.user_role == "admin"}
+				{#if me.user_role == "admin"}
 					<a
 						data-testid="navigation-settings"
 						href="/settings/users"

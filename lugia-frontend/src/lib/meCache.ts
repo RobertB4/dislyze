@@ -9,4 +9,9 @@ export type Me = {
 	tenant_plan: "none" | "basic" | "pro" | "enterprise";
 };
 
-export const me = writable<Me>(null as any); // eslint-disable-line
+/**
+ * Used to cache the response of /api/me.
+ * Do not use this store directly in components.
+ * Use the `me` property from PageData instead.
+ */
+export const meCache = writable<Me>(null as any);

@@ -1,15 +1,15 @@
 <script lang="ts">
 	import "../app.css";
 	import ToastContainer from "$components/Toast/ToastContainer.svelte";
-	import { me } from "$lib/me";
+	import { meCache } from "$lib/meCache";
 	import type { LayoutData } from "./$types";
 	import type { Snippet } from "svelte";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 	$effect(() => {
-		if (data.initialUser) {
-			me.set(data.initialUser);
+		if (data.me) {
+			meCache.set(data.me);
 		}
 	});
 </script>

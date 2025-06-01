@@ -13,9 +13,9 @@
 	import { mutationFetch } from "$lib/fetch";
 	import Skeleton from "./Skeleton.svelte";
 	import type { User } from "./+page";
-	import { me } from "$lib/me";
 
 	let { data: pageData }: { data: PageData } = $props();
+	const { me, usersPromise } = pageData;
 
 	let isSlideoverOpen = $state(false);
 	let userToDelete = $state<{ id: string; name: string; email: string } | null>(null);
@@ -186,9 +186,10 @@
 </script>
 
 <Layout
+	{me}
 	pageTitle="ユーザー管理"
 	promises={{
-		users: pageData.usersPromise
+		users: usersPromise
 	}}
 >
 	{#snippet buttons()}
@@ -361,7 +362,7 @@
 										<td
 											class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6"
 										>
-											{#if $me.user_id !== user.id}
+											{#if me.user_id !== user.id}
 												{#if user.status === "pending_verification"}
 													<Button
 														variant="link"
