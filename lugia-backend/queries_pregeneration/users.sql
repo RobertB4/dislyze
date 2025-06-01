@@ -1,8 +1,24 @@
 -- name: GetUsersByTenantID :many
 SELECT id, email, name, role, status, created_at, updated_at
 FROM users
-WHERE tenant_id = $1
-ORDER BY created_at DESC; 
+WHERE tenant_id = $1 
+AND (
+    $2 = '' OR 
+    name ILIKE '%' || $2 || '%' OR 
+    email ILIKE '%' || $2 || '%'
+)
+ORDER BY created_at DESC
+LIMIT $3 OFFSET $4;
+
+-- name: CountUsersByTenantID :one
+SELECT COUNT(*)
+FROM users
+WHERE tenant_id = $1 
+AND (
+    $2 = '' OR 
+    name ILIKE '%' || $2 || '%' OR 
+    email ILIKE '%' || $2 || '%'
+); 
 
 -- name: InviteUserToTenant :one
 INSERT INTO users (tenant_id, email, password_hash, name, role, status)

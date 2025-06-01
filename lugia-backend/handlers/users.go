@@ -22,8 +22,10 @@ import (
 	"lugia/lib/config"
 	libctx "lugia/lib/ctx"
 	"lugia/lib/errlib"
+	"lugia/lib/pagination"
 	"lugia/lib/ratelimit"
 	"lugia/lib/responder"
+	"lugia/lib/search"
 	"lugia/queries"
 	"lugia/queries_pregeneration"
 )
@@ -80,6 +82,11 @@ type InviteUserResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message,omitempty"`
 	Error   string `json:"error,omitempty"`
+}
+
+type GetUsersResponse struct {
+	Users      []User                        `json:"users"`
+	Pagination pagination.PaginationMetadata `json:"pagination"`
 }
 
 type MeResponse struct {
@@ -142,25 +149,55 @@ func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rawTenantID := libctx.GetTenantID(ctx)
 
-	dbUsers, err := h.q.GetUsersByTenantID(r.Context(), rawTenantID)
+	paginationParams := pagination.CalculatePagination(r)
+	searchTerm := search.ValidateSearchTerm(r, 100)
+
+	totalCount, err := h.q.CountUsersByTenantID(ctx, &queries.CountUsersByTenantIDParams{
+		TenantID: rawTenantID,
+		Column2:  searchTerm,
+	})
+	if err != nil {
+		appErr := errlib.New(fmt.Errorf("GetUsers: failed to count users: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	dbUsers, err := h.q.GetUsersByTenantID(ctx, &queries.GetUsersByTenantIDParams{
+		TenantID: rawTenantID,
+		Column2:  searchTerm,
+		Limit:    int32(paginationParams.Limit),
+		Offset:   int32(paginationParams.Offset),
+	})
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			responder.RespondWithJSON(w, http.StatusOK, []User{})
+			paginationMetadata := pagination.CalculateMetadata(paginationParams.Page, paginationParams.Limit, int(totalCount))
+			response := GetUsersResponse{
+				Users:      []User{},
+				Pagination: paginationMetadata,
+			}
+			responder.RespondWithJSON(w, http.StatusOK, response)
 			return
 		}
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
+		appErr := errlib.New(fmt.Errorf("GetUsers: failed to get users: %w", err), http.StatusInternalServerError, "")
 		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	responseUsers, mapErr := mapDBUsersToResponse(dbUsers)
 	if mapErr != nil {
-		appErr := errlib.New(mapErr, http.StatusInternalServerError, "")
+		appErr := errlib.New(fmt.Errorf("GetUsers: failed to map users: %w", mapErr), http.StatusInternalServerError, "")
 		responder.RespondWithError(w, appErr)
 		return
 	}
 
-	responder.RespondWithJSON(w, http.StatusOK, responseUsers)
+	paginationMetadata := pagination.CalculateMetadata(paginationParams.Page, paginationParams.Limit, int(totalCount))
+
+	response := GetUsersResponse{
+		Users:      responseUsers,
+		Pagination: paginationMetadata,
+	}
+
+	responder.RespondWithJSON(w, http.StatusOK, response)
 }
 
 type SendGridEmailAddress struct {

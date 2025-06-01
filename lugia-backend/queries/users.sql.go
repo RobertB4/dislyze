@@ -28,6 +28,29 @@ func (q *Queries) ActivateInvitedUser(ctx context.Context, arg *ActivateInvitedU
 	return err
 }
 
+const CountUsersByTenantID = `-- name: CountUsersByTenantID :one
+SELECT COUNT(*)
+FROM users
+WHERE tenant_id = $1 
+AND (
+    $2 = '' OR 
+    name ILIKE '%' || $2 || '%' OR 
+    email ILIKE '%' || $2 || '%'
+)
+`
+
+type CountUsersByTenantIDParams struct {
+	TenantID pgtype.UUID
+	Column2  interface{}
+}
+
+func (q *Queries) CountUsersByTenantID(ctx context.Context, arg *CountUsersByTenantIDParams) (int64, error) {
+	row := q.db.QueryRow(ctx, CountUsersByTenantID, arg.TenantID, arg.Column2)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const CreateInvitationToken = `-- name: CreateInvitationToken :one
 INSERT INTO invitation_tokens (token_hash, tenant_id, user_id, expires_at)
 VALUES ($1, $2, $3, $4)
@@ -127,9 +150,22 @@ func (q *Queries) GetInvitationByTokenHash(ctx context.Context, tokenHash string
 const GetUsersByTenantID = `-- name: GetUsersByTenantID :many
 SELECT id, email, name, role, status, created_at, updated_at
 FROM users
-WHERE tenant_id = $1
+WHERE tenant_id = $1 
+AND (
+    $2 = '' OR 
+    name ILIKE '%' || $2 || '%' OR 
+    email ILIKE '%' || $2 || '%'
+)
 ORDER BY created_at DESC
+LIMIT $3 OFFSET $4
 `
+
+type GetUsersByTenantIDParams struct {
+	TenantID pgtype.UUID
+	Column2  interface{}
+	Limit    int32
+	Offset   int32
+}
 
 type GetUsersByTenantIDRow struct {
 	ID        pgtype.UUID
@@ -141,8 +177,13 @@ type GetUsersByTenantIDRow struct {
 	UpdatedAt pgtype.Timestamptz
 }
 
-func (q *Queries) GetUsersByTenantID(ctx context.Context, tenantID pgtype.UUID) ([]*GetUsersByTenantIDRow, error) {
-	rows, err := q.db.Query(ctx, GetUsersByTenantID, tenantID)
+func (q *Queries) GetUsersByTenantID(ctx context.Context, arg *GetUsersByTenantIDParams) ([]*GetUsersByTenantIDRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersByTenantID,
+		arg.TenantID,
+		arg.Column2,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}

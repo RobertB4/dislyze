@@ -11,10 +11,43 @@ export type User = {
 	updated_at: string;
 };
 
-export const load: PageLoad = ({ fetch }) => {
-	const usersPromise: Promise<User[]> = loadFunctionFetch(fetch, `/api/users`).then((res) =>
-		res.json()
-	);
+export type PaginationMetadata = {
+	page: number;
+	limit: number;
+	total: number;
+	total_pages: number;
+	has_next: boolean;
+	has_prev: boolean;
+};
 
-	return { usersPromise };
+export type GetUsersResponse = {
+	users: User[];
+	pagination: PaginationMetadata;
+};
+
+export const load: PageLoad = ({ fetch, url }) => {
+	console.log("running load function");
+	const searchParams = url.searchParams;
+	const page = parseInt(searchParams.get("page") || "1", 10);
+	const limit = parseInt(searchParams.get("limit") || "2", 10);
+	const search = searchParams.get("search") || "";
+
+	const queryParams = new URLSearchParams();
+	queryParams.set("page", page.toString());
+	queryParams.set("limit", limit.toString());
+	if (search) {
+		queryParams.set("search", search);
+	}
+
+	const usersPromise: Promise<GetUsersResponse> = loadFunctionFetch(
+		fetch,
+		`/api/users?${queryParams.toString()}`
+	).then((res) => res.json());
+
+	return {
+		usersPromise,
+		currentPage: page,
+		currentLimit: limit,
+		currentSearch: search
+	};
 };

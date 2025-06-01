@@ -10,7 +10,8 @@
 		error,
 		class: customClass = "",
 		value = $bindable("" as string | number),
-		variant = "default" as "default" | "underlined"
+		variant = "default" as "default" | "underlined",
+		oninput
 	}: {
 		type?: "text" | "email" | "password" | "number" | "tel" | "url";
 		id: string;
@@ -23,6 +24,7 @@
 		class?: string;
 		value?: string | number;
 		variant?: "default" | "underlined";
+		oninput?: (event: Event) => void;
 	} = $props();
 
 	const variantStyles = {
@@ -53,7 +55,17 @@
 
 <div>
 	<label for={id} class="sr-only">{label}</label>
-	<input {id} {name} {type} {required} {disabled} {placeholder} {value} class={inputClass} />
+	<input
+		{id}
+		{name}
+		{type}
+		{required}
+		{disabled}
+		{placeholder}
+		{value}
+		{oninput}
+		class={inputClass}
+	/>
 	{#if error}
 		<p data-testid={`${id}-error`} class="mt-1 text-sm text-red-600">{error}</p>
 	{/if}

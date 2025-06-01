@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	ActivateInvitedUser(ctx context.Context, arg *ActivateInvitedUserParams) error
+	CountUsersByTenantID(ctx context.Context, arg *CountUsersByTenantIDParams) (int64, error)
 	CreateInvitationToken(ctx context.Context, arg *CreateInvitationTokenParams) (*InvitationToken, error)
 	CreatePasswordResetToken(ctx context.Context, arg *CreatePasswordResetTokenParams) (*PasswordResetToken, error)
 	CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error)
@@ -31,7 +32,7 @@ type Querier interface {
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error)
-	GetUsersByTenantID(ctx context.Context, tenantID pgtype.UUID) ([]*GetUsersByTenantIDRow, error)
+	GetUsersByTenantID(ctx context.Context, arg *GetUsersByTenantIDParams) ([]*GetUsersByTenantIDRow, error)
 	InviteUserToTenant(ctx context.Context, arg *InviteUserToTenantParams) (pgtype.UUID, error)
 	MarkPasswordResetTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error
