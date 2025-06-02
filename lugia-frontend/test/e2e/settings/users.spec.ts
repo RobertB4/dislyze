@@ -388,13 +388,15 @@ test.describe("Settings - Users Page", () => {
 			await page.getByTestId("pagination-next").click();
 
 			// Wait for API response and page to update
-			await page.waitForResponse(
-				(response) =>
+			await page.waitForResponse((response) => {
+				console.log("Response URL:", response.url());
+				return (
 					response.url().includes("/api/users") &&
 					response.url().includes("search=Editor") &&
 					response.url().includes("page=2") &&
 					response.status() === 200
-			);
+				);
+			});
 			await expect(page.getByTestId("users-table")).toBeVisible();
 
 			// URL should contain both search term and page number (in any order)
