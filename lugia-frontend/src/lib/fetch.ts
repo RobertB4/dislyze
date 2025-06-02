@@ -119,7 +119,7 @@ export async function mutationFetch(
 			);
 		}
 
-		window.location.href = "/auth/login";
+		window.location.href = "/auth/login2";
 	}
 
 	if (
