@@ -526,6 +526,9 @@ test.describe("Settings - Users Page", () => {
 			const uniqueEmail = `test_user_invitation@example.com`;
 			const userName = "Test Invitation User";
 
+			// Check initial pagination count before invitation
+			await expect(page.getByTestId("pagination-info")).toContainText("6件中 1 - 2件を表示");
+
 			// Open the invite form
 			await page.getByTestId("add-user-button").click();
 			await expect(page.getByTestId("add-user-slideover-panel")).toBeVisible();
@@ -551,6 +554,9 @@ test.describe("Settings - Users Page", () => {
 
 			// Form should be closed
 			await expect(page.getByTestId("add-user-slideover")).not.toBeVisible();
+
+			// Check that pagination count has increased after invitation
+			await expect(page.getByTestId("pagination-info")).toContainText("7件中 1 - 2件を表示");
 
 			// Verify the new user appears in the list (might require searching for them)
 			await page.locator("#user-search").fill(uniqueEmail);
@@ -703,6 +709,10 @@ test.describe("Settings - Users Page", () => {
 					response.status() === 200
 			);
 
+			await expect(
+				page.getByTestId(`user-role-${TestUsersData.alpha_editor.userID}`)
+			).toContainText("編集者");
+
 			// Find and click the edit permissions button
 			await page
 				.getByTestId(`edit-permissions-button-${TestUsersData.alpha_editor.userID}`)
@@ -717,30 +727,24 @@ test.describe("Settings - Users Page", () => {
 			await page.getByTestId("edit-role-list").waitFor({ state: "visible" });
 			await page.getByTestId("edit-role-option-admin").click();
 
-			// Submit the form by clicking the save button
-			await page.getByTestId("edit-user-slideover-primary-button").click();
-
-			// Wait for API request to complete
-			await page.waitForResponse(
+			const editUserResponse = page.waitForResponse(
 				(response) =>
 					response.url().includes(`/api/users/${TestUsersData.alpha_editor.userID}/permissions`) &&
 					response.status() === 200
 			);
+
+			// Submit the form by clicking the save button
+			await page.getByTestId("edit-user-slideover-primary-button").click();
+
+			// Wait for API request to complete
+			await editUserResponse;
 
 			// Verify toast message appears
 			const toastMessage = page.getByTestId("toast-0");
 			await expect(toastMessage).toBeVisible({ timeout: 10000 });
 			await expect(toastMessage).toContainText("ユーザーの役割を更新しました。");
 
-			// Verify the user's role was updated in the UI
-			// First, we need to ensure the page is refreshed/updated with new data
-			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
-			await page.waitForResponse(
-				(response) =>
-					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_editor.email)) &&
-					response.status() === 200
-			);
+			await expect(page.getByTestId("edit-user-slideover-panel")).not.toBeVisible();
 
 			// Verify the role shown in the UI is now "管理者" (admin)
 			await expect(
@@ -759,6 +763,10 @@ test.describe("Settings - Users Page", () => {
 					response.status() === 200
 			);
 
+			await expect(
+				page.getByTestId(`user-role-${TestUsersData.alpha_editor.userID}`)
+			).toContainText("管理者");
+
 			// Find and click the edit permissions button
 			await page
 				.getByTestId(`edit-permissions-button-${TestUsersData.alpha_editor.userID}`)
@@ -773,29 +781,24 @@ test.describe("Settings - Users Page", () => {
 			await page.getByTestId("edit-role-list").waitFor({ state: "visible" });
 			await page.getByTestId("edit-role-option-editor").click();
 
-			// Submit the form by clicking the save button
-			await page.getByTestId("edit-user-slideover-primary-button").click();
-
-			// Wait for API request to complete
-			await page.waitForResponse(
+			const editUserResponse = page.waitForResponse(
 				(response) =>
 					response.url().includes(`/api/users/${TestUsersData.alpha_editor.userID}/permissions`) &&
 					response.status() === 200
 			);
+
+			// Submit the form by clicking the save button
+			await page.getByTestId("edit-user-slideover-primary-button").click();
+
+			// Wait for API request to complete
+			await editUserResponse;
 
 			// Verify toast message appears
 			const toastMessage = page.getByTestId("toast-0");
 			await expect(toastMessage).toBeVisible({ timeout: 10000 });
 			await expect(toastMessage).toContainText("ユーザーの役割を更新しました。");
 
-			// Verify the user's role was updated in the UI
-			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
-			await page.waitForResponse(
-				(response) =>
-					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_editor.email)) &&
-					response.status() === 200
-			);
+			await expect(page.getByTestId("edit-user-slideover-panel")).not.toBeVisible();
 
 			// Verify the role shown in the UI is now "編集者" (editor)
 			await expect(
@@ -804,19 +807,24 @@ test.describe("Settings - Users Page", () => {
 		});
 
 		test("should cancel role editing without saving changes", async ({ page }) => {
-			// Search for the admin user
-			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
-			await page.waitForResponse(
+			const searchResponse = page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
 					response.url().includes(encodeURIComponent(TestUsersData.alpha_editor.email)) &&
 					response.status() === 200
 			);
+			// Search for the admin user
+			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
+			await searchResponse;
 
 			// Store the original role text for comparison after cancelation
 			const originalRoleText = await page
 				.getByTestId(`user-role-${TestUsersData.alpha_editor.userID}`)
 				.textContent();
+
+			await expect(
+				page.getByTestId(`user-role-${TestUsersData.alpha_editor.userID}`)
+			).toContainText("編集者");
 
 			// Find and click the edit permissions button
 			await page
@@ -837,21 +845,12 @@ test.describe("Settings - Users Page", () => {
 			// Verify the slideover is no longer visible
 			await expect(page.getByTestId("edit-user-slideover-panel")).not.toBeVisible();
 
-			// Search again to ensure the page is refreshed
-			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
-			await page.waitForResponse(
-				(response) =>
-					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_editor.email)) &&
-					response.status() === 200
-			);
-
 			// Verify the role hasn't changed
 			const currentRoleText = await page
 				.getByTestId(`user-role-${TestUsersData.alpha_editor.userID}`)
 				.textContent();
 			expect(currentRoleText).toContain(originalRoleText!.trim());
-			// Should still be "管理者" (admin)
+			// Should still be "編集者"
 			await expect(
 				page.getByTestId(`user-role-${TestUsersData.alpha_editor.userID}`)
 			).toContainText("編集者");
@@ -974,6 +973,9 @@ test.describe("Settings - Users Page", () => {
 		});
 
 		test("should successfully delete a user", async ({ page }) => {
+			// Check initial pagination count before deletion (should be 7 after previous invite test)
+			await expect(page.getByTestId("pagination-info")).toContainText("件中 1 - 2件を表示");
+
 			// Search for the editor user
 			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
 			await page.waitForResponse(
@@ -1011,8 +1013,19 @@ test.describe("Settings - Users Page", () => {
 			// Verify the slideover is closed
 			await expect(page.getByTestId("delete-user-slideover-panel")).not.toBeVisible();
 
-			// Verify the user is no longer in the list
-			// Search again for the deleted user
+			// Clear search to view all users and check pagination count decreased
+			await page.locator("#user-search").clear();
+			await page.waitForResponse(
+				(response) =>
+					response.url().includes("/api/users") &&
+					!response.url().includes("search=") &&
+					response.status() === 200
+			);
+
+			// Check that pagination count has decreased after deletion
+			await expect(page.getByTestId("pagination-info")).toContainText("6件中 1 - 2件を表示");
+
+			// Verify the user is no longer in the list by searching for them
 			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
 			await page.waitForResponse(
 				(response) =>

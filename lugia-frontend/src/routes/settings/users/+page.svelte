@@ -38,7 +38,11 @@
 		}
 		goto(`?${params.toString()}`, {
 			replaceState: false,
-			invalidateAll: true
+			invalidate: [
+				(url: URL) => {
+					return url.pathname === "/api.users";
+				}
+			]
 		});
 	}
 
@@ -100,7 +104,7 @@
 			});
 
 			if (success) {
-				await invalidate(`/api/users`);
+				await invalidate((u) => u.pathname === "/api/users");
 				reset();
 				toast.show("ユーザーを招待しました。", "success");
 				isSlideoverOpen = false;
@@ -137,7 +141,7 @@
 			});
 
 			if (success) {
-				await invalidate(`/api/users`);
+				await invalidate((u) => u.pathname === "/api/users");
 				resetDelete();
 				toast.show("ユーザーを削除しました。", "success");
 				userToDelete = null;
@@ -167,7 +171,7 @@
 			});
 
 			if (success) {
-				await invalidate(`/api/users`);
+				await invalidate((u) => u.pathname === "/api/users");
 				toast.show("ユーザーの役割を更新しました。", "success");
 				userToEdit = null;
 				resetEditForm();
