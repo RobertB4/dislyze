@@ -42,7 +42,7 @@
 				errorStore.setError(500, "処理中に予期せぬエラーが発生しました。");
 			}
 
-			safeGoto("/auth/login");
+			window.location.pathname = "/auth/login";
 		} catch (logoutError) {
 			console.error("Logout request failed:", logoutError);
 			errorStore.setError(500, "処理中に予期せぬエラーが発生しました。");

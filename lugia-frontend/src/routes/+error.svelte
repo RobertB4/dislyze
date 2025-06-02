@@ -12,7 +12,7 @@
 		} catch (logoutError) {
 			console.error("Logout attempt from error page failed:", logoutError);
 		}
-		safeGoto("/auth/login");
+		window.location.href = "/auth/login";
 	}
 
 	function handleGoHome() {
