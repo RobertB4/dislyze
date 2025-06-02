@@ -73,6 +73,7 @@ services:
       - ../:/app
       - ../../database:/database
       - ./test-results:/app/test/test-results
+      - playwright_node_modules:/app/node_modules
     ports:
       - "8080:8080"
     environment:
@@ -91,3 +92,6 @@ services:
       - postgres
     user: pwuser
     container_name: playwright_e2e
+
+volumes:
+  playwright_node_modules:
