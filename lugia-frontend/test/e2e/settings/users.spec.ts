@@ -237,19 +237,18 @@ test.describe("Settings - Users Page", () => {
 				)
 			).toBeVisible();
 
-			// Click next page button
-			await page.getByTestId("pagination-next").click();
-
 			// Wait for API response and page to update
 			await page.waitForResponse((response) => {
-				console.log("1Response URL:", response.url());
-				console.log("Response Status:", response.status());
 				return (
 					response.url().includes("/api/users") &&
 					response.url().includes("page=2") &&
 					response.status() === 200
 				);
 			});
+
+			// Click next page button
+			await page.getByTestId("pagination-next").click();
+
 			await expect(page.getByTestId("users-table")).toBeVisible();
 
 			// Should be on page 2
@@ -277,32 +276,31 @@ test.describe("Settings - Users Page", () => {
 		});
 
 		test("should navigate to previous page", async ({ page }) => {
-			// Start by going to page 2
-			await page.getByTestId("pagination-next").click();
 			await page.waitForResponse((response) => {
-				console.log("2Response URL:", response.url());
-				console.log("Response Status:", response.status());
 				return (
 					response.url().includes("/api/users") &&
 					response.url().includes("page=2") &&
 					response.status() === 200
 				);
 			});
-			await expect(page.getByTestId("users-table")).toBeVisible();
 
-			// Now navigate back to page 1
-			await page.getByTestId("pagination-prev").click();
+			// Start by going to page 2
+			await page.getByTestId("pagination-next").click();
+
+			await expect(page.getByTestId("users-table")).toBeVisible();
 
 			// Wait for API response and page to update
 			await page.waitForResponse((response) => {
-				console.log("3Response URL:", response.url());
-				console.log("Response Status:", response.status());
 				return (
 					response.url().includes("/api/users") &&
 					response.url().includes("page=1") &&
 					response.status() === 200
 				);
 			});
+
+			// Now navigate back to page 1
+			await page.getByTestId("pagination-prev").click();
+
 			await expect(page.getByTestId("users-table")).toBeVisible();
 
 			// Should be back on page 1
@@ -318,19 +316,18 @@ test.describe("Settings - Users Page", () => {
 		});
 
 		test("should navigate to last page", async ({ page }) => {
-			// Go directly to last page
-			await page.getByTestId("pagination-last").click();
-
 			// Wait for API response and page to update
 			await page.waitForResponse((response) => {
-				console.log("4Response URL:", response.url());
-				console.log("Response Status:", response.status());
 				return (
 					response.url().includes("/api/users") &&
 					response.url().includes("page=3") &&
 					response.status() === 200
 				);
 			});
+
+			// Go directly to last page
+			await page.getByTestId("pagination-last").click();
+
 			await expect(page.getByTestId("users-table")).toBeVisible();
 
 			// Should be on page 3
@@ -347,32 +344,30 @@ test.describe("Settings - Users Page", () => {
 		});
 
 		test("should navigate to first page", async ({ page }) => {
-			// First go to page 3
-			await page.getByTestId("pagination-last").click();
 			await page.waitForResponse((response) => {
-				console.log("5Response URL:", response.url());
-				console.log("Response Status:", response.status());
 				return (
 					response.url().includes("/api/users") &&
 					response.url().includes("page=3") &&
 					response.status() === 200
 				);
 			});
+
+			// First go to page 3
+			await page.getByTestId("pagination-last").click();
+
 			await expect(page.getByTestId("users-table")).toBeVisible();
-
-			// Now click the "first page" button
-			await page.getByTestId("pagination-first").click();
-
 			// Wait for API response and page to update
 			await page.waitForResponse((response) => {
-				console.log("6Response URL:", response.url());
-				console.log("Response Status:", response.status());
 				return (
 					response.url().includes("/api/users") &&
 					response.url().includes("page=1") &&
 					response.status() === 200
 				);
 			});
+
+			// Now click the "first page" button
+			await page.getByTestId("pagination-first").click();
+
 			await expect(page.getByTestId("users-table")).toBeVisible();
 
 			// Should be back on page 1
@@ -387,31 +382,25 @@ test.describe("Settings - Users Page", () => {
 		});
 
 		test("should persist search results when navigating through pages", async ({ page }) => {
-			// Search for "Editor" which should match multiple users across pages
-			await page.locator("#user-search").fill("Editor");
-
 			// Wait for search to complete
 			await page.waitForResponse((response) => {
-				console.log("7Response URL:", response.url());
-				console.log("Response Status:", response.status());
 				return (
 					response.url().includes("/api/users") &&
 					response.url().includes("search=Editor") &&
 					response.status() === 200
 				);
 			});
+
+			// Search for "Editor" which should match multiple users across pages
+			await page.locator("#user-search").fill("Editor");
+
 			await expect(page.getByTestId("users-table")).toBeVisible();
 
 			// Check that pagination reflects the search results
 			await expect(page.getByTestId("pagination-info")).toBeVisible();
 
-			// Navigate to the second page of search results
-			await page.getByTestId("pagination-next").click();
-
 			// Wait for API response and page to update
 			await page.waitForResponse((response) => {
-				console.log("8Response URL:", response.url());
-				console.log("Response Status:", response.status());
 				return (
 					response.url().includes("/api/users") &&
 					response.url().includes("search=Editor") &&
@@ -419,6 +408,10 @@ test.describe("Settings - Users Page", () => {
 					response.status() === 200
 				);
 			});
+
+			// Navigate to the second page of search results
+			await page.getByTestId("pagination-next").click();
+
 			await expect(page.getByTestId("users-table")).toBeVisible();
 
 			// URL should contain both search term and page number (in any order)
