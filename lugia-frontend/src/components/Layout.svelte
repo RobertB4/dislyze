@@ -364,9 +364,9 @@
 								<EmptyAvatar />
 							</div>
 							<div class="ml-3">
-								<p class="text-base font-medium text-white">User Name</p>
+								<p class="text-base font-medium text-white">{me.user_name}</p>
 								<p class="text-sm font-medium text-gray-400 group-hover:text-gray-300 truncate">
-									test@test.com
+									{me.email}
 								</p>
 							</div>
 						</div>
@@ -605,9 +605,9 @@
 					<EmptyAvatar />
 
 					<div class="ml-4 overflow-hidden">
-						<p class="text-sm font-medium text-white h-4 mb-1">User Name</p>
+						<p class="text-sm font-medium text-white h-4 mb-1">{me.user_name}</p>
 						<p class="text-xs font-medium text-gray-300 group-hover:text-gray-200 h-4 truncate">
-							test@test.com
+							{me.email}
 						</p>
 					</div>
 				</div></a
