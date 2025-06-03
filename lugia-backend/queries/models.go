@@ -9,6 +9,15 @@ import (
 	"lugia/queries_pregeneration"
 )
 
+type EmailChangeToken struct {
+	ID        pgtype.UUID
+	UserID    pgtype.UUID
+	NewEmail  string
+	TokenHash string
+	ExpiresAt pgtype.Timestamptz
+	CreatedAt pgtype.Timestamptz
+}
+
 type InvitationToken struct {
 	ID        pgtype.UUID
 	TenantID  pgtype.UUID

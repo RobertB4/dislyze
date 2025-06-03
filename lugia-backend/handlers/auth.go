@@ -68,16 +68,6 @@ type ForgotPasswordResponse struct {
 	Success bool `json:"success"`
 }
 
-type RefreshTokenInfo struct {
-	ID         string    `json:"id"`
-	DeviceInfo string    `json:"device_info"`
-	IPAddress  string    `json:"ip_address"`
-	LastUsedAt time.Time `json:"last_used_at"`
-	CreatedAt  time.Time `json:"created_at"`
-	ExpiresAt  time.Time `json:"expires_at"`
-	IsRevoked  bool      `json:"is_revoked"`
-}
-
 type AuthHandler struct {
 	dbConn      *pgxpool.Pool
 	env         *config.Env

@@ -67,6 +67,20 @@ CREATE TABLE invitation_tokens (
 CREATE INDEX idx_invitation_tokens_token_hash ON invitation_tokens(token_hash);
 CREATE INDEX idx_invitation_tokens_tenant_id_user_id ON invitation_tokens(tenant_id, user_id);
 
+
+CREATE TABLE email_change_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    new_email VARCHAR(255) NOT NULL,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_email_change_token_user_id UNIQUE (user_id)
+);
+CREATE INDEX idx_email_change_tokens_user_id ON email_change_tokens(user_id);
+CREATE INDEX idx_email_change_tokens_token_hash ON email_change_tokens(token_hash);
+CREATE INDEX idx_email_change_tokens_expires_at ON email_change_tokens(expires_at);
+
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -91,6 +105,9 @@ CREATE TRIGGER update_users_updated_at
 -- +goose StatementBegin
 
 -- Drop indexes
+DROP INDEX IF EXISTS idx_email_change_tokens_expires_at;
+DROP INDEX IF EXISTS idx_email_change_tokens_token_hash;
+DROP INDEX IF EXISTS idx_email_change_tokens_user_id;
 DROP INDEX IF EXISTS idx_invitation_tokens_email_tenant;
 DROP INDEX IF EXISTS idx_invitation_tokens_expires_at;
 DROP INDEX IF EXISTS idx_invitation_tokens_token_hash;
@@ -101,6 +118,7 @@ DROP INDEX IF EXISTS idx_password_reset_tokens_token_hash;
 DROP INDEX IF EXISTS idx_password_reset_tokens_expires_at;
 
 -- Drop tables
+DROP TABLE IF EXISTS email_change_tokens;
 DROP TABLE IF EXISTS invitation_tokens;
 DROP TABLE IF EXISTS password_reset_tokens;
 DROP TABLE IF EXISTS refresh_tokens;
