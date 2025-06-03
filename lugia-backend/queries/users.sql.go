@@ -255,6 +255,22 @@ func (q *Queries) UpdateUserName(ctx context.Context, arg *UpdateUserNameParams)
 	return err
 }
 
+const UpdateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE users
+SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2
+`
+
+type UpdateUserPasswordParams struct {
+	PasswordHash string
+	ID           pgtype.UUID
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg *UpdateUserPasswordParams) error {
+	_, err := q.db.Exec(ctx, UpdateUserPassword, arg.PasswordHash, arg.ID)
+	return err
+}
+
 const UpdateUserRole = `-- name: UpdateUserRole :exec
 UPDATE users
 SET role = $1, updated_at = CURRENT_TIMESTAMP

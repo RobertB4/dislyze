@@ -352,19 +352,3 @@ func (q *Queries) UpdateRefreshTokenLastUsed(ctx context.Context, jti pgtype.UUI
 	_, err := q.db.Exec(ctx, UpdateRefreshTokenLastUsed, jti)
 	return err
 }
-
-const UpdateUserPassword = `-- name: UpdateUserPassword :exec
-UPDATE users
-SET password_hash = $2, updated_at = NOW()
-WHERE id = $1
-`
-
-type UpdateUserPasswordParams struct {
-	ID           pgtype.UUID
-	PasswordHash string
-}
-
-func (q *Queries) UpdateUserPassword(ctx context.Context, arg *UpdateUserPasswordParams) error {
-	_, err := q.db.Exec(ctx, UpdateUserPassword, arg.ID, arg.PasswordHash)
-	return err
-}

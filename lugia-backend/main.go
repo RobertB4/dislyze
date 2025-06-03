@@ -71,6 +71,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 
 		r.Get("/me", usersHandler.GetMe)
 		r.Patch("/me", usersHandler.UpdateMe)
+		r.Post("/me/change-password", usersHandler.ChangePassword)
 
 		r.Route("/users", func(r chi.Router) {
 			r.Use(middleware.RequireAdmin)

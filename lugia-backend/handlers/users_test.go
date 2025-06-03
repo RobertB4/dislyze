@@ -385,3 +385,182 @@ func TestUpdateUserRoleRequest_Validate(t *testing.T) {
 		})
 	}
 }
+
+func TestChangePasswordRequest_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		request ChangePasswordRequest
+		wantErr error
+	}{
+		{
+			name: "valid request",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "currentPassword123",
+				NewPassword:        "newPassword123",
+				NewPasswordConfirm: "newPassword123",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "empty current password",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "",
+				NewPassword:        "newPassword123",
+				NewPasswordConfirm: "newPassword123",
+			},
+			wantErr: fmt.Errorf("current password is required"),
+		},
+		{
+			name: "whitespace-only current password",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "   ",
+				NewPassword:        "newPassword123",
+				NewPasswordConfirm: "newPassword123",
+			},
+			wantErr: fmt.Errorf("current password is required"),
+		},
+		{
+			name: "empty new password",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "currentPassword123",
+				NewPassword:        "",
+				NewPasswordConfirm: "",
+			},
+			wantErr: fmt.Errorf("new password is required"),
+		},
+		{
+			name: "whitespace-only new password",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "currentPassword123",
+				NewPassword:        "   ",
+				NewPasswordConfirm: "   ",
+			},
+			wantErr: fmt.Errorf("new password is required"),
+		},
+		{
+			name: "new password too short",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "currentPassword123",
+				NewPassword:        "short",
+				NewPasswordConfirm: "short",
+			},
+			wantErr: fmt.Errorf("new password must be at least 8 characters long"),
+		},
+		{
+			name: "new password exactly 8 characters",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "currentPassword123",
+				NewPassword:        "password",
+				NewPasswordConfirm: "password",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "new passwords do not match",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "currentPassword123",
+				NewPassword:        "newPassword123",
+				NewPasswordConfirm: "differentPassword123",
+			},
+			wantErr: fmt.Errorf("new passwords do not match"),
+		},
+		{
+			name: "empty new password confirm",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "currentPassword123",
+				NewPassword:        "newPassword123",
+				NewPasswordConfirm: "",
+			},
+			wantErr: fmt.Errorf("new passwords do not match"),
+		},
+		{
+			name: "whitespace-only new password confirm",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "currentPassword123",
+				NewPassword:        "newPassword123",
+				NewPasswordConfirm: "   ",
+			},
+			wantErr: fmt.Errorf("new passwords do not match"),
+		},
+		{
+			name: "new password same as current password",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "samePassword123",
+				NewPassword:        "samePassword123",
+				NewPasswordConfirm: "samePassword123",
+			},
+			wantErr: fmt.Errorf("new password must be different from current password"),
+		},
+		{
+			name: "fields with leading/trailing whitespace (should be trimmed and valid)",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "  currentPassword123  ",
+				NewPassword:        "  newPassword123  ",
+				NewPasswordConfirm: "  newPassword123  ",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "new password with special characters",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "currentPassword123",
+				NewPassword:        "n3wP@ssw0rd!",
+				NewPasswordConfirm: "n3wP@ssw0rd!",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "new password with spaces",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "currentPassword123",
+				NewPassword:        "new password 123",
+				NewPasswordConfirm: "new password 123",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "very long passwords",
+			request: ChangePasswordRequest{
+				CurrentPassword:    "currentPasswordVeryLongButStillValid123456789",
+				NewPassword:        "newPasswordThatIsAlsoVeryLongButStillValid123456789",
+				NewPasswordConfirm: "newPasswordThatIsAlsoVeryLongButStillValid123456789",
+			},
+			wantErr: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reqCopy := tt.request // Copy to avoid modifying the original tt.request due to TrimSpace
+			gotErr := reqCopy.Validate()
+
+			if tt.wantErr != nil {
+				if gotErr == nil {
+					t.Errorf("%s: Validate() error = nil, wantErr %v", tt.name, tt.wantErr)
+					return
+				}
+				if gotErr.Error() != tt.wantErr.Error() {
+					t.Errorf("%s: Validate() error message = %q, wantErrMsg %q", tt.name, gotErr.Error(), tt.wantErr.Error())
+				}
+			} else if gotErr != nil {
+				t.Errorf("%s: Validate() unexpected error = %v", tt.name, gotErr)
+			}
+
+			// Additionally, check if fields were trimmed as expected for whitespace test cases
+			if tt.wantErr == nil && tt.name == "fields with leading/trailing whitespace (should be trimmed and valid)" {
+				expectedTrimmedCurrent := "currentPassword123"
+				expectedTrimmedNew := "newPassword123"
+				expectedTrimmedConfirm := "newPassword123"
+				if reqCopy.CurrentPassword != expectedTrimmedCurrent {
+					t.Errorf("%s: CurrentPassword not trimmed as expected: got %q, want %q", tt.name, reqCopy.CurrentPassword, expectedTrimmedCurrent)
+				}
+				if reqCopy.NewPassword != expectedTrimmedNew {
+					t.Errorf("%s: NewPassword not trimmed as expected: got %q, want %q", tt.name, reqCopy.NewPassword, expectedTrimmedNew)
+				}
+				if reqCopy.NewPasswordConfirm != expectedTrimmedConfirm {
+					t.Errorf("%s: NewPasswordConfirm not trimmed as expected: got %q, want %q", tt.name, reqCopy.NewPasswordConfirm, expectedTrimmedConfirm)
+				}
+			}
+		})
+	}
+}
