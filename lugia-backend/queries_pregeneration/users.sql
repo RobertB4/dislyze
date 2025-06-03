@@ -59,3 +59,13 @@ WHERE id = $1;
 UPDATE users
 SET role = $1, updated_at = CURRENT_TIMESTAMP
 WHERE id = $2 AND tenant_id = $3;
+
+-- name: UpdateUserName :exec
+UPDATE users
+SET name = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2;
+
+-- name: UpdateUserPassword :exec
+UPDATE users
+SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2;

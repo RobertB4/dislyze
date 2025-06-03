@@ -98,6 +98,18 @@ type MeResponse struct {
 	UserRole   string `json:"user_role"`
 }
 
+type UpdateMeRequest struct {
+	Name string `json:"name"`
+}
+
+func (r *UpdateMeRequest) Validate() error {
+	r.Name = strings.TrimSpace(r.Name)
+	if r.Name == "" {
+		return fmt.Errorf("name is required")
+	}
+	return nil
+}
+
 type UsersHandler struct {
 	dbConn                  *pgxpool.Pool
 	q                       *queries.Queries
@@ -731,6 +743,66 @@ func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		appErr := errlib.New(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	response := MeResponse{
+		TenantName: tenant.Name,
+		TenantPlan: tenant.Plan,
+		UserID:     user.ID.String(),
+		Email:      user.Email,
+		UserName:   user.Name,
+		UserRole:   user.Role.String(),
+	}
+
+	responder.RespondWithJSON(w, http.StatusOK, response)
+}
+
+func (h *UsersHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := libctx.GetUserID(ctx)
+
+	var req UpdateMeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		appErr := errlib.New(fmt.Errorf("UpdateMe: failed to decode request: %w", err), http.StatusBadRequest, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			errlib.LogError(fmt.Errorf("UpdateMe: failed to close request body: %w", err))
+		}
+	}()
+
+	if err := req.Validate(); err != nil {
+		appErr := errlib.New(fmt.Errorf("UpdateMe: validation failed: %w", err), http.StatusBadRequest, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	if err := h.q.UpdateUserName(ctx, &queries.UpdateUserNameParams{
+		Name: req.Name,
+		ID:   userID,
+	}); err != nil {
+		appErr := errlib.New(fmt.Errorf("UpdateMe: failed to update user name for user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	// Get updated user data
+	tenantID := libctx.GetTenantID(ctx)
+
+	user, err := h.q.GetUserByID(ctx, userID)
+	if err != nil {
+		appErr := errlib.New(fmt.Errorf("UpdateMe: failed to get updated user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	tenant, err := h.q.GetTenantByID(ctx, tenantID)
+	if err != nil {
+		appErr := errlib.New(fmt.Errorf("UpdateMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
 		responder.RespondWithError(w, appErr)
 		return
 	}

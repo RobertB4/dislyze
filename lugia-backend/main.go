@@ -32,7 +32,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{env.FrontendURL},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
@@ -70,6 +70,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		r.Use(middleware.NewAuthMiddleware(env, queries, authRateLimiter, dbConn).Authenticate)
 
 		r.Get("/me", usersHandler.GetMe)
+		r.Patch("/me", usersHandler.UpdateMe)
 
 		r.Route("/users", func(r chi.Router) {
 			r.Use(middleware.RequireAdmin)

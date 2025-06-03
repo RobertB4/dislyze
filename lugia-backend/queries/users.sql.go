@@ -239,6 +239,22 @@ func (q *Queries) InviteUserToTenant(ctx context.Context, arg *InviteUserToTenan
 	return id, err
 }
 
+const UpdateUserName = `-- name: UpdateUserName :exec
+UPDATE users
+SET name = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2
+`
+
+type UpdateUserNameParams struct {
+	Name string
+	ID   pgtype.UUID
+}
+
+func (q *Queries) UpdateUserName(ctx context.Context, arg *UpdateUserNameParams) error {
+	_, err := q.db.Exec(ctx, UpdateUserName, arg.Name, arg.ID)
+	return err
+}
+
 const UpdateUserRole = `-- name: UpdateUserRole :exec
 UPDATE users
 SET role = $1, updated_at = CURRENT_TIMESTAMP

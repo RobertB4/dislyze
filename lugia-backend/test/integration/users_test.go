@@ -1763,3 +1763,183 @@ func TestGetUsersInvalidParameters_Integration(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateMe_Integration(t *testing.T) {
+	pool := setup.InitDB(t)
+	setup.CleanupDB(t, pool)
+	setup.SeedDB(t, pool)
+	defer setup.CloseDB(pool)
+
+	client := &http.Client{}
+
+	tests := []struct {
+		name             string
+		loginUserKey     string // Key for setup.TestUsersData map, empty for unauth
+		requestBody      handlers.UpdateMeRequest
+		customJSON       string // For malformed JSON tests
+		expectedStatus   int
+		expectUnauth     bool
+		validateResponse func(t *testing.T, resp *http.Response) // For custom response validation
+	}{
+		// Authentication Tests
+		{
+			name:           "unauthenticated request gets 401",
+			requestBody:    handlers.UpdateMeRequest{Name: "Test Name"},
+			expectedStatus: http.StatusUnauthorized,
+			expectUnauth:   true,
+		},
+
+		// Input Validation Tests
+		{
+			name:           "empty name gets 400",
+			loginUserKey:   "alpha_admin",
+			requestBody:    handlers.UpdateMeRequest{Name: ""},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "name with only whitespace gets 400",
+			loginUserKey:   "alpha_admin",
+			requestBody:    handlers.UpdateMeRequest{Name: "   "},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "malformed JSON request gets 400",
+			loginUserKey:   "alpha_admin",
+			customJSON:     `{"name": "Valid Name", invalid}`,
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "missing name field gets 400",
+			loginUserKey:   "alpha_admin",
+			customJSON:     `{}`,
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "name exceeding 255 characters gets 500",
+			loginUserKey:   "alpha_admin",
+			requestBody:    handlers.UpdateMeRequest{Name: strings.Repeat("a", 256)}, // 256 chars, over limit
+			expectedStatus: http.StatusInternalServerError,
+		},
+
+		// Success Tests
+		{
+			name:           "alpha_admin successfully updates name",
+			loginUserKey:   "alpha_admin",
+			requestBody:    handlers.UpdateMeRequest{Name: "Updated Alpha Admin"},
+			expectedStatus: http.StatusOK,
+			validateResponse: func(t *testing.T, resp *http.Response) {
+				var meResp handlers.MeResponse
+				err := json.NewDecoder(resp.Body).Decode(&meResp)
+				assert.NoError(t, err, "Failed to decode MeResponse")
+				assert.Equal(t, "Updated Alpha Admin", meResp.UserName, "Name was not updated correctly")
+				assert.Equal(t, setup.TestUsersData["alpha_admin"].Email, meResp.Email, "Email should remain unchanged")
+				assert.Equal(t, "admin", meResp.UserRole, "Role should remain unchanged")
+			},
+		},
+		{
+			name:           "beta_admin successfully updates name",
+			loginUserKey:   "beta_admin",
+			requestBody:    handlers.UpdateMeRequest{Name: "Updated Beta Admin"},
+			expectedStatus: http.StatusOK,
+			validateResponse: func(t *testing.T, resp *http.Response) {
+				var meResp handlers.MeResponse
+				err := json.NewDecoder(resp.Body).Decode(&meResp)
+				assert.NoError(t, err, "Failed to decode MeResponse")
+				assert.Equal(t, "Updated Beta Admin", meResp.UserName, "Name was not updated correctly")
+				assert.Equal(t, setup.TestUsersData["beta_admin"].Email, meResp.Email, "Email should remain unchanged")
+				assert.Equal(t, "admin", meResp.UserRole, "Role should remain unchanged")
+			},
+		},
+		{
+			name:           "name with leading/trailing whitespace is trimmed",
+			loginUserKey:   "alpha_editor",
+			requestBody:    handlers.UpdateMeRequest{Name: "  Trimmed Name  "},
+			expectedStatus: http.StatusOK,
+			validateResponse: func(t *testing.T, resp *http.Response) {
+				var meResp handlers.MeResponse
+				err := json.NewDecoder(resp.Body).Decode(&meResp)
+				assert.NoError(t, err, "Failed to decode MeResponse")
+				assert.Equal(t, "Trimmed Name", meResp.UserName, "Name should be trimmed")
+			},
+		},
+		{
+			name:           "name with special characters works",
+			loginUserKey:   "alpha_editor",
+			requestBody:    handlers.UpdateMeRequest{Name: "Jean-Claude O'Connor"},
+			expectedStatus: http.StatusOK,
+			validateResponse: func(t *testing.T, resp *http.Response) {
+				var meResp handlers.MeResponse
+				err := json.NewDecoder(resp.Body).Decode(&meResp)
+				assert.NoError(t, err, "Failed to decode MeResponse")
+				assert.Equal(t, "Jean-Claude O'Connor", meResp.UserName, "Name with special characters should be preserved")
+			},
+		},
+		{
+			name:           "name with unicode characters works",
+			loginUserKey:   "alpha_editor",
+			requestBody:    handlers.UpdateMeRequest{Name: "田中太郎 🎉 Émilie"},
+			expectedStatus: http.StatusOK,
+			validateResponse: func(t *testing.T, resp *http.Response) {
+				var meResp handlers.MeResponse
+				err := json.NewDecoder(resp.Body).Decode(&meResp)
+				assert.NoError(t, err, "Failed to decode MeResponse")
+				assert.Equal(t, "田中太郎 🎉 Émilie", meResp.UserName, "Name with unicode characters should be preserved")
+			},
+		},
+		{
+			name:           "maximum length name (255 chars) works",
+			loginUserKey:   "alpha_editor",
+			requestBody:    handlers.UpdateMeRequest{Name: strings.Repeat("a", 255)}, // Exactly 255 chars
+			expectedStatus: http.StatusOK,
+			validateResponse: func(t *testing.T, resp *http.Response) {
+				var meResp handlers.MeResponse
+				err := json.NewDecoder(resp.Body).Decode(&meResp)
+				assert.NoError(t, err, "Failed to decode MeResponse")
+				assert.Equal(t, strings.Repeat("a", 255), meResp.UserName, "255 character name should work")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var reqBody []byte
+			var err error
+
+			if tt.customJSON != "" {
+				// Use custom JSON for malformed JSON tests
+				reqBody = []byte(tt.customJSON)
+			} else {
+				reqBody, err = json.Marshal(tt.requestBody)
+				assert.NoError(t, err, "Failed to marshal request body")
+			}
+
+			req, err := http.NewRequest("PATCH", fmt.Sprintf("%s/me", setup.BaseURL), bytes.NewBuffer(reqBody))
+			assert.NoError(t, err, "Failed to create request")
+			req.Header.Set("Content-Type", "application/json")
+
+			// Add authentication cookies if not testing unauth
+			if !tt.expectUnauth && tt.loginUserKey != "" {
+				userDetails, ok := setup.TestUsersData[tt.loginUserKey]
+				assert.True(t, ok, "User key '%s' not found in setup.TestUsersData", tt.loginUserKey)
+
+				accessToken, refreshToken := setup.LoginUserAndGetTokens(t, userDetails.Email, userDetails.PlainTextPassword)
+				req.AddCookie(&http.Cookie{Name: "dislyze_access_token", Value: accessToken})
+				req.AddCookie(&http.Cookie{Name: "dislyze_refresh_token", Value: refreshToken})
+			}
+
+			resp, err := client.Do(req)
+			assert.NoError(t, err, "Failed to execute request")
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Logf("Error closing response body: %v", err)
+				}
+			}()
+
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Unexpected status code for test: %s", tt.name)
+
+			if tt.validateResponse != nil {
+				tt.validateResponse(t, resp)
+			}
+		})
+	}
+}

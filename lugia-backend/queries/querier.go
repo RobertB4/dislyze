@@ -37,6 +37,7 @@ type Querier interface {
 	MarkPasswordResetTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error
 	UpdateRefreshTokenLastUsed(ctx context.Context, jti pgtype.UUID) error
+	UpdateUserName(ctx context.Context, arg *UpdateUserNameParams) error
 	UpdateUserPassword(ctx context.Context, arg *UpdateUserPasswordParams) error
 	UpdateUserRole(ctx context.Context, arg *UpdateUserRoleParams) error
 }
