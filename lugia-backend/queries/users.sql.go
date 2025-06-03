@@ -51,6 +51,32 @@ func (q *Queries) CountUsersByTenantID(ctx context.Context, arg *CountUsersByTen
 	return count, err
 }
 
+const CreateEmailChangeToken = `-- name: CreateEmailChangeToken :exec
+INSERT INTO email_change_tokens (
+    user_id,
+    new_email,
+    token_hash,
+    expires_at
+) VALUES ($1, $2, $3, $4)
+`
+
+type CreateEmailChangeTokenParams struct {
+	UserID    pgtype.UUID
+	NewEmail  string
+	TokenHash string
+	ExpiresAt pgtype.Timestamptz
+}
+
+func (q *Queries) CreateEmailChangeToken(ctx context.Context, arg *CreateEmailChangeTokenParams) error {
+	_, err := q.db.Exec(ctx, CreateEmailChangeToken,
+		arg.UserID,
+		arg.NewEmail,
+		arg.TokenHash,
+		arg.ExpiresAt,
+	)
+	return err
+}
+
 const CreateInvitationToken = `-- name: CreateInvitationToken :one
 INSERT INTO invitation_tokens (token_hash, tenant_id, user_id, expires_at)
 VALUES ($1, $2, $3, $4)
@@ -81,6 +107,26 @@ func (q *Queries) CreateInvitationToken(ctx context.Context, arg *CreateInvitati
 		&i.CreatedAt,
 	)
 	return &i, err
+}
+
+const DeleteEmailChangeTokenByID = `-- name: DeleteEmailChangeTokenByID :exec
+DELETE FROM email_change_tokens
+WHERE id = $1
+`
+
+func (q *Queries) DeleteEmailChangeTokenByID(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, DeleteEmailChangeTokenByID, id)
+	return err
+}
+
+const DeleteEmailChangeTokensByUserID = `-- name: DeleteEmailChangeTokensByUserID :exec
+DELETE FROM email_change_tokens
+WHERE user_id = $1
+`
+
+func (q *Queries) DeleteEmailChangeTokensByUserID(ctx context.Context, userID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, DeleteEmailChangeTokensByUserID, userID)
+	return err
 }
 
 const DeleteInvitationToken = `-- name: DeleteInvitationToken :exec
@@ -126,6 +172,25 @@ WHERE id = $1
 func (q *Queries) DeleteUser(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, DeleteUser, id)
 	return err
+}
+
+const GetEmailChangeTokenByHash = `-- name: GetEmailChangeTokenByHash :one
+SELECT id, user_id, new_email, token_hash, expires_at, created_at FROM email_change_tokens
+WHERE token_hash = $1
+`
+
+func (q *Queries) GetEmailChangeTokenByHash(ctx context.Context, tokenHash string) (*EmailChangeToken, error) {
+	row := q.db.QueryRow(ctx, GetEmailChangeTokenByHash, tokenHash)
+	var i EmailChangeToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.NewEmail,
+		&i.TokenHash,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+	)
+	return &i, err
 }
 
 const GetInvitationByTokenHash = `-- name: GetInvitationByTokenHash :one
@@ -237,6 +302,22 @@ func (q *Queries) InviteUserToTenant(ctx context.Context, arg *InviteUserToTenan
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const UpdateUserEmail = `-- name: UpdateUserEmail :exec
+UPDATE users
+SET email = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2
+`
+
+type UpdateUserEmailParams struct {
+	Email string
+	ID    pgtype.UUID
+}
+
+func (q *Queries) UpdateUserEmail(ctx context.Context, arg *UpdateUserEmailParams) error {
+	_, err := q.db.Exec(ctx, UpdateUserEmail, arg.Email, arg.ID)
+	return err
 }
 
 const UpdateUserName = `-- name: UpdateUserName :exec

@@ -98,18 +98,6 @@ type MeResponse struct {
 	UserRole   string `json:"user_role"`
 }
 
-type UpdateMeRequest struct {
-	Name string `json:"name"`
-}
-
-func (r *UpdateMeRequest) Validate() error {
-	r.Name = strings.TrimSpace(r.Name)
-	if r.Name == "" {
-		return fmt.Errorf("name is required")
-	}
-	return nil
-}
-
 type UsersHandler struct {
 	dbConn                  *pgxpool.Pool
 	q                       *queries.Queries
@@ -757,6 +745,18 @@ func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responder.RespondWithJSON(w, http.StatusOK, response)
+}
+
+type UpdateMeRequest struct {
+	Name string `json:"name"`
+}
+
+func (r *UpdateMeRequest) Validate() error {
+	r.Name = strings.TrimSpace(r.Name)
+	if r.Name == "" {
+		return fmt.Errorf("name is required")
+	}
+	return nil
 }
 
 func (h *UsersHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {

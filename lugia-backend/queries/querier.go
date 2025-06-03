@@ -13,11 +13,14 @@ import (
 type Querier interface {
 	ActivateInvitedUser(ctx context.Context, arg *ActivateInvitedUserParams) error
 	CountUsersByTenantID(ctx context.Context, arg *CountUsersByTenantIDParams) (int64, error)
+	CreateEmailChangeToken(ctx context.Context, arg *CreateEmailChangeTokenParams) error
 	CreateInvitationToken(ctx context.Context, arg *CreateInvitationTokenParams) (*InvitationToken, error)
 	CreatePasswordResetToken(ctx context.Context, arg *CreatePasswordResetTokenParams) (*PasswordResetToken, error)
 	CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error)
 	CreateTenant(ctx context.Context, arg *CreateTenantParams) (*Tenant, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
+	DeleteEmailChangeTokenByID(ctx context.Context, id pgtype.UUID) error
+	DeleteEmailChangeTokensByUserID(ctx context.Context, userID pgtype.UUID) error
 	DeleteExpiredRefreshTokens(ctx context.Context) error
 	DeleteInvitationToken(ctx context.Context, id pgtype.UUID) error
 	DeleteInvitationTokensByUserIDAndTenantID(ctx context.Context, arg *DeleteInvitationTokensByUserIDAndTenantIDParams) error
@@ -25,6 +28,7 @@ type Querier interface {
 	DeleteRefreshTokensByUserID(ctx context.Context, userID pgtype.UUID) error
 	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	ExistsUserWithEmail(ctx context.Context, email string) (bool, error)
+	GetEmailChangeTokenByHash(ctx context.Context, tokenHash string) (*EmailChangeToken, error)
 	GetInvitationByTokenHash(ctx context.Context, tokenHash string) (*InvitationToken, error)
 	GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error)
 	GetRefreshTokenByJTI(ctx context.Context, jti pgtype.UUID) (*RefreshToken, error)
@@ -37,6 +41,7 @@ type Querier interface {
 	MarkPasswordResetTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error
 	UpdateRefreshTokenLastUsed(ctx context.Context, jti pgtype.UUID) error
+	UpdateUserEmail(ctx context.Context, arg *UpdateUserEmailParams) error
 	UpdateUserName(ctx context.Context, arg *UpdateUserNameParams) error
 	UpdateUserPassword(ctx context.Context, arg *UpdateUserPasswordParams) error
 	UpdateUserRole(ctx context.Context, arg *UpdateUserRoleParams) error

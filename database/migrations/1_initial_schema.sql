@@ -67,7 +67,6 @@ CREATE TABLE invitation_tokens (
 CREATE INDEX idx_invitation_tokens_token_hash ON invitation_tokens(token_hash);
 CREATE INDEX idx_invitation_tokens_tenant_id_user_id ON invitation_tokens(tenant_id, user_id);
 
-
 CREATE TABLE email_change_tokens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

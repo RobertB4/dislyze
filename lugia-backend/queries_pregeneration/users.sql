@@ -69,3 +69,28 @@ WHERE id = $2;
 UPDATE users
 SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
 WHERE id = $2;
+
+-- name: CreateEmailChangeToken :exec
+INSERT INTO email_change_tokens (
+    user_id,
+    new_email,
+    token_hash,
+    expires_at
+) VALUES ($1, $2, $3, $4);
+
+-- name: GetEmailChangeTokenByHash :one
+SELECT * FROM email_change_tokens
+WHERE token_hash = $1;
+
+-- name: DeleteEmailChangeTokensByUserID :exec
+DELETE FROM email_change_tokens
+WHERE user_id = $1;
+
+-- name: DeleteEmailChangeTokenByID :exec
+DELETE FROM email_change_tokens
+WHERE id = $1;
+
+-- name: UpdateUserEmail :exec
+UPDATE users
+SET email = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2;
