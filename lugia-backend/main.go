@@ -52,9 +52,10 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	authRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, rateLimit)
 	resendInviteRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, 1)
 	deleteUserRateLimiter := ratelimit.NewRateLimiter(1*time.Minute, 10)
+	changeEmailRateLimiter := ratelimit.NewRateLimiter(30*time.Minute, 1)
 
 	authHandler := handlers.NewAuthHandler(dbConn, env, authRateLimiter, queries)
-	usersHandler := handlers.NewUsersHandler(dbConn, queries, env, resendInviteRateLimiter, deleteUserRateLimiter)
+	usersHandler := handlers.NewUsersHandler(dbConn, queries, env, resendInviteRateLimiter, deleteUserRateLimiter, changeEmailRateLimiter)
 
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/signup", authHandler.Signup)
@@ -64,6 +65,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		r.Post("/forgot-password", authHandler.ForgotPassword)
 		r.Post("/verify-reset-token", authHandler.VerifyResetToken)
 		r.Post("/reset-password", authHandler.ResetPassword)
+		r.Get("/verify-change-email", authHandler.VerifyChangeEmail)
 	})
 
 	r.Group(func(r chi.Router) {
@@ -72,6 +74,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		r.Get("/me", usersHandler.GetMe)
 		r.Patch("/me", usersHandler.UpdateMe)
 		r.Post("/me/change-password", usersHandler.ChangePassword)
+		r.Post("/me/change-email", usersHandler.ChangeEmail)
 
 		r.Route("/users", func(r chi.Router) {
 			r.Use(middleware.RequireAdmin)
