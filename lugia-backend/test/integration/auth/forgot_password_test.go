@@ -91,28 +91,7 @@ func TestForgotPasswordValidation(t *testing.T) {
 	}
 }
 
-type SendgridMockEmailContent struct {
-	Type  string `json:"type"`
-	Value string `json:"value"`
-}
-
-type SendgridMockTo struct {
-	Email string `json:"email"`
-	Name  string `json:"name"`
-}
-
-type SendgridMockPersonalization struct {
-	To      []SendgridMockTo `json:"to"`
-	Subject string           `json:"subject"`
-}
-
-type SendgridMockEmail struct {
-	Personalizations []SendgridMockPersonalization `json:"personalizations"`
-	Content          []SendgridMockEmailContent    `json:"content"`
-	SentAt           int64                         `json:"sent_at"`
-}
-
-func getLatestEmailFromSendgridMock(t *testing.T, expectedRecipientEmail string) (*SendgridMockEmail, error) {
+func getLatestEmailFromSendgridMock(t *testing.T, expectedRecipientEmail string) (*setup.SendgridMockEmail, error) {
 	t.Helper()
 	sendgridAPIURL := os.Getenv("SENDGRID_API_URL")
 	sendgridAPIKey := os.Getenv("SENDGRID_API_KEY")
@@ -144,7 +123,7 @@ func getLatestEmailFromSendgridMock(t *testing.T, expectedRecipientEmail string)
 			continue
 		}
 
-		var emails []SendgridMockEmail
+		var emails []setup.SendgridMockEmail
 		if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
 			lastErr = fmt.Errorf("failed to decode emails from sendgrid-mock: %w", err)
 			time.Sleep(500 * time.Millisecond)
@@ -166,7 +145,7 @@ func getLatestEmailFromSendgridMock(t *testing.T, expectedRecipientEmail string)
 	return nil, fmt.Errorf("failed to get expected email for %s after multiple retries: %w", expectedRecipientEmail, lastErr)
 }
 
-func extractResetTokenFromEmail(t *testing.T, email *SendgridMockEmail) (string, error) {
+func extractResetTokenFromEmail(t *testing.T, email *setup.SendgridMockEmail) (string, error) {
 	t.Helper()
 	for _, content := range email.Content {
 		if content.Type == "text/html" {

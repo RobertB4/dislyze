@@ -17,6 +17,27 @@ const (
 	BaseURL = "http://lugia-backend:13001"
 )
 
+type SendgridMockEmailContent struct {
+	Type  string `json:"type"`
+	Value string `json:"value"`
+}
+
+type SendgridMockTo struct {
+	Email string `json:"email"`
+	Name  string `json:"name"`
+}
+
+type SendgridMockPersonalization struct {
+	To      []SendgridMockTo `json:"to"`
+	Subject string           `json:"subject"`
+}
+
+type SendgridMockEmail struct {
+	Personalizations []SendgridMockPersonalization `json:"personalizations"`
+	Content          []SendgridMockEmailContent    `json:"content"`
+	SentAt           int64                         `json:"sent_at"`
+}
+
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
