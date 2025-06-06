@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -77,7 +76,6 @@ func (r *InviteUserRequest) Validate() error {
 	}
 	return nil
 }
-
 
 type GetUsersResponse struct {
 	Users      []User                        `json:"users"`
@@ -394,7 +392,7 @@ func (r *UpdateUserRoleRequest) Validate() error {
 
 func (h *UsersHandler) UpdateUserPermissions(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	userIDStr := chi.URLParam(r, "userID")
+	userIDStr := r.PathValue("userID")
 	if userIDStr == "" {
 		responder.RespondWithError(w, errlib.New(fmt.Errorf("user ID is required"), http.StatusBadRequest, ""))
 		return
@@ -459,7 +457,7 @@ func (h *UsersHandler) UpdateUserPermissions(w http.ResponseWriter, r *http.Requ
 func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	targetUserIDStr := chi.URLParam(r, "userID")
+	targetUserIDStr := r.PathValue("userID")
 
 	if !h.resendInviteRateLimiter.Allow(targetUserIDStr) {
 		appErr := errlib.New(fmt.Errorf("rate limit exceeded for user %s resend invite", targetUserIDStr), http.StatusTooManyRequests, "招待メールの再送信は、ユーザーごとに5分間に1回のみ可能です。しばらくしてから再度お試しください。")
@@ -618,7 +616,7 @@ func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
 func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	targetUserIDStr := chi.URLParam(r, "userID")
+	targetUserIDStr := r.PathValue("userID")
 
 	if !h.deleteUserRateLimiter.Allow(targetUserIDStr) {
 		appErr := errlib.New(fmt.Errorf("rate limit exceeded for user %s delete", targetUserIDStr), http.StatusTooManyRequests, "ユーザー削除の操作は制限されています。しばらくしてから再度お試しください。")
