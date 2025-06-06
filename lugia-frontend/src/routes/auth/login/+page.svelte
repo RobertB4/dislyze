@@ -42,9 +42,11 @@
 					credentials: "include"
 				});
 
-				const data = (await response.json()) as { error?: string };
-				if (data.error) {
-					throw new KnownError(data.error);
+				if (!response.ok) {
+					const data = (await response.json()) as { error?: string };
+					if (data.error) {
+						throw new KnownError(data.error);
+					}
 				}
 
 				safeGoto(pageData.redirectTo);

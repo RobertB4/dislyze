@@ -27,7 +27,6 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 )
 
-
 type SignupRequest struct {
 	CompanyName     string `json:"company_name"`
 	UserName        string `json:"user_name"`
@@ -36,27 +35,13 @@ type SignupRequest struct {
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-type SignupResponse struct {
-	Success bool   `json:"success"`
-	Error   string `json:"error,omitempty"`
-}
-
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-type LoginResponse struct {
-	Success bool   `json:"success"`
-	Error   string `json:"error,omitempty"`
-}
-
 type ForgotPasswordRequest struct {
 	Email string `json:"email"`
-}
-
-type ForgotPasswordResponse struct {
-	Success bool `json:"success"`
 }
 
 type AuthHandler struct {
@@ -223,7 +208,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   7 * 24 * 60 * 60, // 7 days
 	})
 
-	responder.RespondWithJSON(w, http.StatusOK, SignupResponse{Success: true})
+	w.WriteHeader(http.StatusOK)
 }
 
 func (r *LoginRequest) Validate() error {
@@ -359,7 +344,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   7 * 24 * 60 * 60, // 7 days
 	})
 
-	responder.RespondWithJSON(w, http.StatusOK, LoginResponse{Success: true})
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -383,7 +368,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 	})
 
-	responder.RespondWithJSON(w, http.StatusOK, nil)
+	w.WriteHeader(http.StatusOK)
 }
 
 type AcceptInviteRequest struct {
@@ -547,7 +532,7 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responder.RespondWithJSON(w, http.StatusOK, map[string]bool{"success": true})
+	w.WriteHeader(http.StatusOK)
 }
 
 func (r *ForgotPasswordRequest) Validate() error {
@@ -567,7 +552,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	if !h.rateLimiter.Allow(r.RemoteAddr) {
 		internalErr := errlib.New(fmt.Errorf("rate limit exceeded for forgot password: %s", r.RemoteAddr), http.StatusTooManyRequests, "Rate limit for forgot password")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
@@ -575,14 +560,14 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		internalErr := errlib.New(err, http.StatusBadRequest, "Failed to decode forgot password request body")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusBadRequest, ForgotPasswordResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
 		return
 	}
 
 	if err := req.Validate(); err != nil {
 		internalErr := errlib.New(err, http.StatusBadRequest, "Forgot password validation failed")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusBadRequest, ForgotPasswordResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
 		return
 	}
 
@@ -594,7 +579,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 			internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: Failed to get user by email %s", req.Email))
 			errlib.LogError(internalErr)
 		}
-		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
@@ -602,7 +587,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		internalErr := errlib.New(err, http.StatusInternalServerError, "ForgotPassword: Failed to generate reset token UUID")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 	resetToken := resetTokenUUID.String()
@@ -616,7 +601,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	if txErr != nil {
 		internalErr := errlib.New(txErr, http.StatusInternalServerError, "ForgotPassword: Failed to begin transaction")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 	defer func() {
@@ -630,7 +615,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	if err := qtx.DeletePasswordResetTokenByUserID(ctx, user.ID); err != nil && !errlib.Is(err, pgx.ErrNoRows) {
 		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: Failed to delete existing password reset token for user %s", user.ID))
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
@@ -642,14 +627,14 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	if createErr != nil {
 		internalErr := errlib.New(createErr, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: Failed to create password reset token for user %s", user.ID))
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
 	if commitErr := tx.Commit(ctx); commitErr != nil {
 		internalErr := errlib.New(commitErr, http.StatusInternalServerError, "ForgotPassword: Failed to commit transaction")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
@@ -676,7 +661,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: failed to marshal SendGrid request body for %s", req.Email))
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
@@ -687,20 +672,20 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: SendGrid API call failed for %s", req.Email))
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
 	if sgResponse.StatusCode < 200 || sgResponse.StatusCode >= 300 {
 		internalErr := errlib.New(fmt.Errorf("SendGrid API returned error status code: %d, Body: %s", sgResponse.StatusCode, sgResponse.Body), http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: SendGrid API error for %s", req.Email))
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
 	log.Printf("Password reset email successfully sent via SendGrid to user with id: %s", user.ID)
 
-	responder.RespondWithJSON(w, http.StatusOK, ForgotPasswordResponse{Success: true})
+	w.WriteHeader(http.StatusOK)
 }
 
 type VerifyResetTokenRequest struct {
@@ -715,11 +700,6 @@ func (r *VerifyResetTokenRequest) Validate() error {
 	return nil
 }
 
-type VerifyResetTokenResponse struct {
-	Success bool   `json:"success"`
-	Email   string `json:"email,omitempty"`
-}
-
 func (h *AuthHandler) VerifyResetToken(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -727,14 +707,14 @@ func (h *AuthHandler) VerifyResetToken(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		internalErr := errlib.New(err, http.StatusBadRequest, "Failed to decode verify reset token request body")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusBadRequest, VerifyResetTokenResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
 		return
 	}
 
 	if err := req.Validate(); err != nil {
 		internalErr := errlib.New(err, http.StatusBadRequest, "Verify reset token validation failed")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusBadRequest, VerifyResetTokenResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
 		return
 	}
 
@@ -746,26 +726,26 @@ func (h *AuthHandler) VerifyResetToken(w http.ResponseWriter, r *http.Request) {
 		if errlib.Is(err, pgx.ErrNoRows) {
 			internalErr := errlib.New(err, http.StatusBadRequest, fmt.Sprintf("VerifyResetToken: Token hash not found: %s", hashedTokenStr))
 			errlib.LogError(internalErr)
-			responder.RespondWithJSON(w, http.StatusBadRequest, VerifyResetTokenResponse{Success: false})
+			responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
 			return
 		}
 		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("VerifyResetToken: Failed to query password reset token by hash %s", hashedTokenStr))
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusInternalServerError, VerifyResetTokenResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
 		return
 	}
 
 	if tokenRecord.UsedAt.Valid {
 		internalErr := errlib.New(fmt.Errorf("VerifyResetToken: Token ID %s already used at %v", tokenRecord.ID, tokenRecord.UsedAt.Time), http.StatusBadRequest, "Token already used")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusBadRequest, VerifyResetTokenResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
 		return
 	}
 
 	if time.Now().After(tokenRecord.ExpiresAt.Time) {
 		internalErr := errlib.New(fmt.Errorf("VerifyResetToken: Token ID %s expired at %v", tokenRecord.ID, tokenRecord.ExpiresAt.Time), http.StatusBadRequest, "Token expired")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusBadRequest, VerifyResetTokenResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
 		return
 	}
 
@@ -774,16 +754,16 @@ func (h *AuthHandler) VerifyResetToken(w http.ResponseWriter, r *http.Request) {
 		if errlib.Is(err, pgx.ErrNoRows) {
 			internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("VerifyResetToken: User ID %s for valid token %s not found", tokenRecord.UserID, tokenRecord.ID))
 			errlib.LogError(internalErr)
-			responder.RespondWithJSON(w, http.StatusInternalServerError, VerifyResetTokenResponse{Success: false})
+			responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
 			return
 		}
 		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("VerifyResetToken: Failed to get user email for user ID %s", tokenRecord.UserID))
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusInternalServerError, VerifyResetTokenResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
 		return
 	}
 
-	responder.RespondWithJSON(w, http.StatusOK, VerifyResetTokenResponse{Success: true, Email: user.Email})
+	responder.RespondWithJSON(w, http.StatusOK, map[string]string{"email": user.Email})
 }
 
 type ResetPasswordRequest struct {
@@ -812,10 +792,6 @@ func (r *ResetPasswordRequest) Validate() error {
 	return nil
 }
 
-type ResetPasswordResponse struct {
-	Success bool `json:"success"`
-}
-
 func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -823,14 +799,14 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		internalErr := errlib.New(err, http.StatusBadRequest, "Failed to decode reset password request body")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusBadRequest, ResetPasswordResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
 		return
 	}
 
 	if err := req.Validate(); err != nil {
 		internalErr := errlib.New(err, http.StatusBadRequest, "Reset password validation failed")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusBadRequest, ResetPasswordResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
 		return
 	}
 
@@ -842,26 +818,26 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		if errlib.Is(err, pgx.ErrNoRows) {
 			internalErr := errlib.New(err, http.StatusBadRequest, fmt.Sprintf("ResetPassword: Token hash not found: %s", hashedTokenStr))
 			errlib.LogError(internalErr)
-			responder.RespondWithJSON(w, http.StatusBadRequest, ResetPasswordResponse{Success: false})
+			responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
 			return
 		}
 		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to query password reset token by hash %s", hashedTokenStr))
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusInternalServerError, ResetPasswordResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
 		return
 	}
 
 	if tokenRecord.UsedAt.Valid {
 		internalErr := errlib.New(fmt.Errorf("ResetPassword: Token ID %s already used at %v", tokenRecord.ID, tokenRecord.UsedAt.Time), http.StatusBadRequest, "Token already used")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusBadRequest, ResetPasswordResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
 		return
 	}
 
 	if time.Now().After(tokenRecord.ExpiresAt.Time) {
 		internalErr := errlib.New(fmt.Errorf("ResetPassword: Token ID %s expired at %v", tokenRecord.ID, tokenRecord.ExpiresAt.Time), http.StatusBadRequest, "Token expired")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusBadRequest, ResetPasswordResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
 		return
 	}
 
@@ -869,7 +845,7 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		internalErr := errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to hash new password")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusInternalServerError, ResetPasswordResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
 		return
 	}
 
@@ -877,7 +853,7 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		internalErr := errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to begin transaction")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusInternalServerError, ResetPasswordResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
 		return
 	}
 	defer func() {
@@ -894,14 +870,14 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}); err != nil {
 		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to update password for user ID %s", tokenRecord.UserID))
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusInternalServerError, ResetPasswordResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
 		return
 	}
 
 	if err := qtx.MarkPasswordResetTokenAsUsed(ctx, tokenRecord.ID); err != nil {
 		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to mark reset token ID %s as used", tokenRecord.ID))
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusInternalServerError, ResetPasswordResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
 		return
 	}
 
@@ -912,9 +888,9 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	if err := tx.Commit(ctx); err != nil {
 		internalErr := errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to commit transaction")
 		errlib.LogError(internalErr)
-		responder.RespondWithJSON(w, http.StatusInternalServerError, ResetPasswordResponse{Success: false})
+		responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
 		return
 	}
 
-	responder.RespondWithJSON(w, http.StatusOK, ResetPasswordResponse{Success: true})
+	w.WriteHeader(http.StatusOK)
 }

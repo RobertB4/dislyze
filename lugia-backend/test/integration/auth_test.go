@@ -29,42 +29,18 @@ type SignupRequest struct {
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-type SignupResponse struct {
-	Success bool   `json:"success"`
-	Error   string `json:"error,omitempty"`
-}
-
-type LoginResponse struct {
-	Success bool   `json:"success"`
-	Error   string `json:"error,omitempty"`
-}
-
 type ForgotPasswordRequest struct {
 	Email string `json:"email"`
-}
-type ForgotPasswordResponse struct {
-	Success bool `json:"success"`
 }
 
 type VerifyResetTokenRequest struct {
 	Token string `json:"token"`
 }
 
-type VerifyResetTokenResponse struct {
-	Success bool   `json:"success"`
-	Email   string `json:"email,omitempty"`
-}
-
 type ResetPasswordRequest struct {
 	Token           string `json:"token"`
 	Password        string `json:"password"`
 	PasswordConfirm string `json:"password_confirm"`
-}
-
-// ResetPasswordResponse defines the structure for the reset password response body.
-// Success: Indicates whether the password reset operation was successful.
-type ResetPasswordResponse struct {
-	Success bool `json:"success"`
 }
 
 func TestSignup(t *testing.T) {
@@ -172,11 +148,6 @@ func TestSignup(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
 			if tt.expectedStatus == http.StatusOK {
-				var response SignupResponse
-				err = json.NewDecoder(resp.Body).Decode(&response)
-				assert.NoError(t, err)
-				assert.True(t, response.Success, "Expected success to be true for OK status")
-				assert.Empty(t, response.Error, "Expected error to be empty for OK status")
 
 				cookies := resp.Cookies()
 				assert.NotEmpty(t, cookies, "Expected cookies in response for successful signup")
@@ -242,12 +213,6 @@ func TestSignupDuplicateEmail(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var successResponse SignupResponse
-	err = json.NewDecoder(resp.Body).Decode(&successResponse)
-	assert.NoError(t, err)
-	assert.True(t, successResponse.Success)
-	assert.Empty(t, successResponse.Error)
-
 	cookies := resp.Cookies()
 	assert.NotEmpty(t, cookies, "Expected cookies for initial successful signup")
 	var accessToken, refreshToken *http.Cookie
@@ -275,11 +240,10 @@ func TestSignupDuplicateEmail(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, resp2.StatusCode)
 
-	var errorResponse SignupResponse
+	var errorResponse map[string]any
 	err = json.NewDecoder(resp2.Body).Decode(&errorResponse)
 	assert.NoError(t, err)
-	assert.False(t, errorResponse.Success)
-	assert.Equal(t, "このメールアドレスは既に使用されています。", errorResponse.Error)
+	assert.Equal(t, "このメールアドレスは既に使用されています。", errorResponse["error"])
 
 	// Expect no cookies for the failed duplicate email signup
 	cookies2 := resp2.Cookies()
@@ -359,11 +323,6 @@ func TestLogin(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
 			if tt.expectedStatus == http.StatusOK {
-				var response LoginResponse
-				err = json.NewDecoder(resp.Body).Decode(&response)
-				assert.NoError(t, err)
-				assert.True(t, response.Success, "Expected success to be true for OK status")
-				assert.Empty(t, response.Error, "Expected error to be empty for OK status")
 
 				cookies := resp.Cookies()
 				assert.NotEmpty(t, cookies, "Expected cookies in response for successful login")
@@ -656,10 +615,6 @@ func TestForgotPassword(t *testing.T) {
 		}()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		var apiResp ForgotPasswordResponse
-		err = json.NewDecoder(resp.Body).Decode(&apiResp)
-		assert.NoError(t, err)
-		assert.True(t, apiResp.Success)
 
 		email, err := getLatestEmailFromSendgridMock(t, testUser.Email)
 		assert.NoError(t, err, "Failed to get email from SendGrid mock")
@@ -716,10 +671,6 @@ func TestForgotPassword(t *testing.T) {
 		}()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		var apiResp ForgotPasswordResponse
-		err = json.NewDecoder(resp.Body).Decode(&apiResp)
-		assert.NoError(t, err)
-		assert.True(t, apiResp.Success)
 	})
 
 	t.Run("TestForgotPassword_InvalidEmailFormat", func(t *testing.T) {
@@ -740,10 +691,6 @@ func TestForgotPassword(t *testing.T) {
 		}()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-		var apiResp ForgotPasswordResponse
-		err = json.NewDecoder(resp.Body).Decode(&apiResp)
-		assert.NoError(t, err)
-		assert.False(t, apiResp.Success, "Expected success to be false for invalid email format")
 	})
 
 	t.Run("TestForgotPassword_EmptyEmail", func(t *testing.T) {
@@ -764,10 +711,6 @@ func TestForgotPassword(t *testing.T) {
 		}()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-		var apiResp ForgotPasswordResponse
-		err = json.NewDecoder(resp.Body).Decode(&apiResp)
-		assert.NoError(t, err)
-		assert.False(t, apiResp.Success, "Expected success to be false for empty email")
 	})
 
 	t.Run("TestForgotPassword_MultipleRequestsForSameUser", func(t *testing.T) {
@@ -926,11 +869,10 @@ func TestVerifyResetToken(t *testing.T) {
 		}()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		var apiResp VerifyResetTokenResponse
+		var apiResp map[string]string
 		err = json.NewDecoder(resp.Body).Decode(&apiResp)
 		assert.NoError(t, err)
-		assert.True(t, apiResp.Success)
-		assert.Equal(t, testUser.Email, apiResp.Email)
+		assert.Equal(t, testUser.Email, apiResp["email"])
 
 		// Verify DB token is not marked as used
 		hash := sha256.Sum256([]byte(rawToken))
@@ -959,11 +901,6 @@ func TestVerifyResetToken(t *testing.T) {
 		}()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-		var apiResp VerifyResetTokenResponse
-		err = json.NewDecoder(resp.Body).Decode(&apiResp)
-		assert.NoError(t, err)
-		assert.False(t, apiResp.Success)
-		assert.Empty(t, apiResp.Email)
 	})
 
 	t.Run("TestVerifyResetToken_ExpiredToken", func(t *testing.T) {
@@ -993,11 +930,6 @@ func TestVerifyResetToken(t *testing.T) {
 		}()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-		var apiResp VerifyResetTokenResponse
-		err = json.NewDecoder(resp.Body).Decode(&apiResp)
-		assert.NoError(t, err)
-		assert.False(t, apiResp.Success)
-		assert.Empty(t, apiResp.Email)
 	})
 
 	t.Run("TestVerifyResetToken_AlreadyUsedToken", func(t *testing.T) {
@@ -1027,11 +959,6 @@ func TestVerifyResetToken(t *testing.T) {
 		}()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-		var apiResp VerifyResetTokenResponse
-		err = json.NewDecoder(resp.Body).Decode(&apiResp)
-		assert.NoError(t, err)
-		assert.False(t, apiResp.Success)
-		assert.Empty(t, apiResp.Email)
 	})
 
 	t.Run("TestVerifyResetToken_EmptyToken", func(t *testing.T) {
@@ -1052,11 +979,6 @@ func TestVerifyResetToken(t *testing.T) {
 		}()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-		var apiResp VerifyResetTokenResponse
-		err = json.NewDecoder(resp.Body).Decode(&apiResp)
-		assert.NoError(t, err)
-		assert.False(t, apiResp.Success)
-		assert.Empty(t, apiResp.Email)
 	})
 }
 
@@ -1123,10 +1045,6 @@ func TestResetPassword(t *testing.T) {
 		}()
 
 		assert.Equal(t, http.StatusOK, resetResp.StatusCode, "Reset password should succeed")
-		var apiResp ResetPasswordResponse
-		err = json.NewDecoder(resetResp.Body).Decode(&apiResp)
-		assert.NoError(t, err)
-		assert.True(t, apiResp.Success, "API success should be true for successful password reset")
 
 		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
 		defer func() {

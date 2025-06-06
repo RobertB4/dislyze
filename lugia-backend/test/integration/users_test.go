@@ -534,11 +534,6 @@ func TestResendInvite_Integration(t *testing.T) {
 				acceptInviteBodyBytes, _ := io.ReadAll(acceptInviteResp.Body)
 				assert.Equal(t, http.StatusOK, acceptInviteResp.StatusCode, "AcceptInvite request failed. Body: %s", string(acceptInviteBodyBytes))
 
-				var acceptInviteSuccessResp map[string]bool
-				err = json.Unmarshal(acceptInviteBodyBytes, &acceptInviteSuccessResp)
-				assert.NoError(t, err, "Failed to decode AcceptInvite response")
-				assert.True(t, acceptInviteSuccessResp["success"], "AcceptInvite response success field was false")
-
 				var userStatus string
 				err = pool.QueryRow(ctx, "SELECT status FROM users WHERE id = $1", targetUser.UserID).Scan(&userStatus)
 				assert.NoError(t, err, "Failed to query user status after invite acceptance")
