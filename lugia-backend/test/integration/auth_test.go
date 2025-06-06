@@ -590,8 +590,7 @@ func attemptLogin(t *testing.T, email string, password string) *http.Response {
 
 func TestForgotPassword(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -815,8 +814,7 @@ func TestForgotPassword(t *testing.T) {
 
 func TestVerifyResetToken(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -984,8 +982,7 @@ func TestVerifyResetToken(t *testing.T) {
 
 func TestResetPassword(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}

@@ -26,8 +26,7 @@ import (
 
 func TestGetUsers_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	tests := []struct {
@@ -167,8 +166,7 @@ func TestInviteUser_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 
 	type inviteUserTestCase struct {
 		name             string
@@ -299,8 +297,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 
 	const (
 		plainValidTokenForAccept       = "26U7PPxCPCFwWifs8gMD73Gq4tLIBlKBgroHOpkb1bQ"
@@ -433,8 +430,7 @@ func extractInvitationTokenFromEmail(t *testing.T, email *SendgridMockEmail) (st
 
 func TestResendInvite_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -732,8 +728,7 @@ func TestResendInvite_Integration(t *testing.T) {
 
 func TestGetMe_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -864,8 +859,7 @@ func CheckPasswordResetTokensExistForUser(t *testing.T, pool *pgxpool.Pool, user
 
 func TestDeleteUser_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -905,8 +899,7 @@ func TestDeleteUser_Integration(t *testing.T) {
 			expectedStatus: http.StatusForbidden, // Middleware RequireAdmin should block this
 			preTestSetup: func(t *testing.T) {
 				// Reset DB because alpha_editor was deleted in a prior test case
-				setup.CleanupDB(t, pool)
-				setup.SeedDB(t, pool)
+				setup.ResetAndSeedDB(t, pool)
 			},
 		},
 		{
@@ -1011,8 +1004,7 @@ func TestDeleteUser_Integration(t *testing.T) {
 
 func TestUpdateUserPermissions_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -1189,8 +1181,7 @@ func TestUpdateUserPermissions_Integration(t *testing.T) {
 
 func TestGetUsersPagination_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Use alpha_admin who has access to 6 users in Tenant A
@@ -1336,8 +1327,7 @@ func TestGetUsersPagination_Integration(t *testing.T) {
 
 func TestGetUsersSearch_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Use alpha_admin who has access to 6 users in Tenant A
@@ -1507,8 +1497,7 @@ func TestGetUsersSearch_Integration(t *testing.T) {
 
 func TestGetUsersSearchWithPagination_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Use alpha_admin who has access to 6 users in Tenant A
@@ -1630,8 +1619,7 @@ func TestGetUsersSearchWithPagination_Integration(t *testing.T) {
 
 func TestGetUsersInvalidParameters_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Use alpha_admin who has access to users
@@ -1758,8 +1746,7 @@ func TestGetUsersInvalidParameters_Integration(t *testing.T) {
 
 func TestUpdateMe_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -1887,8 +1874,7 @@ func TestUpdateMe_Integration(t *testing.T) {
 
 func TestChangePassword_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	type ChangePasswordRequest struct {
@@ -2041,8 +2027,7 @@ func TestChangePassword_Integration(t *testing.T) {
 
 func TestChangePasswordSessionInvalidation_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -2153,8 +2138,7 @@ func TestChangePasswordSessionInvalidation_Integration(t *testing.T) {
 
 func TestChangeEmail_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	type ChangeEmailRequest struct {
@@ -2290,8 +2274,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 
 func TestChangeEmailRateLimit_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Use a dedicated user for rate limit testing to avoid interfering with other tests
@@ -2337,8 +2320,7 @@ func TestChangeEmailRateLimit_Integration(t *testing.T) {
 
 func TestChangeEmailAuthentication_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -2389,8 +2371,7 @@ func TestChangeEmailAuthentication_Integration(t *testing.T) {
 
 func TestVerifyChangeEmail_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Helper function to create deterministic test tokens
@@ -2639,8 +2620,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 
 func TestUpdateTenantName_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	tests := []struct {
@@ -2775,8 +2755,7 @@ func TestUpdateTenantName_Integration(t *testing.T) {
 // Security Tests for Profile Management
 func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Login as alpha_admin
@@ -2853,8 +2832,7 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 
 func TestSecurityXSSProtection_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Login as alpha_admin
@@ -2931,8 +2909,7 @@ func TestSecurityXSSProtection_Integration(t *testing.T) {
 
 func TestSecurityHorizontalPrivilegeEscalation_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Login as alpha_editor (normal user)
@@ -3000,8 +2977,7 @@ func TestSecurityHorizontalPrivilegeEscalation_Integration(t *testing.T) {
 
 func TestSecurityJWTSecurity_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	setup.SeedDB(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Login as alpha_editor to get valid access token

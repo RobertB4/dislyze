@@ -63,22 +63,28 @@ func CloseDB(pool *pgxpool.Pool) {
 	}
 }
 
-func SeedDB(t *testing.T, pool *pgxpool.Pool) {
+func seedDB(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 
-	t.Log("SeedDB: Starting database seeding")
+	t.Log("seedDB: Starting database seeding")
 
 	seedSQL, err := os.ReadFile("/database/seed.sql")
 	if err != nil {
-		t.Fatalf("SeedDB: Failed to read seed.sql: %v", err)
+		t.Fatalf("seedDB: Failed to read seed.sql: %v", err)
 	}
 
 	_, err = pool.Exec(context.Background(), string(seedSQL))
 	if err != nil {
-		t.Fatalf("SeedDB: Failed to execute seed.sql: %v", err)
+		t.Fatalf("seedDB: Failed to execute seed.sql: %v", err)
 	}
 
-	t.Log("SeedDB: Database seeding completed successfully")
+	t.Log("seedDB: Database seeding completed successfully")
+}
+
+func ResetAndSeedDB(t *testing.T, pool *pgxpool.Pool) {
+	t.Helper()
+	CleanupDB(t, pool)
+	seedDB(t, pool)
 }
 
 func LoginUserAndGetTokens(t *testing.T, email string, password string) (string, string) {
