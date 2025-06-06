@@ -2550,13 +2550,14 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, loginResp.StatusCode, "Should be able to login with new email")
 
-		// Verify token was deleted
-		var tokenCount int
+		// Verify token was marked as used
+		var usedAt pgtype.Timestamptz
 		err = pool.QueryRow(ctx,
-			"SELECT COUNT(*) FROM email_change_tokens WHERE user_id = $1",
-			testUser.UserID).Scan(&tokenCount)
+			"SELECT used_at FROM email_change_tokens WHERE token_hash = $1",
+			successHash).Scan(&usedAt)
 		assert.NoError(t, err)
-		assert.Equal(t, 0, tokenCount, "Email change token should be deleted after verification")
+		assert.True(t, usedAt.Valid, "Email change token should be marked as used")
+		assert.True(t, usedAt.Time.After(time.Now().Add(-1*time.Minute)), "used_at should be recent")
 
 		// Note: We expect 1 refresh token here because the login above creates a new one
 		// The VerifyChangeEmail endpoint should have deleted all old tokens, and the login creates a fresh one
@@ -2599,7 +2600,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, verifyResp1.StatusCode, "First verification should succeed")
 
-		// Second verification should fail (token deleted)
+		// Second verification should fail (token already used)
 		verifyReq2, err := http.NewRequest("GET", verifyURL, nil)
 		assert.NoError(t, err)
 

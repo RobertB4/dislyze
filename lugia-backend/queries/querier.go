@@ -19,10 +19,8 @@ type Querier interface {
 	CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error)
 	CreateTenant(ctx context.Context, arg *CreateTenantParams) (*Tenant, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
-	DeleteEmailChangeTokenByID(ctx context.Context, id pgtype.UUID) error
 	DeleteEmailChangeTokensByUserID(ctx context.Context, userID pgtype.UUID) error
 	DeleteExpiredRefreshTokens(ctx context.Context) error
-	DeleteInvitationToken(ctx context.Context, id pgtype.UUID) error
 	DeleteInvitationTokensByUserIDAndTenantID(ctx context.Context, arg *DeleteInvitationTokensByUserIDAndTenantIDParams) error
 	DeletePasswordResetTokenByUserID(ctx context.Context, userID pgtype.UUID) error
 	DeleteRefreshTokensByUserID(ctx context.Context, userID pgtype.UUID) error
@@ -38,6 +36,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error)
 	GetUsersByTenantID(ctx context.Context, arg *GetUsersByTenantIDParams) ([]*GetUsersByTenantIDRow, error)
 	InviteUserToTenant(ctx context.Context, arg *InviteUserToTenantParams) (pgtype.UUID, error)
+	MarkEmailChangeTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	MarkInvitationTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	MarkPasswordResetTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error

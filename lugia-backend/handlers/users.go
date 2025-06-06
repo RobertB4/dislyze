@@ -1110,8 +1110,8 @@ func (h *UsersHandler) VerifyChangeEmail(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := qtx.DeleteEmailChangeTokenByID(ctx, emailChangeToken.ID); err != nil {
-		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: failed to delete token: %w", err), http.StatusInternalServerError, "")
+	if err := qtx.MarkEmailChangeTokenAsUsed(ctx, emailChangeToken.ID); err != nil {
+		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: failed to mark token as used: %w", err), http.StatusInternalServerError, "")
 		responder.RespondWithError(w, appErr)
 		return
 	}

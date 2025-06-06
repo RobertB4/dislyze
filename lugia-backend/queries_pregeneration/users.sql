@@ -81,14 +81,15 @@ INSERT INTO email_change_tokens (
 
 -- name: GetEmailChangeTokenByHash :one
 SELECT * FROM email_change_tokens
-WHERE token_hash = $1;
+WHERE token_hash = $1 AND used_at IS NULL;
 
 -- name: DeleteEmailChangeTokensByUserID :exec
 DELETE FROM email_change_tokens
 WHERE user_id = $1;
 
--- name: DeleteEmailChangeTokenByID :exec
-DELETE FROM email_change_tokens
+-- name: MarkEmailChangeTokenAsUsed :exec
+UPDATE email_change_tokens
+SET used_at = CURRENT_TIMESTAMP
 WHERE id = $1;
 
 -- name: UpdateUserEmail :exec

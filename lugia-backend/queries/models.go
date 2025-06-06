@@ -16,6 +16,7 @@ type EmailChangeToken struct {
 	TokenHash string
 	ExpiresAt pgtype.Timestamptz
 	CreatedAt pgtype.Timestamptz
+	UsedAt    pgtype.Timestamptz
 }
 
 type InvitationToken struct {

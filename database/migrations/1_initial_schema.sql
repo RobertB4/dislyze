@@ -75,6 +75,7 @@ CREATE TABLE email_change_tokens (
     token_hash VARCHAR(255) NOT NULL UNIQUE,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    used_at TIMESTAMP WITH TIME ZONE,
     CONSTRAINT uq_email_change_token_user_id UNIQUE (user_id)
 );
 CREATE INDEX idx_email_change_tokens_user_id ON email_change_tokens(user_id);

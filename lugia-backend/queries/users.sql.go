@@ -110,16 +110,6 @@ func (q *Queries) CreateInvitationToken(ctx context.Context, arg *CreateInvitati
 	return &i, err
 }
 
-const DeleteEmailChangeTokenByID = `-- name: DeleteEmailChangeTokenByID :exec
-DELETE FROM email_change_tokens
-WHERE id = $1
-`
-
-func (q *Queries) DeleteEmailChangeTokenByID(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, DeleteEmailChangeTokenByID, id)
-	return err
-}
-
 const DeleteEmailChangeTokensByUserID = `-- name: DeleteEmailChangeTokensByUserID :exec
 DELETE FROM email_change_tokens
 WHERE user_id = $1
@@ -127,16 +117,6 @@ WHERE user_id = $1
 
 func (q *Queries) DeleteEmailChangeTokensByUserID(ctx context.Context, userID pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, DeleteEmailChangeTokensByUserID, userID)
-	return err
-}
-
-const DeleteInvitationToken = `-- name: DeleteInvitationToken :exec
-DELETE FROM invitation_tokens
-WHERE id = $1
-`
-
-func (q *Queries) DeleteInvitationToken(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, DeleteInvitationToken, id)
 	return err
 }
 
@@ -176,8 +156,8 @@ func (q *Queries) DeleteUser(ctx context.Context, id pgtype.UUID) error {
 }
 
 const GetEmailChangeTokenByHash = `-- name: GetEmailChangeTokenByHash :one
-SELECT id, user_id, new_email, token_hash, expires_at, created_at FROM email_change_tokens
-WHERE token_hash = $1
+SELECT id, user_id, new_email, token_hash, expires_at, created_at, used_at FROM email_change_tokens
+WHERE token_hash = $1 AND used_at IS NULL
 `
 
 func (q *Queries) GetEmailChangeTokenByHash(ctx context.Context, tokenHash string) (*EmailChangeToken, error) {
@@ -190,6 +170,7 @@ func (q *Queries) GetEmailChangeTokenByHash(ctx context.Context, tokenHash strin
 		&i.TokenHash,
 		&i.ExpiresAt,
 		&i.CreatedAt,
+		&i.UsedAt,
 	)
 	return &i, err
 }
@@ -304,6 +285,17 @@ func (q *Queries) InviteUserToTenant(ctx context.Context, arg *InviteUserToTenan
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const MarkEmailChangeTokenAsUsed = `-- name: MarkEmailChangeTokenAsUsed :exec
+UPDATE email_change_tokens
+SET used_at = CURRENT_TIMESTAMP
+WHERE id = $1
+`
+
+func (q *Queries) MarkEmailChangeTokenAsUsed(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, MarkEmailChangeTokenAsUsed, id)
+	return err
 }
 
 const MarkInvitationTokenAsUsed = `-- name: MarkInvitationTokenAsUsed :exec
