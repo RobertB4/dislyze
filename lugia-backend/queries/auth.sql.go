@@ -50,7 +50,7 @@ INSERT INTO refresh_tokens (
     device_info,
     ip_address,
     expires_at
-) VALUES ($1, $2, $3, $4, $5) RETURNING id, user_id, jti, device_info, ip_address, expires_at, created_at, last_used_at, revoked_at
+) VALUES ($1, $2, $3, $4, $5) RETURNING id, user_id, jti, device_info, ip_address, expires_at, created_at, used_at, revoked_at
 `
 
 type CreateRefreshTokenParams struct {
@@ -78,7 +78,7 @@ func (q *Queries) CreateRefreshToken(ctx context.Context, arg *CreateRefreshToke
 		&i.IpAddress,
 		&i.ExpiresAt,
 		&i.CreatedAt,
-		&i.LastUsedAt,
+		&i.UsedAt,
 		&i.RevokedAt,
 	)
 	return &i, err
@@ -211,7 +211,7 @@ func (q *Queries) GetPasswordResetTokenByHash(ctx context.Context, tokenHash str
 }
 
 const GetRefreshTokenByJTI = `-- name: GetRefreshTokenByJTI :one
-SELECT id, user_id, jti, device_info, ip_address, expires_at, created_at, last_used_at, revoked_at FROM refresh_tokens 
+SELECT id, user_id, jti, device_info, ip_address, expires_at, created_at, used_at, revoked_at FROM refresh_tokens 
 WHERE jti = $1 
 AND revoked_at IS NULL 
 AND expires_at > CURRENT_TIMESTAMP
@@ -228,14 +228,14 @@ func (q *Queries) GetRefreshTokenByJTI(ctx context.Context, jti pgtype.UUID) (*R
 		&i.IpAddress,
 		&i.ExpiresAt,
 		&i.CreatedAt,
-		&i.LastUsedAt,
+		&i.UsedAt,
 		&i.RevokedAt,
 	)
 	return &i, err
 }
 
 const GetRefreshTokenByUserID = `-- name: GetRefreshTokenByUserID :one
-SELECT id, user_id, jti, device_info, ip_address, expires_at, created_at, last_used_at, revoked_at FROM refresh_tokens 
+SELECT id, user_id, jti, device_info, ip_address, expires_at, created_at, used_at, revoked_at FROM refresh_tokens 
 WHERE user_id = $1 
 AND revoked_at IS NULL 
 AND expires_at > CURRENT_TIMESTAMP
@@ -252,7 +252,7 @@ func (q *Queries) GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUI
 		&i.IpAddress,
 		&i.ExpiresAt,
 		&i.CreatedAt,
-		&i.LastUsedAt,
+		&i.UsedAt,
 		&i.RevokedAt,
 	)
 	return &i, err
@@ -342,14 +342,14 @@ func (q *Queries) RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error
 	return err
 }
 
-const UpdateRefreshTokenLastUsed = `-- name: UpdateRefreshTokenLastUsed :exec
+const UpdateRefreshTokenUsed = `-- name: UpdateRefreshTokenUsed :exec
 UPDATE refresh_tokens 
-SET last_used_at = CURRENT_TIMESTAMP 
+SET used_at = CURRENT_TIMESTAMP 
 WHERE jti = $1
 `
 
-func (q *Queries) UpdateRefreshTokenLastUsed(ctx context.Context, jti pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, UpdateRefreshTokenLastUsed, jti)
+func (q *Queries) UpdateRefreshTokenUsed(ctx context.Context, jti pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, UpdateRefreshTokenUsed, jti)
 	return err
 }
 

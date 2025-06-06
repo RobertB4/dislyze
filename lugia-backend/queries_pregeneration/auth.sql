@@ -62,9 +62,9 @@ DELETE FROM refresh_tokens
 WHERE expires_at < CURRENT_TIMESTAMP 
    OR revoked_at IS NOT NULL;
 
--- name: UpdateRefreshTokenLastUsed :exec
+-- name: UpdateRefreshTokenUsed :exec
 UPDATE refresh_tokens 
-SET last_used_at = CURRENT_TIMESTAMP 
+SET used_at = CURRENT_TIMESTAMP 
 WHERE jti = $1;
 
 -- name: GetUserByID :one

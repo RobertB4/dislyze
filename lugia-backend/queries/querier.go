@@ -40,7 +40,7 @@ type Querier interface {
 	InviteUserToTenant(ctx context.Context, arg *InviteUserToTenantParams) (pgtype.UUID, error)
 	MarkPasswordResetTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error
-	UpdateRefreshTokenLastUsed(ctx context.Context, jti pgtype.UUID) error
+	UpdateRefreshTokenUsed(ctx context.Context, jti pgtype.UUID) error
 	UpdateTenantName(ctx context.Context, arg *UpdateTenantNameParams) error
 	UpdateUserEmail(ctx context.Context, arg *UpdateUserEmailParams) error
 	UpdateUserName(ctx context.Context, arg *UpdateUserNameParams) error

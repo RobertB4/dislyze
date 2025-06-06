@@ -145,12 +145,12 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 	}
 
 	// --- Security Check: Prevent replay of an already used (for rotation) token ---
-	if storedRefreshToken.LastUsedAt.Valid {
+	if storedRefreshToken.UsedAt.Valid {
 		return nil, errors.New("refresh token already used for rotation")
 	}
 
 	// --- Security Step: Mark the current refresh token as used ---
-	if err := qtx.UpdateRefreshTokenLastUsed(r.Context(), storedRefreshToken.Jti); err != nil {
+	if err := qtx.UpdateRefreshTokenUsed(r.Context(), storedRefreshToken.Jti); err != nil {
 		return nil, fmt.Errorf("failed to mark refresh token as used: %w", err)
 	}
 

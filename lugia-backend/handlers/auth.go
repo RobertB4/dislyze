@@ -283,7 +283,7 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 	}
 
 	if !errlib.Is(err, pgx.ErrNoRows) {
-		err = qtx.UpdateRefreshTokenLastUsed(ctx, existingToken.Jti)
+		err = qtx.UpdateRefreshTokenUsed(ctx, existingToken.Jti)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update refresh token last used: %w", err)
 		}

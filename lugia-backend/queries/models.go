@@ -44,7 +44,7 @@ type RefreshToken struct {
 	IpAddress  pgtype.Text
 	ExpiresAt  pgtype.Timestamptz
 	CreatedAt  pgtype.Timestamptz
-	LastUsedAt pgtype.Timestamptz
+	UsedAt     pgtype.Timestamptz
 	RevokedAt  pgtype.Timestamptz
 }
 
