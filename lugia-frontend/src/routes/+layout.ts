@@ -35,7 +35,7 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 	let me: Me = null as any;
 
 	if (url.pathname.startsWith("/auth")) {
-		// SCENARIO A: User is on an /auth page (e.g., /auth/login)
+		// SCENARIO A: User is on an /auth page (e.g., /auth/login, /auth/signup)
 		try {
 			const response = await loadFunctionFetch(fetch, `/api/me`);
 			if (response.ok) {
@@ -65,8 +65,30 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 				throw err; // Re-throw to SvelteKit (will render +error.svelte or handle other redirects)
 			}
 		}
+	} else if (url.pathname.startsWith("/verify")) {
+		// SCENARIO B: User is on a /verify page (e.g., /verify/change-email)
+		// Never redirect automatically - always allow the verify page to render
+		// The verify page itself will handle showing appropriate messages based on auth status
+		try {
+			const response = await loadFunctionFetch(fetch, `/api/me`);
+			if (response.ok) {
+				me = await response.json();
+			} else {
+				// User not authenticated, but still allow verify page to render
+				me = null as any;
+			}
+		} catch (err: unknown) {
+			// If loadFunctionFetch threw a redirect to /auth/login (e.g. from a 401 on /users/me)
+			if (isRedirect(err) && err.location === "/auth/login") {
+				me = null as any; // User not logged in, allow verify page to render
+			} else {
+				// For any other error (e.g., 500 server error on /users/me, network error from loadFunctionFetch)
+				console.error("+layout.ts: On verify path, unexpected error during /users/me fetch:", err);
+				throw err; // Re-throw to SvelteKit (will render +error.svelte or handle other redirects)
+			}
+		}
 	} else {
-		// SCENARIO B: User is on a protected page (NOT /auth)
+		// SCENARIO C: User is on a protected page (NOT /auth or /verify)
 		try {
 			const response = await loadFunctionFetch(fetch, `/api/me`);
 

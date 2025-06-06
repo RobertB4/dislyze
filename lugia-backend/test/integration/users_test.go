@@ -2429,6 +2429,9 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 		validUser.UserID, "expired@example.com", expiredHash, expiredTime)
 	assert.NoError(t, err, "Should insert expired token")
 
+	// Login user to get access token for authenticated requests
+	accessToken, _ := setup.LoginUserAndGetTokens(t, validUser.Email, validUser.PlainTextPassword)
+
 	tests := []struct {
 		name           string
 		token          string
@@ -2459,13 +2462,20 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var url string
 			if tt.token == "" {
-				url = fmt.Sprintf("%s/auth/verify-change-email", setup.BaseURL)
+				url = fmt.Sprintf("%s/me/verify-change-email", setup.BaseURL)
 			} else {
-				url = fmt.Sprintf("%s/auth/verify-change-email?token=%s", setup.BaseURL, tt.token)
+				url = fmt.Sprintf("%s/me/verify-change-email?token=%s", setup.BaseURL, tt.token)
 			}
 
 			req, err := http.NewRequest("GET", url, nil)
 			assert.NoError(t, err)
+
+			// Add authentication cookie
+			req.AddCookie(&http.Cookie{
+				Name:  "dislyze_access_token",
+				Value: accessToken,
+				Path:  "/",
+			})
 
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
@@ -2496,9 +2506,16 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Verify with our known token
-		verifyURL := fmt.Sprintf("%s/auth/verify-change-email?token=%s", setup.BaseURL, successPlaintext)
+		verifyURL := fmt.Sprintf("%s/me/verify-change-email?token=%s", setup.BaseURL, successPlaintext)
 		verifyReq, err := http.NewRequest("GET", verifyURL, nil)
 		assert.NoError(t, err)
+
+		// Add authentication cookie
+		verifyReq.AddCookie(&http.Cookie{
+			Name:  "dislyze_access_token",
+			Value: accessToken,
+			Path:  "/",
+		})
 
 		verifyResp, err := client.Do(verifyReq)
 		assert.NoError(t, err)
@@ -2554,11 +2571,18 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 			reuseUser.UserID, reuseEmail, reuseHash, expiresAt)
 		assert.NoError(t, err)
 
-		verifyURL := fmt.Sprintf("%s/auth/verify-change-email?token=%s", setup.BaseURL, reusePlaintext)
+		verifyURL := fmt.Sprintf("%s/me/verify-change-email?token=%s", setup.BaseURL, reusePlaintext)
 
 		// First verification should succeed
 		verifyReq1, err := http.NewRequest("GET", verifyURL, nil)
 		assert.NoError(t, err)
+
+		// Add authentication cookie
+		verifyReq1.AddCookie(&http.Cookie{
+			Name:  "dislyze_access_token",
+			Value: accessToken,
+			Path:  "/",
+		})
 
 		verifyResp1, err := client.Do(verifyReq1)
 		assert.NoError(t, err)
@@ -2570,6 +2594,13 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 		verifyReq2, err := http.NewRequest("GET", verifyURL, nil)
 		assert.NoError(t, err)
 
+		// Add authentication cookie
+		verifyReq2.AddCookie(&http.Cookie{
+			Name:  "dislyze_access_token",
+			Value: accessToken,
+			Path:  "/",
+		})
+
 		verifyResp2, err := client.Do(verifyReq2)
 		assert.NoError(t, err)
 		defer verifyResp2.Body.Close()
@@ -2580,6 +2611,37 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 		err = json.NewDecoder(verifyResp2.Body).Decode(&errorResp)
 		assert.NoError(t, err)
 		assert.Equal(t, "無効または期限切れのトークンです。", errorResp["error"])
+	})
+
+	// Test unauthenticated access (should fail with 401)
+	t.Run("unauthenticated access returns 401", func(t *testing.T) {
+		// Create a valid token for testing
+		unauthPlaintext, unauthHash := createTestToken(77)
+		unauthUser := setup.TestUsersData["alpha_admin"]
+
+		// Clean up any existing tokens for this user first
+		_, err := pool.Exec(ctx, "DELETE FROM email_change_tokens WHERE user_id = $1", unauthUser.UserID)
+		assert.NoError(t, err)
+
+		// Insert token into database
+		expiresAt := time.Now().Add(30 * time.Minute)
+		_, err = pool.Exec(ctx,
+			"INSERT INTO email_change_tokens (user_id, new_email, token_hash, expires_at) VALUES ($1, $2, $3, $4)",
+			unauthUser.UserID, "unauth@example.com", unauthHash, expiresAt)
+		assert.NoError(t, err)
+
+		// Try to verify without authentication
+		verifyURL := fmt.Sprintf("%s/me/verify-change-email?token=%s", setup.BaseURL, unauthPlaintext)
+		req, err := http.NewRequest("GET", verifyURL, nil)
+		assert.NoError(t, err)
+
+		// NO authentication cookie added
+
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode, "Unauthenticated request should return 401")
 	})
 }
 

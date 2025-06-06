@@ -1013,7 +1013,7 @@ func (h *UsersHandler) ChangeEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	verificationLink := fmt.Sprintf("%s/auth/verify-change-email?token=%s", h.env.FrontendURL, plaintextToken)
+	verificationLink := fmt.Sprintf("%s/verify/change-email?token=%s", h.env.FrontendURL, plaintextToken)
 
 	plainTextContent := fmt.Sprintf("メールアドレス変更のリクエストを受け取りました。\n\n以下のリンクをクリックしてメールアドレスの変更を完了してください：\n%s\n\nこのメールにお心当たりがない場合は、無視してください。", verificationLink)
 	htmlContent := fmt.Sprintf(`<p>メールアドレス変更のリクエストを受け取りました。</p>
@@ -1049,6 +1049,81 @@ func (h *UsersHandler) ChangeEmail(w http.ResponseWriter, r *http.Request) {
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		appErr := errlib.New(fmt.Errorf("ChangeEmail: SendGrid API returned error status code %d. Body: %s", response.StatusCode, response.Body), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *UsersHandler) VerifyChangeEmail(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: token is missing"), http.StatusBadRequest, "無効または期限切れのトークンです。")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	hash := sha256.Sum256([]byte(token))
+	hashedTokenStr := fmt.Sprintf("%x", hash[:])
+
+	tx, err := h.dbConn.Begin(ctx)
+	if err != nil {
+		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+	defer func() {
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
+			errlib.LogError(fmt.Errorf("VerifyChangeEmail: failed to rollback transaction: %w", rbErr))
+		}
+	}()
+
+	qtx := h.q.WithTx(tx)
+
+	emailChangeToken, err := qtx.GetEmailChangeTokenByHash(ctx, hashedTokenStr)
+	if err != nil {
+		if errlib.Is(err, pgx.ErrNoRows) {
+			appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: invalid or expired token: %w", err), http.StatusBadRequest, "無効または期限切れのトークンです。")
+			responder.RespondWithError(w, appErr)
+			return
+		}
+		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: failed to get email change token: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	if emailChangeToken.ExpiresAt.Time.Before(time.Now()) {
+		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: token expired at %s", emailChangeToken.ExpiresAt.Time), http.StatusBadRequest, "無効または期限切れのトークンです。")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	if err := qtx.UpdateUserEmail(ctx, &queries.UpdateUserEmailParams{
+		ID:    emailChangeToken.UserID,
+		Email: emailChangeToken.NewEmail,
+	}); err != nil {
+		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: failed to update user email: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	if err := qtx.DeleteEmailChangeTokenByID(ctx, emailChangeToken.ID); err != nil {
+		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: failed to delete token: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	if err := qtx.DeleteRefreshTokensByUserID(ctx, emailChangeToken.UserID); err != nil {
+		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: failed to invalidate sessions: %w", err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
 		responder.RespondWithError(w, appErr)
 		return
 	}

@@ -65,7 +65,6 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		r.Post("/forgot-password", authHandler.ForgotPassword)
 		r.Post("/verify-reset-token", authHandler.VerifyResetToken)
 		r.Post("/reset-password", authHandler.ResetPassword)
-		r.Get("/verify-change-email", authHandler.VerifyChangeEmail)
 	})
 
 	r.Group(func(r chi.Router) {
@@ -75,6 +74,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		r.Post("/me/change-name", usersHandler.UpdateMe)
 		r.Post("/me/change-password", usersHandler.ChangePassword)
 		r.Post("/me/change-email", usersHandler.ChangeEmail)
+		r.Get("/me/verify-change-email", usersHandler.VerifyChangeEmail)
 
 		r.Route("/users", func(r chi.Router) {
 			r.Use(middleware.RequireAdmin)

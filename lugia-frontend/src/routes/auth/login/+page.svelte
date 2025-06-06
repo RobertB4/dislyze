@@ -5,6 +5,9 @@
 	import Input from "$components/Input.svelte";
 	import { KnownError } from "$lib/errors";
 	import { safeGoto } from "$lib/routing";
+	import type { PageData } from "./$types";
+
+	let { data: pageData }: { data: PageData } = $props();
 
 	const { form, errors, data, isSubmitting } = createForm({
 		initialValues: {
@@ -44,7 +47,7 @@
 					throw new KnownError(data.error);
 				}
 
-				safeGoto("/");
+				safeGoto(pageData.redirectTo);
 			} catch (err) {
 				toast.showError(err);
 			}
