@@ -27,15 +27,6 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 )
 
-var (
-	ErrCompanyNameRequired = fmt.Errorf("会社名は必須です")
-	ErrUserNameRequired    = fmt.Errorf("ユーザー名は必須です")
-	ErrEmailRequired       = fmt.Errorf("メールアドレスは必須です")
-	ErrPasswordRequired    = fmt.Errorf("パスワードは必須です")
-	ErrPasswordTooShort    = fmt.Errorf("パスワードは8文字以上である必要があります")
-	ErrPasswordsDoNotMatch = fmt.Errorf("パスワードが一致しません")
-	ErrUserAlreadyExists   = fmt.Errorf("このメールアドレスは既に使用されています。")
-)
 
 type SignupRequest struct {
 	CompanyName     string `json:"company_name"`
@@ -92,22 +83,22 @@ func (r *SignupRequest) Validate() error {
 	r.PasswordConfirm = strings.TrimSpace(r.PasswordConfirm)
 
 	if r.CompanyName == "" {
-		return ErrCompanyNameRequired
+		return fmt.Errorf("company name is required")
 	}
 	if r.UserName == "" {
-		return ErrUserNameRequired
+		return fmt.Errorf("user name is required")
 	}
 	if r.Email == "" {
-		return ErrEmailRequired
+		return fmt.Errorf("email is required")
 	}
 	if r.Password == "" {
-		return ErrPasswordRequired
+		return fmt.Errorf("password is required")
 	}
 	if len(r.Password) < 8 {
-		return ErrPasswordTooShort
+		return fmt.Errorf("password must be at least 8 characters long")
 	}
 	if r.Password != r.PasswordConfirm {
-		return ErrPasswordsDoNotMatch
+		return fmt.Errorf("passwords do not match")
 	}
 	return nil
 }
@@ -200,7 +191,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if exists {
-		appErr := errlib.New(ErrUserAlreadyExists, http.StatusBadRequest, ErrUserAlreadyExists.Error())
+		appErr := errlib.New(fmt.Errorf("user already exists with this email"), http.StatusBadRequest, "このメールアドレスは既に使用されています。")
 		responder.RespondWithError(w, appErr)
 		return
 	}
@@ -240,10 +231,10 @@ func (r *LoginRequest) Validate() error {
 	r.Password = strings.TrimSpace(r.Password)
 
 	if r.Email == "" {
-		return ErrEmailRequired
+		return fmt.Errorf("email is required")
 	}
 	if r.Password == "" {
-		return ErrPasswordRequired
+		return fmt.Errorf("password is required")
 	}
 	return nil
 }
@@ -562,7 +553,7 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 func (r *ForgotPasswordRequest) Validate() error {
 	r.Email = strings.TrimSpace(r.Email)
 	if r.Email == "" {
-		return ErrEmailRequired
+		return fmt.Errorf("email is required")
 	}
 	if !strings.Contains(r.Email, "@") {
 		return fmt.Errorf("invalid email address format")
@@ -810,13 +801,13 @@ func (r *ResetPasswordRequest) Validate() error {
 		return fmt.Errorf("token is required")
 	}
 	if r.Password == "" {
-		return ErrPasswordRequired
+		return fmt.Errorf("password is required")
 	}
 	if len(r.Password) < 8 {
-		return ErrPasswordTooShort
+		return fmt.Errorf("password must be at least 8 characters long")
 	}
 	if r.Password != r.PasswordConfirm {
-		return ErrPasswordsDoNotMatch
+		return fmt.Errorf("passwords do not match")
 	}
 	return nil
 }

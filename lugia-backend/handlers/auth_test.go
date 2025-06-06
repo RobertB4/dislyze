@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "password123",
 			},
-			wantErr: ErrCompanyNameRequired,
+			wantErr: fmt.Errorf("company name is required"),
 		},
 		{
 			name: "missing user name",
@@ -41,7 +42,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "password123",
 			},
-			wantErr: ErrUserNameRequired,
+			wantErr: fmt.Errorf("user name is required"),
 		},
 		{
 			name: "missing email",
@@ -51,7 +52,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "password123",
 			},
-			wantErr: ErrEmailRequired,
+			wantErr: fmt.Errorf("email is required"),
 		},
 		{
 			name: "missing password",
@@ -61,7 +62,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 				Email:           "test@example.com",
 				PasswordConfirm: "password123",
 			},
-			wantErr: ErrPasswordRequired,
+			wantErr: fmt.Errorf("password is required"),
 		},
 		{
 			name: "password too short",
@@ -72,7 +73,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 				Password:        "short",
 				PasswordConfirm: "short",
 			},
-			wantErr: ErrPasswordTooShort,
+			wantErr: fmt.Errorf("password must be at least 8 characters long"),
 		},
 		{
 			name: "passwords do not match",
@@ -83,7 +84,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "different",
 			},
-			wantErr: ErrPasswordsDoNotMatch,
+			wantErr: fmt.Errorf("passwords do not match"),
 		},
 		// Edge cases
 		{
@@ -95,7 +96,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "password123",
 			},
-			wantErr: ErrCompanyNameRequired,
+			wantErr: fmt.Errorf("company name is required"),
 		},
 		{
 			name: "whitespace-only company name",
@@ -106,7 +107,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "password123",
 			},
-			wantErr: ErrCompanyNameRequired,
+			wantErr: fmt.Errorf("company name is required"),
 		},
 		{
 			name: "empty user name",
@@ -117,7 +118,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "password123",
 			},
-			wantErr: ErrUserNameRequired,
+			wantErr: fmt.Errorf("user name is required"),
 		},
 		{
 			name: "whitespace-only user name",
@@ -128,7 +129,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "password123",
 			},
-			wantErr: ErrUserNameRequired,
+			wantErr: fmt.Errorf("user name is required"),
 		},
 		{
 			name: "empty email",
@@ -139,7 +140,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "password123",
 			},
-			wantErr: ErrEmailRequired,
+			wantErr: fmt.Errorf("email is required"),
 		},
 		{
 			name: "whitespace-only email",
@@ -150,7 +151,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "password123",
 			},
-			wantErr: ErrEmailRequired,
+			wantErr: fmt.Errorf("email is required"),
 		},
 		{
 			name: "empty password",
@@ -161,7 +162,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 				Password:        "",
 				PasswordConfirm: "",
 			},
-			wantErr: ErrPasswordRequired,
+			wantErr: fmt.Errorf("password is required"),
 		},
 		{
 			name: "whitespace-only password",
@@ -172,7 +173,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 				Password:        "   ",
 				PasswordConfirm: "   ",
 			},
-			wantErr: ErrPasswordRequired,
+			wantErr: fmt.Errorf("password is required"),
 		},
 		{
 			name: "password exactly 8 characters",
@@ -223,8 +224,11 @@ func TestSignupRequest_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.request.Validate()
-			if err != tt.wantErr {
-				t.Errorf("SignupRequest.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr != nil {
+				assert.Error(t, err)
+				assert.EqualError(t, err, tt.wantErr.Error())
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -249,14 +253,14 @@ func TestLoginRequest_Validate(t *testing.T) {
 			request: LoginRequest{
 				Password: "password123",
 			},
-			wantErr: ErrEmailRequired,
+			wantErr: fmt.Errorf("email is required"),
 		},
 		{
 			name: "missing password",
 			request: LoginRequest{
 				Email: "test@example.com",
 			},
-			wantErr: ErrPasswordRequired,
+			wantErr: fmt.Errorf("password is required"),
 		},
 		// Edge cases
 		{
@@ -265,7 +269,7 @@ func TestLoginRequest_Validate(t *testing.T) {
 				Email:    "",
 				Password: "password123",
 			},
-			wantErr: ErrEmailRequired,
+			wantErr: fmt.Errorf("email is required"),
 		},
 		{
 			name: "whitespace-only email",
@@ -273,7 +277,7 @@ func TestLoginRequest_Validate(t *testing.T) {
 				Email:    "   ",
 				Password: "password123",
 			},
-			wantErr: ErrEmailRequired,
+			wantErr: fmt.Errorf("email is required"),
 		},
 		{
 			name: "empty password",
@@ -281,7 +285,7 @@ func TestLoginRequest_Validate(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "",
 			},
-			wantErr: ErrPasswordRequired,
+			wantErr: fmt.Errorf("password is required"),
 		},
 		{
 			name: "whitespace-only password",
@@ -289,7 +293,7 @@ func TestLoginRequest_Validate(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "   ",
 			},
-			wantErr: ErrPasswordRequired,
+			wantErr: fmt.Errorf("password is required"),
 		},
 		{
 			name: "fields with leading/trailing whitespace",
@@ -304,8 +308,11 @@ func TestLoginRequest_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.request.Validate()
-			if err != tt.wantErr {
-				t.Errorf("LoginRequest.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr != nil {
+				assert.Error(t, err)
+				assert.EqualError(t, err, tt.wantErr.Error())
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
