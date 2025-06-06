@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Button from "$components/Button.svelte";
 	import Layout from "$components/Layout.svelte";
+	import SettingsTabs from "../SettingsTabs.svelte";
 	import Slideover from "$components/Slideover.svelte";
 	import type { PageData } from "./$types";
 	import { createForm } from "felte";
@@ -239,7 +240,7 @@
 
 <Layout
 	me={pageData.me}
-	pageTitle="ユーザー管理"
+	pageTitle="設定"
 	promises={{
 		usersResponse: pageData.usersPromise
 	}}
@@ -261,6 +262,8 @@
 
 	{#snippet children({ usersResponse })}
 		{@const { users, pagination } = usersResponse}
+
+		<SettingsTabs me={pageData.me} />
 
 		<!-- Search bar -->
 		<div class="mb-6" data-testid="search-section">

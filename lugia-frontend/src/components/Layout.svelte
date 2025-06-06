@@ -621,7 +621,7 @@
     </div> -->
 	<main class="flex-1">
 		<div
-			class="sticky top-0 flex justify-between bg-white shadow shadow-gray-300 z-10 py-3 mx-auto"
+			class="sticky top-0 flex justify-between bg-white shadow shadow-gray-300 z-10 py-3 mx-auto h-[62px]"
 		>
 			<div class="flex items-center px-4 sm:px-6 md:px-8">
 				<button
