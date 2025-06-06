@@ -1774,13 +1774,12 @@ func TestUpdateMe_Integration(t *testing.T) {
 	client := &http.Client{}
 
 	tests := []struct {
-		name             string
-		loginUserKey     string // Key for setup.TestUsersData map, empty for unauth
-		requestBody      handlers.UpdateMeRequest
-		customJSON       string // For malformed JSON tests
-		expectedStatus   int
-		expectUnauth     bool
-		validateResponse func(t *testing.T, resp *http.Response) // For custom response validation
+		name           string
+		loginUserKey   string // Key for setup.TestUsersData map, empty for unauth
+		requestBody    handlers.UpdateMeRequest
+		customJSON     string // For malformed JSON tests
+		expectedStatus int
+		expectUnauth   bool
 	}{
 		// Authentication Tests
 		{
@@ -1828,76 +1827,36 @@ func TestUpdateMe_Integration(t *testing.T) {
 			loginUserKey:   "alpha_admin",
 			requestBody:    handlers.UpdateMeRequest{Name: "Updated Alpha Admin"},
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, resp *http.Response) {
-				var meResp handlers.MeResponse
-				err := json.NewDecoder(resp.Body).Decode(&meResp)
-				assert.NoError(t, err, "Failed to decode MeResponse")
-				assert.Equal(t, "Updated Alpha Admin", meResp.UserName, "Name was not updated correctly")
-				assert.Equal(t, setup.TestUsersData["alpha_admin"].Email, meResp.Email, "Email should remain unchanged")
-				assert.Equal(t, "admin", meResp.UserRole, "Role should remain unchanged")
-			},
 		},
 		{
 			name:           "beta_admin successfully updates name",
 			loginUserKey:   "beta_admin",
 			requestBody:    handlers.UpdateMeRequest{Name: "Updated Beta Admin"},
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, resp *http.Response) {
-				var meResp handlers.MeResponse
-				err := json.NewDecoder(resp.Body).Decode(&meResp)
-				assert.NoError(t, err, "Failed to decode MeResponse")
-				assert.Equal(t, "Updated Beta Admin", meResp.UserName, "Name was not updated correctly")
-				assert.Equal(t, setup.TestUsersData["beta_admin"].Email, meResp.Email, "Email should remain unchanged")
-				assert.Equal(t, "admin", meResp.UserRole, "Role should remain unchanged")
-			},
 		},
 		{
 			name:           "name with leading/trailing whitespace is trimmed",
 			loginUserKey:   "alpha_editor",
 			requestBody:    handlers.UpdateMeRequest{Name: "  Trimmed Name  "},
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, resp *http.Response) {
-				var meResp handlers.MeResponse
-				err := json.NewDecoder(resp.Body).Decode(&meResp)
-				assert.NoError(t, err, "Failed to decode MeResponse")
-				assert.Equal(t, "Trimmed Name", meResp.UserName, "Name should be trimmed")
-			},
 		},
 		{
 			name:           "name with special characters works",
 			loginUserKey:   "alpha_editor",
 			requestBody:    handlers.UpdateMeRequest{Name: "Jean-Claude O'Connor"},
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, resp *http.Response) {
-				var meResp handlers.MeResponse
-				err := json.NewDecoder(resp.Body).Decode(&meResp)
-				assert.NoError(t, err, "Failed to decode MeResponse")
-				assert.Equal(t, "Jean-Claude O'Connor", meResp.UserName, "Name with special characters should be preserved")
-			},
 		},
 		{
 			name:           "name with unicode characters works",
 			loginUserKey:   "alpha_editor",
 			requestBody:    handlers.UpdateMeRequest{Name: "田中太郎 🎉 Émilie"},
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, resp *http.Response) {
-				var meResp handlers.MeResponse
-				err := json.NewDecoder(resp.Body).Decode(&meResp)
-				assert.NoError(t, err, "Failed to decode MeResponse")
-				assert.Equal(t, "田中太郎 🎉 Émilie", meResp.UserName, "Name with unicode characters should be preserved")
-			},
 		},
 		{
 			name:           "maximum length name (255 chars) works",
 			loginUserKey:   "alpha_editor",
 			requestBody:    handlers.UpdateMeRequest{Name: strings.Repeat("a", 255)}, // Exactly 255 chars
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, resp *http.Response) {
-				var meResp handlers.MeResponse
-				err := json.NewDecoder(resp.Body).Decode(&meResp)
-				assert.NoError(t, err, "Failed to decode MeResponse")
-				assert.Equal(t, strings.Repeat("a", 255), meResp.UserName, "255 character name should work")
-			},
 		},
 	}
 
@@ -1930,17 +1889,7 @@ func TestUpdateMe_Integration(t *testing.T) {
 
 			resp, err := client.Do(req)
 			assert.NoError(t, err, "Failed to execute request")
-			defer func() {
-				if err := resp.Body.Close(); err != nil {
-					t.Logf("Error closing response body: %v", err)
-				}
-			}()
-
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Unexpected status code for test: %s", tt.name)
-
-			if tt.validateResponse != nil {
-				tt.validateResponse(t, resp)
-			}
 		})
 	}
 }
@@ -2641,13 +2590,11 @@ func TestUpdateTenantName_Integration(t *testing.T) {
 	defer setup.CloseDB(pool)
 
 	tests := []struct {
-		name               string
-		loginUserKey       string
-		requestBody        interface{}
-		expectedStatus     int
-		expectUnauth       bool
-		expectMeResponse   bool
-		expectedTenantName string
+		name           string
+		loginUserKey   string
+		requestBody    interface{}
+		expectedStatus int
+		expectUnauth   bool
 	}{
 		// Authentication & Authorization
 		{
@@ -2663,12 +2610,10 @@ func TestUpdateTenantName_Integration(t *testing.T) {
 			expectedStatus: http.StatusForbidden,
 		},
 		{
-			name:               "admin role gets 200 (authorized)",
-			loginUserKey:       "alpha_admin",
-			requestBody:        map[string]string{"name": "New Tenant Name"},
-			expectedStatus:     http.StatusOK,
-			expectMeResponse:   true,
-			expectedTenantName: "New Tenant Name",
+			name:           "admin role gets 200 (authorized)",
+			loginUserKey:   "alpha_admin",
+			requestBody:    map[string]string{"name": "New Tenant Name"},
+			expectedStatus: http.StatusOK,
 		},
 
 		// Request Validation
@@ -2705,12 +2650,10 @@ func TestUpdateTenantName_Integration(t *testing.T) {
 
 		// Business Logic
 		{
-			name:               "successful update returns correct MeResponse",
-			loginUserKey:       "alpha_admin",
-			requestBody:        map[string]string{"name": "Updated Company Name"},
-			expectedStatus:     http.StatusOK,
-			expectMeResponse:   true,
-			expectedTenantName: "Updated Company Name",
+			name:           "successful update with no response body",
+			loginUserKey:   "alpha_admin",
+			requestBody:    map[string]string{"name": "Updated Company Name"},
+			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "name too long (>255 chars) returns 500",
@@ -2771,22 +2714,6 @@ func TestUpdateTenantName_Integration(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
-			if tt.expectMeResponse {
-				var meResponse handlers.MeResponse
-				err = json.NewDecoder(resp.Body).Decode(&meResponse)
-				assert.NoError(t, err, "Failed to decode MeResponse")
-
-				// Verify tenant name was updated
-				assert.Equal(t, tt.expectedTenantName, meResponse.TenantName)
-
-				// Verify other fields are present and unchanged
-				loginDetails := setup.TestUsersData[tt.loginUserKey]
-				assert.Equal(t, loginDetails.UserID, meResponse.UserID)
-				assert.Equal(t, loginDetails.Email, meResponse.Email)
-				assert.Equal(t, loginDetails.Name, meResponse.UserName)
-				assert.Equal(t, string(loginDetails.Role), meResponse.UserRole)
-				assert.Equal(t, "basic", meResponse.TenantPlan) // From seed data
-			}
 		})
 	}
 }

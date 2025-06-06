@@ -792,33 +792,7 @@ func (h *UsersHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get updated user data
-	tenantID := libctx.GetTenantID(ctx)
-
-	user, err := h.q.GetUserByID(ctx, userID)
-	if err != nil {
-		appErr := errlib.New(fmt.Errorf("UpdateMe: failed to get updated user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	tenant, err := h.q.GetTenantByID(ctx, tenantID)
-	if err != nil {
-		appErr := errlib.New(fmt.Errorf("UpdateMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	response := MeResponse{
-		TenantName: tenant.Name,
-		TenantPlan: tenant.Plan,
-		UserID:     user.ID.String(),
-		Email:      user.Email,
-		UserName:   user.Name,
-		UserRole:   user.Role.String(),
-	}
-
-	responder.RespondWithJSON(w, http.StatusOK, response)
+	w.WriteHeader(http.StatusOK)
 }
 
 type ChangePasswordRequest struct {
@@ -1096,7 +1070,6 @@ func (r *UpdateTenantNameRequest) Validate() error {
 
 func (h *UsersHandler) UpdateTenantName(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	userID := libctx.GetUserID(ctx)
 	tenantID := libctx.GetTenantID(ctx)
 
 	var req UpdateTenantNameRequest
@@ -1126,28 +1099,5 @@ func (h *UsersHandler) UpdateTenantName(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err := h.q.GetUserByID(ctx, userID)
-	if err != nil {
-		appErr := errlib.New(fmt.Errorf("UpdateTenantName: failed to get updated user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	tenant, err := h.q.GetTenantByID(ctx, tenantID)
-	if err != nil {
-		appErr := errlib.New(fmt.Errorf("UpdateTenantName: failed to get updated tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	response := MeResponse{
-		TenantName: tenant.Name,
-		TenantPlan: tenant.Plan,
-		UserID:     user.ID.String(),
-		Email:      user.Email,
-		UserName:   user.Name,
-		UserRole:   user.Role.String(),
-	}
-
-	responder.RespondWithJSON(w, http.StatusOK, response)
+	w.WriteHeader(http.StatusOK)
 }
