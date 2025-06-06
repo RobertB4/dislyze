@@ -541,7 +541,7 @@ test.describe("Settings - Users Page", () => {
 
 			// Submit the form and wait for API response
 			const responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/api/users/invite") && response.status() === 201
+				(response) => response.url().includes("/api/users/invite") && response.status() === 200
 			);
 
 			await page.getByTestId("add-user-slideover-primary-button").click();
@@ -996,7 +996,7 @@ test.describe("Settings - Users Page", () => {
 			const responsePromise = page.waitForResponse(
 				(response) =>
 					response.url().includes(`/api/users/${TestUsersData.alpha_editor.userID}`) &&
-					response.status() === 204
+					response.status() === 200
 			);
 
 			// Submit the form

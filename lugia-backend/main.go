@@ -82,7 +82,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 			r.Get("/", usersHandler.GetUsers)
 			r.Post("/invite", usersHandler.InviteUser)
 			r.Post("/{userID}/resend-invite", usersHandler.ResendInvite)
-			r.Delete("/{userID}", usersHandler.DeleteUser)
+			r.Post("/{userID}/delete", usersHandler.DeleteUser)
 			r.Post("/{userID}/permissions", usersHandler.UpdateUserPermissions)
 		})
 

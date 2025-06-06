@@ -137,8 +137,8 @@
 		onSubmit: async () => {
 			if (!userToDelete) return;
 
-			const { success } = await mutationFetch(`/api/users/${userToDelete.id}`, {
-				method: "DELETE"
+			const { success } = await mutationFetch(`/api/users/${userToDelete.id}/delete`, {
+				method: "POST"
 			});
 
 			if (success) {

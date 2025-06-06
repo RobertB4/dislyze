@@ -372,7 +372,7 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusOK)
 }
 
 type UpdateUserRoleRequest struct {
@@ -698,7 +698,7 @@ func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responder.RespondWithJSON(w, http.StatusNoContent, nil)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {

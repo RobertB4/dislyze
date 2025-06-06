@@ -188,7 +188,7 @@ func TestInviteUser_Integration(t *testing.T) {
 				Name:  "New Invitee",
 				Role:  "editor",
 			},
-			expectedStatus: http.StatusCreated,
+			expectedStatus: http.StatusOK,
 		},
 		{
 			name:         "error when email already exists (alpha_admin invites existing alpha_editor)",
@@ -883,7 +883,7 @@ func TestDeleteUser_Integration(t *testing.T) {
 			name:           "Admin Deletes Editor - Success",
 			loginUserKey:   "alpha_admin",
 			targetUserKey:  "alpha_editor",
-			expectedStatus: http.StatusNoContent,
+			expectedStatus: http.StatusOK,
 		},
 		{
 			name:             "Admin Tries to Delete Self - Conflict",
@@ -960,8 +960,8 @@ func TestDeleteUser_Integration(t *testing.T) {
 				targetUserID = tt.targetUserIDInput
 			}
 
-			reqURL := fmt.Sprintf("%s/users/%s", setup.BaseURL, targetUserID)
-			req, err := http.NewRequest("DELETE", reqURL, nil)
+			reqURL := fmt.Sprintf("%s/users/%s/delete", setup.BaseURL, targetUserID)
+			req, err := http.NewRequest("POST", reqURL, nil)
 			assert.NoError(t, err)
 
 			if len(cookies) > 0 {
@@ -980,7 +980,7 @@ func TestDeleteUser_Integration(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Unexpected status code for test: %s", tt.name)
 
-			if tt.expectedStatus == http.StatusNoContent {
+			if tt.expectedStatus == http.StatusOK {
 				// Verify user is actually deleted from DB
 				assert.False(t, CheckUserExists(t, pool, targetUserID), "User %s should have been deleted from DB", targetUserID)
 				// Verify associated tokens are deleted
@@ -992,14 +992,14 @@ func TestDeleteUser_Integration(t *testing.T) {
 				err = json.NewDecoder(resp.Body).Decode(&errResp)
 				assert.NoError(t, err, "Failed to decode error response for test: %s", tt.name)
 				assert.Equal(t, tt.expectedErrorMsg, errResp.Error, "Unexpected error message for test: %s", tt.name)
-			} else if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK { // Log body for unexpected errors
+			} else if resp.StatusCode != http.StatusOK { // Log body for unexpected errors
 				bodyBytes, err := io.ReadAll(resp.Body)
 				assert.NoError(t, err)
 				t.Logf("Received unexpected error response body for %s (Status %d): %s", tt.name, resp.StatusCode, string(bodyBytes))
 			}
 
 			// For tests where user should NOT be deleted, verify they still exist
-			if tt.expectedStatus != http.StatusNoContent && tt.targetUserKey != "" {
+			if tt.expectedStatus != http.StatusOK && tt.targetUserKey != "" {
 				originalTargetUserDetails, ok := setup.TestUsersData[tt.targetUserKey]
 				if ok {
 					assert.True(t, CheckUserExists(t, pool, originalTargetUserDetails.UserID), "User %s should still exist in DB for test: %s", originalTargetUserDetails.UserID, tt.name)

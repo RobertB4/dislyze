@@ -91,6 +91,7 @@ export async function mutationFetch(
 	let success = false;
 	const requestOptions = options ?? {};
 	requestOptions.credentials = requestOptions.credentials ?? "include";
+	requestOptions.method = requestOptions.method ?? "POST";
 
 	try {
 		response = await fetch(url, requestOptions);
