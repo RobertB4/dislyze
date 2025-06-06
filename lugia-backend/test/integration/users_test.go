@@ -327,6 +327,15 @@ func TestAcceptInvite_Integration(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
+			name: "token already used fails",
+			requestBody: handlers.AcceptInviteRequest{
+				Token:           plainValidTokenForAccept, // Same token as successful test
+				Password:        newPasswordForAcceptInvite,
+				PasswordConfirm: newPasswordForAcceptInvite,
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
 			name: "token not found",
 			requestBody: handlers.AcceptInviteRequest{
 				Token:           plainNonExistentTokenForAccept,

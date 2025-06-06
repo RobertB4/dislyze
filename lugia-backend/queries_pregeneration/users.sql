@@ -32,15 +32,16 @@ RETURNING *;
 
 -- name: GetInvitationByTokenHash :one
 SELECT * FROM invitation_tokens
-WHERE token_hash = $1 AND expires_at > CURRENT_TIMESTAMP;
+WHERE token_hash = $1 AND expires_at > CURRENT_TIMESTAMP AND used_at IS NULL;
 
 -- name: ActivateInvitedUser :exec
 UPDATE users
 SET password_hash = $1, status = 'active', updated_at = CURRENT_TIMESTAMP
 WHERE id = $2 AND status = 'pending_verification';
 
--- name: DeleteInvitationToken :exec
-DELETE FROM invitation_tokens
+-- name: MarkInvitationTokenAsUsed :exec
+UPDATE invitation_tokens
+SET used_at = CURRENT_TIMESTAMP
 WHERE id = $1;
 
 -- name: DeleteInvitationTokensByUserIDAndTenantID :exec

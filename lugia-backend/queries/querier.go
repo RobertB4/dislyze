@@ -38,6 +38,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error)
 	GetUsersByTenantID(ctx context.Context, arg *GetUsersByTenantIDParams) ([]*GetUsersByTenantIDRow, error)
 	InviteUserToTenant(ctx context.Context, arg *InviteUserToTenantParams) (pgtype.UUID, error)
+	MarkInvitationTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	MarkPasswordResetTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error
 	UpdateRefreshTokenUsed(ctx context.Context, jti pgtype.UUID) error

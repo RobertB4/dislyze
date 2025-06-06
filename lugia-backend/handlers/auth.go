@@ -494,9 +494,9 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = qtx.DeleteInvitationToken(ctx, invitationTokenRecord.ID)
+	err = qtx.MarkInvitationTokenAsUsed(ctx, invitationTokenRecord.ID)
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to delete used invitation token ID %s: %w", invitationTokenRecord.ID.String(), err), http.StatusInternalServerError, "")
+		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to mark invitation token as used ID %s: %w", invitationTokenRecord.ID.String(), err), http.StatusInternalServerError, "")
 		responder.RespondWithError(w, appErr)
 		return
 	}

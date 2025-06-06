@@ -80,7 +80,7 @@ func (q *Queries) CreateEmailChangeToken(ctx context.Context, arg *CreateEmailCh
 const CreateInvitationToken = `-- name: CreateInvitationToken :one
 INSERT INTO invitation_tokens (token_hash, tenant_id, user_id, expires_at)
 VALUES ($1, $2, $3, $4)
-RETURNING id, tenant_id, user_id, token_hash, expires_at, created_at
+RETURNING id, tenant_id, user_id, token_hash, expires_at, created_at, used_at
 `
 
 type CreateInvitationTokenParams struct {
@@ -105,6 +105,7 @@ func (q *Queries) CreateInvitationToken(ctx context.Context, arg *CreateInvitati
 		&i.TokenHash,
 		&i.ExpiresAt,
 		&i.CreatedAt,
+		&i.UsedAt,
 	)
 	return &i, err
 }
@@ -194,8 +195,8 @@ func (q *Queries) GetEmailChangeTokenByHash(ctx context.Context, tokenHash strin
 }
 
 const GetInvitationByTokenHash = `-- name: GetInvitationByTokenHash :one
-SELECT id, tenant_id, user_id, token_hash, expires_at, created_at FROM invitation_tokens
-WHERE token_hash = $1 AND expires_at > CURRENT_TIMESTAMP
+SELECT id, tenant_id, user_id, token_hash, expires_at, created_at, used_at FROM invitation_tokens
+WHERE token_hash = $1 AND expires_at > CURRENT_TIMESTAMP AND used_at IS NULL
 `
 
 func (q *Queries) GetInvitationByTokenHash(ctx context.Context, tokenHash string) (*InvitationToken, error) {
@@ -208,6 +209,7 @@ func (q *Queries) GetInvitationByTokenHash(ctx context.Context, tokenHash string
 		&i.TokenHash,
 		&i.ExpiresAt,
 		&i.CreatedAt,
+		&i.UsedAt,
 	)
 	return &i, err
 }
@@ -302,6 +304,17 @@ func (q *Queries) InviteUserToTenant(ctx context.Context, arg *InviteUserToTenan
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const MarkInvitationTokenAsUsed = `-- name: MarkInvitationTokenAsUsed :exec
+UPDATE invitation_tokens
+SET used_at = CURRENT_TIMESTAMP
+WHERE id = $1
+`
+
+func (q *Queries) MarkInvitationTokenAsUsed(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, MarkInvitationTokenAsUsed, id)
+	return err
 }
 
 const UpdateUserEmail = `-- name: UpdateUserEmail :exec
