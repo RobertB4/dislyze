@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"lugia/features/auth"
 	"lugia/handlers"
 	"lugia/lib/config"
 	"lugia/lib/db"
@@ -54,7 +55,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	deleteUserRateLimiter := ratelimit.NewRateLimiter(1*time.Minute, 10)
 	changeEmailRateLimiter := ratelimit.NewRateLimiter(30*time.Minute, 1)
 
-	authHandler := handlers.NewAuthHandler(dbConn, env, authRateLimiter, queries)
+	authHandler := auth.NewAuthHandler(dbConn, env, authRateLimiter, queries)
 	usersHandler := handlers.NewUsersHandler(dbConn, queries, env, resendInviteRateLimiter, deleteUserRateLimiter, changeEmailRateLimiter)
 
 	r.Route("/auth", func(r chi.Router) {
