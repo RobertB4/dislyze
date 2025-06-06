@@ -78,11 +78,6 @@ func (r *InviteUserRequest) Validate() error {
 	return nil
 }
 
-type InviteUserResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message,omitempty"`
-	Error   string `json:"error,omitempty"`
-}
 
 type GetUsersResponse struct {
 	Users      []User                        `json:"users"`
@@ -379,7 +374,7 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responder.RespondWithJSON(w, http.StatusCreated, map[string]bool{"success": true})
+	w.WriteHeader(http.StatusCreated)
 }
 
 type UpdateUserRoleRequest struct {
@@ -458,7 +453,7 @@ func (h *UsersHandler) UpdateUserPermissions(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	responder.RespondWithJSON(w, http.StatusOK, map[string]bool{"success": true})
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
@@ -617,7 +612,7 @@ func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responder.RespondWithJSON(w, http.StatusOK, map[string]bool{"success": true})
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {

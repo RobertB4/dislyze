@@ -463,13 +463,8 @@ func TestResendInvite_Integration(t *testing.T) {
 			customAssertions: func(t *testing.T, resp *http.Response, invokerUser testUserDetail, targetUser testUserDetail, firstCallRespStatus int) {
 				assert.Equal(t, http.StatusOK, resp.StatusCode, "Response status should be OK")
 
-				var r SuccessResponse
-				err := json.NewDecoder(resp.Body).Decode(&r)
-				assert.NoError(t, err)
-				assert.True(t, r.Success)
-
 				var countOldToken int
-				err = pool.QueryRow(ctx, "SELECT COUNT(*) FROM invitation_tokens WHERE token_hash = $1 AND user_id = $2", initialTokenHashForPendingUser, targetUser.UserID).Scan(&countOldToken)
+				err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM invitation_tokens WHERE token_hash = $1 AND user_id = $2", initialTokenHashForPendingUser, targetUser.UserID).Scan(&countOldToken)
 				assert.NoError(t, err, "DB query for old token count failed")
 				assert.Equal(t, 0, countOldToken, "Old token for pending_editor_valid_token should be deleted from DB")
 
@@ -1108,10 +1103,6 @@ func TestUpdateUserPermissions_Integration(t *testing.T) {
 			requestBody:    handlers.UpdateUserRoleRequest{Role: "admin"},
 			expectedStatus: http.StatusOK,
 			validateResponse: func(t *testing.T, resp *http.Response) {
-				var successResp map[string]bool
-				err := json.NewDecoder(resp.Body).Decode(&successResp)
-				assert.NoError(t, err, "Failed to decode success response")
-				assert.True(t, successResp["success"], "Expected success to be true")
 			},
 		},
 		{
@@ -1121,10 +1112,6 @@ func TestUpdateUserPermissions_Integration(t *testing.T) {
 			requestBody:    handlers.UpdateUserRoleRequest{Role: "editor"},
 			expectedStatus: http.StatusOK,
 			validateResponse: func(t *testing.T, resp *http.Response) {
-				var successResp map[string]bool
-				err := json.NewDecoder(resp.Body).Decode(&successResp)
-				assert.NoError(t, err, "Failed to decode success response")
-				assert.True(t, successResp["success"], "Expected success to be true")
 			},
 		},
 	}
