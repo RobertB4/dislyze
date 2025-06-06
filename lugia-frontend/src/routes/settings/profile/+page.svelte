@@ -220,7 +220,7 @@
 	}
 </script>
 
-<Layout me={pageData.me} pageTitle="設定">
+<Layout me={pageData.me} pageTitle="プロフィール設定">
 	<div>
 		<SettingsTabs me={pageData.me} />
 

@@ -240,7 +240,7 @@
 
 <Layout
 	me={pageData.me}
-	pageTitle="設定"
+	pageTitle="ユーザー管理"
 	promises={{
 		usersResponse: pageData.usersPromise
 	}}
