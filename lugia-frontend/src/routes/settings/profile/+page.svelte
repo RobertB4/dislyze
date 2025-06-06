@@ -200,7 +200,7 @@
 	<div class="max-w-2xl mx-auto space-y-8">
 		<!-- Change Name Section -->
 		<div class="bg-white shadow rounded-lg p-6" data-testid="change-name-section">
-			<h2 class="text-lg font-medium text-gray-900 mb-4">氏名を変更</h2>
+			<h2 class="text-lg font-medium text-gray-900 mb-4" data-testid="change-name-heading">氏名を変更</h2>
 			<form use:nameForm class="space-y-4" data-testid="change-name-form">
 				<Input
 					id="name"
@@ -227,7 +227,7 @@
 
 		<!-- Change Password Section -->
 		<div class="bg-white shadow rounded-lg p-6" data-testid="change-password-section">
-			<h2 class="text-lg font-medium text-gray-900 mb-4">パスワードを変更</h2>
+			<h2 class="text-lg font-medium text-gray-900 mb-4" data-testid="change-password-heading">パスワードを変更</h2>
 			<form use:passwordForm class="space-y-4" data-testid="change-password-form">
 				<Input
 					id="currentPassword"
@@ -276,7 +276,7 @@
 
 		<!-- Change Email Section -->
 		<div class="bg-white shadow rounded-lg p-6" data-testid="change-email-section">
-			<h2 class="text-lg font-medium text-gray-900 mb-4">メールアドレスを変更</h2>
+			<h2 class="text-lg font-medium text-gray-900 mb-4" data-testid="change-email-heading">メールアドレスを変更</h2>
 			<form use:emailForm class="space-y-4" data-testid="change-email-form">
 				<div>
 					<p class="block text-sm font-medium text-gray-700 mb-1">現在のメールアドレス</p>
@@ -308,7 +308,7 @@
 		<!-- Change Tenant Name Section (Admin Only) -->
 		{#if pageData.me.user_role === "admin"}
 			<div class="bg-white shadow rounded-lg p-6" data-testid="change-tenant-section">
-				<h2 class="text-lg font-medium text-gray-900 mb-4">組織名を変更</h2>
+				<h2 class="text-lg font-medium text-gray-900 mb-4" data-testid="change-tenant-heading">組織名を変更</h2>
 				<form use:tenantForm class="space-y-4" data-testid="change-tenant-form">
 					<Input
 						id="tenantName"
