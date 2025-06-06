@@ -85,6 +85,12 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 			r.Delete("/{userID}", usersHandler.DeleteUser)
 			r.Post("/{userID}/permissions", usersHandler.UpdateUserPermissions)
 		})
+
+		r.Route("/tenant", func(r chi.Router) {
+			r.Use(middleware.RequireAdmin)
+
+			r.Post("/name", usersHandler.UpdateTenantName)
+		})
 	})
 
 	return r

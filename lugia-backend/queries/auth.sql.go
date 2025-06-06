@@ -352,3 +352,19 @@ func (q *Queries) UpdateRefreshTokenLastUsed(ctx context.Context, jti pgtype.UUI
 	_, err := q.db.Exec(ctx, UpdateRefreshTokenLastUsed, jti)
 	return err
 }
+
+const UpdateTenantName = `-- name: UpdateTenantName :exec
+UPDATE tenants
+SET name = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2
+`
+
+type UpdateTenantNameParams struct {
+	Name string
+	ID   pgtype.UUID
+}
+
+func (q *Queries) UpdateTenantName(ctx context.Context, arg *UpdateTenantNameParams) error {
+	_, err := q.db.Exec(ctx, UpdateTenantName, arg.Name, arg.ID)
+	return err
+}

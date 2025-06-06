@@ -1081,3 +1081,73 @@ func (h *UsersHandler) ChangeEmail(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+type UpdateTenantNameRequest struct {
+	Name string `json:"name"`
+}
+
+func (r *UpdateTenantNameRequest) Validate() error {
+	r.Name = strings.TrimSpace(r.Name)
+	if r.Name == "" {
+		return fmt.Errorf("name is required")
+	}
+	return nil
+}
+
+func (h *UsersHandler) UpdateTenantName(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := libctx.GetUserID(ctx)
+	tenantID := libctx.GetTenantID(ctx)
+
+	var req UpdateTenantNameRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		appErr := errlib.New(fmt.Errorf("UpdateTenantName: failed to decode request: %w", err), http.StatusBadRequest, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			errlib.LogError(fmt.Errorf("UpdateTenantName: failed to close request body: %w", err))
+		}
+	}()
+
+	if err := req.Validate(); err != nil {
+		appErr := errlib.New(fmt.Errorf("UpdateTenantName: validation failed: %w", err), http.StatusBadRequest, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	if err := h.q.UpdateTenantName(ctx, &queries.UpdateTenantNameParams{
+		Name: req.Name,
+		ID:   tenantID,
+	}); err != nil {
+		appErr := errlib.New(fmt.Errorf("UpdateTenantName: failed to update tenant name for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	user, err := h.q.GetUserByID(ctx, userID)
+	if err != nil {
+		appErr := errlib.New(fmt.Errorf("UpdateTenantName: failed to get updated user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	tenant, err := h.q.GetTenantByID(ctx, tenantID)
+	if err != nil {
+		appErr := errlib.New(fmt.Errorf("UpdateTenantName: failed to get updated tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	response := MeResponse{
+		TenantName: tenant.Name,
+		TenantPlan: tenant.Plan,
+		UserID:     user.ID.String(),
+		Email:      user.Email,
+		UserName:   user.Name,
+		UserRole:   user.Role.String(),
+	}
+
+	responder.RespondWithJSON(w, http.StatusOK, response)
+}
