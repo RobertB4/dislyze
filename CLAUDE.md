@@ -42,6 +42,9 @@ make migrate          # Run database migrations
 make initdb           # Drop and recreate database with migrations
 ```
 
+### Frontend Format
+Follow the format specified in ./lugia-frontend/.prettierrc
+
 ## Architecture
 
 ### Backend Structure

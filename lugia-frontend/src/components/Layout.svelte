@@ -648,7 +648,12 @@
 					</svg>
 				</button>
 
-				<h1 class="text-2xl font-semibold text-gray-900 pr-2 hidden md:block" data-testid="page-title">{pageTitle}</h1>
+				<h1
+					class="text-2xl font-semibold text-gray-900 pr-2 hidden md:block"
+					data-testid="page-title"
+				>
+					{pageTitle}
+				</h1>
 			</div>
 			<div class="px-4 sm:px-6 md:px-8">
 				{#if buttons}
