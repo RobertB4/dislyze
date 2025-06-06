@@ -1,7 +1,7 @@
 import type { LayoutLoad } from "./$types";
 import { loadFunctionFetch } from "$lib/fetch";
 import { redirect, error as svelteKitError } from "@sveltejs/kit";
-import { meCache, type Me } from "$lib/meCache";
+import { forceUpdateMeCache, meCache, type Me } from "$lib/meCache";
 import { get } from "svelte/store";
 
 export const ssr = false;
@@ -20,10 +20,16 @@ function isRedirect(error: unknown): error is import("@sveltejs/kit").Redirect {
 }
 
 export const load: LayoutLoad = async ({ fetch, url }) => {
-	if (typeof window !== "undefined") {
-		if (get(meCache)) {
-			return { me: get(meCache) };
+	if (!get(forceUpdateMeCache)) {
+		if (typeof window !== "undefined") {
+			if (get(meCache)) {
+				return { me: get(meCache) };
+			}
 		}
+	}
+
+	if (get(forceUpdateMeCache)) {
+		forceUpdateMeCache.set(false);
 	}
 
 	let me: Me = null as any;

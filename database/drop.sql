@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS email_change_tokens;
 DROP TABLE IF EXISTS goose_db_version;
 DROP TABLE IF EXISTS invitation_tokens;
 DROP TABLE IF EXISTS refresh_tokens;

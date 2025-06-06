@@ -72,7 +72,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		r.Use(middleware.NewAuthMiddleware(env, queries, authRateLimiter, dbConn).Authenticate)
 
 		r.Get("/me", usersHandler.GetMe)
-		r.Patch("/me", usersHandler.UpdateMe)
+		r.Post("/me/change-name", usersHandler.UpdateMe)
 		r.Post("/me/change-password", usersHandler.ChangePassword)
 		r.Post("/me/change-email", usersHandler.ChangeEmail)
 
@@ -89,7 +89,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		r.Route("/tenant", func(r chi.Router) {
 			r.Use(middleware.RequireAdmin)
 
-			r.Post("/name", usersHandler.UpdateTenantName)
+			r.Post("/change-name", usersHandler.UpdateTenantName)
 		})
 	})
 

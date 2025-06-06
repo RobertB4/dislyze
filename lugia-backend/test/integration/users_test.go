@@ -1914,7 +1914,7 @@ func TestUpdateMe_Integration(t *testing.T) {
 				assert.NoError(t, err, "Failed to marshal request body")
 			}
 
-			req, err := http.NewRequest("PATCH", fmt.Sprintf("%s/me", setup.BaseURL), bytes.NewBuffer(reqBody))
+			req, err := http.NewRequest("POST", fmt.Sprintf("%s/me/change-name", setup.BaseURL), bytes.NewBuffer(reqBody))
 			assert.NoError(t, err, "Failed to create request")
 			req.Header.Set("Content-Type", "application/json")
 
@@ -2744,7 +2744,7 @@ func TestUpdateTenantName_Integration(t *testing.T) {
 				reqBody = bytes.NewBuffer(jsonBody)
 			}
 
-			reqURL := fmt.Sprintf("%s/tenant/name", setup.BaseURL)
+			reqURL := fmt.Sprintf("%s/tenant/change-name", setup.BaseURL)
 			req, err := http.NewRequest("POST", reqURL, reqBody)
 			assert.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")

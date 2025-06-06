@@ -149,6 +149,28 @@ We prioritize writing correct code over writing code fast. This means we want to
 - Correctly understand the problem before writing code
 - Proactively ask claryfing questions and communicate unknowns/risks before writing code
 
-### WHY over WHAT
+### How to write comments
 - The role of comments to explain WHY code was written in the way it was written.
 - Comments explaining what the code does are generally not needed, unless the logic is so complex it is hard to understand.
+
+#### Example of a good comment
+```
+	limit32, err := conversions.SafeInt32(limit)
+	if err != nil {
+		// Fallback to safe default if conversion fails
+		limit32 = 50
+	}
+```
+This is a good comment because it is not immediately obvious why the value should be set if an error occurs.
+
+#### Example of a bad comment
+```
+	// Create invitation token
+	_, err = qtx.CreateInvitationToken(ctx, &queries.CreateInvitationTokenParams{
+		TokenHash: hashedTokenStr,
+		TenantID:  rawTenantID,
+		UserID:    createdUserID,
+		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
+	})
+```
+This comment is bad because it just explains what the next function call does. This is already obvious by reading the function name.
