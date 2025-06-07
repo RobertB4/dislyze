@@ -21,6 +21,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AcceptInviteRequestBody struct {
+	Token           string `json:"token"`
+	Password        string `json:"password"`
+	PasswordConfirm string `json:"password_confirm"`
+}
+
 func (r *AcceptInviteRequestBody) Validate() error {
 	r.Token = strings.TrimSpace(r.Token)
 	r.Password = strings.TrimSpace(r.Password)

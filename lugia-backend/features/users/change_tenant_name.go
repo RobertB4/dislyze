@@ -15,6 +15,10 @@ import (
 	"lugia/queries"
 )
 
+type ChangeTenantNameRequestBody struct {
+	Name string `json:"name"`
+}
+
 func (r *ChangeTenantNameRequestBody) Validate() error {
 	r.Name = strings.TrimSpace(r.Name)
 	if r.Name == "" {

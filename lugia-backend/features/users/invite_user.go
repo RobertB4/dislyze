@@ -26,6 +26,12 @@ import (
 	"lugia/queries_pregeneration"
 )
 
+type InviteUserRequestBody struct {
+	Email string                         `json:"email"`
+	Name  string                         `json:"name"`
+	Role  queries_pregeneration.UserRole `json:"role"`
+}
+
 func (r *InviteUserRequestBody) Validate() error {
 	r.Email = strings.TrimSpace(r.Email)
 	r.Name = strings.TrimSpace(r.Name)

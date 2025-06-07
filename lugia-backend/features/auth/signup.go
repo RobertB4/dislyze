@@ -19,6 +19,14 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type SignupRequestBody struct {
+	CompanyName     string `json:"company_name"`
+	UserName        string `json:"user_name"`
+	Email           string `json:"email"`
+	Password        string `json:"password"`
+	PasswordConfirm string `json:"password_confirm"`
+}
+
 func (r *SignupRequestBody) Validate() error {
 	r.CompanyName = strings.TrimSpace(r.CompanyName)
 	r.UserName = strings.TrimSpace(r.UserName)

@@ -19,6 +19,12 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+type ResetPasswordRequestBody struct {
+	Token           string `json:"token"`
+	Password        string `json:"password"`
+	PasswordConfirm string `json:"password_confirm"`
+}
+
 func (r *ResetPasswordRequestBody) Validate() error {
 	r.Token = strings.TrimSpace(r.Token)
 	r.Password = strings.TrimSpace(r.Password)

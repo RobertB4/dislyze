@@ -15,6 +15,10 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+type VerifyResetTokenRequestBody struct {
+	Token string `json:"token"`
+}
+
 func (r *VerifyResetTokenRequestBody) Validate() error {
 	r.Token = strings.TrimSpace(r.Token)
 	if r.Token == "" {

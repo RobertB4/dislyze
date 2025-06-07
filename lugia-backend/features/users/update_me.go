@@ -13,6 +13,10 @@ import (
 	"lugia/queries"
 )
 
+type UpdateMeRequestBody struct {
+	Name string `json:"name"`
+}
+
 func (r *UpdateMeRequestBody) Validate() error {
 	r.Name = strings.TrimSpace(r.Name)
 	if r.Name == "" {

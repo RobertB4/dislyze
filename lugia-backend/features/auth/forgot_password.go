@@ -22,6 +22,10 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 )
 
+type ForgotPasswordRequestBody struct {
+	Email string `json:"email"`
+}
+
 func (r *ForgotPasswordRequestBody) Validate() error {
 	r.Email = strings.TrimSpace(r.Email)
 	if r.Email == "" {

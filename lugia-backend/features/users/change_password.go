@@ -18,6 +18,12 @@ import (
 	"lugia/queries"
 )
 
+type ChangePasswordRequestBody struct {
+	CurrentPassword    string `json:"current_password"`
+	NewPassword        string `json:"new_password"`
+	NewPasswordConfirm string `json:"new_password_confirm"`
+}
+
 func (r *ChangePasswordRequestBody) Validate() error {
 	r.CurrentPassword = strings.TrimSpace(r.CurrentPassword)
 	r.NewPassword = strings.TrimSpace(r.NewPassword)

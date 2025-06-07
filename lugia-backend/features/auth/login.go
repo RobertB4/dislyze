@@ -20,6 +20,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type LoginRequestBody struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 func (r *LoginRequestBody) Validate() error {
 	r.Email = strings.TrimSpace(r.Email)
 	r.Password = strings.TrimSpace(r.Password)

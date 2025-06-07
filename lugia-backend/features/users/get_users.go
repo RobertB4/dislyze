@@ -16,6 +16,11 @@ import (
 	"lugia/queries"
 )
 
+type GetUsersResponse struct {
+	Users      []*queries.GetUsersByTenantIDRow `json:"users"`
+	Pagination pagination.PaginationMetadata    `json:"pagination"`
+}
+
 func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rawTenantID := libctx.GetTenantID(ctx)

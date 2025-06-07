@@ -23,6 +23,10 @@ import (
 	"lugia/queries"
 )
 
+type ChangeEmailRequestBody struct {
+	NewEmail string `json:"new_email"`
+}
+
 func (r *ChangeEmailRequestBody) Validate() error {
 	r.NewEmail = strings.TrimSpace(r.NewEmail)
 	if r.NewEmail == "" {

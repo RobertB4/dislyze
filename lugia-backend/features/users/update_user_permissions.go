@@ -17,6 +17,10 @@ import (
 	"lugia/queries_pregeneration"
 )
 
+type UpdateUserRoleRequestBody struct {
+	Role queries_pregeneration.UserRole `json:"role"`
+}
+
 func (r *UpdateUserRoleRequestBody) Validate() error {
 	r.Role = queries_pregeneration.UserRole(strings.TrimSpace(strings.ToLower(string(r.Role))))
 	if r.Role == "" {
