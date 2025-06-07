@@ -19,13 +19,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type ResetPasswordRequest struct {
-	Token           string `json:"token"`
-	Password        string `json:"password"`
-	PasswordConfirm string `json:"password_confirm"`
-}
-
-func (r *ResetPasswordRequest) Validate() error {
+func (r *ResetPasswordRequestBody) Validate() error {
 	r.Token = strings.TrimSpace(r.Token)
 	r.Password = strings.TrimSpace(r.Password)
 	r.PasswordConfirm = strings.TrimSpace(r.PasswordConfirm)
@@ -48,7 +42,7 @@ func (r *ResetPasswordRequest) Validate() error {
 func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var req ResetPasswordRequest
+	var req ResetPasswordRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		internalErr := errlib.New(err, http.StatusBadRequest, "Failed to decode reset password request body")
 		errlib.LogError(internalErr)
@@ -77,7 +71,7 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *AuthHandler) resetPassword(ctx context.Context, req ResetPasswordRequest) error {
+func (h *AuthHandler) resetPassword(ctx context.Context, req ResetPasswordRequestBody) error {
 	tokenHash := sha256.Sum256([]byte(req.Token))
 	hashedTokenStr := fmt.Sprintf("%x", tokenHash[:])
 

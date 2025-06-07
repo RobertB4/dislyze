@@ -7,15 +7,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLoginRequest_Validate(t *testing.T) {
+func TestLoginRequestBody_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		request LoginRequest
+		request LoginRequestBody
 		wantErr error
 	}{
 		{
 			name: "valid request",
-			request: LoginRequest{
+			request: LoginRequestBody{
 				Email:    "test@example.com",
 				Password: "password123",
 			},
@@ -23,14 +23,14 @@ func TestLoginRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "missing email",
-			request: LoginRequest{
+			request: LoginRequestBody{
 				Password: "password123",
 			},
 			wantErr: fmt.Errorf("email is required"),
 		},
 		{
 			name: "missing password",
-			request: LoginRequest{
+			request: LoginRequestBody{
 				Email: "test@example.com",
 			},
 			wantErr: fmt.Errorf("password is required"),
@@ -38,7 +38,7 @@ func TestLoginRequest_Validate(t *testing.T) {
 		// Edge cases
 		{
 			name: "empty email",
-			request: LoginRequest{
+			request: LoginRequestBody{
 				Email:    "",
 				Password: "password123",
 			},
@@ -46,7 +46,7 @@ func TestLoginRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "whitespace-only email",
-			request: LoginRequest{
+			request: LoginRequestBody{
 				Email:    "   ",
 				Password: "password123",
 			},
@@ -54,7 +54,7 @@ func TestLoginRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "empty password",
-			request: LoginRequest{
+			request: LoginRequestBody{
 				Email:    "test@example.com",
 				Password: "",
 			},
@@ -62,7 +62,7 @@ func TestLoginRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "whitespace-only password",
-			request: LoginRequest{
+			request: LoginRequestBody{
 				Email:    "test@example.com",
 				Password: "   ",
 			},
@@ -70,7 +70,7 @@ func TestLoginRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "fields with leading/trailing whitespace",
-			request: LoginRequest{
+			request: LoginRequestBody{
 				Email:    "  test@example.com  ",
 				Password: "  password123  ",
 			},

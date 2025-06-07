@@ -7,15 +7,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAcceptInviteRequest_Validate(t *testing.T) {
+func TestAcceptInviteRequestBody_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		request AcceptInviteRequest
+		request AcceptInviteRequestBody
 		wantErr error
 	}{
 		{
 			name: "valid request",
-			request: AcceptInviteRequest{
+			request: AcceptInviteRequestBody{
 				Token:           "valid-token-123",
 				Password:        "password123",
 				PasswordConfirm: "password123",
@@ -24,7 +24,7 @@ func TestAcceptInviteRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "missing token",
-			request: AcceptInviteRequest{
+			request: AcceptInviteRequestBody{
 				Token:           "",
 				Password:        "password123",
 				PasswordConfirm: "password123",
@@ -33,7 +33,7 @@ func TestAcceptInviteRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "empty token",
-			request: AcceptInviteRequest{
+			request: AcceptInviteRequestBody{
 				Token:           "",
 				Password:        "password123",
 				PasswordConfirm: "password123",
@@ -42,7 +42,7 @@ func TestAcceptInviteRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "missing password",
-			request: AcceptInviteRequest{
+			request: AcceptInviteRequestBody{
 				Token:           "some-token",
 				PasswordConfirm: "password123",
 			},
@@ -50,7 +50,7 @@ func TestAcceptInviteRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "password too short",
-			request: AcceptInviteRequest{
+			request: AcceptInviteRequestBody{
 				Token:           "some-token",
 				Password:        "short",
 				PasswordConfirm: "short",
@@ -59,7 +59,7 @@ func TestAcceptInviteRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "passwords do not match",
-			request: AcceptInviteRequest{
+			request: AcceptInviteRequestBody{
 				Token:           "some-token",
 				Password:        "password123",
 				PasswordConfirm: "password456",
@@ -68,7 +68,7 @@ func TestAcceptInviteRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "whitespace-only token",
-			request: AcceptInviteRequest{
+			request: AcceptInviteRequestBody{
 				Token:           "   ",
 				Password:        "password123",
 				PasswordConfirm: "password123",
@@ -77,7 +77,7 @@ func TestAcceptInviteRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "empty password",
-			request: AcceptInviteRequest{
+			request: AcceptInviteRequestBody{
 				Token:           "some-token",
 				Password:        "",
 				PasswordConfirm: "",
@@ -86,7 +86,7 @@ func TestAcceptInviteRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "whitespace-only password",
-			request: AcceptInviteRequest{
+			request: AcceptInviteRequestBody{
 				Token:           "some-token",
 				Password:        "   ",
 				PasswordConfirm: "   ",
@@ -95,7 +95,7 @@ func TestAcceptInviteRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "password exactly 8 characters",
-			request: AcceptInviteRequest{
+			request: AcceptInviteRequestBody{
 				Token:           "some-token",
 				Password:        "12345678",
 				PasswordConfirm: "12345678",
@@ -104,7 +104,7 @@ func TestAcceptInviteRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "fields with leading/trailing whitespace",
-			request: AcceptInviteRequest{
+			request: AcceptInviteRequestBody{
 				Token:           "  valid-token-123  ",
 				Password:        "  password123  ",
 				PasswordConfirm: "  password123  ",

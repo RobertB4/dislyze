@@ -13,7 +13,7 @@ import (
 )
 
 func createTestUser(t *testing.T) {
-	body, err := json.Marshal(SignupRequest{
+	body, err := json.Marshal(SignupRequestBody{
 		CompanyName:     "Test Company",
 		UserName:        "Test User",
 		Email:           "test@example.com",
@@ -47,12 +47,12 @@ func TestLogin(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		request        auth.LoginRequest
+		request        auth.LoginRequestBody
 		expectedStatus int
 	}{
 		{
 			name: "successful login",
-			request: auth.LoginRequest{
+			request: auth.LoginRequestBody{
 				Email:    "test@example.com",
 				Password: "password123",
 			},
@@ -60,7 +60,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name: "wrong password",
-			request: auth.LoginRequest{
+			request: auth.LoginRequestBody{
 				Email:    "test@example.com",
 				Password: "wrongpassword",
 			},
@@ -68,7 +68,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name: "non-existent email",
-			request: auth.LoginRequest{
+			request: auth.LoginRequestBody{
 				Email:    "nonexistent@example.com",
 				Password: "password123",
 			},
@@ -76,14 +76,14 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name: "missing email",
-			request: auth.LoginRequest{
+			request: auth.LoginRequestBody{
 				Password: "password123",
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "missing password",
-			request: auth.LoginRequest{
+			request: auth.LoginRequestBody{
 				Email: "test@example.com",
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -152,7 +152,7 @@ func TestLoginLogoutAndVerifyMeEndpoint(t *testing.T) {
 	client := &http.Client{}
 
 	// 1. Log in
-	loginPayload := auth.LoginRequest{
+	loginPayload := auth.LoginRequestBody{
 		Email:    "test@example.com",
 		Password: "password123",
 	}

@@ -22,11 +22,7 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 )
 
-type ForgotPasswordRequest struct {
-	Email string `json:"email"`
-}
-
-func (r *ForgotPasswordRequest) Validate() error {
+func (r *ForgotPasswordRequestBody) Validate() error {
 	r.Email = strings.TrimSpace(r.Email)
 	if r.Email == "" {
 		return fmt.Errorf("email is required")
@@ -47,7 +43,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req ForgotPasswordRequest
+	var req ForgotPasswordRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		internalErr := errlib.New(err, http.StatusBadRequest, "Failed to decode forgot password request body")
 		errlib.LogError(internalErr)
@@ -78,7 +74,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *AuthHandler) forgotPassword(ctx context.Context, req ForgotPasswordRequest) error {
+func (h *AuthHandler) forgotPassword(ctx context.Context, req ForgotPasswordRequestBody) error {
 	user, err := h.queries.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {

@@ -19,15 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type SignupRequest struct {
-	CompanyName     string `json:"company_name"`
-	UserName        string `json:"user_name"`
-	Email           string `json:"email"`
-	Password        string `json:"password"`
-	PasswordConfirm string `json:"password_confirm"`
-}
-
-func (r *SignupRequest) Validate() error {
+func (r *SignupRequestBody) Validate() error {
 	r.CompanyName = strings.TrimSpace(r.CompanyName)
 	r.UserName = strings.TrimSpace(r.UserName)
 	r.Email = strings.TrimSpace(r.Email)
@@ -62,7 +54,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req SignupRequest
+	var req SignupRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		appErr := errlib.New(err, http.StatusBadRequest, "Invalid request body")
 		responder.RespondWithError(w, appErr)
@@ -117,7 +109,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Request) (*jwt.TokenPair, error) {
+func (h *AuthHandler) signup(ctx context.Context, req *SignupRequestBody, r *http.Request) (*jwt.TokenPair, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)

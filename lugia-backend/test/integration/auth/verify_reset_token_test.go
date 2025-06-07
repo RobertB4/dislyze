@@ -27,7 +27,7 @@ func TestVerifyResetToken(t *testing.T) {
 
 	// Helper function to make a /auth/forgot-password request and get the raw token
 	getRawResetToken := func(userEmail string) string {
-		payload := auth.ForgotPasswordRequest{Email: userEmail}
+		payload := auth.ForgotPasswordRequestBody{Email: userEmail}
 		body, err := json.Marshal(payload)
 		assert.NoError(t, err)
 		fpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/forgot-password", setup.BaseURL), bytes.NewBuffer(body))
@@ -55,7 +55,7 @@ func TestVerifyResetToken(t *testing.T) {
 		rawToken := getRawResetToken(testUser.Email)
 		fmt.Println("Raw token for user:", testUser.Email, "is", rawToken)
 
-		verifyPayload := auth.VerifyResetTokenRequest{Token: rawToken}
+		verifyPayload := auth.VerifyResetTokenRequestBody{Token: rawToken}
 		verifyBody, err := json.Marshal(verifyPayload)
 		assert.NoError(t, err)
 
@@ -87,7 +87,7 @@ func TestVerifyResetToken(t *testing.T) {
 	})
 
 	t.Run("TestVerifyResetToken_InvalidToken_NonExistent", func(t *testing.T) {
-		verifyPayload := auth.VerifyResetTokenRequest{Token: "non-existent-token-string"}
+		verifyPayload := auth.VerifyResetTokenRequestBody{Token: "non-existent-token-string"}
 		verifyBody, err := json.Marshal(verifyPayload)
 		assert.NoError(t, err)
 
@@ -116,7 +116,7 @@ func TestVerifyResetToken(t *testing.T) {
 		_, err := pool.Exec(ctx, "UPDATE password_reset_tokens SET expires_at = $1 WHERE token_hash = $2", time.Now().Add(-1*time.Hour), hashedTokenStr)
 		assert.NoError(t, err, "Failed to manually expire token")
 
-		verifyPayload := auth.VerifyResetTokenRequest{Token: rawToken}
+		verifyPayload := auth.VerifyResetTokenRequestBody{Token: rawToken}
 		verifyBody, err := json.Marshal(verifyPayload)
 		assert.NoError(t, err)
 
@@ -145,7 +145,7 @@ func TestVerifyResetToken(t *testing.T) {
 		_, err := pool.Exec(ctx, "UPDATE password_reset_tokens SET used_at = $1 WHERE token_hash = $2", time.Now(), hashedTokenStr)
 		assert.NoError(t, err, "Failed to manually mark token as used")
 
-		verifyPayload := auth.VerifyResetTokenRequest{Token: rawToken}
+		verifyPayload := auth.VerifyResetTokenRequestBody{Token: rawToken}
 		verifyBody, err := json.Marshal(verifyPayload)
 		assert.NoError(t, err)
 
@@ -165,7 +165,7 @@ func TestVerifyResetToken(t *testing.T) {
 	})
 
 	t.Run("TestVerifyResetToken_EmptyToken", func(t *testing.T) {
-		verifyPayload := auth.VerifyResetTokenRequest{Token: ""}
+		verifyPayload := auth.VerifyResetTokenRequestBody{Token: ""}
 		verifyBody, err := json.Marshal(verifyPayload)
 		assert.NoError(t, err)
 

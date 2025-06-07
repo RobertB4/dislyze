@@ -27,7 +27,7 @@ func TestResetPassword(t *testing.T) {
 
 	getRawResetTokenForTest := func(t *testing.T, userEmail string) string {
 		t.Helper()
-		payload := auth.ForgotPasswordRequest{Email: userEmail}
+		payload := auth.ForgotPasswordRequestBody{Email: userEmail}
 		body, err := json.Marshal(payload)
 		assert.NoError(t, err, "Failed to marshal forgot password payload")
 
@@ -60,7 +60,7 @@ func TestResetPassword(t *testing.T) {
 		newPassword := "newSecurePassword123"
 		rawToken := getRawResetTokenForTest(t, testUser.Email)
 
-		resetPayload := auth.ResetPasswordRequest{
+		resetPayload := auth.ResetPasswordRequestBody{
 			Token:           rawToken,
 			Password:        newPassword,
 			PasswordConfirm: newPassword,
@@ -109,7 +109,7 @@ func TestResetPassword(t *testing.T) {
 		originalPassword := testUser.PlainTextPassword
 		newPassword := "attemptedNewPass1"
 
-		resetPayload := auth.ResetPasswordRequest{
+		resetPayload := auth.ResetPasswordRequestBody{
 			Token:           "this-token-does-not-exist-12345",
 			Password:        newPassword,
 			PasswordConfirm: newPassword,
@@ -158,7 +158,7 @@ func TestResetPassword(t *testing.T) {
 		_, err := pool.Exec(ctx, "UPDATE password_reset_tokens SET expires_at = $1 WHERE token_hash = $2", time.Now().Add(-1*time.Hour), hashedTokenStr)
 		assert.NoError(t, err, "Failed to manually expire token")
 
-		resetPayload := auth.ResetPasswordRequest{
+		resetPayload := auth.ResetPasswordRequestBody{
 			Token:           rawToken,
 			Password:        newPassword,
 			PasswordConfirm: newPassword,
@@ -205,7 +205,7 @@ func TestResetPassword(t *testing.T) {
 		_, err := pool.Exec(ctx, "UPDATE password_reset_tokens SET used_at = $1 WHERE token_hash = $2", time.Now(), hashedTokenStr)
 		assert.NoError(t, err, "Failed to manually mark token as used")
 
-		resetPayload := auth.ResetPasswordRequest{
+		resetPayload := auth.ResetPasswordRequestBody{
 			Token:           rawToken,
 			Password:        newPassword,
 			PasswordConfirm: newPassword,
@@ -246,7 +246,7 @@ func TestResetPassword(t *testing.T) {
 		originalPassword := testUser.PlainTextPassword
 		newPassword := "attemptedNewPass4"
 
-		resetPayload := auth.ResetPasswordRequest{
+		resetPayload := auth.ResetPasswordRequestBody{
 			Token:           "",
 			Password:        newPassword,
 			PasswordConfirm: newPassword,
@@ -287,7 +287,7 @@ func TestResetPassword(t *testing.T) {
 		originalPassword := testUser.PlainTextPassword
 		rawToken := getRawResetTokenForTest(t, testUser.Email)
 
-		resetPayload := auth.ResetPasswordRequest{
+		resetPayload := auth.ResetPasswordRequestBody{
 			Token:           rawToken,
 			Password:        "",
 			PasswordConfirm: "",
@@ -328,7 +328,7 @@ func TestResetPassword(t *testing.T) {
 		newPassword := "short"
 		rawToken := getRawResetTokenForTest(t, testUser.Email)
 
-		resetPayload := auth.ResetPasswordRequest{
+		resetPayload := auth.ResetPasswordRequestBody{
 			Token:           rawToken,
 			Password:        newPassword,
 			PasswordConfirm: newPassword,
@@ -376,7 +376,7 @@ func TestResetPassword(t *testing.T) {
 		originalPassword := testUser.PlainTextPassword
 		rawToken := getRawResetTokenForTest(t, testUser.Email)
 
-		resetPayload := auth.ResetPasswordRequest{
+		resetPayload := auth.ResetPasswordRequestBody{
 			Token:           rawToken,
 			Password:        "newValidPass123",
 			PasswordConfirm: "anotherValidPass456",

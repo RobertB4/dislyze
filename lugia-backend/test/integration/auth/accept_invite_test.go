@@ -29,14 +29,14 @@ func TestAcceptInvite_Integration(t *testing.T) {
 
 	type acceptInviteTestCase struct {
 		name           string
-		requestBody    auth.AcceptInviteRequest
+		requestBody    auth.AcceptInviteRequestBody
 		expectedStatus int
 	}
 
 	tests := []acceptInviteTestCase{
 		{
 			name: "successful invite acceptance",
-			requestBody: auth.AcceptInviteRequest{
+			requestBody: auth.AcceptInviteRequestBody{
 				Token:           plainValidTokenForAccept,
 				Password:        newPasswordForAcceptInvite,
 				PasswordConfirm: newPasswordForAcceptInvite,
@@ -45,7 +45,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 		},
 		{
 			name: "token already used fails",
-			requestBody: auth.AcceptInviteRequest{
+			requestBody: auth.AcceptInviteRequestBody{
 				Token:           plainValidTokenForAccept, // Same token as successful test
 				Password:        newPasswordForAcceptInvite,
 				PasswordConfirm: newPasswordForAcceptInvite,
@@ -54,7 +54,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 		},
 		{
 			name: "token not found",
-			requestBody: auth.AcceptInviteRequest{
+			requestBody: auth.AcceptInviteRequestBody{
 				Token:           plainNonExistentTokenForAccept,
 				Password:        newPasswordForAcceptInvite,
 				PasswordConfirm: newPasswordForAcceptInvite,
@@ -63,7 +63,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 		},
 		{
 			name: "validation error - password mismatch",
-			requestBody: auth.AcceptInviteRequest{
+			requestBody: auth.AcceptInviteRequestBody{
 				Token:           plainValidTokenForAccept, // Needs a valid token context for this to be the failure point
 				Password:        newPasswordForAcceptInvite,
 				PasswordConfirm: "IncorrectP@sswOrdConfirm",
@@ -72,7 +72,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 		},
 		{
 			name: "validation error - password too short",
-			requestBody: auth.AcceptInviteRequest{
+			requestBody: auth.AcceptInviteRequestBody{
 				Token:           plainValidTokenForAccept,
 				Password:        "short",
 				PasswordConfirm: "short",
@@ -81,7 +81,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 		},
 		{
 			name: "validation error - empty token",
-			requestBody: auth.AcceptInviteRequest{
+			requestBody: auth.AcceptInviteRequestBody{
 				Token:           "",
 				Password:        newPasswordForAcceptInvite,
 				PasswordConfirm: newPasswordForAcceptInvite,
@@ -90,7 +90,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 		},
 		{
 			name: "expired token",
-			requestBody: auth.AcceptInviteRequest{
+			requestBody: auth.AcceptInviteRequestBody{
 				Token:           plainExpiredTokenForAccept,
 				Password:        newPasswordForAcceptInvite,
 				PasswordConfirm: newPasswordForAcceptInvite,
@@ -99,7 +99,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 		},
 		{
 			name: "user status not pending_verification (e.g., already active)",
-			requestBody: auth.AcceptInviteRequest{
+			requestBody: auth.AcceptInviteRequestBody{
 				Token:           plainTokenForActiveUserAccept, // Token associated with an already active user
 				Password:        newPasswordForAcceptInvite,
 				PasswordConfirm: newPasswordForAcceptInvite,

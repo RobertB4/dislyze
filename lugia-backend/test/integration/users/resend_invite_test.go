@@ -107,13 +107,13 @@ func TestResendInvite_Integration(t *testing.T) {
 				// --- Start: Accept Invite and Verify Activation ---
 				const newPasswordForInviteAccept = "ValidNewPass123!"
 
-				acceptInvitePayload := auth.AcceptInviteRequest{
+				acceptInvitePayload := auth.AcceptInviteRequestBody{
 					Token:           newPlainToken,
 					Password:        newPasswordForInviteAccept,
 					PasswordConfirm: newPasswordForInviteAccept,
 				}
 				payloadBytes, err := json.Marshal(acceptInvitePayload)
-				assert.NoError(t, err, "Failed to marshal AcceptInviteRequest")
+				assert.NoError(t, err, "Failed to marshal AcceptInviteRequestBody")
 
 				acceptInviteURL := fmt.Sprintf("%s/auth/accept-invite", setup.BaseURL)
 				acceptInviteReq, err := http.NewRequest(http.MethodPost, acceptInviteURL, bytes.NewBuffer(payloadBytes))

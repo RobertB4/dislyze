@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type SignupRequest struct {
+type SignupRequestBody struct {
 	CompanyName     string `json:"company_name"`
 	UserName        string `json:"user_name"`
 	Email           string `json:"email"`
@@ -26,12 +26,12 @@ func TestSignup(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		request        SignupRequest
+		request        SignupRequestBody
 		expectedStatus int
 	}{
 		{
 			name: "successful signup",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Email:           "test@example.com",
@@ -42,7 +42,7 @@ func TestSignup(t *testing.T) {
 		},
 		{
 			name: "missing company name",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				UserName:        "Test User",
 				Email:           "test@example.com",
 				Password:        "password123",
@@ -52,7 +52,7 @@ func TestSignup(t *testing.T) {
 		},
 		{
 			name: "missing user name",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				Email:           "test@example.com",
 				Password:        "password123",
@@ -62,7 +62,7 @@ func TestSignup(t *testing.T) {
 		},
 		{
 			name: "missing email",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Password:        "password123",
@@ -72,7 +72,7 @@ func TestSignup(t *testing.T) {
 		},
 		{
 			name: "missing password",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName: "Test Company",
 				UserName:    "Test User",
 				Email:       "test@example.com",
@@ -81,7 +81,7 @@ func TestSignup(t *testing.T) {
 		},
 		{
 			name: "password too short",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Email:           "test@example.com",
@@ -92,7 +92,7 @@ func TestSignup(t *testing.T) {
 		},
 		{
 			name: "passwords do not match",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Email:           "test@example.com",
@@ -163,7 +163,7 @@ func TestSignupDuplicateEmail(t *testing.T) {
 	setup.CleanupDB(t, pool)
 	defer setup.CloseDB(pool)
 
-	request := SignupRequest{
+	request := SignupRequestBody{
 		CompanyName:     "Test Company",
 		UserName:        "Test User",
 		Email:           "duplicate@example.com",

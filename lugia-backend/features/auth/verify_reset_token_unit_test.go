@@ -7,43 +7,43 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestVerifyResetTokenRequest_Validate(t *testing.T) {
+func TestVerifyResetTokenRequestBody_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		request VerifyResetTokenRequest
+		request VerifyResetTokenRequestBody
 		wantErr error
 	}{
 		{
 			name: "valid request",
-			request: VerifyResetTokenRequest{
+			request: VerifyResetTokenRequestBody{
 				Token: "valid-token-123",
 			},
 			wantErr: nil,
 		},
 		{
 			name: "missing token",
-			request: VerifyResetTokenRequest{
+			request: VerifyResetTokenRequestBody{
 				Token: "",
 			},
 			wantErr: fmt.Errorf("token is required"),
 		},
 		{
 			name: "empty token",
-			request: VerifyResetTokenRequest{
+			request: VerifyResetTokenRequestBody{
 				Token: "",
 			},
 			wantErr: fmt.Errorf("token is required"),
 		},
 		{
 			name: "whitespace-only token",
-			request: VerifyResetTokenRequest{
+			request: VerifyResetTokenRequestBody{
 				Token: "   ",
 			},
 			wantErr: fmt.Errorf("token is required"),
 		},
 		{
 			name: "token with leading/trailing whitespace",
-			request: VerifyResetTokenRequest{
+			request: VerifyResetTokenRequestBody{
 				Token: "  valid-token-123  ",
 			},
 			wantErr: nil,

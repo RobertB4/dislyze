@@ -27,7 +27,7 @@ func TestForgotPassword(t *testing.T) {
 
 	t.Run("TestForgotPassword_ExistingEmail_Successful", func(t *testing.T) {
 		testUser := setup.TestUsersData["alpha_admin"]
-		payload := auth.ForgotPasswordRequest{Email: testUser.Email}
+		payload := auth.ForgotPasswordRequestBody{Email: testUser.Email}
 		body, err := json.Marshal(payload)
 		assert.NoError(t, err)
 
@@ -83,7 +83,7 @@ func TestForgotPassword(t *testing.T) {
 
 	t.Run("TestForgotPassword_NonExistentEmail", func(t *testing.T) {
 		nonExistentEmail := "idonotexist@example.com"
-		payload := auth.ForgotPasswordRequest{Email: nonExistentEmail}
+		payload := auth.ForgotPasswordRequestBody{Email: nonExistentEmail}
 		body, err := json.Marshal(payload)
 		assert.NoError(t, err)
 
@@ -103,7 +103,7 @@ func TestForgotPassword(t *testing.T) {
 	})
 
 	t.Run("TestForgotPassword_InvalidEmailFormat", func(t *testing.T) {
-		payload := auth.ForgotPasswordRequest{Email: "invalidemail"}
+		payload := auth.ForgotPasswordRequestBody{Email: "invalidemail"}
 		body, err := json.Marshal(payload)
 		assert.NoError(t, err)
 
@@ -123,7 +123,7 @@ func TestForgotPassword(t *testing.T) {
 	})
 
 	t.Run("TestForgotPassword_EmptyEmail", func(t *testing.T) {
-		payload := auth.ForgotPasswordRequest{Email: ""}
+		payload := auth.ForgotPasswordRequestBody{Email: ""}
 		body, err := json.Marshal(payload)
 		assert.NoError(t, err)
 
@@ -146,7 +146,7 @@ func TestForgotPassword(t *testing.T) {
 		testUser := setup.TestUsersData["alpha_editor"]
 
 		// --- First Request ---
-		payload1 := auth.ForgotPasswordRequest{Email: testUser.Email}
+		payload1 := auth.ForgotPasswordRequestBody{Email: testUser.Email}
 		body1, err := json.Marshal(payload1)
 		assert.NoError(t, err)
 		req1, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/forgot-password", setup.BaseURL), bytes.NewBuffer(body1))
@@ -188,7 +188,7 @@ func TestForgotPassword(t *testing.T) {
 		}
 
 		// --- Second Request ---
-		payload2 := auth.ForgotPasswordRequest{Email: testUser.Email}
+		payload2 := auth.ForgotPasswordRequestBody{Email: testUser.Email}
 		body2, err := json.Marshal(payload2)
 		assert.NoError(t, err)
 		req2, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/forgot-password", setup.BaseURL), bytes.NewBuffer(body2))

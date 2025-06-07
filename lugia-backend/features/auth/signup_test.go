@@ -7,15 +7,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSignupRequest_Validate(t *testing.T) {
+func TestSignupRequestBody_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		request SignupRequest
+		request SignupRequestBody
 		wantErr error
 	}{
 		{
 			name: "valid request",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Email:           "test@example.com",
@@ -26,7 +26,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "missing company name",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				UserName:        "Test User",
 				Email:           "test@example.com",
 				Password:        "password123",
@@ -36,7 +36,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "missing user name",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				Email:           "test@example.com",
 				Password:        "password123",
@@ -46,7 +46,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "missing email",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Password:        "password123",
@@ -56,7 +56,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "missing password",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Email:           "test@example.com",
@@ -66,7 +66,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "password too short",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Email:           "test@example.com",
@@ -77,7 +77,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "passwords do not match",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Email:           "test@example.com",
@@ -89,7 +89,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		// Edge cases
 		{
 			name: "empty company name",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "",
 				UserName:        "Test User",
 				Email:           "test@example.com",
@@ -100,7 +100,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "whitespace-only company name",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "   ",
 				UserName:        "Test User",
 				Email:           "test@example.com",
@@ -111,7 +111,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "empty user name",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "",
 				Email:           "test@example.com",
@@ -122,7 +122,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "whitespace-only user name",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "   ",
 				Email:           "test@example.com",
@@ -133,7 +133,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "empty email",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Email:           "",
@@ -144,7 +144,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "whitespace-only email",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Email:           "   ",
@@ -155,7 +155,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "empty password",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Email:           "test@example.com",
@@ -166,7 +166,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "whitespace-only password",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Email:           "test@example.com",
@@ -177,7 +177,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "password exactly 8 characters",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Email:           "test@example.com",
@@ -188,7 +188,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "password with spaces",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Email:           "test@example.com",
@@ -199,7 +199,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "password with special characters",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 				Email:           "test@example.com",
@@ -210,7 +210,7 @@ func TestSignupRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "fields with leading/trailing whitespace",
-			request: SignupRequest{
+			request: SignupRequestBody{
 				CompanyName:     "  Test Company  ",
 				UserName:        "  Test User  ",
 				Email:           "  test@example.com  ",

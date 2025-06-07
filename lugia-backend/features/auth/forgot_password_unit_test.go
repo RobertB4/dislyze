@@ -7,57 +7,57 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestForgotPasswordRequest_Validate(t *testing.T) {
+func TestForgotPasswordRequestBody_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		request ForgotPasswordRequest
+		request ForgotPasswordRequestBody
 		wantErr error
 	}{
 		{
 			name: "valid request",
-			request: ForgotPasswordRequest{
+			request: ForgotPasswordRequestBody{
 				Email: "test@example.com",
 			},
 			wantErr: nil,
 		},
 		{
 			name: "missing email",
-			request: ForgotPasswordRequest{
+			request: ForgotPasswordRequestBody{
 				Email: "",
 			},
 			wantErr: fmt.Errorf("email is required"),
 		},
 		{
 			name: "empty email",
-			request: ForgotPasswordRequest{
+			request: ForgotPasswordRequestBody{
 				Email: "",
 			},
 			wantErr: fmt.Errorf("email is required"),
 		},
 		{
 			name: "whitespace-only email",
-			request: ForgotPasswordRequest{
+			request: ForgotPasswordRequestBody{
 				Email: "   ",
 			},
 			wantErr: fmt.Errorf("email is required"),
 		},
 		{
 			name: "invalid email format - no @",
-			request: ForgotPasswordRequest{
+			request: ForgotPasswordRequestBody{
 				Email: "invalid-email",
 			},
 			wantErr: fmt.Errorf("invalid email address format"),
 		},
 		{
 			name: "invalid email format - just @",
-			request: ForgotPasswordRequest{
+			request: ForgotPasswordRequestBody{
 				Email: "@",
 			},
 			wantErr: nil, // Basic validation only checks for @ presence
 		},
 		{
 			name: "email with leading/trailing whitespace",
-			request: ForgotPasswordRequest{
+			request: ForgotPasswordRequestBody{
 				Email: "  test@example.com  ",
 			},
 			wantErr: nil,

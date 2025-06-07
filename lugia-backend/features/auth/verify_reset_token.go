@@ -15,11 +15,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type VerifyResetTokenRequest struct {
-	Token string `json:"token"`
-}
-
-func (r *VerifyResetTokenRequest) Validate() error {
+func (r *VerifyResetTokenRequestBody) Validate() error {
 	r.Token = strings.TrimSpace(r.Token)
 	if r.Token == "" {
 		return fmt.Errorf("token is required")
@@ -30,7 +26,7 @@ func (r *VerifyResetTokenRequest) Validate() error {
 func (h *AuthHandler) VerifyResetToken(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var req VerifyResetTokenRequest
+	var req VerifyResetTokenRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		internalErr := errlib.New(err, http.StatusBadRequest, "Failed to decode verify reset token request body")
 		errlib.LogError(internalErr)
@@ -59,7 +55,7 @@ func (h *AuthHandler) VerifyResetToken(w http.ResponseWriter, r *http.Request) {
 	responder.RespondWithJSON(w, http.StatusOK, map[string]string{"email": email})
 }
 
-func (h *AuthHandler) verifyResetToken(ctx context.Context, req VerifyResetTokenRequest) (string, error) {
+func (h *AuthHandler) verifyResetToken(ctx context.Context, req VerifyResetTokenRequestBody) (string, error) {
 	tokenHash := sha256.Sum256([]byte(req.Token))
 	hashedTokenStr := fmt.Sprintf("%x", tokenHash[:])
 

@@ -90,7 +90,7 @@ func ResetAndSeedDB(t *testing.T, pool *pgxpool.Pool) {
 func LoginUserAndGetTokens(t *testing.T, email string, password string) (string, string) {
 	t.Helper()
 
-	loginPayload := auth.LoginRequest{
+	loginPayload := auth.LoginRequestBody{
 		Email:    email,
 		Password: password,
 	}
@@ -209,7 +209,7 @@ func AttemptLogin(t *testing.T, email string, password string) *http.Response {
 	t.Helper()
 	client := &http.Client{}
 
-	loginPayload := auth.LoginRequest{
+	loginPayload := auth.LoginRequestBody{
 		Email:    email,
 		Password: password,
 	}

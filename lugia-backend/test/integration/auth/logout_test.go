@@ -22,7 +22,7 @@ func TestLogout(t *testing.T) {
 	client := &http.Client{}
 
 	// First, log in to get cookies
-	loginPayload := auth.LoginRequest{
+	loginPayload := auth.LoginRequestBody{
 		Email:    "test@example.com",
 		Password: "password123",
 	}

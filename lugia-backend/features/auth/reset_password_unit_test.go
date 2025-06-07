@@ -7,15 +7,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestResetPasswordRequest_Validate(t *testing.T) {
+func TestResetPasswordRequestBody_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		request ResetPasswordRequest
+		request ResetPasswordRequestBody
 		wantErr error
 	}{
 		{
 			name: "valid request",
-			request: ResetPasswordRequest{
+			request: ResetPasswordRequestBody{
 				Token:           "valid-token-123",
 				Password:        "password123",
 				PasswordConfirm: "password123",
@@ -24,7 +24,7 @@ func TestResetPasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "missing token",
-			request: ResetPasswordRequest{
+			request: ResetPasswordRequestBody{
 				Token:           "",
 				Password:        "password123",
 				PasswordConfirm: "password123",
@@ -33,7 +33,7 @@ func TestResetPasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "missing password",
-			request: ResetPasswordRequest{
+			request: ResetPasswordRequestBody{
 				Token:           "valid-token-123",
 				Password:        "",
 				PasswordConfirm: "password123",
@@ -42,7 +42,7 @@ func TestResetPasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "password too short",
-			request: ResetPasswordRequest{
+			request: ResetPasswordRequestBody{
 				Token:           "valid-token-123",
 				Password:        "short",
 				PasswordConfirm: "short",
@@ -51,7 +51,7 @@ func TestResetPasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "passwords do not match",
-			request: ResetPasswordRequest{
+			request: ResetPasswordRequestBody{
 				Token:           "valid-token-123",
 				Password:        "password123",
 				PasswordConfirm: "password456",
@@ -60,7 +60,7 @@ func TestResetPasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "empty token",
-			request: ResetPasswordRequest{
+			request: ResetPasswordRequestBody{
 				Token:           "",
 				Password:        "password123",
 				PasswordConfirm: "password123",
@@ -69,7 +69,7 @@ func TestResetPasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "whitespace-only token",
-			request: ResetPasswordRequest{
+			request: ResetPasswordRequestBody{
 				Token:           "   ",
 				Password:        "password123",
 				PasswordConfirm: "password123",
@@ -78,7 +78,7 @@ func TestResetPasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "empty password",
-			request: ResetPasswordRequest{
+			request: ResetPasswordRequestBody{
 				Token:           "valid-token-123",
 				Password:        "",
 				PasswordConfirm: "",
@@ -87,7 +87,7 @@ func TestResetPasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "whitespace-only password",
-			request: ResetPasswordRequest{
+			request: ResetPasswordRequestBody{
 				Token:           "valid-token-123",
 				Password:        "   ",
 				PasswordConfirm: "   ",
@@ -96,7 +96,7 @@ func TestResetPasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "password exactly 8 characters",
-			request: ResetPasswordRequest{
+			request: ResetPasswordRequestBody{
 				Token:           "valid-token-123",
 				Password:        "12345678",
 				PasswordConfirm: "12345678",
@@ -105,7 +105,7 @@ func TestResetPasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "fields with leading/trailing whitespace",
-			request: ResetPasswordRequest{
+			request: ResetPasswordRequestBody{
 				Token:           "  valid-token-123  ",
 				Password:        "  password123  ",
 				PasswordConfirm: "  password123  ",

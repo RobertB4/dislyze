@@ -21,13 +21,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type AcceptInviteRequest struct {
-	Token           string `json:"token"`
-	Password        string `json:"password"`
-	PasswordConfirm string `json:"password_confirm"`
-}
-
-func (r *AcceptInviteRequest) Validate() error {
+func (r *AcceptInviteRequestBody) Validate() error {
 	r.Token = strings.TrimSpace(r.Token)
 	r.Password = strings.TrimSpace(r.Password)
 	r.PasswordConfirm = strings.TrimSpace(r.PasswordConfirm)
@@ -50,7 +44,7 @@ func (r *AcceptInviteRequest) Validate() error {
 func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var req AcceptInviteRequest
+	var req AcceptInviteRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to decode request: %w", err), http.StatusBadRequest, "")
 		responder.RespondWithError(w, appErr)
@@ -77,7 +71,7 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *AuthHandler) acceptInvite(ctx context.Context, req AcceptInviteRequest, w http.ResponseWriter, r *http.Request) error {
+func (h *AuthHandler) acceptInvite(ctx context.Context, req AcceptInviteRequestBody, w http.ResponseWriter, r *http.Request) error {
 	hash := sha256.Sum256([]byte(req.Token))
 	hashedTokenStr := fmt.Sprintf("%x", hash[:])
 

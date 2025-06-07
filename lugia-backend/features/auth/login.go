@@ -20,12 +20,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-func (r *LoginRequest) Validate() error {
+func (r *LoginRequestBody) Validate() error {
 	r.Email = strings.TrimSpace(r.Email)
 	r.Password = strings.TrimSpace(r.Password)
 
@@ -45,7 +40,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req LoginRequest
+	var req LoginRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		appErr := errlib.New(err, http.StatusBadRequest, "Invalid request body")
 		responder.RespondWithError(w, appErr)
@@ -88,7 +83,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Request) (*jwt.TokenPair, error) {
+func (h *AuthHandler) login(ctx context.Context, req *LoginRequestBody, r *http.Request) (*jwt.TokenPair, error) {
 	user, err := h.queries.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
