@@ -1,11 +1,13 @@
 package users
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	libctx "lugia/lib/ctx"
 	"lugia/lib/errlib"
@@ -71,18 +73,26 @@ func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	paginationParams := pagination.CalculatePagination(r)
 	searchTerm := search.ValidateSearchTerm(r, 100)
 
-	totalCount, err := h.q.CountUsersByTenantID(ctx, &queries.CountUsersByTenantIDParams{
-		TenantID: rawTenantID,
-		Column2:  searchTerm,
-	})
+	response, err := h.getUsers(ctx, rawTenantID, paginationParams, searchTerm)
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("GetUsers: failed to count users: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
+		responder.RespondWithError(w, err)
 		return
 	}
 
+	responder.RespondWithJSON(w, http.StatusOK, response)
+}
+
+func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, paginationParams pagination.QueryParams, searchTerm string) (*GetUsersResponse, error) {
+	totalCount, err := h.q.CountUsersByTenantID(ctx, &queries.CountUsersByTenantIDParams{
+		TenantID: tenantID,
+		Column2:  searchTerm,
+	})
+	if err != nil {
+		return nil, errlib.New(fmt.Errorf("GetUsers: failed to count users: %w", err), http.StatusInternalServerError, "")
+	}
+
 	dbUsers, err := h.q.GetUsersByTenantID(ctx, &queries.GetUsersByTenantIDParams{
-		TenantID: rawTenantID,
+		TenantID: tenantID,
 		Column2:  searchTerm,
 		Limit:    paginationParams.Limit,
 		Offset:   paginationParams.Offset,
@@ -90,31 +100,26 @@ func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
 			paginationMetadata := pagination.CalculateMetadata(paginationParams.Page, paginationParams.Limit, totalCount)
-			response := GetUsersResponse{
+			response := &GetUsersResponse{
 				Users:      []User{},
 				Pagination: paginationMetadata,
 			}
-			responder.RespondWithJSON(w, http.StatusOK, response)
-			return
+			return response, nil
 		}
-		appErr := errlib.New(fmt.Errorf("GetUsers: failed to get users: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, errlib.New(fmt.Errorf("GetUsers: failed to get users: %w", err), http.StatusInternalServerError, "")
 	}
 
 	responseUsers, mapErr := mapDBUsersToResponse(dbUsers)
 	if mapErr != nil {
-		appErr := errlib.New(fmt.Errorf("GetUsers: failed to map users: %w", mapErr), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, errlib.New(fmt.Errorf("GetUsers: failed to map users: %w", mapErr), http.StatusInternalServerError, "")
 	}
 
 	paginationMetadata := pagination.CalculateMetadata(paginationParams.Page, paginationParams.Limit, totalCount)
 
-	response := GetUsersResponse{
+	response := &GetUsersResponse{
 		Users:      responseUsers,
 		Pagination: paginationMetadata,
 	}
 
-	responder.RespondWithJSON(w, http.StatusOK, response)
+	return response, nil
 }

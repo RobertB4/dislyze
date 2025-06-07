@@ -1,6 +1,7 @@
 package users
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -35,35 +36,36 @@ func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	invokerUserID := libctx.GetUserID(ctx)
 	invokerTenantID := libctx.GetTenantID(ctx)
 
+	err := h.deleteUser(ctx, targetUserID, invokerUserID, invokerTenantID)
+	if err != nil {
+		responder.RespondWithError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *UsersHandler) deleteUser(ctx context.Context, targetUserID, invokerUserID, invokerTenantID pgtype.UUID) error {
+
 	targetDBUser, err := h.q.GetUserByID(ctx, targetUserID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			appErr := errlib.New(fmt.Errorf("DeleteUser: target user with ID %s not found: %w", targetUserIDStr, err), http.StatusNotFound, "")
-			responder.RespondWithError(w, appErr)
-			return
+			return errlib.New(fmt.Errorf("DeleteUser: target user with ID %s not found: %w", targetUserID.String(), err), http.StatusNotFound, "")
 		}
-		appErr := errlib.New(fmt.Errorf("DeleteUser: failed to get target user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("DeleteUser: failed to get target user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
 	}
 
 	if invokerTenantID != targetDBUser.TenantID {
-		appErr := errlib.New(fmt.Errorf("DeleteUser: invoker %s (tenant %s) attempting to delete user %s (tenant %s) in different tenant", invokerUserID.String(), invokerTenantID.String(), targetUserID.String(), targetDBUser.TenantID.String()), http.StatusForbidden, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("DeleteUser: invoker %s (tenant %s) attempting to delete user %s (tenant %s) in different tenant", invokerUserID.String(), invokerTenantID.String(), targetUserID.String(), targetDBUser.TenantID.String()), http.StatusForbidden, "")
 	}
 
 	if invokerUserID == targetUserID {
-		appErr := errlib.New(fmt.Errorf("DeleteUser: user %s attempting to delete themselves", invokerUserID.String()), http.StatusConflict, "自分自身を削除することはできません。")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("DeleteUser: user %s attempting to delete themselves", invokerUserID.String()), http.StatusConflict, "自分自身を削除することはできません。")
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("DeleteUser: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("DeleteUser: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -76,28 +78,20 @@ func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		UserID:   targetUserID,
 		TenantID: targetDBUser.TenantID,
 	}); err != nil {
-		appErr := errlib.New(fmt.Errorf("DeleteUser: failed to delete invitation tokens for user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("DeleteUser: failed to delete invitation tokens for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
 	}
 
 	if err := qtx.DeleteRefreshTokensByUserID(ctx, targetUserID); err != nil {
-		appErr := errlib.New(fmt.Errorf("DeleteUser: failed to delete refresh tokens for user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("DeleteUser: failed to delete refresh tokens for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
 	}
 
 	if err := qtx.DeleteUser(ctx, targetUserID); err != nil {
-		appErr := errlib.New(fmt.Errorf("DeleteUser: failed to delete user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("DeleteUser: failed to delete user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		appErr := errlib.New(fmt.Errorf("DeleteUser: failed to commit transaction for user %s: %w", targetUserIDStr, err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("DeleteUser: failed to commit transaction for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil
 }

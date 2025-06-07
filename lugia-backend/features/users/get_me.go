@@ -1,10 +1,12 @@
 package users
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	libctx "lugia/lib/ctx"
 	"lugia/lib/errlib"
@@ -25,31 +27,33 @@ func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	userID := libctx.GetUserID(ctx)
 	tenantID := libctx.GetTenantID(ctx)
 
+	response, err := h.getMe(ctx, userID, tenantID)
+	if err != nil {
+		responder.RespondWithError(w, err)
+		return
+	}
+
+	responder.RespondWithJSON(w, http.StatusOK, response)
+}
+
+func (h *UsersHandler) getMe(ctx context.Context, userID, tenantID pgtype.UUID) (*MeResponse, error) {
 	user, err := h.q.GetUserByID(ctx, userID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			appErr := errlib.New(fmt.Errorf("GetMe: user not found %s: %w", userID.String(), err), http.StatusNotFound, "")
-			responder.RespondWithError(w, appErr)
-			return
+			return nil, errlib.New(fmt.Errorf("GetMe: user not found %s: %w", userID.String(), err), http.StatusNotFound, "")
 		}
-		appErr := errlib.New(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, errlib.New(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
 	}
 
 	tenant, err := h.q.GetTenantByID(ctx, tenantID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			appErr := errlib.New(fmt.Errorf("GetMe: tenant not found %s for user %s: %w", tenantID.String(), userID.String(), err), http.StatusNotFound, "")
-			responder.RespondWithError(w, appErr)
-			return
+			return nil, errlib.New(fmt.Errorf("GetMe: tenant not found %s for user %s: %w", tenantID.String(), userID.String(), err), http.StatusNotFound, "")
 		}
-		appErr := errlib.New(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, errlib.New(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
 	}
 
-	response := MeResponse{
+	response := &MeResponse{
 		TenantName: tenant.Name,
 		TenantPlan: tenant.Plan,
 		UserID:     user.ID.String(),
@@ -58,5 +62,5 @@ func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		UserRole:   user.Role.String(),
 	}
 
-	responder.RespondWithJSON(w, http.StatusOK, response)
+	return response, nil
 }

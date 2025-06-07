@@ -1,10 +1,13 @@
 package users
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/jackc/pgx/v5/pgtype"
 
 	libctx "lugia/lib/ctx"
 	"lugia/lib/errlib"
@@ -46,14 +49,22 @@ func (h *UsersHandler) ChangeTenantName(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := h.q.UpdateTenantName(ctx, &queries.UpdateTenantNameParams{
-		Name: req.Name,
-		ID:   tenantID,
-	}); err != nil {
-		appErr := errlib.New(fmt.Errorf("ChangeTenantName: failed to update tenant name for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
+	err := h.changeTenantName(ctx, tenantID, req)
+	if err != nil {
+		responder.RespondWithError(w, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *UsersHandler) changeTenantName(ctx context.Context, tenantID pgtype.UUID, req ChangeTenantNameRequest) error {
+	if err := h.q.UpdateTenantName(ctx, &queries.UpdateTenantNameParams{
+		Name: req.Name,
+		ID:   tenantID,
+	}); err != nil {
+		return errlib.New(fmt.Errorf("ChangeTenantName: failed to update tenant name for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
+	}
+
+	return nil
 }
