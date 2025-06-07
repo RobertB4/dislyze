@@ -6,13 +6,6 @@
 
 	let { data }: { data: PageData } = $props();
 
-	const goToLogin = () => {
-		const returnUrl = encodeURIComponent(
-			`/verify/change-email?token=${encodeURIComponent(data.token)}`
-		);
-		goto(`/auth/login?redirect=${returnUrl}`);
-	};
-
 	const goToProfile = () => {
 		goto("/settings/profile");
 	};
@@ -30,30 +23,7 @@
 				</h2>
 			</div>
 
-			{#if data.needsLogin}
-				<div class="space-y-6" data-testid="needs-login-section">
-					<Alert type="info">
-						<p class="text-sm" data-testid="needs-login-message">
-							メールアドレスの変更を完了するには、ログインする必要があります。
-						</p>
-					</Alert>
-
-					<p class="text-sm text-gray-600 text-center" data-testid="login-instruction">
-						アカウントにログイン後、メールアドレスの変更が自動的に完了します。
-					</p>
-
-					<div class="flex flex-col space-y-3">
-						<Button
-							variant="primary"
-							onclick={goToLogin}
-							class="w-full"
-							data-testid="go-to-login-button"
-						>
-							ログインしてメールアドレスを変更
-						</Button>
-					</div>
-				</div>
-			{:else if data.verificationFailed}
+			{#if data.verificationFailed}
 				<div class="space-y-6" data-testid="verification-failed-section">
 					<Alert type="danger">
 						<p class="text-sm" data-testid="verification-failed-message">

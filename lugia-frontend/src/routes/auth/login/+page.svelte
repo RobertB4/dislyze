@@ -3,6 +3,7 @@
 	import { createForm } from "felte";
 	import Button from "$components/Button.svelte";
 	import Input from "$components/Input.svelte";
+	import Alert from "$components/Alert.svelte";
 	import { KnownError } from "$lib/errors";
 	import { safeGoto } from "$lib/routing";
 	import type { PageData } from "./$types";
@@ -78,6 +79,12 @@
 				</a>
 			</p>
 		</div>
+
+		{#if pageData.message}
+			<Alert type="info" data-testid="login-message">
+				<p class="text-sm">{pageData.message}</p>
+			</Alert>
+		{/if}
 
 		<form class="mt-8 space-y-6" use:form>
 			<div class="rounded-md space-y-4">

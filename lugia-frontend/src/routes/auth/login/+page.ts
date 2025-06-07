@@ -2,6 +2,7 @@ import type { PageLoad } from "./$types";
 
 export const load: PageLoad = ({ url }) => {
 	const redirectTo = url.searchParams.get("redirect");
+	const message = url.searchParams.get("message");
 
 	// Validate redirect URL for security (prevent open redirect attacks)
 	let validatedRedirect = "/";
@@ -19,6 +20,7 @@ export const load: PageLoad = ({ url }) => {
 	}
 
 	return {
-		redirectTo: validatedRedirect
+		redirectTo: validatedRedirect,
+		message
 	};
 };

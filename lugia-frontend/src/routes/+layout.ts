@@ -68,7 +68,7 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 	} else if (url.pathname.startsWith("/verify")) {
 		// SCENARIO B: User is on a /verify page (e.g., /verify/change-email)
 		// Never redirect automatically - always allow the verify page to render
-		// The verify page itself will handle showing appropriate messages based on auth status
+		// The verify page itself will handle showing appropriate messages and redirects based on auth status
 		try {
 			const response = await loadFunctionFetch(fetch, `/api/me`);
 			if (response.ok) {

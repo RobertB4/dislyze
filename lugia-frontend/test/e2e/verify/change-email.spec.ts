@@ -95,24 +95,12 @@ test.describe("Verify Email Change", () => {
 			// Wait for page to process
 			await page.waitForTimeout(2000);
 
-			// If we're still on the verify page, check what state is shown
+			// If we're still on the verify page, check if verification failed
 			if (page.url().includes("/verify/change-email")) {
-				// Check if needsLogin or verificationFailed state is shown
-				const needsLoginVisible = await page
-					.getByTestId("needs-login-message")
-					.isVisible()
-					.catch(() => false);
 				const verificationFailedVisible = await page
 					.getByTestId("verification-failed-message")
 					.isVisible()
 					.catch(() => false);
-
-				// If needsLogin is shown, user was logged out or session expired
-				if (needsLoginVisible) {
-					console.log("Needs login state shown - user may have been logged out");
-					// Skip the rest of this test since it depends on authenticated verification
-					return;
-				}
 
 				// If verification failed, this might be due to rate limiting or token issues
 				if (verificationFailedVisible) {
@@ -147,7 +135,9 @@ test.describe("Verify Email Change", () => {
 			await expect(page).toHaveURL(new RegExp(VERIFY_EMAIL_URL));
 			await expect(page.getByTestId("verify-email-heading")).toBeVisible();
 			await expect(page.getByTestId("verification-failed-message")).toBeVisible();
-			await expect(page.getByTestId("verification-failed-detail")).toContainText("リンクが無効または期限切れの可能性があります");
+			await expect(page.getByTestId("verification-failed-detail")).toContainText(
+				"リンクが無効または期限切れの可能性があります"
+			);
 		});
 
 		test("should show SvelteKit error page for missing token", async ({ page }) => {
@@ -176,10 +166,7 @@ test.describe("Verify Email Change", () => {
 			await page.context().clearCookies();
 		});
 
-		test("should show login prompt for unauthenticated user with valid token", async ({
-			page,
-			request
-		}) => {
+		test("should redirect to login page for unauthenticated user", async ({ page, request }) => {
 			// First, login temporarily to get a valid token
 			await logInAs(page, TestUsersData.beta_admin);
 			const newEmail = "beta_admin_unauth_test@example.com";
@@ -191,17 +178,20 @@ test.describe("Verify Email Change", () => {
 			// Navigate to verify page while unauthenticated
 			await page.goto(`${VERIFY_EMAIL_URL}?token=${token}`);
 
-			// Should show the needsLogin state
-			await expect(page).toHaveURL(new RegExp(VERIFY_EMAIL_URL));
-			await expect(page.getByTestId("verify-email-heading")).toBeVisible();
-			await expect(page.getByTestId("needs-login-message")).toBeVisible();
-			await expect(page.getByTestId("login-instruction")).toBeVisible();
+			// Should redirect to login page with message
+			await expect(page).toHaveURL(new RegExp(`${LOGIN_URL}\\?redirect=.*&message=`));
 
-			// Should show login button
-			await expect(page.getByTestId("go-to-login-button")).toBeVisible();
+			// Should show login heading
+			await expect(page.getByTestId("login-heading")).toBeVisible();
+
+			// Should show the message about email change verification
+			await expect(page.getByTestId("login-message")).toBeVisible();
+			await expect(page.getByTestId("login-message")).toContainText(
+				"メールアドレスの変更を完了するには、ログインする必要があります。"
+			);
 		});
 
-		test("should redirect to login with return URL when login button clicked", async ({
+		test("should redirect to login with correct return URL and message", async ({
 			page,
 			request
 		}) => {
@@ -216,28 +206,10 @@ test.describe("Verify Email Change", () => {
 			// Navigate to verify page
 			await page.goto(`${VERIFY_EMAIL_URL}?token=${token}`);
 
-			// Click the login button
-			await page.getByTestId("go-to-login-button").click();
-
-			// Should redirect to login with return URL
+			// Should automatically redirect to login with return URL and message
 			await expect(page).toHaveURL(new RegExp(`${LOGIN_URL}\\?redirect=`));
 			expect(page.url()).toContain(encodeURIComponent(`${VERIFY_EMAIL_URL}?token=${token}`));
-		});
-
-		test("should show login prompt for unauthenticated user with any token", async ({ page }) => {
-			// Navigate to verify page with invalid token while unauthenticated
-			await page.goto(`${VERIFY_EMAIL_URL}?token=invalid-token-123`);
-
-			// Wait for page to load
-			await page.waitForLoadState("networkidle");
-
-			// For unauthenticated users, the API returns 401 before checking token validity
-			// So they should see the needsLogin state regardless of token validity
-			await expect(page.getByTestId("needs-login-message")).toBeVisible();
-			await expect(page.getByTestId("login-instruction")).toBeVisible();
-
-			// Should not show the verification failed state
-			await expect(page.getByTestId("verification-failed-message")).not.toBeVisible();
+			expect(page.url()).toContain("message=");
 		});
 	});
 
@@ -257,7 +229,9 @@ test.describe("Verify Email Change", () => {
 				await page.goto(`${VERIFY_EMAIL_URL}?token=${token}`);
 				// Wait for page to load and show error state
 				await page.waitForLoadState("networkidle");
-				await expect(page.getByTestId("verification-failed-message")).toContainText("メールアドレスの変更に失敗しました");
+				await expect(page.getByTestId("verification-failed-message")).toContainText(
+					"メールアドレスの変更に失敗しました"
+				);
 			}
 		});
 	});

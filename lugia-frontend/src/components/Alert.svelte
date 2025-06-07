@@ -25,7 +25,7 @@
 </script>
 
 <div class="{baseClasses} {typeClasses[type]}" data-testid={dataTestid}>
-	<div class="flex">
+	<div class="flex items-center">
 		<div class="flex-shrink-0">
 			{#if type === "danger"}
 				<!-- Heroicon name: exclamation-triangle -->

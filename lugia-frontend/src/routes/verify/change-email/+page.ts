@@ -18,7 +18,6 @@ export const load: PageLoad = async ({ url, fetch }) => {
 		console.error("Email verification fetch error:", err);
 		return {
 			token,
-			needsLogin: false,
 			verificationFailed: true
 		};
 	}
@@ -27,17 +26,16 @@ export const load: PageLoad = async ({ url, fetch }) => {
 		// Email verification successful, redirect to profile with success message
 		redirect(302, "/settings/profile?email-verified=true");
 	} else if (response.status === 401) {
-		// User not authenticated, return data to show login prompt
-		return {
-			token,
-			needsLogin: true,
-			verificationFailed: false
-		};
+		// User not authenticated, redirect to login with message
+		const returnUrl = encodeURIComponent(`/verify/change-email?token=${encodeURIComponent(token)}`);
+		const message = encodeURIComponent(
+			"メールアドレスの変更を完了するには、ログインする必要があります。"
+		);
+		redirect(302, `/auth/login?redirect=${returnUrl}&message=${message}`);
 	} else {
 		// Verification failed for other reasons
 		return {
 			token,
-			needsLogin: false,
 			verificationFailed: true
 		};
 	}

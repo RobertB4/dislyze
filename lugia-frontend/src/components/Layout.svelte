@@ -356,7 +356,7 @@
 				<div class="flex flex-shrink-0 bg-gray-700 p-4">
 					<a
 						data-testid="navigation-avatar-mobile"
-						href="/settings/my-account"
+						href="/settings/profile"
 						class="group block flex-shrink-0"
 					>
 						<div class="flex items-center">
@@ -598,7 +598,7 @@
 		<div class="flex flex-shrink-0 bg-gray-700 px-2 py-4">
 			<a
 				data-testid="navigation-avatar"
-				href="/settings/my-account"
+				href="/settings/profile"
 				class="group block w-full flex-shrink-0"
 			>
 				<div class="flex items-center">
