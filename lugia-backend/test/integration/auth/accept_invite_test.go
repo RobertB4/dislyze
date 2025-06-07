@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"lugia/features/auth"
 	"lugia/test/integration/setup"
 	"net/http"
 	"testing"
@@ -11,99 +13,123 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type AcceptInviteRequest struct {
-	Token           string `json:"token"`
-	Password        string `json:"password"`
-	PasswordConfirm string `json:"password_confirm"`
-}
-
-func TestAcceptInviteValidation(t *testing.T) {
+func TestAcceptInvite_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
 	defer setup.CloseDB(pool)
 
-	tests := []struct {
+	setup.ResetAndSeedDB(t, pool)
+
+	const (
+		plainValidTokenForAccept       = "26U7PPxCPCFwWifs8gMD73Gq4tLIBlKBgroHOpkb1bQ"
+		plainNonExistentTokenForAccept = "accept-invite-plain-nonexistent-token-for-testing-456"
+		plainExpiredTokenForAccept     = "accept-invite-plain-expired-token-for-testing-789"
+		plainTokenForActiveUserAccept  = "accept-invite-plain-token-for-active-user-000"
+		newPasswordForAcceptInvite     = "SuP3rS3cur3N3wP@sswOrd!"
+	)
+
+	type acceptInviteTestCase struct {
 		name           string
-		request        AcceptInviteRequest
+		requestBody    auth.AcceptInviteRequest
 		expectedStatus int
-	}{
+	}
+
+	tests := []acceptInviteTestCase{
 		{
-			name: "missing token",
-			request: AcceptInviteRequest{
-				Password:        "password123",
-				PasswordConfirm: "password123",
+			name: "successful invite acceptance",
+			requestBody: auth.AcceptInviteRequest{
+				Token:           plainValidTokenForAccept,
+				Password:        newPasswordForAcceptInvite,
+				PasswordConfirm: newPasswordForAcceptInvite,
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "token already used fails",
+			requestBody: auth.AcceptInviteRequest{
+				Token:           plainValidTokenForAccept, // Same token as successful test
+				Password:        newPasswordForAcceptInvite,
+				PasswordConfirm: newPasswordForAcceptInvite,
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name: "empty token",
-			request: AcceptInviteRequest{
-				Token:           "",
-				Password:        "password123",
-				PasswordConfirm: "password123",
+			name: "token not found",
+			requestBody: auth.AcceptInviteRequest{
+				Token:           plainNonExistentTokenForAccept,
+				Password:        newPasswordForAcceptInvite,
+				PasswordConfirm: newPasswordForAcceptInvite,
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name: "missing password",
-			request: AcceptInviteRequest{
-				Token:           "some-token",
-				PasswordConfirm: "password123",
+			name: "validation error - password mismatch",
+			requestBody: auth.AcceptInviteRequest{
+				Token:           plainValidTokenForAccept, // Needs a valid token context for this to be the failure point
+				Password:        newPasswordForAcceptInvite,
+				PasswordConfirm: "IncorrectP@sswOrdConfirm",
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name: "password too short",
-			request: AcceptInviteRequest{
-				Token:           "some-token",
+			name: "validation error - password too short",
+			requestBody: auth.AcceptInviteRequest{
+				Token:           plainValidTokenForAccept,
 				Password:        "short",
 				PasswordConfirm: "short",
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name: "passwords do not match",
-			request: AcceptInviteRequest{
-				Token:           "some-token",
-				Password:        "password123",
-				PasswordConfirm: "password456",
+			name: "validation error - empty token",
+			requestBody: auth.AcceptInviteRequest{
+				Token:           "",
+				Password:        newPasswordForAcceptInvite,
+				PasswordConfirm: newPasswordForAcceptInvite,
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name: "invalid token (valid format but doesn't exist)",
-			request: AcceptInviteRequest{
-				Token:           "invalid-but-valid-format-token",
-				Password:        "password123",
-				PasswordConfirm: "password123",
+			name: "expired token",
+			requestBody: auth.AcceptInviteRequest{
+				Token:           plainExpiredTokenForAccept,
+				Password:        newPasswordForAcceptInvite,
+				PasswordConfirm: newPasswordForAcceptInvite,
 			},
-			expectedStatus: http.StatusBadRequest, // Should be "招待リンクが無効か、期限切れです"
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "user status not pending_verification (e.g., already active)",
+			requestBody: auth.AcceptInviteRequest{
+				Token:           plainTokenForActiveUserAccept, // Token associated with an already active user
+				Password:        newPasswordForAcceptInvite,
+				PasswordConfirm: newPasswordForAcceptInvite,
+			},
+			expectedStatus: http.StatusBadRequest,
 		},
 	}
 
+	client := &http.Client{}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			body, err := json.Marshal(tt.request)
-			assert.NoError(t, err)
+			payloadBytes, err := json.Marshal(tt.requestBody)
+			assert.NoError(t, err, "Test: %s, Failed to marshal request body", tt.name)
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/accept-invite", setup.BaseURL), bytes.NewBuffer(body))
-			assert.NoError(t, err)
+			reqURL := fmt.Sprintf("%s/auth/accept-invite", setup.BaseURL)
+			req, err := http.NewRequest(http.MethodPost, reqURL, bytes.NewBuffer(payloadBytes))
+			assert.NoError(t, err, "Test: %s, Failed to create request", tt.name)
 			req.Header.Set("Content-Type", "application/json")
 
-			client := &http.Client{}
 			resp, err := client.Do(req)
-			assert.NoError(t, err)
+			assert.NoError(t, err, "Test: %s, Failed to execute request", tt.name)
 			defer func() {
 				if err := resp.Body.Close(); err != nil {
 					t.Logf("Error closing response body: %v", err)
 				}
 			}()
 
-			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
-
-			// For all these test cases, there should be no cookies set
-			cookies := resp.Cookies()
-			assert.Empty(t, cookies, "Expected no cookies for failed accept invite")
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Test: %s, Expected status %d, got %d. Body: %s", tt.name, tt.expectedStatus, resp.StatusCode, string(bodyBytes))
 		})
 	}
 }

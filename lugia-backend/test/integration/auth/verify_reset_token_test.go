@@ -112,7 +112,7 @@ func TestVerifyResetTokenComplex(t *testing.T) {
 		}()
 		assert.Equal(t, http.StatusOK, fpResp.StatusCode)
 
-		email, err := getLatestEmailFromSendgridMock(t, userEmail)
+		email, err := setup.GetLatestEmailFromSendgridMock(t, userEmail)
 		assert.NoError(t, err)
 		rawToken, err := extractResetTokenFromEmail(t, email)
 		assert.NoError(t, err)

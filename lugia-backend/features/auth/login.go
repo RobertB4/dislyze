@@ -107,7 +107,6 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-
 	return tokenPair, nil
 }
 

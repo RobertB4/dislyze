@@ -10,16 +10,13 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"lugia/lib/config"
 	"lugia/lib/errlib"
 	"lugia/lib/jwt"
-	"lugia/lib/ratelimit"
 	"lugia/lib/responder"
 	"lugia/queries"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type SignupRequest struct {
@@ -28,22 +25,6 @@ type SignupRequest struct {
 	Email           string `json:"email"`
 	Password        string `json:"password"`
 	PasswordConfirm string `json:"password_confirm"`
-}
-
-type AuthHandler struct {
-	dbConn      *pgxpool.Pool
-	env         *config.Env
-	rateLimiter *ratelimit.RateLimiter
-	queries     *queries.Queries
-}
-
-func NewAuthHandler(dbConn *pgxpool.Pool, env *config.Env, rateLimiter *ratelimit.RateLimiter, queries *queries.Queries) *AuthHandler {
-	return &AuthHandler{
-		dbConn:      dbConn,
-		env:         env,
-		rateLimiter: rateLimiter,
-		queries:     queries,
-	}
 }
 
 func (r *SignupRequest) Validate() error {

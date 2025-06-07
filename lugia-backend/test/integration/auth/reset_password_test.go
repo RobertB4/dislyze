@@ -106,26 +106,6 @@ func TestResetPasswordValidation(t *testing.T) {
 	}
 }
 
-func attemptLogin(t *testing.T, email string, password string) *http.Response {
-	t.Helper()
-	client := &http.Client{}
-
-	loginPayload := setup.LoginRequest{
-		Email:    email,
-		Password: password,
-	}
-	loginBody, err := json.Marshal(loginPayload)
-	assert.NoError(t, err, "Failed to marshal login payload in attemptLogin")
-
-	loginReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/login", setup.BaseURL), bytes.NewBuffer(loginBody))
-	assert.NoError(t, err, "Failed to create login request in attemptLogin")
-	loginReq.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(loginReq)
-	assert.NoError(t, err, "Failed to execute login request in attemptLogin")
-	return resp
-}
-
 func TestResetPasswordComplex(t *testing.T) {
 	pool := setup.InitDB(t)
 	setup.ResetAndSeedDB(t, pool)
@@ -153,7 +133,7 @@ func TestResetPasswordComplex(t *testing.T) {
 		}()
 		assert.Equal(t, http.StatusOK, fpResp.StatusCode, "Forgot password request did not return OK")
 
-		emailContent, err := getLatestEmailFromSendgridMock(t, userEmail)
+		emailContent, err := setup.GetLatestEmailFromSendgridMock(t, userEmail)
 		assert.NoError(t, err, "Failed to get latest email from Sendgrid mock")
 
 		rawToken, err := extractResetTokenFromEmail(t, emailContent)
@@ -189,7 +169,7 @@ func TestResetPasswordComplex(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, resetResp.StatusCode, "Reset password should succeed")
 
-		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
+		oldLoginResp := setup.AttemptLogin(t, testUser.Email, originalPassword)
 		defer func() {
 			if err := oldLoginResp.Body.Close(); err != nil {
 				t.Logf("Error closing oldLoginResp body: %v", err)
@@ -197,7 +177,7 @@ func TestResetPasswordComplex(t *testing.T) {
 		}()
 		assert.Equal(t, http.StatusUnauthorized, oldLoginResp.StatusCode, "Login with old password should fail after reset")
 
-		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
+		newLoginResp := setup.AttemptLogin(t, testUser.Email, newPassword)
 		defer func() {
 			if err := newLoginResp.Body.Close(); err != nil {
 				t.Logf("Error closing newLoginResp body: %v", err)
@@ -243,7 +223,7 @@ func TestResetPasswordComplex(t *testing.T) {
 		}()
 		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with expired token should fail")
 
-		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
+		newLoginResp := setup.AttemptLogin(t, testUser.Email, newPassword)
 		defer func() {
 			if err := newLoginResp.Body.Close(); err != nil {
 				t.Logf("Error closing newLoginResp body: %v", err)
@@ -251,7 +231,7 @@ func TestResetPasswordComplex(t *testing.T) {
 		}()
 		assert.Equal(t, http.StatusUnauthorized, newLoginResp.StatusCode)
 
-		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
+		oldLoginResp := setup.AttemptLogin(t, testUser.Email, originalPassword)
 		defer func() {
 			if err := oldLoginResp.Body.Close(); err != nil {
 				t.Logf("Error closing oldLoginResp body: %v", err)
@@ -290,7 +270,7 @@ func TestResetPasswordComplex(t *testing.T) {
 		}()
 		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with used token should fail")
 
-		newLoginResp := attemptLogin(t, testUser.Email, newPassword)
+		newLoginResp := setup.AttemptLogin(t, testUser.Email, newPassword)
 		defer func() {
 			if err := newLoginResp.Body.Close(); err != nil {
 				t.Logf("Error closing newLoginResp body: %v", err)
@@ -298,7 +278,7 @@ func TestResetPasswordComplex(t *testing.T) {
 		}()
 		assert.Equal(t, http.StatusUnauthorized, newLoginResp.StatusCode)
 
-		oldLoginResp := attemptLogin(t, testUser.Email, originalPassword)
+		oldLoginResp := setup.AttemptLogin(t, testUser.Email, originalPassword)
 		defer func() {
 			if err := oldLoginResp.Body.Close(); err != nil {
 				t.Logf("Error closing oldLoginResp body: %v", err)

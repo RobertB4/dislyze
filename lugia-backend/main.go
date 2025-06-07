@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"lugia/features/auth"
-	"lugia/handlers"
+	"lugia/features/users"
 	"lugia/lib/config"
 	"lugia/lib/db"
 	"lugia/lib/middleware"
@@ -56,7 +56,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	changeEmailRateLimiter := ratelimit.NewRateLimiter(30*time.Minute, 1)
 
 	authHandler := auth.NewAuthHandler(dbConn, env, authRateLimiter, queries)
-	usersHandler := handlers.NewUsersHandler(dbConn, queries, env, resendInviteRateLimiter, deleteUserRateLimiter, changeEmailRateLimiter)
+	usersHandler := users.NewUsersHandler(dbConn, queries, env, resendInviteRateLimiter, deleteUserRateLimiter, changeEmailRateLimiter)
 
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/signup", authHandler.Signup)
@@ -90,7 +90,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		r.Route("/tenant", func(r chi.Router) {
 			r.Use(middleware.RequireAdmin)
 
-			r.Post("/change-name", usersHandler.UpdateTenantName)
+			r.Post("/change-name", usersHandler.ChangeTenantName)
 		})
 	})
 

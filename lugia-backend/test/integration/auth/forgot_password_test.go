@@ -10,7 +10,6 @@ import (
 	"lugia/test/integration/setup"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -91,60 +90,6 @@ func TestForgotPasswordValidation(t *testing.T) {
 	}
 }
 
-func getLatestEmailFromSendgridMock(t *testing.T, expectedRecipientEmail string) (*setup.SendgridMockEmail, error) {
-	t.Helper()
-	sendgridAPIURL := os.Getenv("SENDGRID_API_URL")
-	sendgridAPIKey := os.Getenv("SENDGRID_API_KEY")
-
-	client := &http.Client{Timeout: 5 * time.Second}
-	var lastErr error
-
-	for i := 0; i < 10; i++ {
-		req, err := http.NewRequest("GET", fmt.Sprintf("%s/json?token=%s", sendgridAPIURL, sendgridAPIKey), nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create request to sendgrid-mock: %w", err)
-		}
-
-		resp, err := client.Do(req)
-		if err != nil {
-			lastErr = fmt.Errorf("failed to get emails from sendgrid-mock: %w", err)
-			time.Sleep(500 * time.Millisecond)
-			continue
-		}
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				t.Logf("Error closing response body in getLatestEmailFromSendgridMock: %v", err)
-			}
-		}()
-
-		if resp.StatusCode != http.StatusOK {
-			lastErr = fmt.Errorf("sendgrid-mock returned status %d", resp.StatusCode)
-			time.Sleep(500 * time.Millisecond)
-			continue
-		}
-
-		var emails []setup.SendgridMockEmail
-		if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
-			lastErr = fmt.Errorf("failed to decode emails from sendgrid-mock: %w", err)
-			time.Sleep(500 * time.Millisecond)
-			continue
-		}
-
-		if len(emails) > 0 {
-			latestEmail := emails[0]
-			if len(latestEmail.Personalizations) > 0 && len(latestEmail.Personalizations[0].To) > 0 &&
-				latestEmail.Personalizations[0].To[0].Email == expectedRecipientEmail {
-				return &latestEmail, nil
-			}
-			lastErr = fmt.Errorf("latest email recipient %s does not match expected %s", latestEmail.Personalizations[0].To[0].Email, expectedRecipientEmail)
-		} else {
-			lastErr = fmt.Errorf("no emails found in sendgrid-mock")
-		}
-		time.Sleep(500 * time.Millisecond)
-	}
-	return nil, fmt.Errorf("failed to get expected email for %s after multiple retries: %w", expectedRecipientEmail, lastErr)
-}
-
 func extractResetTokenFromEmail(t *testing.T, email *setup.SendgridMockEmail) (string, error) {
 	t.Helper()
 	for _, content := range email.Content {
@@ -190,7 +135,7 @@ func TestForgotPasswordComplex(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		email, err := getLatestEmailFromSendgridMock(t, testUser.Email)
+		email, err := setup.GetLatestEmailFromSendgridMock(t, testUser.Email)
 		assert.NoError(t, err, "Failed to get email from SendGrid mock")
 		if err == nil {
 			assert.Equal(t, "パスワードリセットのご案内 - dislyze", email.Personalizations[0].Subject)
@@ -245,7 +190,7 @@ func TestForgotPasswordComplex(t *testing.T) {
 		}()
 		assert.Equal(t, http.StatusOK, resp1.StatusCode)
 
-		email1, err := getLatestEmailFromSendgridMock(t, testUser.Email)
+		email1, err := setup.GetLatestEmailFromSendgridMock(t, testUser.Email)
 		assert.NoError(t, err)
 		rawToken1, err := extractResetTokenFromEmail(t, email1)
 		assert.NoError(t, err)
@@ -287,7 +232,7 @@ func TestForgotPasswordComplex(t *testing.T) {
 		}()
 		assert.Equal(t, http.StatusOK, resp2.StatusCode)
 
-		email2, err := getLatestEmailFromSendgridMock(t, testUser.Email)
+		email2, err := setup.GetLatestEmailFromSendgridMock(t, testUser.Email)
 		assert.NoError(t, err)
 		rawToken2, err := extractResetTokenFromEmail(t, email2)
 		assert.NoError(t, err)
