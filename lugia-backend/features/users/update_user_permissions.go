@@ -17,11 +17,7 @@ import (
 	"lugia/queries_pregeneration"
 )
 
-type UpdateUserRoleRequest struct {
-	Role queries_pregeneration.UserRole `json:"role"`
-}
-
-func (r *UpdateUserRoleRequest) Validate() error {
+func (r *UpdateUserRoleRequestBody) Validate() error {
 	r.Role = queries_pregeneration.UserRole(strings.TrimSpace(strings.ToLower(string(r.Role))))
 	if r.Role == "" {
 		return fmt.Errorf("role is required")
@@ -46,7 +42,7 @@ func (h *UsersHandler) UpdateUserPermissions(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var req UpdateUserRoleRequest
+	var req UpdateUserRoleRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: failed to decode request: %w", err), http.StatusBadRequest, ""))
 		return
@@ -67,7 +63,7 @@ func (h *UsersHandler) UpdateUserPermissions(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *UsersHandler) updateUserPermissions(ctx context.Context, targetUserID pgtype.UUID, req UpdateUserRoleRequest) error {
+func (h *UsersHandler) updateUserPermissions(ctx context.Context, targetUserID pgtype.UUID, req UpdateUserRoleRequestBody) error {
 	requestingUserID := libctx.GetUserID(ctx)
 	requestingTenantID := libctx.GetTenantID(ctx)
 

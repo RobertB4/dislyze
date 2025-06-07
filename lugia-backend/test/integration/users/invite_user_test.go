@@ -29,7 +29,7 @@ func TestInviteUser_Integration(t *testing.T) {
 	type inviteUserTestCase struct {
 		name             string
 		loginUserKey     string // Key for setup.TestUsersData map, empty for unauth
-		requestBody      users.InviteUserRequest
+		requestBody      users.InviteUserRequestBody
 		expectedStatus   int
 		expectedErrorKey string // Key for expectedInviteErrorMessages, if any
 		expectUnauth     bool
@@ -39,7 +39,7 @@ func TestInviteUser_Integration(t *testing.T) {
 		{
 			name:         "successful invitation by alpha_admin",
 			loginUserKey: "alpha_admin",
-			requestBody: users.InviteUserRequest{
+			requestBody: users.InviteUserRequestBody{
 				Email: "new_invitee@example.com",
 				Name:  "New Invitee",
 				Role:  "editor",
@@ -49,7 +49,7 @@ func TestInviteUser_Integration(t *testing.T) {
 		{
 			name:         "error when email already exists (alpha_admin invites existing alpha_editor)",
 			loginUserKey: "alpha_admin",
-			requestBody: users.InviteUserRequest{
+			requestBody: users.InviteUserRequestBody{
 				Email: setup.TestUsersData["alpha_editor"].Email,
 				Name:  "Duplicate Invitee",
 				Role:  "editor",
@@ -60,7 +60,7 @@ func TestInviteUser_Integration(t *testing.T) {
 		{
 			name:         "error for unauthorized request",
 			expectUnauth: true,
-			requestBody: users.InviteUserRequest{
+			requestBody: users.InviteUserRequestBody{
 				Email: "unauth_invitee@example.com",
 				Name:  "Unauth Invitee",
 				Role:  "editor",
@@ -70,37 +70,37 @@ func TestInviteUser_Integration(t *testing.T) {
 		{
 			name:           "validation error: missing email",
 			loginUserKey:   "alpha_admin",
-			requestBody:    users.InviteUserRequest{Email: "", Name: "Test Name", Role: "editor"},
+			requestBody:    users.InviteUserRequestBody{Email: "", Name: "Test Name", Role: "editor"},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "validation error: invalid email format",
 			loginUserKey:   "alpha_admin",
-			requestBody:    users.InviteUserRequest{Email: "invalid-email", Name: "Test Name", Role: "editor"},
+			requestBody:    users.InviteUserRequestBody{Email: "invalid-email", Name: "Test Name", Role: "editor"},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "validation error: missing name",
 			loginUserKey:   "alpha_admin",
-			requestBody:    users.InviteUserRequest{Email: "valid@example.com", Name: "", Role: "editor"},
+			requestBody:    users.InviteUserRequestBody{Email: "valid@example.com", Name: "", Role: "editor"},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "validation error: name with only whitespace",
 			loginUserKey:   "alpha_admin",
-			requestBody:    users.InviteUserRequest{Email: "whitespace@example.com", Name: "   ", Role: "editor"},
+			requestBody:    users.InviteUserRequestBody{Email: "whitespace@example.com", Name: "   ", Role: "editor"},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "validation error: missing role",
 			loginUserKey:   "alpha_admin",
-			requestBody:    users.InviteUserRequest{Email: "valid@example.com", Name: "Test Name", Role: ""},
+			requestBody:    users.InviteUserRequestBody{Email: "valid@example.com", Name: "Test Name", Role: ""},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "validation error: invalid role value",
 			loginUserKey:   "alpha_admin",
-			requestBody:    users.InviteUserRequest{Email: "valid@example.com", Name: "Test Name", Role: "guest"},
+			requestBody:    users.InviteUserRequestBody{Email: "valid@example.com", Name: "Test Name", Role: "guest"},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}

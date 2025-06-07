@@ -6,71 +6,71 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestChangeEmailRequest_Validate(t *testing.T) {
+func TestChangeEmailRequestBody_Validate(t *testing.T) {
 	tests := []struct {
 		name          string
-		request       ChangeEmailRequest
+		request       ChangeEmailRequestBody
 		expectedError string
 	}{
 		{
 			name: "valid email",
-			request: ChangeEmailRequest{
+			request: ChangeEmailRequestBody{
 				NewEmail: "user@example.com",
 			},
 			expectedError: "",
 		},
 		{
 			name: "empty email",
-			request: ChangeEmailRequest{
+			request: ChangeEmailRequestBody{
 				NewEmail: "",
 			},
 			expectedError: "new email is required",
 		},
 		{
 			name: "whitespace-only email",
-			request: ChangeEmailRequest{
+			request: ChangeEmailRequestBody{
 				NewEmail: "   ",
 			},
 			expectedError: "new email is required",
 		},
 		{
 			name: "invalid email format (no @)",
-			request: ChangeEmailRequest{
+			request: ChangeEmailRequestBody{
 				NewEmail: "invalid-email",
 			},
 			expectedError: "new email is invalid",
 		},
 		{
 			name: "invalid email format (missing domain)",
-			request: ChangeEmailRequest{
+			request: ChangeEmailRequestBody{
 				NewEmail: "user@",
 			},
 			expectedError: "", // This will pass basic @ validation but would fail in real email validation
 		},
 		{
 			name: "invalid email format (missing user)",
-			request: ChangeEmailRequest{
+			request: ChangeEmailRequestBody{
 				NewEmail: "@example.com",
 			},
 			expectedError: "", // This will pass basic @ validation but would fail in real email validation
 		},
 		{
 			name: "whitespace trimming works",
-			request: ChangeEmailRequest{
+			request: ChangeEmailRequestBody{
 				NewEmail: "  user@example.com  ",
 			},
 			expectedError: "",
 		},
 		{
 			name: "email with subdomain",
-			request: ChangeEmailRequest{
+			request: ChangeEmailRequestBody{
 				NewEmail: "user@mail.example.com",
 			},
 			expectedError: "",
 		},
 		{
 			name: "email with plus sign",
-			request: ChangeEmailRequest{
+			request: ChangeEmailRequestBody{
 				NewEmail: "user+tag@example.com",
 			},
 			expectedError: "",

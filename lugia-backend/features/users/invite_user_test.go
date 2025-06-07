@@ -8,16 +8,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInviteUserRequest_Validate(t *testing.T) {
+func TestInviteUserRequestBody_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		request InviteUserRequest
+		request InviteUserRequestBody
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name: "valid request",
-			request: InviteUserRequest{
+			request: InviteUserRequestBody{
 				Email: "test@example.com",
 				Name:  "Test User",
 				Role:  queries_pregeneration.UserRole("admin"),
@@ -26,7 +26,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "valid request with editor role",
-			request: InviteUserRequest{
+			request: InviteUserRequestBody{
 				Email: "editor@example.com",
 				Name:  "Editor User",
 				Role:  queries_pregeneration.UserRole("editor"),
@@ -35,7 +35,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "valid request with whitespace trimming",
-			request: InviteUserRequest{
+			request: InviteUserRequestBody{
 				Email: "  test@example.com  ",
 				Name:  "  Test User  ",
 				Role:  queries_pregeneration.UserRole("  ADMIN  "),
@@ -44,7 +44,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "missing email",
-			request: InviteUserRequest{
+			request: InviteUserRequestBody{
 				Email: "",
 				Name:  "Test User",
 				Role:  queries_pregeneration.UserRole("admin"),
@@ -54,7 +54,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "email with only whitespace",
-			request: InviteUserRequest{
+			request: InviteUserRequestBody{
 				Email: "   ",
 				Name:  "Test User",
 				Role:  queries_pregeneration.UserRole("admin"),
@@ -64,7 +64,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid email format",
-			request: InviteUserRequest{
+			request: InviteUserRequestBody{
 				Email: "invalid-email",
 				Name:  "Test User",
 				Role:  queries_pregeneration.UserRole("admin"),
@@ -74,7 +74,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "missing name",
-			request: InviteUserRequest{
+			request: InviteUserRequestBody{
 				Email: "test@example.com",
 				Name:  "",
 				Role:  queries_pregeneration.UserRole("admin"),
@@ -84,7 +84,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "name with only whitespace",
-			request: InviteUserRequest{
+			request: InviteUserRequestBody{
 				Email: "test@example.com",
 				Name:  "   ",
 				Role:  queries_pregeneration.UserRole("admin"),
@@ -94,7 +94,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "missing role",
-			request: InviteUserRequest{
+			request: InviteUserRequestBody{
 				Email: "test@example.com",
 				Name:  "Test User",
 				Role:  queries_pregeneration.UserRole(""),
@@ -104,7 +104,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "role with only whitespace",
-			request: InviteUserRequest{
+			request: InviteUserRequestBody{
 				Email: "test@example.com",
 				Name:  "Test User",
 				Role:  queries_pregeneration.UserRole("   "),
@@ -114,7 +114,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid role",
-			request: InviteUserRequest{
+			request: InviteUserRequestBody{
 				Email: "test@example.com",
 				Name:  "Test User",
 				Role:  queries_pregeneration.UserRole("guest"),
@@ -124,7 +124,7 @@ func TestInviteUserRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "another invalid role",
-			request: InviteUserRequest{
+			request: InviteUserRequestBody{
 				Email: "test@example.com",
 				Name:  "Test User",
 				Role:  queries_pregeneration.UserRole("superuser"),

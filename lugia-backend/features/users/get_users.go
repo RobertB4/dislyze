@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -15,27 +14,7 @@ import (
 	"lugia/lib/responder"
 	"lugia/lib/search"
 	"lugia/queries"
-	"lugia/queries_pregeneration"
 )
-
-var (
-	ErrInvalidUserDataFromDB = fmt.Errorf("invalid user data retrieved from database")
-)
-
-type User struct {
-	ID        string                         `json:"id"`
-	Email     string                         `json:"email"`
-	Name      string                         `json:"name,omitempty"`
-	Role      queries_pregeneration.UserRole `json:"role"`
-	Status    string                         `json:"status"`
-	CreatedAt time.Time                      `json:"created_at"`
-	UpdatedAt time.Time                      `json:"updated_at"`
-}
-
-type GetUsersResponse struct {
-	Users      []*queries.GetUsersByTenantIDRow `json:"users"`
-	Pagination pagination.PaginationMetadata    `json:"pagination"`
-}
 
 func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

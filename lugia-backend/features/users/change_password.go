@@ -18,13 +18,7 @@ import (
 	"lugia/queries"
 )
 
-type ChangePasswordRequest struct {
-	CurrentPassword    string `json:"current_password"`
-	NewPassword        string `json:"new_password"`
-	NewPasswordConfirm string `json:"new_password_confirm"`
-}
-
-func (r *ChangePasswordRequest) Validate() error {
+func (r *ChangePasswordRequestBody) Validate() error {
 	r.CurrentPassword = strings.TrimSpace(r.CurrentPassword)
 	r.NewPassword = strings.TrimSpace(r.NewPassword)
 	r.NewPasswordConfirm = strings.TrimSpace(r.NewPasswordConfirm)
@@ -51,7 +45,7 @@ func (h *UsersHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userID := libctx.GetUserID(ctx)
 
-	var req ChangePasswordRequest
+	var req ChangePasswordRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		appErr := errlib.New(fmt.Errorf("ChangePassword: failed to decode request: %w", err), http.StatusBadRequest, "")
 		responder.RespondWithError(w, appErr)
@@ -78,7 +72,7 @@ func (h *UsersHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *UsersHandler) changePassword(ctx context.Context, userID pgtype.UUID, req ChangePasswordRequest) error {
+func (h *UsersHandler) changePassword(ctx context.Context, userID pgtype.UUID, req ChangePasswordRequestBody) error {
 
 	user, err := h.q.GetUserByID(ctx, userID)
 	if err != nil {

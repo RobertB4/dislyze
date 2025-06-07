@@ -13,11 +13,7 @@ import (
 	"lugia/queries"
 )
 
-type UpdateMeRequest struct {
-	Name string `json:"name"`
-}
-
-func (r *UpdateMeRequest) Validate() error {
+func (r *UpdateMeRequestBody) Validate() error {
 	r.Name = strings.TrimSpace(r.Name)
 	if r.Name == "" {
 		return fmt.Errorf("name is required")
@@ -28,7 +24,7 @@ func (r *UpdateMeRequest) Validate() error {
 func (h *UsersHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var req UpdateMeRequest
+	var req UpdateMeRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		appErr := errlib.New(fmt.Errorf("UpdateMe: failed to decode request: %w", err), http.StatusBadRequest, "")
 		responder.RespondWithError(w, appErr)
@@ -55,7 +51,7 @@ func (h *UsersHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *UsersHandler) updateMe(ctx context.Context, req UpdateMeRequest) error {
+func (h *UsersHandler) updateMe(ctx context.Context, req UpdateMeRequestBody) error {
 	userID := libctx.GetUserID(ctx)
 
 	if err := h.q.UpdateUserName(ctx, &queries.UpdateUserNameParams{

@@ -26,13 +26,7 @@ import (
 	"lugia/queries_pregeneration"
 )
 
-type InviteUserRequest struct {
-	Email string                         `json:"email"`
-	Name  string                         `json:"name"`
-	Role  queries_pregeneration.UserRole `json:"role"`
-}
-
-func (r *InviteUserRequest) Validate() error {
+func (r *InviteUserRequestBody) Validate() error {
 	r.Email = strings.TrimSpace(r.Email)
 	r.Name = strings.TrimSpace(r.Name)
 	r.Role = queries_pregeneration.UserRole(strings.TrimSpace(strings.ToLower(r.Role.String())))
@@ -58,7 +52,7 @@ func (r *InviteUserRequest) Validate() error {
 func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var req InviteUserRequest
+	var req InviteUserRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		appErr := errlib.New(fmt.Errorf("InviteUser: failed to decode request: %w", err), http.StatusBadRequest, "")
 		responder.RespondWithError(w, appErr)
@@ -85,7 +79,7 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *UsersHandler) inviteUser(ctx context.Context, req InviteUserRequest) error {
+func (h *UsersHandler) inviteUser(ctx context.Context, req InviteUserRequestBody) error {
 	tenantID := libctx.GetTenantID(ctx)
 	inviterUserID := libctx.GetUserID(ctx)
 

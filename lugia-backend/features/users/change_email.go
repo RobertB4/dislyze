@@ -23,11 +23,7 @@ import (
 	"lugia/queries"
 )
 
-type ChangeEmailRequest struct {
-	NewEmail string `json:"new_email"`
-}
-
-func (r *ChangeEmailRequest) Validate() error {
+func (r *ChangeEmailRequestBody) Validate() error {
 	r.NewEmail = strings.TrimSpace(r.NewEmail)
 	if r.NewEmail == "" {
 		return fmt.Errorf("new email is required")
@@ -42,7 +38,7 @@ func (h *UsersHandler) ChangeEmail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userID := libctx.GetUserID(ctx)
 
-	var req ChangeEmailRequest
+	var req ChangeEmailRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		appErr := errlib.New(fmt.Errorf("ChangeEmail: failed to decode request: %w", err), http.StatusBadRequest, "")
 		responder.RespondWithError(w, appErr)
@@ -69,7 +65,7 @@ func (h *UsersHandler) ChangeEmail(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *UsersHandler) changeEmail(ctx context.Context, userID pgtype.UUID, req ChangeEmailRequest) error {
+func (h *UsersHandler) changeEmail(ctx context.Context, userID pgtype.UUID, req ChangeEmailRequestBody) error {
 	existingUser, err := h.q.GetUserByEmail(ctx, req.NewEmail)
 	if err == nil && existingUser != nil {
 		return errlib.New(fmt.Errorf("ChangeEmail: email %s is already in use", req.NewEmail), http.StatusConflict, "このメールアドレスは既に使用されています。")

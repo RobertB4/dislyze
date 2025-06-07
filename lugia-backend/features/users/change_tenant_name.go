@@ -15,11 +15,7 @@ import (
 	"lugia/queries"
 )
 
-type ChangeTenantNameRequest struct {
-	Name string `json:"name"`
-}
-
-func (r *ChangeTenantNameRequest) Validate() error {
+func (r *ChangeTenantNameRequestBody) Validate() error {
 	r.Name = strings.TrimSpace(r.Name)
 	if r.Name == "" {
 		return fmt.Errorf("name is required")
@@ -31,7 +27,7 @@ func (h *UsersHandler) ChangeTenantName(w http.ResponseWriter, r *http.Request) 
 	ctx := r.Context()
 	tenantID := libctx.GetTenantID(ctx)
 
-	var req ChangeTenantNameRequest
+	var req ChangeTenantNameRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		appErr := errlib.New(fmt.Errorf("ChangeTenantName: failed to decode request: %w", err), http.StatusBadRequest, "")
 		responder.RespondWithError(w, appErr)
@@ -58,7 +54,7 @@ func (h *UsersHandler) ChangeTenantName(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *UsersHandler) changeTenantName(ctx context.Context, tenantID pgtype.UUID, req ChangeTenantNameRequest) error {
+func (h *UsersHandler) changeTenantName(ctx context.Context, tenantID pgtype.UUID, req ChangeTenantNameRequestBody) error {
 	if err := h.q.UpdateTenantName(ctx, &queries.UpdateTenantNameParams{
 		Name: req.Name,
 		ID:   tenantID,

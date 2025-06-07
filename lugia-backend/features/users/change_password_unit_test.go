@@ -6,15 +6,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestChangePasswordRequest_Validate(t *testing.T) {
+func TestChangePasswordRequestBody_Validate(t *testing.T) {
 	tests := []struct {
 		name          string
-		request       ChangePasswordRequest
+		request       ChangePasswordRequestBody
 		expectedError string
 	}{
 		{
 			name: "valid request",
-			request: ChangePasswordRequest{
+			request: ChangePasswordRequestBody{
 				CurrentPassword:    "current123",
 				NewPassword:        "newpassword123",
 				NewPasswordConfirm: "newpassword123",
@@ -23,7 +23,7 @@ func TestChangePasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "missing current password",
-			request: ChangePasswordRequest{
+			request: ChangePasswordRequestBody{
 				CurrentPassword:    "",
 				NewPassword:        "newpassword123",
 				NewPasswordConfirm: "newpassword123",
@@ -32,7 +32,7 @@ func TestChangePasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "missing new password",
-			request: ChangePasswordRequest{
+			request: ChangePasswordRequestBody{
 				CurrentPassword:    "current123",
 				NewPassword:        "",
 				NewPasswordConfirm: "newpassword123",
@@ -41,7 +41,7 @@ func TestChangePasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "new password too short",
-			request: ChangePasswordRequest{
+			request: ChangePasswordRequestBody{
 				CurrentPassword:    "current123",
 				NewPassword:        "short",
 				NewPasswordConfirm: "short",
@@ -50,7 +50,7 @@ func TestChangePasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "passwords do not match",
-			request: ChangePasswordRequest{
+			request: ChangePasswordRequestBody{
 				CurrentPassword:    "current123",
 				NewPassword:        "newpassword123",
 				NewPasswordConfirm: "differentpassword123",
@@ -59,7 +59,7 @@ func TestChangePasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "current and new password are the same",
-			request: ChangePasswordRequest{
+			request: ChangePasswordRequestBody{
 				CurrentPassword:    "samepassword123",
 				NewPassword:        "samepassword123",
 				NewPasswordConfirm: "samepassword123",
@@ -68,7 +68,7 @@ func TestChangePasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "whitespace trimming works",
-			request: ChangePasswordRequest{
+			request: ChangePasswordRequestBody{
 				CurrentPassword:    "  current123  ",
 				NewPassword:        "  newpassword123  ",
 				NewPasswordConfirm: "  newpassword123  ",
@@ -77,7 +77,7 @@ func TestChangePasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "whitespace-only current password",
-			request: ChangePasswordRequest{
+			request: ChangePasswordRequestBody{
 				CurrentPassword:    "   ",
 				NewPassword:        "newpassword123",
 				NewPasswordConfirm: "newpassword123",
@@ -86,7 +86,7 @@ func TestChangePasswordRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "whitespace-only new password",
-			request: ChangePasswordRequest{
+			request: ChangePasswordRequestBody{
 				CurrentPassword:    "current123",
 				NewPassword:        "   ",
 				NewPasswordConfirm: "   ",

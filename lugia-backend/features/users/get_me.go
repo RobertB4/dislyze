@@ -13,15 +13,6 @@ import (
 	"lugia/lib/responder"
 )
 
-type MeResponse struct {
-	TenantName string `json:"tenant_name"`
-	TenantPlan string `json:"tenant_plan"`
-	UserID     string `json:"user_id"`
-	Email      string `json:"email"`
-	UserName   string `json:"user_name"`
-	UserRole   string `json:"user_role"`
-}
-
 func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userID := libctx.GetUserID(ctx)

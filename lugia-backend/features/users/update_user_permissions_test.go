@@ -8,44 +8,44 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUpdateUserRoleRequest_Validate(t *testing.T) {
+func TestUpdateUserRoleRequestBody_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		request UpdateUserRoleRequest
+		request UpdateUserRoleRequestBody
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name: "valid admin role",
-			request: UpdateUserRoleRequest{
+			request: UpdateUserRoleRequestBody{
 				Role: queries_pregeneration.UserRole("admin"),
 			},
 			wantErr: false,
 		},
 		{
 			name: "valid editor role",
-			request: UpdateUserRoleRequest{
+			request: UpdateUserRoleRequestBody{
 				Role: queries_pregeneration.UserRole("editor"),
 			},
 			wantErr: false,
 		},
 		{
 			name: "role with whitespace and case normalization",
-			request: UpdateUserRoleRequest{
+			request: UpdateUserRoleRequestBody{
 				Role: queries_pregeneration.UserRole("  ADMIN  "),
 			},
 			wantErr: false,
 		},
 		{
 			name: "role with mixed case",
-			request: UpdateUserRoleRequest{
+			request: UpdateUserRoleRequestBody{
 				Role: queries_pregeneration.UserRole("Editor"),
 			},
 			wantErr: false,
 		},
 		{
 			name: "missing role",
-			request: UpdateUserRoleRequest{
+			request: UpdateUserRoleRequestBody{
 				Role: queries_pregeneration.UserRole(""),
 			},
 			wantErr: true,
@@ -53,7 +53,7 @@ func TestUpdateUserRoleRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "role with only whitespace",
-			request: UpdateUserRoleRequest{
+			request: UpdateUserRoleRequestBody{
 				Role: queries_pregeneration.UserRole("   "),
 			},
 			wantErr: true,
@@ -61,7 +61,7 @@ func TestUpdateUserRoleRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid role value",
-			request: UpdateUserRoleRequest{
+			request: UpdateUserRoleRequestBody{
 				Role: queries_pregeneration.UserRole("guest"),
 			},
 			wantErr: true,
@@ -69,7 +69,7 @@ func TestUpdateUserRoleRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "another invalid role value",
-			request: UpdateUserRoleRequest{
+			request: UpdateUserRoleRequestBody{
 				Role: queries_pregeneration.UserRole("superuser"),
 			},
 			wantErr: true,
@@ -77,7 +77,7 @@ func TestUpdateUserRoleRequest_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid role with mixed case",
-			request: UpdateUserRoleRequest{
+			request: UpdateUserRoleRequestBody{
 				Role: queries_pregeneration.UserRole("GUEST"),
 			},
 			wantErr: true,
