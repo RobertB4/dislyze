@@ -10,9 +10,6 @@ npm run test-e2e      # E2E tests (Playwright with Docker)
 npm run lint          # ESLint and Prettier
 ```
 
-### Frontend Format
-Follow the format specified in ./lugia-frontend/.prettierrc
-
 ## Architecture
 - `routes/`: SvelteKit file-based routing
 - `components/`: Reusable UI components
@@ -34,3 +31,6 @@ const {response, success} = await mutationFetch('/api/endpoint', {
   body: JSON.stringify(data)
 });
 ```
+
+### Frontend Format
+Follow the format specified in @lugia-frontend/.prettierrc

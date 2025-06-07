@@ -58,39 +58,41 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	authHandler := auth.NewAuthHandler(dbConn, env, authRateLimiter, queries)
 	usersHandler := users.NewUsersHandler(dbConn, queries, env, resendInviteRateLimiter, deleteUserRateLimiter, changeEmailRateLimiter)
 
-	r.Route("/auth", func(r chi.Router) {
-		r.Post("/signup", authHandler.Signup)
-		r.Post("/login", authHandler.Login)
-		r.Post("/logout", authHandler.Logout)
-		r.Post("/accept-invite", authHandler.AcceptInvite)
-		r.Post("/forgot-password", authHandler.ForgotPassword)
-		r.Post("/verify-reset-token", authHandler.VerifyResetToken)
-		r.Post("/reset-password", authHandler.ResetPassword)
-	})
-
-	r.Group(func(r chi.Router) {
-		r.Use(middleware.NewAuthMiddleware(env, queries, authRateLimiter, dbConn).Authenticate)
-
-		r.Get("/me", usersHandler.GetMe)
-		r.Post("/me/change-name", usersHandler.UpdateMe)
-		r.Post("/me/change-password", usersHandler.ChangePassword)
-		r.Post("/me/change-email", usersHandler.ChangeEmail)
-		r.Get("/me/verify-change-email", usersHandler.VerifyChangeEmail)
-
-		r.Route("/users", func(r chi.Router) {
-			r.Use(middleware.RequireAdmin)
-
-			r.Get("/", usersHandler.GetUsers)
-			r.Post("/invite", usersHandler.InviteUser)
-			r.Post("/{userID}/resend-invite", usersHandler.ResendInvite)
-			r.Post("/{userID}/delete", usersHandler.DeleteUser)
-			r.Post("/{userID}/permissions", usersHandler.UpdateUserPermissions)
+	r.Route("/api", func(r chi.Router) {
+		r.Route("/auth", func(r chi.Router) {
+			r.Post("/signup", authHandler.Signup)
+			r.Post("/login", authHandler.Login)
+			r.Post("/logout", authHandler.Logout)
+			r.Post("/accept-invite", authHandler.AcceptInvite)
+			r.Post("/forgot-password", authHandler.ForgotPassword)
+			r.Post("/verify-reset-token", authHandler.VerifyResetToken)
+			r.Post("/reset-password", authHandler.ResetPassword)
 		})
 
-		r.Route("/tenant", func(r chi.Router) {
-			r.Use(middleware.RequireAdmin)
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.NewAuthMiddleware(env, queries, authRateLimiter, dbConn).Authenticate)
 
-			r.Post("/change-name", usersHandler.ChangeTenantName)
+			r.Get("/me", usersHandler.GetMe)
+			r.Post("/me/change-name", usersHandler.UpdateMe)
+			r.Post("/me/change-password", usersHandler.ChangePassword)
+			r.Post("/me/change-email", usersHandler.ChangeEmail)
+			r.Get("/me/verify-change-email", usersHandler.VerifyChangeEmail)
+
+			r.Route("/users", func(r chi.Router) {
+				r.Use(middleware.RequireAdmin)
+
+				r.Get("/", usersHandler.GetUsers)
+				r.Post("/invite", usersHandler.InviteUser)
+				r.Post("/{userID}/resend-invite", usersHandler.ResendInvite)
+				r.Post("/{userID}/delete", usersHandler.DeleteUser)
+				r.Post("/{userID}/permissions", usersHandler.UpdateUserPermissions)
+			})
+
+			r.Route("/tenant", func(r chi.Router) {
+				r.Use(middleware.RequireAdmin)
+
+				r.Post("/change-name", usersHandler.ChangeTenantName)
+			})
 		})
 	})
 
