@@ -5,8 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"lugia/features/auth"
+	"lugia/lib/sendgridlib"
 	"net/http"
+	"net/url"
 	"os"
+	"regexp"
 	"testing"
 	"time"
 
@@ -17,32 +21,6 @@ import (
 const (
 	BaseURL = "http://lugia-backend:13001"
 )
-
-type SendgridMockEmailContent struct {
-	Type  string `json:"type"`
-	Value string `json:"value"`
-}
-
-type SendgridMockTo struct {
-	Email string `json:"email"`
-	Name  string `json:"name"`
-}
-
-type SendgridMockPersonalization struct {
-	To      []SendgridMockTo `json:"to"`
-	Subject string           `json:"subject"`
-}
-
-type SendgridMockEmail struct {
-	Personalizations []SendgridMockPersonalization `json:"personalizations"`
-	Content          []SendgridMockEmailContent    `json:"content"`
-	SentAt           int64                         `json:"sent_at"`
-}
-
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
 
 func InitDB(t *testing.T) *pgxpool.Pool {
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
@@ -112,7 +90,7 @@ func ResetAndSeedDB(t *testing.T, pool *pgxpool.Pool) {
 func LoginUserAndGetTokens(t *testing.T, email string, password string) (string, string) {
 	t.Helper()
 
-	loginPayload := LoginRequest{
+	loginPayload := auth.LoginRequest{
 		Email:    email,
 		Password: password,
 	}
@@ -155,7 +133,7 @@ func LoginUserAndGetTokens(t *testing.T, email string, password string) (string,
 	return accessTokenValue, refreshTokenValue
 }
 
-func GetLatestEmailFromSendgridMock(t *testing.T, expectedRecipientEmail string) (*SendgridMockEmail, error) {
+func GetLatestEmailFromSendgridMock(t *testing.T, expectedRecipientEmail string) (*sendgridlib.SendGridMailRequestBody, error) {
 	t.Helper()
 	sendgridAPIURL := os.Getenv("SENDGRID_API_URL")
 	sendgridAPIKey := os.Getenv("SENDGRID_API_KEY")
@@ -187,7 +165,7 @@ func GetLatestEmailFromSendgridMock(t *testing.T, expectedRecipientEmail string)
 			continue
 		}
 
-		var emails []SendgridMockEmail
+		var emails []sendgridlib.SendGridMailRequestBody
 		if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
 			lastErr = fmt.Errorf("failed to decode emails from sendgrid-mock: %w", err)
 			time.Sleep(500 * time.Millisecond)
@@ -209,11 +187,29 @@ func GetLatestEmailFromSendgridMock(t *testing.T, expectedRecipientEmail string)
 	return nil, fmt.Errorf("failed to get expected email for %s after multiple retries: %w", expectedRecipientEmail, lastErr)
 }
 
+func ExtractResetTokenFromEmail(t *testing.T, email *sendgridlib.SendGridMailRequestBody) (string, error) {
+	t.Helper()
+	for _, content := range email.Content {
+		if content.Type == "text/html" {
+			re := regexp.MustCompile(`href="[^"]*/reset-password\?token=([a-zA-Z0-9\-_.%]+)"`)
+			matches := re.FindStringSubmatch(content.Value)
+			if len(matches) > 1 {
+				decodedToken, err := url.QueryUnescape(matches[1])
+				if err != nil {
+					return "", fmt.Errorf("failed to decode reset token from email: %w", err)
+				}
+				return decodedToken, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("reset token not found in email HTML content")
+}
+
 func AttemptLogin(t *testing.T, email string, password string) *http.Response {
 	t.Helper()
 	client := &http.Client{}
 
-	loginPayload := LoginRequest{
+	loginPayload := auth.LoginRequest{
 		Email:    email,
 		Password: password,
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"lugia/features/auth"
 	"lugia/test/integration/setup"
 	"net/http"
 	"testing"
@@ -21,7 +22,7 @@ func TestLogout(t *testing.T) {
 	client := &http.Client{}
 
 	// First, log in to get cookies
-	loginPayload := LoginRequest{
+	loginPayload := auth.LoginRequest{
 		Email:    "test@example.com",
 		Password: "password123",
 	}

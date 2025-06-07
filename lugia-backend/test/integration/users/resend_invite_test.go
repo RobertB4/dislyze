@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"lugia/features/auth"
+	"lugia/lib/sendgridlib"
 	"lugia/test/integration/setup"
 	"net/http"
 	"regexp"
@@ -19,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func extractInvitationTokenFromEmail(t *testing.T, email *setup.SendgridMockEmail) (string, error) {
+func extractInvitationTokenFromEmail(t *testing.T, email *sendgridlib.SendGridMailRequestBody) (string, error) {
 	t.Helper()
 	for _, content := range email.Content {
 		if content.Type == "text/html" {

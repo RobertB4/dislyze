@@ -7,10 +7,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"lugia/features/auth"
 	"lugia/test/integration/setup"
 	"net/http"
-	"net/url"
-	"regexp"
 	"testing"
 	"time"
 
@@ -19,96 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type ForgotPasswordRequest struct {
-	Email string `json:"email"`
-}
-
-func TestForgotPasswordValidation(t *testing.T) {
-	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	defer setup.CloseDB(pool)
-
-	tests := []struct {
-		name           string
-		request        ForgotPasswordRequest
-		expectedStatus int
-	}{
-		{
-			name: "missing email",
-			request: ForgotPasswordRequest{
-				Email: "",
-			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name: "invalid email format",
-			request: ForgotPasswordRequest{
-				Email: "invalid-email",
-			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name: "valid email (non-existent user)",
-			request: ForgotPasswordRequest{
-				Email: "nonexistent@example.com",
-			},
-			expectedStatus: http.StatusOK, // Always returns 200 for security
-		},
-		{
-			name: "valid email format",
-			request: ForgotPasswordRequest{
-				Email: "test@example.com",
-			},
-			expectedStatus: http.StatusOK, // Always returns 200 for security
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			body, err := json.Marshal(tt.request)
-			assert.NoError(t, err)
-
-			req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/forgot-password", setup.BaseURL), bytes.NewBuffer(body))
-			assert.NoError(t, err)
-			req.Header.Set("Content-Type", "application/json")
-
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			assert.NoError(t, err)
-			defer func() {
-				if err := resp.Body.Close(); err != nil {
-					t.Logf("Error closing response body: %v", err)
-				}
-			}()
-
-			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
-
-			// For forgot password, no cookies should ever be set
-			cookies := resp.Cookies()
-			assert.Empty(t, cookies, "Expected no cookies for forgot password")
-		})
-	}
-}
-
-func extractResetTokenFromEmail(t *testing.T, email *setup.SendgridMockEmail) (string, error) {
-	t.Helper()
-	for _, content := range email.Content {
-		if content.Type == "text/html" {
-			re := regexp.MustCompile(`href="[^"]*/reset-password\?token=([a-zA-Z0-9\-_.%]+)"`)
-			matches := re.FindStringSubmatch(content.Value)
-			if len(matches) > 1 {
-				decodedToken, err := url.QueryUnescape(matches[1])
-				if err != nil {
-					return "", fmt.Errorf("failed to decode reset token from email: %w", err)
-				}
-				return decodedToken, nil
-			}
-		}
-	}
-	return "", fmt.Errorf("reset token not found in email HTML content")
-}
-
-func TestForgotPasswordComplex(t *testing.T) {
+func TestForgotPassword(t *testing.T) {
 	pool := setup.InitDB(t)
 	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
@@ -117,7 +27,7 @@ func TestForgotPasswordComplex(t *testing.T) {
 
 	t.Run("TestForgotPassword_ExistingEmail_Successful", func(t *testing.T) {
 		testUser := setup.TestUsersData["alpha_admin"]
-		payload := ForgotPasswordRequest{Email: testUser.Email}
+		payload := auth.ForgotPasswordRequest{Email: testUser.Email}
 		body, err := json.Marshal(payload)
 		assert.NoError(t, err)
 
@@ -140,7 +50,7 @@ func TestForgotPasswordComplex(t *testing.T) {
 		if err == nil {
 			assert.Equal(t, "パスワードリセットのご案内 - dislyze", email.Personalizations[0].Subject)
 
-			rawToken, err := extractResetTokenFromEmail(t, email)
+			rawToken, err := setup.ExtractResetTokenFromEmail(t, email)
 			assert.NoError(t, err, "Failed to extract reset token from email")
 			assert.NotEmpty(t, rawToken, "Extracted reset token should not be empty")
 
@@ -171,11 +81,72 @@ func TestForgotPasswordComplex(t *testing.T) {
 		}
 	})
 
+	t.Run("TestForgotPassword_NonExistentEmail", func(t *testing.T) {
+		nonExistentEmail := "idonotexist@example.com"
+		payload := auth.ForgotPasswordRequest{Email: nonExistentEmail}
+		body, err := json.Marshal(payload)
+		assert.NoError(t, err)
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/forgot-password", setup.BaseURL), bytes.NewBuffer(body))
+		assert.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	})
+
+	t.Run("TestForgotPassword_InvalidEmailFormat", func(t *testing.T) {
+		payload := auth.ForgotPasswordRequest{Email: "invalidemail"}
+		body, err := json.Marshal(payload)
+		assert.NoError(t, err)
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/forgot-password", setup.BaseURL), bytes.NewBuffer(body))
+		assert.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("TestForgotPassword_EmptyEmail", func(t *testing.T) {
+		payload := auth.ForgotPasswordRequest{Email: ""}
+		body, err := json.Marshal(payload)
+		assert.NoError(t, err)
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/forgot-password", setup.BaseURL), bytes.NewBuffer(body))
+		assert.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
 	t.Run("TestForgotPassword_MultipleRequestsForSameUser", func(t *testing.T) {
 		testUser := setup.TestUsersData["alpha_editor"]
 
 		// --- First Request ---
-		payload1 := ForgotPasswordRequest{Email: testUser.Email}
+		payload1 := auth.ForgotPasswordRequest{Email: testUser.Email}
 		body1, err := json.Marshal(payload1)
 		assert.NoError(t, err)
 		req1, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/forgot-password", setup.BaseURL), bytes.NewBuffer(body1))
@@ -192,7 +163,7 @@ func TestForgotPasswordComplex(t *testing.T) {
 
 		email1, err := setup.GetLatestEmailFromSendgridMock(t, testUser.Email)
 		assert.NoError(t, err)
-		rawToken1, err := extractResetTokenFromEmail(t, email1)
+		rawToken1, err := setup.ExtractResetTokenFromEmail(t, email1)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, rawToken1)
 		hash1 := sha256.Sum256([]byte(rawToken1))
@@ -217,7 +188,7 @@ func TestForgotPasswordComplex(t *testing.T) {
 		}
 
 		// --- Second Request ---
-		payload2 := ForgotPasswordRequest{Email: testUser.Email}
+		payload2 := auth.ForgotPasswordRequest{Email: testUser.Email}
 		body2, err := json.Marshal(payload2)
 		assert.NoError(t, err)
 		req2, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/forgot-password", setup.BaseURL), bytes.NewBuffer(body2))
@@ -234,7 +205,7 @@ func TestForgotPasswordComplex(t *testing.T) {
 
 		email2, err := setup.GetLatestEmailFromSendgridMock(t, testUser.Email)
 		assert.NoError(t, err)
-		rawToken2, err := extractResetTokenFromEmail(t, email2)
+		rawToken2, err := setup.ExtractResetTokenFromEmail(t, email2)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, rawToken2)
 		assert.NotEqual(t, rawToken1, rawToken2, "Raw tokens from two requests should be different")

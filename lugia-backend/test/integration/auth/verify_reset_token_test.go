@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"lugia/features/auth"
 	"lugia/test/integration/setup"
 	"net/http"
 	"testing"
@@ -16,78 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type VerifyResetTokenRequest struct {
-	Token string `json:"token"`
-}
-
-func TestVerifyResetTokenValidation(t *testing.T) {
-	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
-	defer setup.CloseDB(pool)
-
-	tests := []struct {
-		name           string
-		request        VerifyResetTokenRequest
-		expectedStatus int
-	}{
-		{
-			name: "missing token",
-			request: VerifyResetTokenRequest{
-				Token: "",
-			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name: "empty token",
-			request: VerifyResetTokenRequest{
-				Token: "",
-			},
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name: "invalid token (valid format but doesn't exist)",
-			request: VerifyResetTokenRequest{
-				Token: "invalid-token-123",
-			},
-			expectedStatus: http.StatusBadRequest, // Token not found
-		},
-		{
-			name: "whitespace-only token",
-			request: VerifyResetTokenRequest{
-				Token: "   ",
-			},
-			expectedStatus: http.StatusBadRequest,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			body, err := json.Marshal(tt.request)
-			assert.NoError(t, err)
-
-			req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/verify-reset-token", setup.BaseURL), bytes.NewBuffer(body))
-			assert.NoError(t, err)
-			req.Header.Set("Content-Type", "application/json")
-
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			assert.NoError(t, err)
-			defer func() {
-				if err := resp.Body.Close(); err != nil {
-					t.Logf("Error closing response body: %v", err)
-				}
-			}()
-
-			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
-
-			// For verify reset token, no cookies should ever be set
-			cookies := resp.Cookies()
-			assert.Empty(t, cookies, "Expected no cookies for verify reset token")
-		})
-	}
-}
-
-func TestVerifyResetTokenComplex(t *testing.T) {
+func TestVerifyResetToken(t *testing.T) {
 	pool := setup.InitDB(t)
 	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
@@ -97,7 +27,7 @@ func TestVerifyResetTokenComplex(t *testing.T) {
 
 	// Helper function to make a /auth/forgot-password request and get the raw token
 	getRawResetToken := func(userEmail string) string {
-		payload := ForgotPasswordRequest{Email: userEmail}
+		payload := auth.ForgotPasswordRequest{Email: userEmail}
 		body, err := json.Marshal(payload)
 		assert.NoError(t, err)
 		fpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/forgot-password", setup.BaseURL), bytes.NewBuffer(body))
@@ -114,7 +44,7 @@ func TestVerifyResetTokenComplex(t *testing.T) {
 
 		email, err := setup.GetLatestEmailFromSendgridMock(t, userEmail)
 		assert.NoError(t, err)
-		rawToken, err := extractResetTokenFromEmail(t, email)
+		rawToken, err := setup.ExtractResetTokenFromEmail(t, email)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, rawToken)
 		return rawToken
@@ -125,7 +55,7 @@ func TestVerifyResetTokenComplex(t *testing.T) {
 		rawToken := getRawResetToken(testUser.Email)
 		fmt.Println("Raw token for user:", testUser.Email, "is", rawToken)
 
-		verifyPayload := VerifyResetTokenRequest{Token: rawToken}
+		verifyPayload := auth.VerifyResetTokenRequest{Token: rawToken}
 		verifyBody, err := json.Marshal(verifyPayload)
 		assert.NoError(t, err)
 
@@ -156,6 +86,26 @@ func TestVerifyResetTokenComplex(t *testing.T) {
 		assert.False(t, dbUsedAt.Valid, "Token should not be marked as used after verification")
 	})
 
+	t.Run("TestVerifyResetToken_InvalidToken_NonExistent", func(t *testing.T) {
+		verifyPayload := auth.VerifyResetTokenRequest{Token: "non-existent-token-string"}
+		verifyBody, err := json.Marshal(verifyPayload)
+		assert.NoError(t, err)
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/verify-reset-token", setup.BaseURL), bytes.NewBuffer(verifyBody))
+		assert.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
 	t.Run("TestVerifyResetToken_ExpiredToken", func(t *testing.T) {
 		testUser := setup.TestUsersData["alpha_editor"]
 		rawToken := getRawResetToken(testUser.Email)
@@ -166,7 +116,7 @@ func TestVerifyResetTokenComplex(t *testing.T) {
 		_, err := pool.Exec(ctx, "UPDATE password_reset_tokens SET expires_at = $1 WHERE token_hash = $2", time.Now().Add(-1*time.Hour), hashedTokenStr)
 		assert.NoError(t, err, "Failed to manually expire token")
 
-		verifyPayload := VerifyResetTokenRequest{Token: rawToken}
+		verifyPayload := auth.VerifyResetTokenRequest{Token: rawToken}
 		verifyBody, err := json.Marshal(verifyPayload)
 		assert.NoError(t, err)
 
@@ -195,7 +145,27 @@ func TestVerifyResetTokenComplex(t *testing.T) {
 		_, err := pool.Exec(ctx, "UPDATE password_reset_tokens SET used_at = $1 WHERE token_hash = $2", time.Now(), hashedTokenStr)
 		assert.NoError(t, err, "Failed to manually mark token as used")
 
-		verifyPayload := VerifyResetTokenRequest{Token: rawToken}
+		verifyPayload := auth.VerifyResetTokenRequest{Token: rawToken}
+		verifyBody, err := json.Marshal(verifyPayload)
+		assert.NoError(t, err)
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/verify-reset-token", setup.BaseURL), bytes.NewBuffer(verifyBody))
+		assert.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Logf("Error closing response body: %v", err)
+			}
+		}()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("TestVerifyResetToken_EmptyToken", func(t *testing.T) {
+		verifyPayload := auth.VerifyResetTokenRequest{Token: ""}
 		verifyBody, err := json.Marshal(verifyPayload)
 		assert.NoError(t, err)
 

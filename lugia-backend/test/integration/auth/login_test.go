@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"lugia/features/auth"
 	"lugia/test/integration/setup"
 	"net/http"
 	"testing"
@@ -11,20 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
 func createTestUser(t *testing.T) {
-	type SignupRequest struct {
-		CompanyName     string `json:"company_name"`
-		UserName        string `json:"user_name"`
-		Email           string `json:"email"`
-		Password        string `json:"password"`
-		PasswordConfirm string `json:"password_confirm"`
-	}
-	
 	body, err := json.Marshal(SignupRequest{
 		CompanyName:     "Test Company",
 		UserName:        "Test User",
@@ -59,12 +47,12 @@ func TestLogin(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		request        LoginRequest
+		request        auth.LoginRequest
 		expectedStatus int
 	}{
 		{
 			name: "successful login",
-			request: LoginRequest{
+			request: auth.LoginRequest{
 				Email:    "test@example.com",
 				Password: "password123",
 			},
@@ -72,7 +60,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name: "wrong password",
-			request: LoginRequest{
+			request: auth.LoginRequest{
 				Email:    "test@example.com",
 				Password: "wrongpassword",
 			},
@@ -80,7 +68,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name: "non-existent email",
-			request: LoginRequest{
+			request: auth.LoginRequest{
 				Email:    "nonexistent@example.com",
 				Password: "password123",
 			},
@@ -88,14 +76,14 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			name: "missing email",
-			request: LoginRequest{
+			request: auth.LoginRequest{
 				Password: "password123",
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "missing password",
-			request: LoginRequest{
+			request: auth.LoginRequest{
 				Email: "test@example.com",
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -164,7 +152,7 @@ func TestLoginLogoutAndVerifyMeEndpoint(t *testing.T) {
 	client := &http.Client{}
 
 	// 1. Log in
-	loginPayload := LoginRequest{
+	loginPayload := auth.LoginRequest{
 		Email:    "test@example.com",
 		Password: "password123",
 	}
