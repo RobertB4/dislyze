@@ -3,7 +3,8 @@ package users
 import (
 	"encoding/json"
 	"fmt"
-	"lugia/handlers"
+
+	"lugia/features/users"
 	"lugia/queries_pregeneration"
 	"lugia/test/integration/setup"
 	"net/http"
@@ -88,7 +89,7 @@ func TestGetUsers_Integration(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
 			if tt.expectedStatus == http.StatusOK {
-				var usersResponse handlers.GetUsersResponse
+				var usersResponse users.GetUsersResponse
 				err = json.NewDecoder(resp.Body).Decode(&usersResponse)
 				assert.NoError(t, err, "Failed to decode response for test: %s", tt.name)
 
@@ -256,7 +257,7 @@ func TestGetUsersPagination_Integration(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
 			if tt.expectedStatus == http.StatusOK {
-				var usersResponse handlers.GetUsersResponse
+				var usersResponse users.GetUsersResponse
 				err = json.NewDecoder(resp.Body).Decode(&usersResponse)
 				assert.NoError(t, err, "Failed to decode response for test: %s", tt.name)
 
@@ -415,7 +416,7 @@ func TestGetUsersSearch_Integration(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
 			if tt.expectedStatus == http.StatusOK {
-				var usersResponse handlers.GetUsersResponse
+				var usersResponse users.GetUsersResponse
 				err = json.NewDecoder(resp.Body).Decode(&usersResponse)
 				assert.NoError(t, err, "Failed to decode response for test: %s", tt.name)
 
@@ -541,7 +542,7 @@ func TestGetUsersSearchWithPagination_Integration(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
 			if tt.expectedStatus == http.StatusOK {
-				var usersResponse handlers.GetUsersResponse
+				var usersResponse users.GetUsersResponse
 				err = json.NewDecoder(resp.Body).Decode(&usersResponse)
 				assert.NoError(t, err, "Failed to decode response for test: %s", tt.name)
 
@@ -677,7 +678,7 @@ func TestGetUsersInvalidParameters_Integration(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Status code mismatch for test: %s", tt.name)
 
 			if tt.expectedStatus == http.StatusOK {
-				var usersResponse handlers.GetUsersResponse
+				var usersResponse users.GetUsersResponse
 				err = json.NewDecoder(resp.Body).Decode(&usersResponse)
 				assert.NoError(t, err, "Failed to decode response for test: %s", tt.name)
 

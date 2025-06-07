@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"lugia/handlers"
+	"lugia/features/users"
 	"lugia/test/integration/setup"
 	"net/http"
 	"strings"
@@ -23,7 +23,7 @@ func TestUpdateMe_Integration(t *testing.T) {
 	tests := []struct {
 		name           string
 		loginUserKey   string // Key for setup.TestUsersData map, empty for unauth
-		requestBody    handlers.UpdateMeRequest
+		requestBody    users.UpdateMeRequest
 		customJSON     string // For malformed JSON tests
 		expectedStatus int
 		expectUnauth   bool
@@ -31,7 +31,7 @@ func TestUpdateMe_Integration(t *testing.T) {
 		// Authentication Tests
 		{
 			name:           "unauthenticated request gets 401",
-			requestBody:    handlers.UpdateMeRequest{Name: "Test Name"},
+			requestBody:    users.UpdateMeRequest{Name: "Test Name"},
 			expectedStatus: http.StatusUnauthorized,
 			expectUnauth:   true,
 		},
@@ -40,13 +40,13 @@ func TestUpdateMe_Integration(t *testing.T) {
 		{
 			name:           "empty name gets 400",
 			loginUserKey:   "alpha_admin",
-			requestBody:    handlers.UpdateMeRequest{Name: ""},
+			requestBody:    users.UpdateMeRequest{Name: ""},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "name with only whitespace gets 400",
 			loginUserKey:   "alpha_admin",
-			requestBody:    handlers.UpdateMeRequest{Name: "   "},
+			requestBody:    users.UpdateMeRequest{Name: "   "},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -64,7 +64,7 @@ func TestUpdateMe_Integration(t *testing.T) {
 		{
 			name:           "name exceeding 255 characters gets 500",
 			loginUserKey:   "alpha_admin",
-			requestBody:    handlers.UpdateMeRequest{Name: strings.Repeat("a", 256)}, // 256 chars, over limit
+			requestBody:    users.UpdateMeRequest{Name: strings.Repeat("a", 256)}, // 256 chars, over limit
 			expectedStatus: http.StatusInternalServerError,
 		},
 
@@ -72,37 +72,37 @@ func TestUpdateMe_Integration(t *testing.T) {
 		{
 			name:           "alpha_admin successfully updates name",
 			loginUserKey:   "alpha_admin",
-			requestBody:    handlers.UpdateMeRequest{Name: "Updated Alpha Admin"},
+			requestBody:    users.UpdateMeRequest{Name: "Updated Alpha Admin"},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "beta_admin successfully updates name",
 			loginUserKey:   "beta_admin",
-			requestBody:    handlers.UpdateMeRequest{Name: "Updated Beta Admin"},
+			requestBody:    users.UpdateMeRequest{Name: "Updated Beta Admin"},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "name with leading/trailing whitespace is trimmed",
 			loginUserKey:   "alpha_editor",
-			requestBody:    handlers.UpdateMeRequest{Name: "  Trimmed Name  "},
+			requestBody:    users.UpdateMeRequest{Name: "  Trimmed Name  "},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "name with special characters works",
 			loginUserKey:   "alpha_editor",
-			requestBody:    handlers.UpdateMeRequest{Name: "Jean-Claude O'Connor"},
+			requestBody:    users.UpdateMeRequest{Name: "Jean-Claude O'Connor"},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "name with unicode characters works",
 			loginUserKey:   "alpha_editor",
-			requestBody:    handlers.UpdateMeRequest{Name: "田中太郎 🎉 Émilie"},
+			requestBody:    users.UpdateMeRequest{Name: "田中太郎 🎉 Émilie"},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "maximum length name (255 chars) works",
 			loginUserKey:   "alpha_editor",
-			requestBody:    handlers.UpdateMeRequest{Name: strings.Repeat("a", 255)}, // Exactly 255 chars
+			requestBody:    users.UpdateMeRequest{Name: strings.Repeat("a", 255)}, // Exactly 255 chars
 			expectedStatus: http.StatusOK,
 		},
 	}

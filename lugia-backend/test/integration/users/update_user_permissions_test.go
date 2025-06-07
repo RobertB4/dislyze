@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"lugia/handlers"
+	"lugia/features/users"
 	"lugia/test/integration/setup"
 	"net/http"
 	"strings"
@@ -26,7 +26,7 @@ func TestUpdateUserPermissions_Integration(t *testing.T) {
 		loginUserKey         string // Key for setup.TestUsersData map, empty for unauth
 		targetUserKey        string // Key for setup.TestUsersData map of target user
 		targetUserIDOverride string // Use this if targetUserKey is empty (for invalid userID tests)
-		requestBody          handlers.UpdateUserRoleRequest
+		requestBody          users.UpdateUserRoleRequest
 		expectedStatus       int
 		expectUnauth         bool
 		validateResponse     func(t *testing.T, resp *http.Response) // For custom response validation
@@ -35,7 +35,7 @@ func TestUpdateUserPermissions_Integration(t *testing.T) {
 		{
 			name:           "unauthenticated request gets 401",
 			targetUserKey:  "alpha_editor",
-			requestBody:    handlers.UpdateUserRoleRequest{Role: "admin"},
+			requestBody:    users.UpdateUserRoleRequest{Role: "admin"},
 			expectedStatus: http.StatusUnauthorized,
 			expectUnauth:   true,
 		},
@@ -43,14 +43,14 @@ func TestUpdateUserPermissions_Integration(t *testing.T) {
 			name:           "non-admin user gets 403 forbidden",
 			loginUserKey:   "alpha_editor",
 			targetUserKey:  "pending_editor_valid_token",
-			requestBody:    handlers.UpdateUserRoleRequest{Role: "admin"},
+			requestBody:    users.UpdateUserRoleRequest{Role: "admin"},
 			expectedStatus: http.StatusForbidden,
 		},
 		{
 			name:           "admin from different tenant gets 403 forbidden",
 			loginUserKey:   "beta_admin",   // Tenant B
 			targetUserKey:  "alpha_editor", // Tenant A
-			requestBody:    handlers.UpdateUserRoleRequest{Role: "admin"},
+			requestBody:    users.UpdateUserRoleRequest{Role: "admin"},
 			expectedStatus: http.StatusForbidden,
 		},
 
@@ -59,21 +59,21 @@ func TestUpdateUserPermissions_Integration(t *testing.T) {
 			name:                 "invalid userID format gets 400",
 			loginUserKey:         "alpha_admin",
 			targetUserIDOverride: "not-a-uuid",
-			requestBody:          handlers.UpdateUserRoleRequest{Role: "admin"},
+			requestBody:          users.UpdateUserRoleRequest{Role: "admin"},
 			expectedStatus:       http.StatusBadRequest,
 		},
 		{
 			name:           "empty role gets 400",
 			loginUserKey:   "alpha_admin",
 			targetUserKey:  "alpha_editor",
-			requestBody:    handlers.UpdateUserRoleRequest{Role: ""},
+			requestBody:    users.UpdateUserRoleRequest{Role: ""},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "invalid role value gets 400",
 			loginUserKey:   "alpha_admin",
 			targetUserKey:  "alpha_editor",
-			requestBody:    handlers.UpdateUserRoleRequest{Role: "guest"},
+			requestBody:    users.UpdateUserRoleRequest{Role: "guest"},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -88,14 +88,14 @@ func TestUpdateUserPermissions_Integration(t *testing.T) {
 			name:                 "non-existent user gets 404",
 			loginUserKey:         "alpha_admin",
 			targetUserIDOverride: "00000000-0000-0000-0000-000000000000", // Valid UUID that doesn't exist
-			requestBody:          handlers.UpdateUserRoleRequest{Role: "admin"},
+			requestBody:          users.UpdateUserRoleRequest{Role: "admin"},
 			expectedStatus:       http.StatusNotFound,
 		},
 		{
 			name:           "user trying to update own role gets 400",
 			loginUserKey:   "alpha_admin",
 			targetUserKey:  "alpha_admin", // Same user
-			requestBody:    handlers.UpdateUserRoleRequest{Role: "editor"},
+			requestBody:    users.UpdateUserRoleRequest{Role: "editor"},
 			expectedStatus: http.StatusBadRequest,
 		},
 
@@ -104,7 +104,7 @@ func TestUpdateUserPermissions_Integration(t *testing.T) {
 			name:           "admin successfully updates editor to admin",
 			loginUserKey:   "alpha_admin",
 			targetUserKey:  "alpha_editor",
-			requestBody:    handlers.UpdateUserRoleRequest{Role: "admin"},
+			requestBody:    users.UpdateUserRoleRequest{Role: "admin"},
 			expectedStatus: http.StatusOK,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
@@ -113,7 +113,7 @@ func TestUpdateUserPermissions_Integration(t *testing.T) {
 			name:           "admin successfully updates admin to editor",
 			loginUserKey:   "alpha_admin",
 			targetUserKey:  "alpha_editor", // Was updated to admin in previous test
-			requestBody:    handlers.UpdateUserRoleRequest{Role: "editor"},
+			requestBody:    users.UpdateUserRoleRequest{Role: "editor"},
 			expectedStatus: http.StatusOK,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
