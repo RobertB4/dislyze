@@ -10,6 +10,20 @@ export default defineConfig({
 		host: "0.0.0.0",
 		port: 23000,
 		strictPort: true,
-		cors: true
+		cors: true,
+		proxy: {
+			"/api": {
+				target: "http://lugia-backend:23001",
+				changeOrigin: true,
+				secure: false,
+				configure: (proxy) => {
+					proxy.on("proxyReq", (proxyReq, req) => {
+						if (req.socket.remoteAddress) {
+							proxyReq.setHeader("X-Forwarded-For", req.socket.remoteAddress);
+						}
+					});
+				}
+			}
+		}
 	}
 });

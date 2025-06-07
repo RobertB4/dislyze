@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	BaseURL = "http://lugia-backend:13001"
+	BaseURL = "http://lugia-backend:13001/api"
 )
 
 func InitDB(t *testing.T) *pgxpool.Pool {

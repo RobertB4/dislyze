@@ -6,10 +6,10 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE tenants (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     features_config JSONB DEFAULT '{}', -- Feature toggles: {"feature_name": {"enabled": boolean, ...config}}
-    stripe_customer_id VARCHAR(255) UNIQUE
+    stripe_customer_id VARCHAR(255) UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_tenants_features_config ON tenants USING GIN (features_config);
 CREATE INDEX idx_tenants_stripe_customer_id ON tenants(stripe_customer_id);

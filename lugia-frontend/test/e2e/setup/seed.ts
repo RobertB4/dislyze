@@ -5,7 +5,6 @@ export const TestUsersData = {
 		userID: "b0000000-0000-0000-0000-000000000001",
 		tenantID: "a0000000-0000-0000-0000-000000000001",
 		name: "Alpha Admin",
-		role: "admin",
 		status: "active"
 	},
 	alpha_editor: {
@@ -14,7 +13,6 @@ export const TestUsersData = {
 		userID: "b0000000-0000-0000-0000-000000000002",
 		tenantID: "a0000000-0000-0000-0000-000000000001",
 		name: "Alpha Editor",
-		role: "editor",
 		status: "active"
 	},
 	pending_editor_valid_token: {
@@ -23,7 +21,6 @@ export const TestUsersData = {
 		userID: "b0000000-0000-0000-0000-000000000003",
 		tenantID: "a0000000-0000-0000-0000-000000000001",
 		name: "Pending Editor Valid Token",
-		role: "editor",
 		status: "pending_verification"
 	},
 	suspended_editor: {
@@ -32,7 +29,6 @@ export const TestUsersData = {
 		userID: "b0000000-0000-0000-0000-000000000004",
 		tenantID: "a0000000-0000-0000-0000-000000000001",
 		name: "Suspended Editor",
-		role: "editor",
 		status: "suspended"
 	},
 	pending_editor_for_rate_limit_test: {
@@ -41,7 +37,6 @@ export const TestUsersData = {
 		userID: "b0000000-0000-0000-0000-000000000005",
 		tenantID: "a0000000-0000-0000-0000-000000000001",
 		name: "Pending Editor Rate Limit Test",
-		role: "editor",
 		status: "pending_verification"
 	},
 	pending_editor_tenant_A_for_x_tenant_test: {
@@ -50,7 +45,6 @@ export const TestUsersData = {
 		userID: "b0000000-0000-0000-0000-000000000006",
 		tenantID: "a0000000-0000-0000-0000-000000000001",
 		name: "PendingXT Editor",
-		role: "editor",
 		status: "pending_verification"
 	},
 	// Tenant Beta User
@@ -60,7 +54,6 @@ export const TestUsersData = {
 		userID: "b0000000-0000-0000-0000-000000000007",
 		tenantID: "a0000000-0000-0000-0000-000000000002",
 		name: "Beta Admin",
-		role: "admin",
 		status: "active"
 	}
 } as const;
@@ -71,13 +64,11 @@ export type TestUser = (typeof TestUsersData)[TestUserKey];
 export const TestTenantsData = {
 	tenant_alpha: {
 		id: "a0000000-0000-0000-0000-000000000001",
-		name: "Tenant Alpha",
-		plan: "basic"
+		name: "Tenant Alpha"
 	},
 	tenant_beta: {
 		id: "a0000000-0000-0000-0000-000000000002",
-		name: "Tenant Beta",
-		plan: "basic"
+		name: "Tenant Beta"
 	}
 } as const;
 

@@ -11,6 +11,9 @@ COPY lugia-backend/go.mod lugia-backend/go.sum ./
 # Download dependencies
 RUN go mod download
 
+# Install gotestfmt
+RUN go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
+
 # Copy source code of the backend from the lugia-backend directory within the context
 COPY lugia-backend/ .
 
