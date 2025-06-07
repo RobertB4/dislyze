@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"lugia/handlers"
+	"lugia/features/users"
 	"lugia/test/integration/setup"
 	"net/http"
 	"testing"
@@ -92,7 +92,7 @@ func TestGetMe_Integration(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
 			if tt.expectedStatus == http.StatusOK {
-				var meResponse handlers.MeResponse
+				var meResponse users.MeResponse
 				err = json.NewDecoder(resp.Body).Decode(&meResponse)
 				assert.NoError(t, err, "Failed to decode MeResponse")
 
