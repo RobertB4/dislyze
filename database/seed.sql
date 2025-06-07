@@ -2,6 +2,21 @@ INSERT INTO tenants (id, name, features_config, stripe_customer_id, created_at, 
 ('a0000000-0000-0000-0000-000000000001', 'Tenant Alpha', '{}', null, '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00'),
 ('a0000000-0000-0000-0000-000000000002', 'Tenant Beta', '{}', null, '2024-01-01 10:01:00+00', '2024-01-01 10:01:00+00');
 
+INSERT INTO permissions (id, resource, action, description, created_at, updated_at) VALUES
+('d0000000-0000-0000-0000-000000000001', 'user', 'invite', 'Invite new users to the tenant', '2024-01-01 09:00:00+00', '2024-01-01 09:00:00+00');
+
+INSERT INTO roles (id, tenant_id, name, description, created_at, updated_at) VALUES
+('e0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'admin', 'Full administrative access', '2024-01-01 09:30:00+00', '2024-01-01 09:30:00+00'),
+('e0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'editor', 'Limited editor access', '2024-01-01 09:31:00+00', '2024-01-01 09:31:00+00');
+
+INSERT INTO roles (id, tenant_id, name, description, created_at, updated_at) VALUES
+('e0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000002', 'admin', 'Full administrative access', '2024-01-01 09:32:00+00', '2024-01-01 09:32:00+00'),
+('e0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000002', 'editor', 'Limited editor access', '2024-01-01 09:33:00+00', '2024-01-01 09:33:00+00');
+
+INSERT INTO role_permissions (role_id, permission_id, created_at) VALUES
+('f0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', '2024-01-01 09:40:00+00'), -- Tenant Alpha admin -> users/invite
+('f0000000-0000-0000-0000-000000000003', 'd0000000-0000-0000-0000-000000000001', '2024-01-01 09:41:00+00'); -- Tenant Beta admin -> users/invite
+
 -- Password for all users is 'password123' (except pending users, which is 'password')
 
 -- Users for Tenant Alpha (a...1)
@@ -16,6 +31,17 @@ INSERT INTO users (id, tenant_id, email, password_hash, name, status, created_at
 -- User for Tenant Beta (a...2)
 INSERT INTO users (id, tenant_id, email, password_hash, name, status, created_at, updated_at) VALUES
 ('b0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000002', 'beta_admin@example.com', '$2a$10$oadek4URiwb4gMH1/Llscusq97X3jLWTB2skaIYh5.8yy3W9.kGsS', 'Beta Admin', 'active', '2024-01-01 11:06:00+00', '2024-01-01 11:06:00+00');
+
+INSERT INTO user_roles (user_id, role_id, created_at) VALUES
+-- Tenant Alpha users
+('b0000000-0000-0000-0000-000000000001', 'r0000000-0000-0000-0000-000000000001', '2024-01-01 11:10:00+00'), -- Alpha Admin -> admin role
+('b0000000-0000-0000-0000-000000000002', 'r0000000-0000-0000-0000-000000000002', '2024-01-01 11:11:00+00'), -- Alpha Editor -> editor role
+('b0000000-0000-0000-0000-000000000003', 'r0000000-0000-0000-0000-000000000002', '2024-01-01 11:12:00+00'), -- Pending Editor Valid Token -> editor role
+('b0000000-0000-0000-0000-000000000004', 'r0000000-0000-0000-0000-000000000002', '2024-01-01 11:13:00+00'), -- Suspended Editor -> editor role
+('b0000000-0000-0000-0000-000000000005', 'r0000000-0000-0000-0000-000000000002', '2024-01-01 11:14:00+00'), -- Pending Editor Rate Limit -> editor role
+('b0000000-0000-0000-0000-000000000006', 'r0000000-0000-0000-0000-000000000002', '2024-01-01 11:15:00+00'), -- Pending Editor X Tenant -> editor role
+-- Tenant Beta users  
+('b0000000-0000-0000-0000-000000000007', 'r0000000-0000-0000-0000-000000000003', '2024-01-01 11:16:00+00'); -- Beta Admin -> admin role
 
 INSERT INTO invitation_tokens (id, token_hash, tenant_id, user_id, expires_at, created_at) VALUES
 -- Token for pending_editor_valid_token@example.com (User ID: b...3)
