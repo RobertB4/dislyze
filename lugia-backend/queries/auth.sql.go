@@ -24,9 +24,9 @@ RETURNING id, user_id, token_hash, expires_at, created_at, used_at
 `
 
 type CreatePasswordResetTokenParams struct {
-	UserID    pgtype.UUID
-	TokenHash string
-	ExpiresAt pgtype.Timestamptz
+	UserID    pgtype.UUID        `json:"user_id"`
+	TokenHash string             `json:"token_hash"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 }
 
 func (q *Queries) CreatePasswordResetToken(ctx context.Context, arg *CreatePasswordResetTokenParams) (*PasswordResetToken, error) {
@@ -54,11 +54,11 @@ INSERT INTO refresh_tokens (
 `
 
 type CreateRefreshTokenParams struct {
-	UserID     pgtype.UUID
-	Jti        pgtype.UUID
-	DeviceInfo pgtype.Text
-	IpAddress  pgtype.Text
-	ExpiresAt  pgtype.Timestamptz
+	UserID     pgtype.UUID        `json:"user_id"`
+	Jti        pgtype.UUID        `json:"jti"`
+	DeviceInfo pgtype.Text        `json:"device_info"`
+	IpAddress  pgtype.Text        `json:"ip_address"`
+	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
 }
 
 func (q *Queries) CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error) {
@@ -94,8 +94,8 @@ INSERT INTO tenants (
 `
 
 type CreateTenantParams struct {
-	Name string
-	Plan string
+	Name string `json:"name"`
+	Plan string `json:"plan"`
 }
 
 func (q *Queries) CreateTenant(ctx context.Context, arg *CreateTenantParams) (*Tenant, error) {
@@ -125,12 +125,12 @@ INSERT INTO users (
 `
 
 type CreateUserParams struct {
-	TenantID     pgtype.UUID
-	Email        string
-	PasswordHash string
-	Name         string
-	Role         queries_pregeneration.UserRole
-	Status       string
+	TenantID     pgtype.UUID                    `json:"tenant_id"`
+	Email        string                         `json:"email"`
+	PasswordHash string                         `json:"password_hash"`
+	Name         string                         `json:"name"`
+	Role         queries_pregeneration.UserRole `json:"role"`
+	Status       string                         `json:"status"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error) {
@@ -360,8 +360,8 @@ WHERE id = $2
 `
 
 type UpdateTenantNameParams struct {
-	Name string
-	ID   pgtype.UUID
+	Name string      `json:"name"`
+	ID   pgtype.UUID `json:"id"`
 }
 
 func (q *Queries) UpdateTenantName(ctx context.Context, arg *UpdateTenantNameParams) error {

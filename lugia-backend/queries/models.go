@@ -10,62 +10,62 @@ import (
 )
 
 type EmailChangeToken struct {
-	ID        pgtype.UUID
-	UserID    pgtype.UUID
-	NewEmail  string
-	TokenHash string
-	ExpiresAt pgtype.Timestamptz
-	CreatedAt pgtype.Timestamptz
-	UsedAt    pgtype.Timestamptz
+	ID        pgtype.UUID        `json:"id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	NewEmail  string             `json:"new_email"`
+	TokenHash string             `json:"token_hash"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
 }
 
 type InvitationToken struct {
-	ID        pgtype.UUID
-	TenantID  pgtype.UUID
-	UserID    pgtype.UUID
-	TokenHash string
-	ExpiresAt pgtype.Timestamptz
-	CreatedAt pgtype.Timestamptz
-	UsedAt    pgtype.Timestamptz
+	ID        pgtype.UUID        `json:"id"`
+	TenantID  pgtype.UUID        `json:"tenant_id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	TokenHash string             `json:"token_hash"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
 }
 
 type PasswordResetToken struct {
-	ID        pgtype.UUID
-	UserID    pgtype.UUID
-	TokenHash string
-	ExpiresAt pgtype.Timestamptz
-	CreatedAt pgtype.Timestamptz
-	UsedAt    pgtype.Timestamptz
+	ID        pgtype.UUID        `json:"id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	TokenHash string             `json:"token_hash"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
 }
 
 type RefreshToken struct {
-	ID         pgtype.UUID
-	UserID     pgtype.UUID
-	Jti        pgtype.UUID
-	DeviceInfo pgtype.Text
-	IpAddress  pgtype.Text
-	ExpiresAt  pgtype.Timestamptz
-	CreatedAt  pgtype.Timestamptz
-	UsedAt     pgtype.Timestamptz
-	RevokedAt  pgtype.Timestamptz
+	ID         pgtype.UUID        `json:"id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	Jti        pgtype.UUID        `json:"jti"`
+	DeviceInfo pgtype.Text        `json:"device_info"`
+	IpAddress  pgtype.Text        `json:"ip_address"`
+	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UsedAt     pgtype.Timestamptz `json:"used_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
 }
 
 type Tenant struct {
-	ID        pgtype.UUID
-	Name      string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-	Plan      string
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Plan      string             `json:"plan"`
 }
 
 type User struct {
-	ID           pgtype.UUID
-	TenantID     pgtype.UUID
-	Email        string
-	PasswordHash string
-	Name         string
-	Role         queries_pregeneration.UserRole
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
-	Status       string
+	ID           pgtype.UUID                    `json:"id"`
+	TenantID     pgtype.UUID                    `json:"tenant_id"`
+	Email        string                         `json:"email"`
+	PasswordHash string                         `json:"password_hash"`
+	Name         string                         `json:"name"`
+	Role         queries_pregeneration.UserRole `json:"role"`
+	CreatedAt    pgtype.Timestamptz             `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz             `json:"updated_at"`
+	Status       string                         `json:"status"`
 }

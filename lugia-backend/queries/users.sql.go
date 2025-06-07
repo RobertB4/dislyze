@@ -19,8 +19,8 @@ WHERE id = $2 AND status = 'pending_verification'
 `
 
 type ActivateInvitedUserParams struct {
-	PasswordHash string
-	ID           pgtype.UUID
+	PasswordHash string      `json:"password_hash"`
+	ID           pgtype.UUID `json:"id"`
 }
 
 func (q *Queries) ActivateInvitedUser(ctx context.Context, arg *ActivateInvitedUserParams) error {
@@ -40,8 +40,8 @@ AND (
 `
 
 type CountUsersByTenantIDParams struct {
-	TenantID pgtype.UUID
-	Column2  interface{}
+	TenantID pgtype.UUID `json:"tenant_id"`
+	Column2  interface{} `json:"column_2"`
 }
 
 func (q *Queries) CountUsersByTenantID(ctx context.Context, arg *CountUsersByTenantIDParams) (int64, error) {
@@ -61,10 +61,10 @@ INSERT INTO email_change_tokens (
 `
 
 type CreateEmailChangeTokenParams struct {
-	UserID    pgtype.UUID
-	NewEmail  string
-	TokenHash string
-	ExpiresAt pgtype.Timestamptz
+	UserID    pgtype.UUID        `json:"user_id"`
+	NewEmail  string             `json:"new_email"`
+	TokenHash string             `json:"token_hash"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 }
 
 func (q *Queries) CreateEmailChangeToken(ctx context.Context, arg *CreateEmailChangeTokenParams) error {
@@ -84,10 +84,10 @@ RETURNING id, tenant_id, user_id, token_hash, expires_at, created_at, used_at
 `
 
 type CreateInvitationTokenParams struct {
-	TokenHash string
-	TenantID  pgtype.UUID
-	UserID    pgtype.UUID
-	ExpiresAt pgtype.Timestamptz
+	TokenHash string             `json:"token_hash"`
+	TenantID  pgtype.UUID        `json:"tenant_id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 }
 
 func (q *Queries) CreateInvitationToken(ctx context.Context, arg *CreateInvitationTokenParams) (*InvitationToken, error) {
@@ -126,8 +126,8 @@ WHERE user_id = $1 AND tenant_id = $2
 `
 
 type DeleteInvitationTokensByUserIDAndTenantIDParams struct {
-	UserID   pgtype.UUID
-	TenantID pgtype.UUID
+	UserID   pgtype.UUID `json:"user_id"`
+	TenantID pgtype.UUID `json:"tenant_id"`
 }
 
 func (q *Queries) DeleteInvitationTokensByUserIDAndTenantID(ctx context.Context, arg *DeleteInvitationTokensByUserIDAndTenantIDParams) error {
@@ -209,20 +209,20 @@ LIMIT $3 OFFSET $4
 `
 
 type GetUsersByTenantIDParams struct {
-	TenantID pgtype.UUID
-	Column2  interface{}
-	Limit    int32
-	Offset   int32
+	TenantID pgtype.UUID `json:"tenant_id"`
+	Column2  interface{} `json:"column_2"`
+	Limit    int32       `json:"limit"`
+	Offset   int32       `json:"offset"`
 }
 
 type GetUsersByTenantIDRow struct {
-	ID        pgtype.UUID
-	Email     string
-	Name      string
-	Role      queries_pregeneration.UserRole
-	Status    string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID        pgtype.UUID                    `json:"id"`
+	Email     string                         `json:"email"`
+	Name      string                         `json:"name"`
+	Role      queries_pregeneration.UserRole `json:"role"`
+	Status    string                         `json:"status"`
+	CreatedAt pgtype.Timestamptz             `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz             `json:"updated_at"`
 }
 
 func (q *Queries) GetUsersByTenantID(ctx context.Context, arg *GetUsersByTenantIDParams) ([]*GetUsersByTenantIDRow, error) {
@@ -265,12 +265,12 @@ RETURNING id
 `
 
 type InviteUserToTenantParams struct {
-	TenantID     pgtype.UUID
-	Email        string
-	PasswordHash string
-	Name         string
-	Role         queries_pregeneration.UserRole
-	Status       string
+	TenantID     pgtype.UUID                    `json:"tenant_id"`
+	Email        string                         `json:"email"`
+	PasswordHash string                         `json:"password_hash"`
+	Name         string                         `json:"name"`
+	Role         queries_pregeneration.UserRole `json:"role"`
+	Status       string                         `json:"status"`
 }
 
 func (q *Queries) InviteUserToTenant(ctx context.Context, arg *InviteUserToTenantParams) (pgtype.UUID, error) {
@@ -316,8 +316,8 @@ WHERE id = $2
 `
 
 type UpdateUserEmailParams struct {
-	Email string
-	ID    pgtype.UUID
+	Email string      `json:"email"`
+	ID    pgtype.UUID `json:"id"`
 }
 
 func (q *Queries) UpdateUserEmail(ctx context.Context, arg *UpdateUserEmailParams) error {
@@ -332,8 +332,8 @@ WHERE id = $2
 `
 
 type UpdateUserNameParams struct {
-	Name string
-	ID   pgtype.UUID
+	Name string      `json:"name"`
+	ID   pgtype.UUID `json:"id"`
 }
 
 func (q *Queries) UpdateUserName(ctx context.Context, arg *UpdateUserNameParams) error {
@@ -348,8 +348,8 @@ WHERE id = $2
 `
 
 type UpdateUserPasswordParams struct {
-	PasswordHash string
-	ID           pgtype.UUID
+	PasswordHash string      `json:"password_hash"`
+	ID           pgtype.UUID `json:"id"`
 }
 
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg *UpdateUserPasswordParams) error {
@@ -364,9 +364,9 @@ WHERE id = $2 AND tenant_id = $3
 `
 
 type UpdateUserRoleParams struct {
-	Role     queries_pregeneration.UserRole
-	ID       pgtype.UUID
-	TenantID pgtype.UUID
+	Role     queries_pregeneration.UserRole `json:"role"`
+	ID       pgtype.UUID                    `json:"id"`
+	TenantID pgtype.UUID                    `json:"tenant_id"`
 }
 
 func (q *Queries) UpdateUserRole(ctx context.Context, arg *UpdateUserRoleParams) error {

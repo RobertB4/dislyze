@@ -103,7 +103,7 @@ func TestGetUsers_Integration(t *testing.T) {
 				actualEmails := make([]string, len(usersResponse.Users))
 				for i, u := range usersResponse.Users {
 					actualEmails[i] = u.Email
-					assert.NotEmpty(t, u.ID, "User ID should not be empty for user %s", u.Email)
+					assert.NotEmpty(t, u.ID.String(), "User ID should not be empty for user %s", u.Email)
 
 					var expectedName, expectedUserID, expectedStatus string
 					var expectedRole queries_pregeneration.UserRole
@@ -119,7 +119,7 @@ func TestGetUsers_Integration(t *testing.T) {
 						}
 					}
 					assert.True(t, foundInTestData, "User with email %s not found in setup.TestUsersData. Check setup.sql and setup.TestUsersData map.", u.Email)
-					assert.Equal(t, expectedUserID, u.ID, "ID mismatch for user %s", u.Email)
+					assert.Equal(t, expectedUserID, u.ID.String(), "ID mismatch for user %s", u.Email)
 					assert.Equal(t, expectedName, u.Name, "Name mismatch for user %s", u.Email)
 					assert.Equal(t, expectedRole, u.Role, "Role mismatch for user %s", u.Email)
 					assert.Equal(t, expectedStatus, u.Status, "Status mismatch for user %s", u.Email)

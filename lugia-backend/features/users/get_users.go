@@ -33,37 +33,8 @@ type User struct {
 }
 
 type GetUsersResponse struct {
-	Users      []User                        `json:"users"`
-	Pagination pagination.PaginationMetadata `json:"pagination"`
-}
-
-func mapDBUsersToResponse(dbUsers []*queries.GetUsersByTenantIDRow) ([]User, error) {
-	responseUsers := make([]User, len(dbUsers))
-	for i, dbUser := range dbUsers {
-		if dbUser == nil {
-			// This is highly unexpected if the DB query is correct.
-			return nil, fmt.Errorf("%w: encountered nil user record at index %d", ErrInvalidUserDataFromDB, i)
-		}
-		userIDStr := ""
-		if dbUser.ID.Valid {
-			userIDStr = dbUser.ID.String()
-		} else {
-			// This case should ideally not happen for a User's ID (Primary Key).
-			return nil, fmt.Errorf("%w: user record with invalid/NULL ID (email for context: %s)", ErrInvalidUserDataFromDB, dbUser.Email)
-		}
-
-		mappedUser := User{
-			ID:        userIDStr,
-			Email:     dbUser.Email,
-			Name:      dbUser.Name,
-			Role:      dbUser.Role,
-			Status:    dbUser.Status,
-			CreatedAt: dbUser.CreatedAt.Time,
-			UpdatedAt: dbUser.UpdatedAt.Time,
-		}
-		responseUsers[i] = mappedUser
-	}
-	return responseUsers, nil
+	Users      []*queries.GetUsersByTenantIDRow `json:"users"`
+	Pagination pagination.PaginationMetadata    `json:"pagination"`
 }
 
 func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -91,7 +62,7 @@ func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, pagin
 		return nil, errlib.New(fmt.Errorf("GetUsers: failed to count users: %w", err), http.StatusInternalServerError, "")
 	}
 
-	dbUsers, err := h.q.GetUsersByTenantID(ctx, &queries.GetUsersByTenantIDParams{
+	users, err := h.q.GetUsersByTenantID(ctx, &queries.GetUsersByTenantIDParams{
 		TenantID: tenantID,
 		Column2:  searchTerm,
 		Limit:    paginationParams.Limit,
@@ -101,7 +72,7 @@ func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, pagin
 		if errlib.Is(err, pgx.ErrNoRows) {
 			paginationMetadata := pagination.CalculateMetadata(paginationParams.Page, paginationParams.Limit, totalCount)
 			response := &GetUsersResponse{
-				Users:      []User{},
+				Users:      []*queries.GetUsersByTenantIDRow{},
 				Pagination: paginationMetadata,
 			}
 			return response, nil
@@ -109,15 +80,10 @@ func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, pagin
 		return nil, errlib.New(fmt.Errorf("GetUsers: failed to get users: %w", err), http.StatusInternalServerError, "")
 	}
 
-	responseUsers, mapErr := mapDBUsersToResponse(dbUsers)
-	if mapErr != nil {
-		return nil, errlib.New(fmt.Errorf("GetUsers: failed to map users: %w", mapErr), http.StatusInternalServerError, "")
-	}
-
 	paginationMetadata := pagination.CalculateMetadata(paginationParams.Page, paginationParams.Limit, totalCount)
 
 	response := &GetUsersResponse{
-		Users:      responseUsers,
+		Users:      users,
 		Pagination: paginationMetadata,
 	}
 
