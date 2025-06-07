@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
@@ -67,14 +68,22 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err := h.acceptInvite(ctx, req, w, r)
+	if err != nil {
+		responder.RespondWithError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *AuthHandler) acceptInvite(ctx context.Context, req AcceptInviteRequest, w http.ResponseWriter, r *http.Request) error {
 	hash := sha256.Sum256([]byte(req.Token))
 	hashedTokenStr := fmt.Sprintf("%x", hash[:])
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("AcceptInvite: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -86,38 +95,27 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 	invitationTokenRecord, err := qtx.GetInvitationByTokenHash(ctx, hashedTokenStr)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			appErr := errlib.New(fmt.Errorf("AcceptInvite: token not found or expired for hash %s: %w", hashedTokenStr, err), http.StatusBadRequest, "招待リンクが無効か、期限切れです。お手数ですが、招待者に再度依頼してください。")
-			responder.RespondWithError(w, appErr)
-			return
+			return errlib.New(fmt.Errorf("AcceptInvite: token not found or expired for hash %s: %w", hashedTokenStr, err), http.StatusBadRequest, "招待リンクが無効か、期限切れです。お手数ですが、招待者に再度依頼してください。")
 		}
-		appErr := errlib.New(fmt.Errorf("AcceptInvite: GetInvitationByTokenHash failed: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("AcceptInvite: GetInvitationByTokenHash failed: %w", err), http.StatusInternalServerError, "")
 	}
 
 	dbUser, err := qtx.GetUserByID(ctx, invitationTokenRecord.UserID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			appErr := errlib.New(fmt.Errorf("AcceptInvite: user for valid token not found, userID: %s: %w", invitationTokenRecord.UserID, err), http.StatusInternalServerError, "")
-			responder.RespondWithError(w, appErr)
-			return
+			return errlib.New(fmt.Errorf("AcceptInvite: user for valid token not found, userID: %s: %w", invitationTokenRecord.UserID, err), http.StatusInternalServerError, "")
+
 		}
-		appErr := errlib.New(fmt.Errorf("AcceptInvite: GetUserByID failed: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("AcceptInvite: GetUserByID failed: %w", err), http.StatusInternalServerError, "")
 	}
 
 	if dbUser.Status != "pending_verification" {
-		appErr := errlib.New(fmt.Errorf("AcceptInvite: user %s status is '%s', expected 'pending_verification' for token %s", dbUser.ID.String(), dbUser.Status, hashedTokenStr), http.StatusBadRequest, "このユーザーはすでに承諾済みです。")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("AcceptInvite: user %s status is '%s', expected 'pending_verification' for token %s", dbUser.ID.String(), dbUser.Status, hashedTokenStr), http.StatusBadRequest, "このユーザーはすでに承諾済みです。")
 	}
 
 	hashedNewPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to hash new password: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("AcceptInvite: failed to hash new password: %w", err), http.StatusInternalServerError, "")
 	}
 
 	err = qtx.ActivateInvitedUser(ctx, &queries.ActivateInvitedUserParams{
@@ -125,23 +123,17 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 		ID:           invitationTokenRecord.UserID,
 	})
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("AcceptInvite: ActivateInvitedUser failed: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("AcceptInvite: ActivateInvitedUser failed: %w", err), http.StatusInternalServerError, "")
 	}
 
 	err = qtx.MarkInvitationTokenAsUsed(ctx, invitationTokenRecord.ID)
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to mark invitation token as used ID %s: %w", invitationTokenRecord.ID.String(), err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("AcceptInvite: failed to mark invitation token as used ID %s: %w", invitationTokenRecord.ID.String(), err), http.StatusInternalServerError, "")
 	}
 
 	tokenPair, err := jwt.GenerateTokenPair(dbUser.ID, invitationTokenRecord.TenantID, dbUser.Role, []byte(h.env.JWTSecret))
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to generate token pair: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("AcceptInvite: failed to generate token pair: %w", err), http.StatusInternalServerError, "")
 	}
 
 	_, err = qtx.CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
@@ -152,9 +144,7 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
 	})
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to store refresh token: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("AcceptInvite: failed to store refresh token: %w", err), http.StatusInternalServerError, "")
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -178,10 +168,8 @@ func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := tx.Commit(ctx); err != nil {
-		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("AcceptInvite: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil
 }

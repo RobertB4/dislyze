@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
@@ -54,6 +55,11 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
 		return
 	}
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			errlib.LogError(fmt.Errorf("ResetPassword: failed to close request body: %w", err))
+		}
+	}()
 
 	if err := req.Validate(); err != nil {
 		internalErr := errlib.New(err, http.StatusBadRequest, "Reset password validation failed")
@@ -62,51 +68,43 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err := h.resetPassword(ctx, req)
+	if err != nil {
+		responder.RespondWithError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *AuthHandler) resetPassword(ctx context.Context, req ResetPasswordRequest) error {
 	tokenHash := sha256.Sum256([]byte(req.Token))
 	hashedTokenStr := fmt.Sprintf("%x", tokenHash[:])
 
 	tokenRecord, err := h.queries.GetPasswordResetTokenByHash(ctx, hashedTokenStr)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			internalErr := errlib.New(err, http.StatusBadRequest, fmt.Sprintf("ResetPassword: Token hash not found: %s", hashedTokenStr))
-			errlib.LogError(internalErr)
-			responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
-			return
+			return errlib.New(err, http.StatusBadRequest, fmt.Sprintf("ResetPassword: Token hash not found: %s", hashedTokenStr))
 		}
-		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to query password reset token by hash %s", hashedTokenStr))
-		errlib.LogError(internalErr)
-		responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
-		return
+		return errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to query password reset token by hash %s", hashedTokenStr))
 	}
 
 	if tokenRecord.UsedAt.Valid {
-		internalErr := errlib.New(fmt.Errorf("ResetPassword: Token ID %s already used at %v", tokenRecord.ID, tokenRecord.UsedAt.Time), http.StatusBadRequest, "Token already used")
-		errlib.LogError(internalErr)
-		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
-		return
+		return errlib.New(fmt.Errorf("ResetPassword: Token ID %s already used at %v", tokenRecord.ID, tokenRecord.UsedAt.Time), http.StatusBadRequest, "Token already used")
 	}
 
 	if time.Now().After(tokenRecord.ExpiresAt.Time) {
-		internalErr := errlib.New(fmt.Errorf("ResetPassword: Token ID %s expired at %v", tokenRecord.ID, tokenRecord.ExpiresAt.Time), http.StatusBadRequest, "Token expired")
-		errlib.LogError(internalErr)
-		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
-		return
+		return errlib.New(fmt.Errorf("ResetPassword: Token ID %s expired at %v", tokenRecord.ID, tokenRecord.ExpiresAt.Time), http.StatusBadRequest, "Token expired")
 	}
 
 	hashedNewPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		internalErr := errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to hash new password")
-		errlib.LogError(internalErr)
-		responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
-		return
+		return errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to hash new password")
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		internalErr := errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to begin transaction")
-		errlib.LogError(internalErr)
-		responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
-		return
+		return errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to begin transaction")
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -120,17 +118,11 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		ID:           tokenRecord.UserID,
 		PasswordHash: string(hashedNewPassword),
 	}); err != nil {
-		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to update password for user ID %s", tokenRecord.UserID))
-		errlib.LogError(internalErr)
-		responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
-		return
+		return errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to update password for user ID %s", tokenRecord.UserID))
 	}
 
 	if err := qtx.MarkPasswordResetTokenAsUsed(ctx, tokenRecord.ID); err != nil {
-		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to mark reset token ID %s as used", tokenRecord.ID))
-		errlib.LogError(internalErr)
-		responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
-		return
+		return errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to mark reset token ID %s as used", tokenRecord.ID))
 	}
 
 	if err := qtx.DeleteRefreshTokensByUserID(ctx, tokenRecord.UserID); err != nil {
@@ -138,11 +130,8 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		internalErr := errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to commit transaction")
-		errlib.LogError(internalErr)
-		responder.RespondWithError(w, errlib.New(err, http.StatusInternalServerError, ""))
-		return
+		return errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to commit transaction")
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil
 }

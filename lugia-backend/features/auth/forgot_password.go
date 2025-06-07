@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
@@ -53,6 +54,11 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
 		return
 	}
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			errlib.LogError(fmt.Errorf("ForgotPassword: failed to close request body: %w", err))
+		}
+	}()
 
 	if err := req.Validate(); err != nil {
 		internalErr := errlib.New(err, http.StatusBadRequest, "Forgot password validation failed")
@@ -61,24 +67,31 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err := h.forgotPassword(ctx, req)
+	if err != nil {
+		errlib.LogError(err)
+		// Always return 200 OK for security reasons (prevent email enumeration)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *AuthHandler) forgotPassword(ctx context.Context, req ForgotPasswordRequest) error {
 	user, err := h.queries.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
 			log.Printf("ForgotPassword: No user found for email %s", req.Email)
 		} else {
-			internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: Failed to get user by email %s", req.Email))
-			errlib.LogError(internalErr)
+			return errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: Failed to get user by email %s", req.Email))
 		}
-		w.WriteHeader(http.StatusOK)
-		return
+		return nil
 	}
 
 	resetTokenUUID, err := utils.NewUUID()
 	if err != nil {
-		internalErr := errlib.New(err, http.StatusInternalServerError, "ForgotPassword: Failed to generate reset token UUID")
-		errlib.LogError(internalErr)
-		w.WriteHeader(http.StatusOK)
-		return
+		return errlib.New(err, http.StatusInternalServerError, "ForgotPassword: Failed to generate reset token UUID")
 	}
 	resetToken := resetTokenUUID.String()
 
@@ -89,10 +102,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	tx, txErr := h.dbConn.Begin(ctx)
 	if txErr != nil {
-		internalErr := errlib.New(txErr, http.StatusInternalServerError, "ForgotPassword: Failed to begin transaction")
-		errlib.LogError(internalErr)
-		w.WriteHeader(http.StatusOK)
-		return
+		return errlib.New(txErr, http.StatusInternalServerError, "ForgotPassword: Failed to begin transaction")
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -103,10 +113,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	qtx := h.queries.WithTx(tx)
 
 	if err := qtx.DeletePasswordResetTokenByUserID(ctx, user.ID); err != nil && !errlib.Is(err, pgx.ErrNoRows) {
-		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: Failed to delete existing password reset token for user %s", user.ID))
-		errlib.LogError(internalErr)
-		w.WriteHeader(http.StatusOK)
-		return
+		return errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: Failed to delete existing password reset token for user %s", user.ID))
 	}
 
 	_, createErr := qtx.CreatePasswordResetToken(ctx, &queries.CreatePasswordResetTokenParams{
@@ -115,17 +122,11 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 	if createErr != nil {
-		internalErr := errlib.New(createErr, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: Failed to create password reset token for user %s", user.ID))
-		errlib.LogError(internalErr)
-		w.WriteHeader(http.StatusOK)
-		return
+		return errlib.New(createErr, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: Failed to create password reset token for user %s", user.ID))
 	}
 
 	if commitErr := tx.Commit(ctx); commitErr != nil {
-		internalErr := errlib.New(commitErr, http.StatusInternalServerError, "ForgotPassword: Failed to commit transaction")
-		errlib.LogError(internalErr)
-		w.WriteHeader(http.StatusOK)
-		return
+		return errlib.New(commitErr, http.StatusInternalServerError, "ForgotPassword: Failed to commit transaction")
 	}
 
 	resetLink := fmt.Sprintf("%s/auth/reset-password?token=%s", h.env.FrontendURL, resetToken)
@@ -149,10 +150,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	bodyBytes, err := json.Marshal(sgMailBody)
 	if err != nil {
-		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: failed to marshal SendGrid request body for %s", req.Email))
-		errlib.LogError(internalErr)
-		w.WriteHeader(http.StatusOK)
-		return
+		return errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: failed to marshal SendGrid request body for %s", req.Email))
 	}
 
 	sendgridRequest := sendgrid.GetRequest(h.env.SendgridAPIKey, "/v3/mail/send", h.env.SendgridAPIUrl)
@@ -160,20 +158,14 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	sendgridRequest.Body = bodyBytes
 	sgResponse, err := sendgrid.API(sendgridRequest)
 	if err != nil {
-		internalErr := errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: SendGrid API call failed for %s", req.Email))
-		errlib.LogError(internalErr)
-		w.WriteHeader(http.StatusOK)
-		return
+		return errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: SendGrid API call failed for %s", req.Email))
 	}
 
 	if sgResponse.StatusCode < 200 || sgResponse.StatusCode >= 300 {
-		internalErr := errlib.New(fmt.Errorf("SendGrid API returned error status code: %d, Body: %s", sgResponse.StatusCode, sgResponse.Body), http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: SendGrid API error for %s", req.Email))
-		errlib.LogError(internalErr)
-		w.WriteHeader(http.StatusOK)
-		return
+		return errlib.New(fmt.Errorf("SendGrid API returned error status code: %d, Body: %s", sgResponse.StatusCode, sgResponse.Body), http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: SendGrid API error for %s", req.Email))
 	}
 
 	log.Printf("Password reset email successfully sent via SendGrid to user with id: %s", user.ID)
 
-	w.WriteHeader(http.StatusOK)
+	return nil
 }

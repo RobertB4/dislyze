@@ -56,3 +56,7 @@ This is a good comment because it is not immediately obvious why the value shoul
 	})
 ```
 This comment is bad because it just explains what the next function call does. This is already obvious by reading the function name.
+
+### Locality of behavior over Seperation of concerns
+Code that belongs together should be located closely together, e.g. in the same file or the same directory.
+There are valid reasons to have code that belongs together live in another directory, but we should only seperate code if there is good reason to do so.
