@@ -38,6 +38,56 @@ func (r *LoginRequest) Validate() error {
 	return nil
 }
 
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	if !h.rateLimiter.Allow(r.RemoteAddr) {
+		appErr := errlib.New(fmt.Errorf("rate limit exceeded for login"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	var req LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		appErr := errlib.New(err, http.StatusBadRequest, "Invalid request body")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		appErr := errlib.New(err, http.StatusBadRequest, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	tokenPair, err := h.login(r.Context(), &req, r)
+	if err != nil {
+		appErr := errlib.New(err, http.StatusUnauthorized, err.Error())
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "dislyze_access_token",
+		Value:    tokenPair.AccessToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   int(tokenPair.ExpiresIn),
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "dislyze_refresh_token",
+		Value:    tokenPair.RefreshToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   7 * 24 * 60 * 60, // 7 days
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Request) (*jwt.TokenPair, error) {
 	user, err := h.queries.GetUserByEmail(ctx, req.Email)
 	if err != nil {
@@ -108,54 +158,4 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequest, r *http.Requ
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 	return tokenPair, nil
-}
-
-func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	if !h.rateLimiter.Allow(r.RemoteAddr) {
-		appErr := errlib.New(fmt.Errorf("rate limit exceeded for login"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	var req LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "Invalid request body")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	if err := req.Validate(); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	tokenPair, err := h.login(r.Context(), &req, r)
-	if err != nil {
-		appErr := errlib.New(err, http.StatusUnauthorized, err.Error())
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     "dislyze_access_token",
-		Value:    tokenPair.AccessToken,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-		MaxAge:   int(tokenPair.ExpiresIn),
-	})
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     "dislyze_refresh_token",
-		Value:    tokenPair.RefreshToken,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-		MaxAge:   7 * 24 * 60 * 60, // 7 days
-	})
-
-	w.WriteHeader(http.StatusOK)
 }

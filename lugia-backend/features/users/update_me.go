@@ -1,6 +1,7 @@
 package users
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -26,7 +27,6 @@ func (r *UpdateMeRequest) Validate() error {
 
 func (h *UsersHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	userID := libctx.GetUserID(ctx)
 
 	var req UpdateMeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -46,14 +46,24 @@ func (h *UsersHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.q.UpdateUserName(ctx, &queries.UpdateUserNameParams{
-		Name: req.Name,
-		ID:   userID,
-	}); err != nil {
-		appErr := errlib.New(fmt.Errorf("UpdateMe: failed to update user name for user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
+	err := h.updateMe(ctx, req)
+	if err != nil {
+		responder.RespondWithError(w, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *UsersHandler) updateMe(ctx context.Context, req UpdateMeRequest) error {
+	userID := libctx.GetUserID(ctx)
+
+	if err := h.q.UpdateUserName(ctx, &queries.UpdateUserNameParams{
+		Name: req.Name,
+		ID:   userID,
+	}); err != nil {
+		return errlib.New(fmt.Errorf("UpdateMe: failed to update user name for user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
+	}
+
+	return nil
 }

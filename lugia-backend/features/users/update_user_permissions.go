@@ -1,6 +1,7 @@
 package users
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -57,27 +58,33 @@ func (h *UsersHandler) UpdateUserPermissions(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	err := h.updateUserPermissions(ctx, targetUserID, req)
+	if err != nil {
+		responder.RespondWithError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *UsersHandler) updateUserPermissions(ctx context.Context, targetUserID pgtype.UUID, req UpdateUserRoleRequest) error {
 	requestingUserID := libctx.GetUserID(ctx)
 	requestingTenantID := libctx.GetTenantID(ctx)
 
 	if requestingUserID == targetUserID {
-		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: user %s attempting to update their own role", requestingUserID.String()), http.StatusBadRequest, ""))
-		return
+		return errlib.New(fmt.Errorf("UpdateUserPermissions: user %s attempting to update their own role", requestingUserID.String()), http.StatusBadRequest, "")
 	}
 
 	targetUser, err := h.q.GetUserByID(ctx, targetUserID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: target user with ID %s not found: %w", userIDStr, err), http.StatusNotFound, ""))
-			return
+			return errlib.New(fmt.Errorf("UpdateUserPermissions: target user with ID %s not found: %w", targetUserID.String(), err), http.StatusNotFound, "")
 		}
-		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: failed to get target user %s: %w", userIDStr, err), http.StatusInternalServerError, ""))
-		return
+		return errlib.New(fmt.Errorf("UpdateUserPermissions: failed to get target user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
 	}
 
 	if requestingTenantID != targetUser.TenantID {
-		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: requesting user %s (tenant %s) attempting to update user %s (tenant %s) in different tenant", requestingUserID.String(), requestingTenantID.String(), targetUserID.String(), targetUser.TenantID.String()), http.StatusForbidden, ""))
-		return
+		return errlib.New(fmt.Errorf("UpdateUserPermissions: requesting user %s (tenant %s) attempting to update user %s (tenant %s) in different tenant", requestingUserID.String(), requestingTenantID.String(), targetUserID.String(), targetUser.TenantID.String()), http.StatusForbidden, "")
 	}
 
 	params := queries.UpdateUserRoleParams{
@@ -88,9 +95,8 @@ func (h *UsersHandler) UpdateUserPermissions(w http.ResponseWriter, r *http.Requ
 
 	err = h.q.UpdateUserRole(ctx, &params)
 	if err != nil {
-		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: failed to update user role: %w", err), http.StatusInternalServerError, ""))
-		return
+		return errlib.New(fmt.Errorf("UpdateUserPermissions: failed to update user role: %w", err), http.StatusInternalServerError, "")
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil
 }

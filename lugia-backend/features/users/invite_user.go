@@ -1,6 +1,7 @@
 package users
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
@@ -75,40 +76,40 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rawTenantID := libctx.GetTenantID(ctx)
+	err := h.inviteUser(ctx, req)
+	if err != nil {
+		responder.RespondWithError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *UsersHandler) inviteUser(ctx context.Context, req InviteUserRequest) error {
+	tenantID := libctx.GetTenantID(ctx)
 	inviterUserID := libctx.GetUserID(ctx)
 
 	inviterDBUser, err := h.q.GetUserByID(ctx, inviterUserID)
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("InviteUser: failed to get inviter's user details for UserID %s: %w", inviterUserID.String(), err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("InviteUser: failed to get inviter's user details for UserID %s: %w", inviterUserID.String(), err), http.StatusInternalServerError, "")
 	}
 
 	_, err = h.q.GetUserByEmail(ctx, req.Email)
 	if err == nil {
-		appErr := errlib.New(fmt.Errorf("InviteUser: attempt to invite existing email: %s", req.Email), http.StatusConflict, "このメールアドレスは既に使用されています。")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("InviteUser: attempt to invite existing email: %s", req.Email), http.StatusConflict, "このメールアドレスは既に使用されています。")
 	}
 	if !errlib.Is(err, pgx.ErrNoRows) {
-		appErr := errlib.New(fmt.Errorf("InviteUser: GetUserByEmail failed: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("InviteUser: GetUserByEmail failed: %w", err), http.StatusInternalServerError, "")
 	}
 
 	hashedInitialPassword, err := bcrypt.GenerateFromPassword([]byte(h.env.InitialPW), bcrypt.DefaultCost)
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("InviteUser: failed to hash initial password: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("InviteUser: failed to hash initial password: %w", err), http.StatusInternalServerError, "")
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("InviteUser: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("InviteUser: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -118,7 +119,7 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	qtx := h.q.WithTx(tx)
 
 	createdUserID, err := qtx.InviteUserToTenant(ctx, &queries.InviteUserToTenantParams{
-		TenantID:     rawTenantID,
+		TenantID:     tenantID,
 		Email:        req.Email,
 		PasswordHash: string(hashedInitialPassword),
 		Name:         req.Name,
@@ -126,16 +127,12 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 		Status:       "pending_verification",
 	})
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("InviteUser: InviteUserToTenant failed: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("InviteUser: InviteUserToTenant failed: %w", err), http.StatusInternalServerError, "")
 	}
 
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
-		appErr := errlib.New(fmt.Errorf("InviteUser: failed to generate random bytes for invitation token: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("InviteUser: failed to generate random bytes for invitation token: %w", err), http.StatusInternalServerError, "")
 	}
 	plaintextToken := base64.URLEncoding.EncodeToString(tokenBytes)
 
@@ -146,14 +143,12 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 
 	_, err = qtx.CreateInvitationToken(ctx, &queries.CreateInvitationTokenParams{
 		TokenHash: hashedTokenStr,
-		TenantID:  rawTenantID,
+		TenantID:  tenantID,
 		UserID:    createdUserID,
 		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("InviteUser: CreateInvitationToken failed: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("InviteUser: CreateInvitationToken failed: %w", err), http.StatusInternalServerError, "")
 	}
 
 	subject := fmt.Sprintf("%sさんから%s様へのdislyzeへのご招待", inviterDBUser.Name, req.Name)
@@ -183,9 +178,7 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 
 	bodyBytes, err := json.Marshal(sgMailBody)
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("InviteUser: failed to marshal SendGrid request body: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("InviteUser: failed to marshal SendGrid request body: %w", err), http.StatusInternalServerError, "")
 	}
 
 	sendgridRequest := sendgrid.GetRequest(h.env.SendgridAPIKey, "/v3/mail/send", h.env.SendgridAPIUrl)
@@ -193,22 +186,16 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	sendgridRequest.Body = bodyBytes
 	response, err := sendgrid.API(sendgridRequest)
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("InviteUser: SendGrid API call failed: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("InviteUser: SendGrid API call failed: %w", err), http.StatusInternalServerError, "")
 	}
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		appErr := errlib.New(fmt.Errorf("InviteUser: SendGrid API returned error status code: %d, Body: %s", response.StatusCode, response.Body), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("InviteUser: SendGrid API returned error status code: %d, Body: %s", response.StatusCode, response.Body), http.StatusInternalServerError, "")
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		appErr := errlib.New(fmt.Errorf("InviteUser: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("InviteUser: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil
 }

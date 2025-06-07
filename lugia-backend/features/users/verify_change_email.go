@@ -1,6 +1,7 @@
 package users
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"fmt"
@@ -24,14 +25,22 @@ func (h *UsersHandler) VerifyChangeEmail(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	err := h.verifyChangeEmail(ctx, token)
+	if err != nil {
+		responder.RespondWithError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *UsersHandler) verifyChangeEmail(ctx context.Context, token string) error {
 	hash := sha256.Sum256([]byte(token))
 	hashedTokenStr := fmt.Sprintf("%x", hash[:])
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("VerifyChangeEmail: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -44,47 +53,33 @@ func (h *UsersHandler) VerifyChangeEmail(w http.ResponseWriter, r *http.Request)
 	emailChangeToken, err := qtx.GetEmailChangeTokenByHash(ctx, hashedTokenStr)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: invalid or expired token: %w", err), http.StatusBadRequest, "無効または期限切れのトークンです。")
-			responder.RespondWithError(w, appErr)
-			return
+			return errlib.New(fmt.Errorf("VerifyChangeEmail: invalid or expired token: %w", err), http.StatusBadRequest, "無効または期限切れのトークンです。")
 		}
-		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: failed to get email change token: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("VerifyChangeEmail: failed to get email change token: %w", err), http.StatusInternalServerError, "")
 	}
 
 	if emailChangeToken.ExpiresAt.Time.Before(time.Now()) {
-		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: token expired at %s", emailChangeToken.ExpiresAt.Time), http.StatusBadRequest, "無効または期限切れのトークンです。")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("VerifyChangeEmail: token expired at %s", emailChangeToken.ExpiresAt.Time), http.StatusBadRequest, "無効または期限切れのトークンです。")
 	}
 
 	if err := qtx.UpdateUserEmail(ctx, &queries.UpdateUserEmailParams{
 		ID:    emailChangeToken.UserID,
 		Email: emailChangeToken.NewEmail,
 	}); err != nil {
-		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: failed to update user email: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("VerifyChangeEmail: failed to update user email: %w", err), http.StatusInternalServerError, "")
 	}
 
 	if err := qtx.MarkEmailChangeTokenAsUsed(ctx, emailChangeToken.ID); err != nil {
-		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: failed to mark token as used: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("VerifyChangeEmail: failed to mark token as used: %w", err), http.StatusInternalServerError, "")
 	}
 
 	if err := qtx.DeleteRefreshTokensByUserID(ctx, emailChangeToken.UserID); err != nil {
-		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: failed to invalidate sessions: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("VerifyChangeEmail: failed to invalidate sessions: %w", err), http.StatusInternalServerError, "")
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(fmt.Errorf("VerifyChangeEmail: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil
 }

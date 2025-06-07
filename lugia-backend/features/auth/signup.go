@@ -55,67 +55,6 @@ func (r *SignupRequest) Validate() error {
 	return nil
 }
 
-func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Request) (*jwt.TokenPair, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, fmt.Errorf("failed to hash password: %w", err)
-	}
-
-	tx, err := h.dbConn.Begin(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to start transaction: %w", err)
-	}
-	defer func() {
-		if rErr := tx.Rollback(ctx); rErr != nil && !errlib.Is(rErr, pgx.ErrTxClosed) {
-			errlib.LogError(fmt.Errorf("failed to rollback transaction in signup: %w", rErr))
-		}
-	}()
-
-	qtx := h.queries.WithTx(tx)
-
-	tenant, err := qtx.CreateTenant(ctx, &queries.CreateTenantParams{
-		Name: req.CompanyName,
-		Plan: "basic",
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create tenant: %w", err)
-	}
-
-	user, err := qtx.CreateUser(ctx, &queries.CreateUserParams{
-		TenantID:     tenant.ID,
-		Email:        req.Email,
-		PasswordHash: string(hashedPassword),
-		Name:         req.UserName,
-		Role:         "admin",
-		Status:       "active",
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
-	}
-
-	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, user.Role, []byte(h.env.JWTSecret))
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate token pair: %w", err)
-	}
-
-	_, err = qtx.CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
-		UserID:     user.ID,
-		Jti:        tokenPair.JTI,
-		DeviceInfo: pgtype.Text{String: r.UserAgent(), Valid: true},
-		IpAddress:  pgtype.Text{String: r.RemoteAddr, Valid: true},
-		ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to store refresh token: %w", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	return tokenPair, nil
-}
-
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	if !h.rateLimiter.Allow(r.RemoteAddr) {
 		appErr := errlib.New(fmt.Errorf("rate limit exceeded for signup"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
@@ -176,4 +115,65 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	})
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *AuthHandler) signup(ctx context.Context, req *SignupRequest, r *http.Request) (*jwt.TokenPair, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	tx, err := h.dbConn.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() {
+		if rErr := tx.Rollback(ctx); rErr != nil && !errlib.Is(rErr, pgx.ErrTxClosed) {
+			errlib.LogError(fmt.Errorf("failed to rollback transaction in signup: %w", rErr))
+		}
+	}()
+
+	qtx := h.queries.WithTx(tx)
+
+	tenant, err := qtx.CreateTenant(ctx, &queries.CreateTenantParams{
+		Name: req.CompanyName,
+		Plan: "basic",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tenant: %w", err)
+	}
+
+	user, err := qtx.CreateUser(ctx, &queries.CreateUserParams{
+		TenantID:     tenant.ID,
+		Email:        req.Email,
+		PasswordHash: string(hashedPassword),
+		Name:         req.UserName,
+		Role:         "admin",
+		Status:       "active",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, user.Role, []byte(h.env.JWTSecret))
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token pair: %w", err)
+	}
+
+	_, err = qtx.CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
+		UserID:     user.ID,
+		Jti:        tokenPair.JTI,
+		DeviceInfo: pgtype.Text{String: r.UserAgent(), Valid: true},
+		IpAddress:  pgtype.Text{String: r.RemoteAddr, Valid: true},
+		ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to store refresh token: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return tokenPair, nil
 }
