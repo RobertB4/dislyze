@@ -1,7 +1,6 @@
 package jwt
 
 import (
-	"lugia/queries_pregeneration"
 	"testing"
 	"time"
 
@@ -19,14 +18,12 @@ func TestGenerateTokenPair(t *testing.T) {
 		Bytes: [16]byte{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1},
 		Valid: true,
 	}
-	role := queries_pregeneration.UserRole("admin")
 	secret := []byte("test-secret-key")
 
 	tests := []struct {
 		name     string
 		userID   pgtype.UUID
 		tenantID pgtype.UUID
-		role     queries_pregeneration.UserRole
 		secret   []byte
 		wantErr  bool
 	}{
@@ -34,7 +31,6 @@ func TestGenerateTokenPair(t *testing.T) {
 			name:     "valid token generation",
 			userID:   userID,
 			tenantID: tenantID,
-			role:     role,
 			secret:   secret,
 			wantErr:  false,
 		},
@@ -42,7 +38,6 @@ func TestGenerateTokenPair(t *testing.T) {
 			name:     "empty secret",
 			userID:   userID,
 			tenantID: tenantID,
-			role:     role,
 			secret:   []byte{},
 			wantErr:  true,
 		},
@@ -50,7 +45,7 @@ func TestGenerateTokenPair(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tokenPair, err := GenerateTokenPair(tt.userID, tt.tenantID, tt.role, tt.secret)
+			tokenPair, err := GenerateTokenPair(tt.userID, tt.tenantID, tt.secret)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -69,7 +64,6 @@ func TestGenerateTokenPair(t *testing.T) {
 			assert.NotNil(t, claims)
 			assert.Equal(t, tt.userID, claims.UserID)
 			assert.Equal(t, tt.tenantID, claims.TenantID)
-			assert.Equal(t, tt.role, claims.Role)
 		})
 	}
 }
@@ -84,14 +78,12 @@ func TestValidateToken(t *testing.T) {
 		Bytes: [16]byte{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1},
 		Valid: true,
 	}
-	role := queries_pregeneration.UserRole("admin")
 	secret := []byte("test-secret-key")
 
 	now := time.Now()
 	claims := Claims{
 		UserID:   userID,
 		TenantID: tenantID,
-		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(15 * time.Minute)),
@@ -135,7 +127,7 @@ func TestValidateToken(t *testing.T) {
 		},
 		{
 			name:    "expired token",
-			token:   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTIzNDU2Nzg5MCIsInRlbmFudF9pZCI6IjkwODc2NTQzMjEiLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE1MTYyMzkwMjIsImlhdCI6MTUxNjIzOTAyMiwibmJmIjoxNTE2MjM5MDIyfQ.4Adcj3UFYzPUVaVF43FmMze0Qp0j0j6h0h0h0h0h0h0h0",
+			token:   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTIzNDU2Nzg5MCIsInRlbmFudF9pZCI6IjkwODc2NTQzMjEiLCJleHAiOjE1MTYyMzkwMjIsImlhdCI6MTUxNjIzOTAyMiwibmJmIjoxNTE2MjM5MDIyfQ.4Adcj3UFYzPUVaVF43FmMze0Qp0j0j6h0h0h0h0h0h0h0",
 			secret:  secret,
 			wantErr: true,
 		},
@@ -155,7 +147,6 @@ func TestValidateToken(t *testing.T) {
 			assert.NotNil(t, claims)
 			assert.Equal(t, tt.wantClaims.UserID, claims.UserID)
 			assert.Equal(t, tt.wantClaims.TenantID, claims.TenantID)
-			assert.Equal(t, tt.wantClaims.Role, claims.Role)
 		})
 	}
 }
@@ -171,7 +162,7 @@ func TestTokenExpiration(t *testing.T) {
 	}
 	secret := []byte("test-secret-key")
 
-	tokenPair, err := GenerateTokenPair(userID, tenantID, "admin", secret)
+	tokenPair, err := GenerateTokenPair(userID, tenantID, secret)
 	assert.NoError(t, err)
 	assert.NotNil(t, tokenPair)
 

@@ -6,26 +6,25 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 
 	libctx "lugia/lib/ctx"
 	"lugia/lib/errlib"
 	"lugia/lib/responder"
+	"lugia/queries"
 )
 
 type MeResponse struct {
-	TenantName string `json:"tenant_name"`
-	UserID     string `json:"user_id"`
-	Email      string `json:"email"`
-	UserName   string `json:"user_name"`
+	TenantName  string   `json:"tenant_name"`
+	UserID      string   `json:"user_id"`
+	Email       string   `json:"email"`
+	UserName    string   `json:"user_name"`
+	Permissions []string `json:"permissions"`
 }
 
 func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	userID := libctx.GetUserID(ctx)
-	tenantID := libctx.GetTenantID(ctx)
 
-	response, err := h.getMe(ctx, userID, tenantID)
+	response, err := h.getMe(ctx)
 	if err != nil {
 		responder.RespondWithError(w, err)
 		return
@@ -34,7 +33,10 @@ func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	responder.RespondWithJSON(w, http.StatusOK, response)
 }
 
-func (h *UsersHandler) getMe(ctx context.Context, userID, tenantID pgtype.UUID) (*MeResponse, error) {
+func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
+	userID := libctx.GetUserID(ctx)
+	tenantID := libctx.GetTenantID(ctx)
+
 	user, err := h.q.GetUserByID(ctx, userID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
@@ -51,11 +53,25 @@ func (h *UsersHandler) getMe(ctx context.Context, userID, tenantID pgtype.UUID) 
 		return nil, errlib.New(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
 	}
 
+	permissionRows, err := h.q.GetUserPermissions(ctx, &queries.GetUserPermissionsParams{
+		UserID:   userID,
+		TenantID: tenantID,
+	})
+	if err != nil {
+		return nil, errlib.New(fmt.Errorf("GetMe: failed to get user permissions for user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
+	}
+
+	permissions := make([]string, len(permissionRows))
+	for i, row := range permissionRows {
+		permissions[i] = fmt.Sprintf("%s.%s", row.Resource, row.Action)
+	}
+
 	response := &MeResponse{
-		TenantName: tenant.Name,
-		UserID:     user.ID.String(),
-		Email:      user.Email,
-		UserName:   user.Name,
+		TenantName:  tenant.Name,
+		UserID:      user.ID.String(),
+		Email:       user.Email,
+		UserName:    user.Name,
+		Permissions: permissions,
 	}
 
 	return response, nil

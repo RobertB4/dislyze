@@ -24,25 +24,22 @@ func TestGetMe_Integration(t *testing.T) {
 		loginUserKey        string // Key for setup.TestUsersData map
 		expectedStatus      int
 		expectedTenantName  string
-		expectedTenantPlan  string
-		expectedUserRole    string
+		expectedPermissions []string
 		expectErrorResponse bool
 	}{
 		{
-			name:               "alpha_admin gets their details",
-			loginUserKey:       "alpha_admin",
-			expectedStatus:     http.StatusOK,
-			expectedTenantName: "Tenant Alpha",
-			expectedTenantPlan: "basic",
-			expectedUserRole:   "admin",
+			name:                "alpha_admin gets their details",
+			loginUserKey:        "alpha_admin",
+			expectedStatus:      http.StatusOK,
+			expectedTenantName:  "Tenant Alpha",
+			expectedPermissions: []string{"users.view", "users.create", "users.update", "users.delete", "tenant.update"},
 		},
 		{
-			name:               "alpha_editor gets their details",
-			loginUserKey:       "alpha_editor",
-			expectedStatus:     http.StatusOK,
-			expectedTenantName: "Tenant Alpha",
-			expectedTenantPlan: "basic",
-			expectedUserRole:   "editor",
+			name:                "alpha_editor gets their details",
+			loginUserKey:        "alpha_editor",
+			expectedStatus:      http.StatusOK,
+			expectedTenantName:  "Tenant Alpha",
+			expectedPermissions: []string{},
 		},
 		{
 			name:                "unauthenticated user gets 401",
@@ -100,8 +97,7 @@ func TestGetMe_Integration(t *testing.T) {
 				assert.Equal(t, currentUserDetails.Email, meResponse.Email)
 				assert.Equal(t, currentUserDetails.Name, meResponse.UserName)
 				assert.Equal(t, tt.expectedTenantName, meResponse.TenantName)
-				assert.Equal(t, tt.expectedTenantPlan, meResponse.TenantPlan)
-				assert.Equal(t, tt.expectedUserRole, meResponse.UserRole)
+				assert.ElementsMatch(t, tt.expectedPermissions, meResponse.Permissions)
 			} else if tt.expectErrorResponse {
 				bodyBytes, err := io.ReadAll(resp.Body)
 				assert.NoError(t, err)

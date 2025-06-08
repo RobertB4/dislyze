@@ -16,9 +16,25 @@ import (
 	"lugia/queries"
 )
 
+type UserRole struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type UserInfo struct {
+	ID        string     `json:"id"`
+	Email     string     `json:"email"`
+	Name      string     `json:"name"`
+	Status    string     `json:"status"`
+	CreatedAt string     `json:"created_at"`
+	UpdatedAt string     `json:"updated_at"`
+	Roles     []UserRole `json:"roles"`
+}
+
 type GetUsersResponse struct {
-	Users      []*queries.GetUsersByTenantIDRow `json:"users"`
-	Pagination pagination.PaginationMetadata    `json:"pagination"`
+	Users      []UserInfo                    `json:"users"`
+	Pagination pagination.PaginationMetadata `json:"pagination"`
 }
 
 func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -46,28 +62,59 @@ func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, pagin
 		return nil, errlib.New(fmt.Errorf("GetUsers: failed to count users: %w", err), http.StatusInternalServerError, "")
 	}
 
-	users, err := h.q.GetUsersByTenantID(ctx, &queries.GetUsersByTenantIDParams{
-		TenantID: tenantID,
-		Column2:  searchTerm,
-		Limit:    paginationParams.Limit,
-		Offset:   paginationParams.Offset,
+	usersWithRoles, err := h.q.GetUsersWithRoles(ctx, &queries.GetUsersWithRolesParams{
+		TenantID:    tenantID,
+		SearchTerm:  searchTerm,
+		LimitCount:  paginationParams.Limit,
+		OffsetCount: paginationParams.Offset,
 	})
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
 			paginationMetadata := pagination.CalculateMetadata(paginationParams.Page, paginationParams.Limit, totalCount)
 			response := &GetUsersResponse{
-				Users:      []*queries.GetUsersByTenantIDRow{},
+				Users:      []UserInfo{},
 				Pagination: paginationMetadata,
 			}
 			return response, nil
 		}
-		return nil, errlib.New(fmt.Errorf("GetUsers: failed to get users: %w", err), http.StatusInternalServerError, "")
+		return nil, errlib.New(fmt.Errorf("GetUsers: failed to get users with roles: %w", err), http.StatusInternalServerError, "")
+	}
+
+	var userOrder []string
+	userMap := make(map[string]*UserInfo)
+	for _, row := range usersWithRoles {
+		userID := row.ID.String()
+
+		if _, exists := userMap[userID]; !exists {
+			userOrder = append(userOrder, userID)
+			userMap[userID] = &UserInfo{
+				ID:        userID,
+				Email:     row.Email,
+				Name:      row.Name,
+				Status:    row.Status,
+				CreatedAt: row.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
+				UpdatedAt: row.UpdatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
+				Roles:     []UserRole{},
+			}
+		}
+
+		role := UserRole{
+			ID:          row.RoleID.String(),
+			Name:        row.RoleName.String,
+			Description: row.RoleDescription.String,
+		}
+		userMap[userID].Roles = append(userMap[userID].Roles, role)
+	}
+
+	userInfos := make([]UserInfo, len(userOrder))
+	for i, userID := range userOrder {
+		userInfos[i] = *userMap[userID]
 	}
 
 	paginationMetadata := pagination.CalculateMetadata(paginationParams.Page, paginationParams.Limit, totalCount)
 
 	response := &GetUsersResponse{
-		Users:      users,
+		Users:      userInfos,
 		Pagination: paginationMetadata,
 	}
 

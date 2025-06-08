@@ -12,17 +12,34 @@ import (
 	libctx "lugia/lib/ctx"
 	"lugia/lib/errlib"
 	"lugia/lib/responder"
+	"lugia/queries"
 )
 
 type UpdateUserRolesRequestBody struct {
-	RoleIDs []string `json:"role_ids"`
+	RoleIDs []pgtype.UUID `json:"role_ids"`
 }
 
 func (r *UpdateUserRolesRequestBody) Validate() error {
 	if len(r.RoleIDs) == 0 {
-		return fmt.Errorf("ユーザーには最低1つの権限が必要です")
+		return fmt.Errorf("users need at least one role")
 	}
 	return nil
+}
+
+// difference returns elements that are in slice1 but not in slice2
+func difference(slice1, slice2 []pgtype.UUID) []pgtype.UUID {
+	set := make(map[string]struct{})
+	for _, item := range slice2 {
+		set[item.String()] = struct{}{}
+	}
+
+	var result []pgtype.UUID
+	for _, item := range slice1 {
+		if _, exists := set[item.String()]; !exists {
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 func (h *UsersHandler) UpdateUserPermissions(w http.ResponseWriter, r *http.Request) {
@@ -80,15 +97,68 @@ func (h *UsersHandler) updateUserPermissions(ctx context.Context, targetUserID p
 		return errlib.New(fmt.Errorf("UpdateUserPermissions: requesting user %s (tenant %s) attempting to update user %s (tenant %s) in different tenant", requestingUserID.String(), requestingTenantID.String(), targetUserID.String(), targetUser.TenantID.String()), http.StatusForbidden, "")
 	}
 
-	// TODO: Implement role assignment using new role-based permission system
-	// This needs to:
-	// 1. Validate role IDs belong to tenant
-	// 2. Get current role IDs for user
-	// 3. Calculate differences (toAdd, toRemove)
-	// 4. Remove roles in transaction
-	// 5. Add roles in transaction
-	// For now, return success to allow compilation
-	_ = req.RoleIDs // Acknowledge the parameter to avoid unused variable error
+	validRoleIDs, err := h.q.ValidateRolesBelongToTenant(ctx, &queries.ValidateRolesBelongToTenantParams{
+		Column1:  req.RoleIDs,
+		TenantID: requestingTenantID,
+	})
+	if err != nil {
+		return errlib.New(fmt.Errorf("UpdateUserPermissions: failed to validate roles belong to tenant: %w", err), http.StatusInternalServerError, "")
+	}
+	if len(validRoleIDs) != len(req.RoleIDs) {
+		return errlib.New(fmt.Errorf("UpdateUserPermissions: some roles don't belong to tenant"), http.StatusBadRequest, "")
+	}
+
+	currentRoleIDs, err := h.q.GetUserRoleIDs(ctx, &queries.GetUserRoleIDsParams{
+		UserID:   targetUserID,
+		TenantID: requestingTenantID,
+	})
+	if err != nil {
+		return errlib.New(fmt.Errorf("UpdateUserPermissions: failed to get current user roles: %w", err), http.StatusInternalServerError, "")
+	}
+
+	toAdd := difference(req.RoleIDs, currentRoleIDs)
+	toRemove := difference(currentRoleIDs, req.RoleIDs)
+
+	if len(toRemove) > 0 || len(toAdd) > 0 {
+		tx, err := h.dbConn.Begin(ctx)
+		if err != nil {
+			return errlib.New(fmt.Errorf("UpdateUserPermissions: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+		}
+		defer tx.Rollback(ctx)
+
+		qtx := h.q.WithTx(tx)
+
+		if len(toRemove) > 0 {
+			err = qtx.RemoveRolesFromUser(ctx, &queries.RemoveRolesFromUserParams{
+				UserID:   targetUserID,
+				TenantID: requestingTenantID,
+				Column3:  toRemove,
+			})
+			if err != nil {
+				return errlib.New(fmt.Errorf("UpdateUserPermissions: failed to remove roles: %w", err), http.StatusInternalServerError, "")
+			}
+		}
+
+		if len(toAdd) > 0 {
+			addRolesInput := make([]*queries.AddRolesToUserParams, len(toAdd))
+			for i, roleID := range toAdd {
+				addRolesInput[i] = &queries.AddRolesToUserParams{
+					UserID:   targetUserID,
+					RoleID:   roleID,
+					TenantID: requestingTenantID,
+				}
+			}
+
+			_, err = qtx.AddRolesToUser(ctx, addRolesInput)
+			if err != nil {
+				return errlib.New(fmt.Errorf("UpdateUserPermissions: failed to add roles: %w", err), http.StatusInternalServerError, "")
+			}
+		}
+
+		if err = tx.Commit(ctx); err != nil {
+			return errlib.New(fmt.Errorf("UpdateUserPermissions: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
+		}
+	}
 
 	return nil
 }

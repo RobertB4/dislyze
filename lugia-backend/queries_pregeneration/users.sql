@@ -1,15 +1,3 @@
--- name: GetUsersByTenantID :many
-SELECT id, email, name, status, created_at, updated_at
-FROM users
-WHERE tenant_id = $1 
-AND (
-    $2 = '' OR 
-    name ILIKE '%' || $2 || '%' OR 
-    email ILIKE '%' || $2 || '%'
-)
-ORDER BY created_at DESC
-LIMIT $3 OFFSET $4;
-
 -- name: CountUsersByTenantID :one
 SELECT COUNT(*)
 FROM users
@@ -116,3 +104,32 @@ WHERE user_id = $1 AND tenant_id = $2 AND role_id = ANY($3::uuid[]);
 -- name: ValidateRolesBelongToTenant :many
 SELECT id FROM roles 
 WHERE id = ANY($1::uuid[]) AND tenant_id = $2;
+
+-- name: GetUserPermissions :many
+SELECT permissions.resource, permissions.action
+FROM user_roles
+JOIN role_permissions ON user_roles.role_id = role_permissions.role_id
+JOIN permissions ON role_permissions.permission_id = permissions.id
+WHERE user_roles.user_id = $1 AND user_roles.tenant_id = $2;
+
+-- name: GetUserRolesWithDetails :many
+SELECT roles.id, roles.name, roles.description
+FROM user_roles
+JOIN roles ON user_roles.role_id = roles.id
+WHERE user_roles.user_id = $1 AND user_roles.tenant_id = $2;
+
+-- name: GetUsersWithRoles :many
+SELECT 
+    users.id, users.email, users.name, users.status, users.created_at, users.updated_at,
+    roles.id as role_id, roles.name as role_name, roles.description as role_description
+FROM users
+LEFT JOIN user_roles ON users.id = user_roles.user_id AND users.tenant_id = user_roles.tenant_id
+LEFT JOIN roles ON user_roles.role_id = roles.id
+WHERE users.tenant_id = @tenant_id
+AND (
+    @search_term = '' OR 
+    users.name ILIKE '%' || @search_term || '%' OR 
+    users.email ILIKE '%' || @search_term || '%'
+)
+ORDER BY users.created_at DESC, users.id, roles.name
+LIMIT @limit_count OFFSET @offset_count;

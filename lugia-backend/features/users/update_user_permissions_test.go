@@ -3,85 +3,61 @@ package users
 import (
 	"testing"
 
-	"lugia/queries_pregeneration"
-
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUpdateUserRoleRequestBody_Validate(t *testing.T) {
+func TestUpdateUserRolesRequestBody_Validate(t *testing.T) {
+	// Helper function to create a UUID from string
+	mustParseUUID := func(s string) pgtype.UUID {
+		var uuid pgtype.UUID
+		err := uuid.Scan(s)
+		if err != nil {
+			t.Fatalf("Failed to parse UUID %s: %v", s, err)
+		}
+		return uuid
+	}
+
 	tests := []struct {
 		name    string
-		request UpdateUserRoleRequestBody
+		request UpdateUserRolesRequestBody
 		wantErr bool
 		errMsg  string
 	}{
 		{
-			name: "valid admin role",
-			request: UpdateUserRoleRequestBody{
-				Role: queries_pregeneration.UserRole("admin"),
+			name: "single valid role ID",
+			request: UpdateUserRolesRequestBody{
+				RoleIDs: []pgtype.UUID{
+					mustParseUUID("e0000000-0000-0000-0000-000000000001"),
+				},
 			},
 			wantErr: false,
 		},
 		{
-			name: "valid editor role",
-			request: UpdateUserRoleRequestBody{
-				Role: queries_pregeneration.UserRole("editor"),
+			name: "multiple valid role IDs",
+			request: UpdateUserRolesRequestBody{
+				RoleIDs: []pgtype.UUID{
+					mustParseUUID("e0000000-0000-0000-0000-000000000001"),
+					mustParseUUID("e0000000-0000-0000-0000-000000000002"),
+				},
 			},
 			wantErr: false,
 		},
 		{
-			name: "role with whitespace and case normalization",
-			request: UpdateUserRoleRequestBody{
-				Role: queries_pregeneration.UserRole("  ADMIN  "),
-			},
-			wantErr: false,
-		},
-		{
-			name: "role with mixed case",
-			request: UpdateUserRoleRequestBody{
-				Role: queries_pregeneration.UserRole("Editor"),
-			},
-			wantErr: false,
-		},
-		{
-			name: "missing role",
-			request: UpdateUserRoleRequestBody{
-				Role: queries_pregeneration.UserRole(""),
+			name: "empty role IDs array",
+			request: UpdateUserRolesRequestBody{
+				RoleIDs: []pgtype.UUID{},
 			},
 			wantErr: true,
-			errMsg:  "role is required",
+			errMsg:  "users need at least one role",
 		},
 		{
-			name: "role with only whitespace",
-			request: UpdateUserRoleRequestBody{
-				Role: queries_pregeneration.UserRole("   "),
+			name: "nil role IDs array",
+			request: UpdateUserRolesRequestBody{
+				RoleIDs: nil,
 			},
 			wantErr: true,
-			errMsg:  "role is required",
-		},
-		{
-			name: "invalid role value",
-			request: UpdateUserRoleRequestBody{
-				Role: queries_pregeneration.UserRole("guest"),
-			},
-			wantErr: true,
-			errMsg:  "invalid role specified, must be 'admin' or 'editor'",
-		},
-		{
-			name: "another invalid role value",
-			request: UpdateUserRoleRequestBody{
-				Role: queries_pregeneration.UserRole("superuser"),
-			},
-			wantErr: true,
-			errMsg:  "invalid role specified, must be 'admin' or 'editor'",
-		},
-		{
-			name: "invalid role with mixed case",
-			request: UpdateUserRoleRequestBody{
-				Role: queries_pregeneration.UserRole("GUEST"),
-			},
-			wantErr: true,
-			errMsg:  "invalid role specified, must be 'admin' or 'editor'",
+			errMsg:  "users need at least one role",
 		},
 	}
 
@@ -94,15 +70,8 @@ func TestUpdateUserRoleRequestBody_Validate(t *testing.T) {
 				assert.Equal(t, tt.errMsg, err.Error())
 			} else {
 				assert.NoError(t, err)
-				// For successful validations, check that role was properly normalized
-				assert.True(t, tt.request.Role == "admin" || tt.request.Role == "editor")
-				// Check specific normalization cases
-				if tt.name == "role with whitespace and case normalization" {
-					assert.Equal(t, queries_pregeneration.UserRole("admin"), tt.request.Role)
-				}
-				if tt.name == "role with mixed case" {
-					assert.Equal(t, queries_pregeneration.UserRole("editor"), tt.request.Role)
-				}
+				// For successful validations, check that we have at least one role
+				assert.NotEmpty(t, tt.request.RoleIDs, "Valid request should have at least one role ID")
 			}
 		})
 	}

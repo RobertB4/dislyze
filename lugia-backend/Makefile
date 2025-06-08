@@ -5,7 +5,7 @@ dev:
 	$(HOME)/go/bin/air
 
 test-unit:
-	go test `go list ./... | grep -v test` -json -v 2>&1 | gotestfmt
+	go test `go list ./... | grep -v test` -json -v 2>&1 | gotestfmt -hide=empty-packages
 
 test-integration:
 	cd test && bash test.sh

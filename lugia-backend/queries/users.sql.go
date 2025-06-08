@@ -200,6 +200,44 @@ func (q *Queries) GetInvitationByTokenHash(ctx context.Context, tokenHash string
 	return &i, err
 }
 
+const GetUserPermissions = `-- name: GetUserPermissions :many
+SELECT permissions.resource, permissions.action
+FROM user_roles
+JOIN role_permissions ON user_roles.role_id = role_permissions.role_id
+JOIN permissions ON role_permissions.permission_id = permissions.id
+WHERE user_roles.user_id = $1 AND user_roles.tenant_id = $2
+`
+
+type GetUserPermissionsParams struct {
+	UserID   pgtype.UUID `json:"user_id"`
+	TenantID pgtype.UUID `json:"tenant_id"`
+}
+
+type GetUserPermissionsRow struct {
+	Resource string `json:"resource"`
+	Action   string `json:"action"`
+}
+
+func (q *Queries) GetUserPermissions(ctx context.Context, arg *GetUserPermissionsParams) ([]*GetUserPermissionsRow, error) {
+	rows, err := q.db.Query(ctx, GetUserPermissions, arg.UserID, arg.TenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUserPermissionsRow{}
+	for rows.Next() {
+		var i GetUserPermissionsRow
+		if err := rows.Scan(&i.Resource, &i.Action); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUserRoleIDs = `-- name: GetUserRoleIDs :many
 SELECT role_id FROM user_roles
 WHERE user_id = $1 AND tenant_id = $2
@@ -230,49 +268,94 @@ func (q *Queries) GetUserRoleIDs(ctx context.Context, arg *GetUserRoleIDsParams)
 	return items, nil
 }
 
-const GetUsersByTenantID = `-- name: GetUsersByTenantID :many
-SELECT id, email, name, status, created_at, updated_at
-FROM users
-WHERE tenant_id = $1 
-AND (
-    $2 = '' OR 
-    name ILIKE '%' || $2 || '%' OR 
-    email ILIKE '%' || $2 || '%'
-)
-ORDER BY created_at DESC
-LIMIT $3 OFFSET $4
+const GetUserRolesWithDetails = `-- name: GetUserRolesWithDetails :many
+SELECT roles.id, roles.name, roles.description
+FROM user_roles
+JOIN roles ON user_roles.role_id = roles.id
+WHERE user_roles.user_id = $1 AND user_roles.tenant_id = $2
 `
 
-type GetUsersByTenantIDParams struct {
+type GetUserRolesWithDetailsParams struct {
+	UserID   pgtype.UUID `json:"user_id"`
 	TenantID pgtype.UUID `json:"tenant_id"`
-	Column2  interface{} `json:"column_2"`
-	Limit    int32       `json:"limit"`
-	Offset   int32       `json:"offset"`
 }
 
-type GetUsersByTenantIDRow struct {
-	ID        pgtype.UUID        `json:"id"`
-	Email     string             `json:"email"`
-	Name      string             `json:"name"`
-	Status    string             `json:"status"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+type GetUserRolesWithDetailsRow struct {
+	ID          pgtype.UUID `json:"id"`
+	Name        string      `json:"name"`
+	Description pgtype.Text `json:"description"`
 }
 
-func (q *Queries) GetUsersByTenantID(ctx context.Context, arg *GetUsersByTenantIDParams) ([]*GetUsersByTenantIDRow, error) {
-	rows, err := q.db.Query(ctx, GetUsersByTenantID,
+func (q *Queries) GetUserRolesWithDetails(ctx context.Context, arg *GetUserRolesWithDetailsParams) ([]*GetUserRolesWithDetailsRow, error) {
+	rows, err := q.db.Query(ctx, GetUserRolesWithDetails, arg.UserID, arg.TenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUserRolesWithDetailsRow{}
+	for rows.Next() {
+		var i GetUserRolesWithDetailsRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetUsersWithRoles = `-- name: GetUsersWithRoles :many
+SELECT 
+    users.id, users.email, users.name, users.status, users.created_at, users.updated_at,
+    roles.id as role_id, roles.name as role_name, roles.description as role_description
+FROM users
+LEFT JOIN user_roles ON users.id = user_roles.user_id AND users.tenant_id = user_roles.tenant_id
+LEFT JOIN roles ON user_roles.role_id = roles.id
+WHERE users.tenant_id = $1
+AND (
+    $2 = '' OR 
+    users.name ILIKE '%' || $2 || '%' OR 
+    users.email ILIKE '%' || $2 || '%'
+)
+ORDER BY users.created_at DESC, users.id, roles.name
+LIMIT $4 OFFSET $3
+`
+
+type GetUsersWithRolesParams struct {
+	TenantID    pgtype.UUID `json:"tenant_id"`
+	SearchTerm  interface{} `json:"search_term"`
+	OffsetCount int32       `json:"offset_count"`
+	LimitCount  int32       `json:"limit_count"`
+}
+
+type GetUsersWithRolesRow struct {
+	ID              pgtype.UUID        `json:"id"`
+	Email           string             `json:"email"`
+	Name            string             `json:"name"`
+	Status          string             `json:"status"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	RoleID          pgtype.UUID        `json:"role_id"`
+	RoleName        pgtype.Text        `json:"role_name"`
+	RoleDescription pgtype.Text        `json:"role_description"`
+}
+
+func (q *Queries) GetUsersWithRoles(ctx context.Context, arg *GetUsersWithRolesParams) ([]*GetUsersWithRolesRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersWithRoles,
 		arg.TenantID,
-		arg.Column2,
-		arg.Limit,
-		arg.Offset,
+		arg.SearchTerm,
+		arg.OffsetCount,
+		arg.LimitCount,
 	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*GetUsersByTenantIDRow{}
+	items := []*GetUsersWithRolesRow{}
 	for rows.Next() {
-		var i GetUsersByTenantIDRow
+		var i GetUsersWithRolesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Email,
@@ -280,6 +363,9 @@ func (q *Queries) GetUsersByTenantID(ctx context.Context, arg *GetUsersByTenantI
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.RoleID,
+			&i.RoleName,
+			&i.RoleDescription,
 		); err != nil {
 			return nil, err
 		}

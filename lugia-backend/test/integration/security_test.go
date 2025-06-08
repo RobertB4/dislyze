@@ -45,7 +45,7 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 			name:     "SQL injection in tenant name change",
 			endpoint: "/tenant/change-name",
 			payload: map[string]string{
-				"name": "'; UPDATE users SET role='admin' WHERE email='alpha_editor@example.com'; --",
+				"name": "'; UPDATE user_roles SET role_id='e0000000-0000-0000-0000-000000000001' WHERE user_id='b0000000-0000-0000-0000-000000000002'; --",
 			},
 		},
 	}
@@ -81,12 +81,19 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 			assert.Greater(t, userCount, 0, "Users table should still contain data")
 
 			// Verify no unauthorized privilege escalation occurred
-			var alphaEditorRole string
-			err = pool.QueryRow(context.Background(),
-				"SELECT role FROM users WHERE email = $1",
-				setup.TestUsersData["alpha_editor"].Email).Scan(&alphaEditorRole)
+			// This SQL injection attempted to change alpha_editor from editor role to admin role
+			// If successful, it would grant them admin permissions like users.view
+			var alphaEditorRoleName string
+			err = pool.QueryRow(context.Background(), `
+				SELECT r.name 
+				FROM users u
+				JOIN user_roles ur ON u.id = ur.user_id 
+				JOIN roles r ON ur.role_id = r.id 
+				WHERE u.email = $1
+				LIMIT 1`,
+				setup.TestUsersData["alpha_editor"].Email).Scan(&alphaEditorRoleName)
 			assert.NoError(t, err)
-			assert.Equal(t, "editor", alphaEditorRole, "Alpha editor role should not have been modified by SQL injection")
+			assert.Equal(t, "編集者", alphaEditorRoleName, "Alpha editor should still have editor role - SQL injection should not have escalated privileges")
 		})
 	}
 }

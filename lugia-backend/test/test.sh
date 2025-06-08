@@ -20,7 +20,7 @@ sleep 5
 
 echo "🧪 Running tests..."
 # Run tests
-docker compose -f docker-compose.integration.yml exec lugia-backend sh -c "go test ./test/integration/... -json -v -p 1 -parallel 1 2>&1 | gotestfmt"
+docker compose -f docker-compose.integration.yml exec lugia-backend sh -c "go test ./test/integration/... -json -v -p 1 -parallel 1 2>&1 | gotestfmt -hide=empty-packages,successful-tests"
 
 # Capture the exit code
 TEST_EXIT_CODE=$?
@@ -36,7 +36,7 @@ fi
 
 echo "🧹 Cleaning up..."
 # Stop and remove containers
-docker compose -f docker-compose.integration.yml down
+docker compose -f docker-compose.integration.yml down --volumes
 
 # Exit with the test exit code
 exit $TEST_EXIT_CODE 
