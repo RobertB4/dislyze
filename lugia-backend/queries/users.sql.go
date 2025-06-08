@@ -200,6 +200,49 @@ func (q *Queries) GetInvitationByTokenHash(ctx context.Context, tokenHash string
 	return &i, err
 }
 
+const GetTenantRolesWithPermissions = `-- name: GetTenantRolesWithPermissions :many
+SELECT 
+    roles.id, roles.name, roles.description,
+    permissions.description as permission_description
+FROM roles
+LEFT JOIN role_permissions ON roles.id = role_permissions.role_id
+LEFT JOIN permissions ON role_permissions.permission_id = permissions.id
+WHERE roles.tenant_id = $1
+ORDER BY roles.name, permissions.description
+`
+
+type GetTenantRolesWithPermissionsRow struct {
+	ID                    pgtype.UUID `json:"id"`
+	Name                  string      `json:"name"`
+	Description           pgtype.Text `json:"description"`
+	PermissionDescription pgtype.Text `json:"permission_description"`
+}
+
+func (q *Queries) GetTenantRolesWithPermissions(ctx context.Context, tenantID pgtype.UUID) ([]*GetTenantRolesWithPermissionsRow, error) {
+	rows, err := q.db.Query(ctx, GetTenantRolesWithPermissions, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetTenantRolesWithPermissionsRow{}
+	for rows.Next() {
+		var i GetTenantRolesWithPermissionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.PermissionDescription,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUserPermissions = `-- name: GetUserPermissions :many
 SELECT permissions.resource, permissions.action
 FROM user_roles

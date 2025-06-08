@@ -41,7 +41,7 @@ type Permission struct {
 	ID          pgtype.UUID        `json:"id"`
 	Resource    string             `json:"resource"`
 	Action      string             `json:"action"`
-	Description pgtype.Text        `json:"description"`
+	Description string             `json:"description"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }

@@ -29,7 +29,7 @@ CREATE TABLE permissions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     resource VARCHAR(255) NOT NULL,
     action VARCHAR(50) NOT NULL,
-    description TEXT,
+    description VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_permissions_resource_action UNIQUE (resource, action)

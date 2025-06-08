@@ -133,3 +133,13 @@ AND (
 )
 ORDER BY users.created_at DESC, users.id, roles.name
 LIMIT @limit_count OFFSET @offset_count;
+
+-- name: GetTenantRolesWithPermissions :many
+SELECT 
+    roles.id, roles.name, roles.description,
+    permissions.description as permission_description
+FROM roles
+LEFT JOIN role_permissions ON roles.id = role_permissions.role_id
+LEFT JOIN permissions ON role_permissions.permission_id = permissions.id
+WHERE roles.tenant_id = $1
+ORDER BY roles.name, permissions.description;

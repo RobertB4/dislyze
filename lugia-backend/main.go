@@ -74,12 +74,13 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 				r.With(middleware.RequireUsersView(queries)).Get("/", usersHandler.GetUsers)
 				r.With(middleware.RequireUsersCreate(queries)).Post("/invite", usersHandler.InviteUser)
 				r.With(middleware.RequireUsersCreate(queries)).Post("/{userID}/resend-invite", usersHandler.ResendInvite)
-				r.With(middleware.RequireUsersDelete(queries)).Post("/{userID}/delete", usersHandler.DeleteUser)
 				r.With(middleware.RequireUsersUpdate(queries)).Post("/{userID}/roles", usersHandler.UpdateUserRoles)
+				r.With(middleware.RequireUsersDelete(queries)).Post("/{userID}/delete", usersHandler.DeleteUser)
 			})
 
 			r.Route("/tenant", func(r chi.Router) {
 				r.With(middleware.RequireTenantUpdate(queries)).Post("/change-name", usersHandler.ChangeTenantName)
+				r.With(middleware.RequireUsersUpdate(queries)).Get("/roles", usersHandler.GetTenantRoles)
 			})
 		})
 	})
