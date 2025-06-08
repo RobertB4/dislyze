@@ -19,7 +19,7 @@ type Querier interface {
 	CreateInvitationToken(ctx context.Context, arg *CreateInvitationTokenParams) (*InvitationToken, error)
 	CreatePasswordResetToken(ctx context.Context, arg *CreatePasswordResetTokenParams) (*PasswordResetToken, error)
 	CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error)
-	CreateRole(ctx context.Context, arg *CreateRoleParams) (*Role, error)
+	CreateRole(ctx context.Context, arg *CreateRoleParams) (*CreateRoleRow, error)
 	CreateRolePermissionsBulk(ctx context.Context, arg *CreateRolePermissionsBulkParams) error
 	CreateTenant(ctx context.Context, name string) (*Tenant, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)

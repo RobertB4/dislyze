@@ -142,7 +142,7 @@ ORDER BY users.created_at DESC, users.id, roles.name;
 
 -- name: GetTenantRolesWithPermissions :many
 SELECT 
-    roles.id, roles.name, roles.description,
+    roles.id, roles.name, roles.description, roles.is_default,
     permissions.description as permission_description
 FROM roles
 LEFT JOIN role_permissions ON roles.id = role_permissions.role_id
@@ -154,8 +154,8 @@ ORDER BY roles.name, permissions.description;
 SELECT id, resource, action, description FROM permissions;
 
 -- name: CreateRole :one
-INSERT INTO roles (tenant_id, name, description)
-VALUES ($1, $2, $3)
+INSERT INTO roles (tenant_id, name, description, is_default)
+VALUES ($1, $2, $3, $4)
 RETURNING id, tenant_id, name, description, created_at, updated_at;
 
 -- name: CreateRolePermissionsBulk :exec

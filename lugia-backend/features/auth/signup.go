@@ -179,8 +179,6 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequestBody, r *htt
 	return tokenPair, nil
 }
 
-// By default, the admin (管理者) role has all permissions
-// the editor (編集者) has no permissions
 func (h *AuthHandler) setupDefaultRoles(ctx context.Context, qtx *queries.Queries, tenantID pgtype.UUID, userID pgtype.UUID) error {
 	permissions, err := qtx.GetAllPermissions(ctx)
 	if err != nil {
@@ -191,6 +189,7 @@ func (h *AuthHandler) setupDefaultRoles(ctx context.Context, qtx *queries.Querie
 		TenantID:    tenantID,
 		Name:        "管理者",
 		Description: pgtype.Text{String: "すべての機能にアクセス可能", Valid: true},
+		IsDefault:   true,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create admin role: %w", err)
@@ -213,7 +212,18 @@ func (h *AuthHandler) setupDefaultRoles(ctx context.Context, qtx *queries.Querie
 	_, err = qtx.CreateRole(ctx, &queries.CreateRoleParams{
 		TenantID:    tenantID,
 		Name:        "編集者",
-		Description: pgtype.Text{String: "限定的な編集権限", Valid: true},
+		Description: pgtype.Text{String: "ユーザー管理以外の編集権限", Valid: true},
+		IsDefault:   true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create editor role: %w", err)
+	}
+
+	_, err = qtx.CreateRole(ctx, &queries.CreateRoleParams{
+		TenantID:    tenantID,
+		Name:        "閲覧者",
+		Description: pgtype.Text{String: "閲覧権限のみ", Valid: true},
+		IsDefault:   true,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create editor role: %w", err)

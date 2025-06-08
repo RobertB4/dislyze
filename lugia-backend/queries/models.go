@@ -63,6 +63,7 @@ type Role struct {
 	TenantID    pgtype.UUID        `json:"tenant_id"`
 	Name        string             `json:"name"`
 	Description pgtype.Text        `json:"description"`
+	IsDefault   bool               `json:"is_default"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }

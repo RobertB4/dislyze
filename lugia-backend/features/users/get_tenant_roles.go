@@ -17,6 +17,7 @@ type RoleInfo struct {
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
+	IsDefault   bool     `json:"is_default"`
 	Permissions []string `json:"permissions"`
 }
 
@@ -60,6 +61,7 @@ func (h *UsersHandler) getTenantRoles(ctx context.Context, tenantID pgtype.UUID)
 				ID:          roleID,
 				Name:        row.Name,
 				Description: row.Description.String,
+				IsDefault:   row.IsDefault,
 				Permissions: []string{},
 			}
 		}

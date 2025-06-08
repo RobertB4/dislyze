@@ -132,8 +132,8 @@ func (q *Queries) CreateInvitationToken(ctx context.Context, arg *CreateInvitati
 }
 
 const CreateRole = `-- name: CreateRole :one
-INSERT INTO roles (tenant_id, name, description)
-VALUES ($1, $2, $3)
+INSERT INTO roles (tenant_id, name, description, is_default)
+VALUES ($1, $2, $3, $4)
 RETURNING id, tenant_id, name, description, created_at, updated_at
 `
 
@@ -141,11 +141,26 @@ type CreateRoleParams struct {
 	TenantID    pgtype.UUID `json:"tenant_id"`
 	Name        string      `json:"name"`
 	Description pgtype.Text `json:"description"`
+	IsDefault   bool        `json:"is_default"`
 }
 
-func (q *Queries) CreateRole(ctx context.Context, arg *CreateRoleParams) (*Role, error) {
-	row := q.db.QueryRow(ctx, CreateRole, arg.TenantID, arg.Name, arg.Description)
-	var i Role
+type CreateRoleRow struct {
+	ID          pgtype.UUID        `json:"id"`
+	TenantID    pgtype.UUID        `json:"tenant_id"`
+	Name        string             `json:"name"`
+	Description pgtype.Text        `json:"description"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) CreateRole(ctx context.Context, arg *CreateRoleParams) (*CreateRoleRow, error) {
+	row := q.db.QueryRow(ctx, CreateRole,
+		arg.TenantID,
+		arg.Name,
+		arg.Description,
+		arg.IsDefault,
+	)
+	var i CreateRoleRow
 	err := row.Scan(
 		&i.ID,
 		&i.TenantID,
@@ -296,7 +311,7 @@ func (q *Queries) GetInvitationByTokenHash(ctx context.Context, tokenHash string
 
 const GetTenantRolesWithPermissions = `-- name: GetTenantRolesWithPermissions :many
 SELECT 
-    roles.id, roles.name, roles.description,
+    roles.id, roles.name, roles.description, roles.is_default,
     permissions.description as permission_description
 FROM roles
 LEFT JOIN role_permissions ON roles.id = role_permissions.role_id
@@ -309,6 +324,7 @@ type GetTenantRolesWithPermissionsRow struct {
 	ID                    pgtype.UUID `json:"id"`
 	Name                  string      `json:"name"`
 	Description           pgtype.Text `json:"description"`
+	IsDefault             bool        `json:"is_default"`
 	PermissionDescription pgtype.Text `json:"permission_description"`
 }
 
@@ -325,6 +341,7 @@ func (q *Queries) GetTenantRolesWithPermissions(ctx context.Context, tenantID pg
 			&i.ID,
 			&i.Name,
 			&i.Description,
+			&i.IsDefault,
 			&i.PermissionDescription,
 		); err != nil {
 			return nil, err
