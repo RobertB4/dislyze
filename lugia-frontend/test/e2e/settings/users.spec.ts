@@ -729,7 +729,7 @@ test.describe("Settings - Users Page", () => {
 
 			const editUserResponse = page.waitForResponse(
 				(response) =>
-					response.url().includes(`/api/users/${TestUsersData.alpha_editor.userID}/permissions`) &&
+					response.url().includes(`/api/users/${TestUsersData.alpha_editor.userID}/roles`) &&
 					response.status() === 200
 			);
 
@@ -783,7 +783,7 @@ test.describe("Settings - Users Page", () => {
 
 			const editUserResponse = page.waitForResponse(
 				(response) =>
-					response.url().includes(`/api/users/${TestUsersData.alpha_editor.userID}/permissions`) &&
+					response.url().includes(`/api/users/${TestUsersData.alpha_editor.userID}/roles`) &&
 					response.status() === 200
 			);
 

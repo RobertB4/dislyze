@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUpdateUserPermissions_Integration(t *testing.T) {
+func TestUpdateUserRoles_Integration(t *testing.T) {
 	// Helper function to create a UUID from string
 	mustParseUUID := func(s string) pgtype.UUID {
 		var uuid pgtype.UUID
@@ -129,8 +129,8 @@ func TestUpdateUserPermissions_Integration(t *testing.T) {
 		},
 		{
 			name:           "roles from different tenant get 400",
-			loginUserKey:   "alpha_admin", // Tenant A admin
-			targetUserKey:  "alpha_editor", // Tenant A user
+			loginUserKey:   "alpha_admin",                                                                                                   // Tenant A admin
+			targetUserKey:  "alpha_editor",                                                                                                  // Tenant A user
 			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000003")}}, // Tenant B admin role
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -151,7 +151,7 @@ func TestUpdateUserPermissions_Integration(t *testing.T) {
 			loginUserKey:   "alpha_admin",
 			targetUserKey:  "alpha_editor",
 			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000001"), mustParseUUID("e0000000-0000-0000-0000-000000000001")}}, // Same role twice
-			expectedStatus: http.StatusBadRequest, // Validation correctly rejects duplicates
+			expectedStatus: http.StatusBadRequest,                                                                                                                                                  // Validation correctly rejects duplicates
 		},
 		{
 			name:           "mixed valid and invalid role IDs get 400",
@@ -245,7 +245,7 @@ func TestUpdateUserPermissions_Integration(t *testing.T) {
 				assert.NoError(t, err, "Failed to marshal request body")
 			}
 
-			reqURL := fmt.Sprintf("%s/users/%s/permissions", setup.BaseURL, targetUserID)
+			reqURL := fmt.Sprintf("%s/users/%s/roles", setup.BaseURL, targetUserID)
 			req, err := http.NewRequest("POST", reqURL, bytes.NewBuffer(reqBody))
 			assert.NoError(t, err, "Failed to create request")
 			req.Header.Set("Content-Type", "application/json")
@@ -281,7 +281,7 @@ func TestUpdateUserPermissions_Integration(t *testing.T) {
 			// For successful updates, verify the roles were actually changed in database
 			if tt.expectedStatus == http.StatusOK && tt.targetUserKey != "" {
 				ctx := context.Background()
-				
+
 				// Query the user's current role IDs from user_roles table
 				rows, err := pool.Query(ctx, `
 					SELECT r.name 

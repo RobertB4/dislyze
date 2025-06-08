@@ -163,7 +163,7 @@
 		onSubmit: async (values) => {
 			if (!userToEdit) return;
 
-			const { success } = await mutationFetch(`/api/users/${userToEdit.id}/permissions`, {
+			const { success } = await mutationFetch(`/api/users/${userToEdit.id}/roles`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json"
