@@ -143,3 +143,19 @@ LEFT JOIN role_permissions ON roles.id = role_permissions.role_id
 LEFT JOIN permissions ON role_permissions.permission_id = permissions.id
 WHERE roles.tenant_id = $1
 ORDER BY roles.name, permissions.description;
+
+-- name: GetAllPermissions :many
+SELECT id, resource, action, description FROM permissions;
+
+-- name: CreateRole :one
+INSERT INTO roles (tenant_id, name, description)
+VALUES ($1, $2, $3)
+RETURNING id, tenant_id, name, description, created_at, updated_at;
+
+-- name: CreateRolePermissionsBulk :exec
+INSERT INTO role_permissions (role_id, permission_id, tenant_id)
+SELECT @role_id, UNNEST(@permission_ids::uuid[]), @tenant_id;
+
+-- name: AssignRoleToUser :exec
+INSERT INTO user_roles (user_id, role_id, tenant_id)
+VALUES ($1, $2, $3);

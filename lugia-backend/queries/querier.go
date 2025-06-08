@@ -13,11 +13,14 @@ import (
 type Querier interface {
 	ActivateInvitedUser(ctx context.Context, arg *ActivateInvitedUserParams) error
 	AddRolesToUser(ctx context.Context, arg []*AddRolesToUserParams) (int64, error)
+	AssignRoleToUser(ctx context.Context, arg *AssignRoleToUserParams) error
 	CountUsersByTenantID(ctx context.Context, arg *CountUsersByTenantIDParams) (int64, error)
 	CreateEmailChangeToken(ctx context.Context, arg *CreateEmailChangeTokenParams) error
 	CreateInvitationToken(ctx context.Context, arg *CreateInvitationTokenParams) (*InvitationToken, error)
 	CreatePasswordResetToken(ctx context.Context, arg *CreatePasswordResetTokenParams) (*PasswordResetToken, error)
 	CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error)
+	CreateRole(ctx context.Context, arg *CreateRoleParams) (*Role, error)
+	CreateRolePermissionsBulk(ctx context.Context, arg *CreateRolePermissionsBulkParams) error
 	CreateTenant(ctx context.Context, name string) (*Tenant, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
 	DeleteEmailChangeTokensByUserID(ctx context.Context, userID pgtype.UUID) error
@@ -27,6 +30,7 @@ type Querier interface {
 	DeleteRefreshTokensByUserID(ctx context.Context, userID pgtype.UUID) error
 	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	ExistsUserWithEmail(ctx context.Context, email string) (bool, error)
+	GetAllPermissions(ctx context.Context) ([]*GetAllPermissionsRow, error)
 	GetEmailChangeTokenByHash(ctx context.Context, tokenHash string) (*EmailChangeToken, error)
 	GetInvitationByTokenHash(ctx context.Context, tokenHash string) (*InvitationToken, error)
 	GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error)

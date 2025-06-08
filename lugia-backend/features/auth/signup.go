@@ -151,6 +151,11 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequestBody, r *htt
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
+	err = h.setupDefaultRoles(ctx, qtx, tenant.ID, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup default roles: %w", err)
+	}
+
 	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, []byte(h.env.JWTSecret))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token pair: %w", err)
@@ -172,4 +177,56 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequestBody, r *htt
 	}
 
 	return tokenPair, nil
+}
+
+// By default, the admin (管理者) role has all permissions
+// the editor (編集者) has no permissions
+func (h *AuthHandler) setupDefaultRoles(ctx context.Context, qtx *queries.Queries, tenantID pgtype.UUID, userID pgtype.UUID) error {
+	permissions, err := qtx.GetAllPermissions(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get permissions: %w", err)
+	}
+
+	adminRole, err := qtx.CreateRole(ctx, &queries.CreateRoleParams{
+		TenantID:    tenantID,
+		Name:        "管理者",
+		Description: pgtype.Text{String: "すべての機能にアクセス可能", Valid: true},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create admin role: %w", err)
+	}
+
+	permissionIDs := make([]pgtype.UUID, len(permissions))
+	for i, permission := range permissions {
+		permissionIDs[i] = permission.ID
+	}
+
+	err = qtx.CreateRolePermissionsBulk(ctx, &queries.CreateRolePermissionsBulkParams{
+		RoleID:        adminRole.ID,
+		PermissionIds: permissionIDs,
+		TenantID:      tenantID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to assign permissions to admin role: %w", err)
+	}
+
+	_, err = qtx.CreateRole(ctx, &queries.CreateRoleParams{
+		TenantID:    tenantID,
+		Name:        "編集者",
+		Description: pgtype.Text{String: "限定的な編集権限", Valid: true},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create editor role: %w", err)
+	}
+
+	err = qtx.AssignRoleToUser(ctx, &queries.AssignRoleToUserParams{
+		UserID:   userID,
+		RoleID:   adminRole.ID,
+		TenantID: tenantID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to assign admin role to user: %w", err)
+	}
+
+	return nil
 }
