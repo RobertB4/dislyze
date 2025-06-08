@@ -9,7 +9,6 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"lugia/queries_pregeneration"
 )
 
 const CreatePasswordResetToken = `-- name: CreatePasswordResetToken :one
@@ -86,27 +85,22 @@ func (q *Queries) CreateRefreshToken(ctx context.Context, arg *CreateRefreshToke
 
 const CreateTenant = `-- name: CreateTenant :one
 INSERT INTO tenants (
-    name,
-    plan
+    name
 ) VALUES (
-    $1, $2
-) RETURNING id, name, created_at, updated_at, plan
+    $1
+) RETURNING id, name, features_config, stripe_customer_id, created_at, updated_at
 `
 
-type CreateTenantParams struct {
-	Name string `json:"name"`
-	Plan string `json:"plan"`
-}
-
-func (q *Queries) CreateTenant(ctx context.Context, arg *CreateTenantParams) (*Tenant, error) {
-	row := q.db.QueryRow(ctx, CreateTenant, arg.Name, arg.Plan)
+func (q *Queries) CreateTenant(ctx context.Context, name string) (*Tenant, error) {
+	row := q.db.QueryRow(ctx, CreateTenant, name)
 	var i Tenant
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
+		&i.FeaturesConfig,
+		&i.StripeCustomerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Plan,
 	)
 	return &i, err
 }
@@ -117,20 +111,18 @@ INSERT INTO users (
     email,
     password_hash,
     name,
-    role,
     status
 ) VALUES (
-    $1, $2, $3, $4, $5, $6
-) RETURNING id, tenant_id, email, password_hash, name, role, created_at, updated_at, status
+    $1, $2, $3, $4, $5
+) RETURNING id, tenant_id, email, password_hash, name, created_at, updated_at, status
 `
 
 type CreateUserParams struct {
-	TenantID     pgtype.UUID                    `json:"tenant_id"`
-	Email        string                         `json:"email"`
-	PasswordHash string                         `json:"password_hash"`
-	Name         string                         `json:"name"`
-	Role         queries_pregeneration.UserRole `json:"role"`
-	Status       string                         `json:"status"`
+	TenantID     pgtype.UUID `json:"tenant_id"`
+	Email        string      `json:"email"`
+	PasswordHash string      `json:"password_hash"`
+	Name         string      `json:"name"`
+	Status       string      `json:"status"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error) {
@@ -139,7 +131,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User,
 		arg.Email,
 		arg.PasswordHash,
 		arg.Name,
-		arg.Role,
 		arg.Status,
 	)
 	var i User
@@ -149,7 +140,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User,
 		&i.Email,
 		&i.PasswordHash,
 		&i.Name,
-		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,
@@ -259,7 +249,7 @@ func (q *Queries) GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUI
 }
 
 const GetTenantByID = `-- name: GetTenantByID :one
-SELECT id, name, created_at, updated_at, plan FROM tenants
+SELECT id, name, features_config, stripe_customer_id, created_at, updated_at FROM tenants
 WHERE id = $1
 `
 
@@ -269,15 +259,16 @@ func (q *Queries) GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, e
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
+		&i.FeaturesConfig,
+		&i.StripeCustomerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Plan,
 	)
 	return &i, err
 }
 
 const GetUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, tenant_id, email, password_hash, name, role, created_at, updated_at, status FROM users
+SELECT id, tenant_id, email, password_hash, name, created_at, updated_at, status FROM users
 WHERE email = $1
 `
 
@@ -290,7 +281,6 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 		&i.Email,
 		&i.PasswordHash,
 		&i.Name,
-		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,
@@ -299,7 +289,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 }
 
 const GetUserByID = `-- name: GetUserByID :one
-SELECT id, tenant_id, email, password_hash, name, role, created_at, updated_at, status FROM users
+SELECT id, tenant_id, email, password_hash, name, created_at, updated_at, status FROM users
 WHERE id = $1
 `
 
@@ -312,7 +302,6 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error
 		&i.Email,
 		&i.PasswordHash,
 		&i.Name,
-		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,

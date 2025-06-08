@@ -15,11 +15,9 @@ import (
 
 type MeResponse struct {
 	TenantName string `json:"tenant_name"`
-	TenantPlan string `json:"tenant_plan"`
 	UserID     string `json:"user_id"`
 	Email      string `json:"email"`
 	UserName   string `json:"user_name"`
-	UserRole   string `json:"user_role"`
 }
 
 func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
@@ -55,11 +53,9 @@ func (h *UsersHandler) getMe(ctx context.Context, userID, tenantID pgtype.UUID) 
 
 	response := &MeResponse{
 		TenantName: tenant.Name,
-		TenantPlan: tenant.Plan,
 		UserID:     user.ID.String(),
 		Email:      user.Email,
 		UserName:   user.Name,
-		UserRole:   user.Role.String(),
 	}
 
 	return response, nil

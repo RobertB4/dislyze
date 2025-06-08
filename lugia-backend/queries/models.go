@@ -6,7 +6,6 @@ package queries
 
 import (
 	"github.com/jackc/pgx/v5/pgtype"
-	"lugia/queries_pregeneration"
 )
 
 type EmailChangeToken struct {
@@ -38,6 +37,15 @@ type PasswordResetToken struct {
 	UsedAt    pgtype.Timestamptz `json:"used_at"`
 }
 
+type Permission struct {
+	ID          pgtype.UUID        `json:"id"`
+	Resource    string             `json:"resource"`
+	Action      string             `json:"action"`
+	Description pgtype.Text        `json:"description"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
 type RefreshToken struct {
 	ID         pgtype.UUID        `json:"id"`
 	UserID     pgtype.UUID        `json:"user_id"`
@@ -50,22 +58,43 @@ type RefreshToken struct {
 	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
 }
 
+type Role struct {
+	ID          pgtype.UUID        `json:"id"`
+	TenantID    pgtype.UUID        `json:"tenant_id"`
+	Name        string             `json:"name"`
+	Description pgtype.Text        `json:"description"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type RolePermission struct {
+	RoleID       pgtype.UUID        `json:"role_id"`
+	PermissionID pgtype.UUID        `json:"permission_id"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
 type Tenant struct {
-	ID        pgtype.UUID        `json:"id"`
-	Name      string             `json:"name"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	Plan      string             `json:"plan"`
+	ID               pgtype.UUID        `json:"id"`
+	Name             string             `json:"name"`
+	FeaturesConfig   []byte             `json:"features_config"`
+	StripeCustomerID pgtype.Text        `json:"stripe_customer_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 }
 
 type User struct {
-	ID           pgtype.UUID                    `json:"id"`
-	TenantID     pgtype.UUID                    `json:"tenant_id"`
-	Email        string                         `json:"email"`
-	PasswordHash string                         `json:"password_hash"`
-	Name         string                         `json:"name"`
-	Role         queries_pregeneration.UserRole `json:"role"`
-	CreatedAt    pgtype.Timestamptz             `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz             `json:"updated_at"`
-	Status       string                         `json:"status"`
+	ID           pgtype.UUID        `json:"id"`
+	TenantID     pgtype.UUID        `json:"tenant_id"`
+	Email        string             `json:"email"`
+	PasswordHash string             `json:"password_hash"`
+	Name         string             `json:"name"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	Status       string             `json:"status"`
+}
+
+type UserRole struct {
+	UserID    pgtype.UUID        `json:"user_id"`
+	RoleID    pgtype.UUID        `json:"role_id"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }

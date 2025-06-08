@@ -17,7 +17,7 @@ type Querier interface {
 	CreateInvitationToken(ctx context.Context, arg *CreateInvitationTokenParams) (*InvitationToken, error)
 	CreatePasswordResetToken(ctx context.Context, arg *CreatePasswordResetTokenParams) (*PasswordResetToken, error)
 	CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error)
-	CreateTenant(ctx context.Context, arg *CreateTenantParams) (*Tenant, error)
+	CreateTenant(ctx context.Context, name string) (*Tenant, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
 	DeleteEmailChangeTokensByUserID(ctx context.Context, userID pgtype.UUID) error
 	DeleteExpiredRefreshTokens(ctx context.Context) error
@@ -45,7 +45,7 @@ type Querier interface {
 	UpdateUserEmail(ctx context.Context, arg *UpdateUserEmailParams) error
 	UpdateUserName(ctx context.Context, arg *UpdateUserNameParams) error
 	UpdateUserPassword(ctx context.Context, arg *UpdateUserPasswordParams) error
-	UpdateUserRole(ctx context.Context, arg *UpdateUserRoleParams) error
+	UserHasPermission(ctx context.Context, arg *UserHasPermissionParams) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)

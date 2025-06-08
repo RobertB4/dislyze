@@ -1,5 +1,5 @@
 -- name: GetUsersByTenantID :many
-SELECT id, email, name, role, status, created_at, updated_at
+SELECT id, email, name, status, created_at, updated_at
 FROM users
 WHERE tenant_id = $1 
 AND (
@@ -21,8 +21,8 @@ AND (
 ); 
 
 -- name: InviteUserToTenant :one
-INSERT INTO users (tenant_id, email, password_hash, name, role, status)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO users (tenant_id, email, password_hash, name, status)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id; 
 
 -- name: CreateInvitationToken :one
@@ -55,11 +55,6 @@ WHERE user_id = $1;
 -- name: DeleteUser :exec
 DELETE FROM users
 WHERE id = $1;
-
--- name: UpdateUserRole :exec
-UPDATE users
-SET role = $1, updated_at = CURRENT_TIMESTAMP
-WHERE id = $2 AND tenant_id = $3;
 
 -- name: UpdateUserName :exec
 UPDATE users
@@ -96,3 +91,13 @@ WHERE id = $1;
 UPDATE users
 SET email = $1, updated_at = CURRENT_TIMESTAMP
 WHERE id = $2;
+
+-- name: UserHasPermission :one
+SELECT EXISTS(
+    SELECT 1 FROM user_roles ur
+    JOIN roles r ON ur.role_id = r.id
+    JOIN role_permissions rp ON r.id = rp.role_id
+    JOIN permissions p ON rp.permission_id = p.id
+    WHERE ur.user_id = $1 AND r.tenant_id = $2 
+    AND p.resource = $3 AND p.action = $4
+);

@@ -9,7 +9,6 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"lugia/queries_pregeneration"
 )
 
 const ActivateInvitedUser = `-- name: ActivateInvitedUser :exec
@@ -196,7 +195,7 @@ func (q *Queries) GetInvitationByTokenHash(ctx context.Context, tokenHash string
 }
 
 const GetUsersByTenantID = `-- name: GetUsersByTenantID :many
-SELECT id, email, name, role, status, created_at, updated_at
+SELECT id, email, name, status, created_at, updated_at
 FROM users
 WHERE tenant_id = $1 
 AND (
@@ -216,13 +215,12 @@ type GetUsersByTenantIDParams struct {
 }
 
 type GetUsersByTenantIDRow struct {
-	ID        pgtype.UUID                    `json:"id"`
-	Email     string                         `json:"email"`
-	Name      string                         `json:"name"`
-	Role      queries_pregeneration.UserRole `json:"role"`
-	Status    string                         `json:"status"`
-	CreatedAt pgtype.Timestamptz             `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz             `json:"updated_at"`
+	ID        pgtype.UUID        `json:"id"`
+	Email     string             `json:"email"`
+	Name      string             `json:"name"`
+	Status    string             `json:"status"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
 func (q *Queries) GetUsersByTenantID(ctx context.Context, arg *GetUsersByTenantIDParams) ([]*GetUsersByTenantIDRow, error) {
@@ -243,7 +241,6 @@ func (q *Queries) GetUsersByTenantID(ctx context.Context, arg *GetUsersByTenantI
 			&i.ID,
 			&i.Email,
 			&i.Name,
-			&i.Role,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -259,18 +256,17 @@ func (q *Queries) GetUsersByTenantID(ctx context.Context, arg *GetUsersByTenantI
 }
 
 const InviteUserToTenant = `-- name: InviteUserToTenant :one
-INSERT INTO users (tenant_id, email, password_hash, name, role, status)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO users (tenant_id, email, password_hash, name, status)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id
 `
 
 type InviteUserToTenantParams struct {
-	TenantID     pgtype.UUID                    `json:"tenant_id"`
-	Email        string                         `json:"email"`
-	PasswordHash string                         `json:"password_hash"`
-	Name         string                         `json:"name"`
-	Role         queries_pregeneration.UserRole `json:"role"`
-	Status       string                         `json:"status"`
+	TenantID     pgtype.UUID `json:"tenant_id"`
+	Email        string      `json:"email"`
+	PasswordHash string      `json:"password_hash"`
+	Name         string      `json:"name"`
+	Status       string      `json:"status"`
 }
 
 func (q *Queries) InviteUserToTenant(ctx context.Context, arg *InviteUserToTenantParams) (pgtype.UUID, error) {
@@ -279,7 +275,6 @@ func (q *Queries) InviteUserToTenant(ctx context.Context, arg *InviteUserToTenan
 		arg.Email,
 		arg.PasswordHash,
 		arg.Name,
-		arg.Role,
 		arg.Status,
 	)
 	var id pgtype.UUID
@@ -357,19 +352,32 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg *UpdateUserPasswor
 	return err
 }
 
-const UpdateUserRole = `-- name: UpdateUserRole :exec
-UPDATE users
-SET role = $1, updated_at = CURRENT_TIMESTAMP
-WHERE id = $2 AND tenant_id = $3
+const UserHasPermission = `-- name: UserHasPermission :one
+SELECT EXISTS(
+    SELECT 1 FROM user_roles ur
+    JOIN roles r ON ur.role_id = r.id
+    JOIN role_permissions rp ON r.id = rp.role_id
+    JOIN permissions p ON rp.permission_id = p.id
+    WHERE ur.user_id = $1 AND r.tenant_id = $2 
+    AND p.resource = $3 AND p.action = $4
+)
 `
 
-type UpdateUserRoleParams struct {
-	Role     queries_pregeneration.UserRole `json:"role"`
-	ID       pgtype.UUID                    `json:"id"`
-	TenantID pgtype.UUID                    `json:"tenant_id"`
+type UserHasPermissionParams struct {
+	UserID   pgtype.UUID `json:"user_id"`
+	TenantID pgtype.UUID `json:"tenant_id"`
+	Resource string      `json:"resource"`
+	Action   string      `json:"action"`
 }
 
-func (q *Queries) UpdateUserRole(ctx context.Context, arg *UpdateUserRoleParams) error {
-	_, err := q.db.Exec(ctx, UpdateUserRole, arg.Role, arg.ID, arg.TenantID)
-	return err
+func (q *Queries) UserHasPermission(ctx context.Context, arg *UserHasPermissionParams) (bool, error) {
+	row := q.db.QueryRow(ctx, UserHasPermission,
+		arg.UserID,
+		arg.TenantID,
+		arg.Resource,
+		arg.Action,
+	)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }

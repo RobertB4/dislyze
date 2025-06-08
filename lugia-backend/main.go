@@ -71,19 +71,15 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 			r.Get("/me/verify-change-email", usersHandler.VerifyChangeEmail)
 
 			r.Route("/users", func(r chi.Router) {
-				r.Use(middleware.RequireAdmin)
-
-				r.Get("/", usersHandler.GetUsers)
-				r.Post("/invite", usersHandler.InviteUser)
-				r.Post("/{userID}/resend-invite", usersHandler.ResendInvite)
-				r.Post("/{userID}/delete", usersHandler.DeleteUser)
-				r.Post("/{userID}/permissions", usersHandler.UpdateUserPermissions)
+				r.With(middleware.RequireUsersView(queries)).Get("/", usersHandler.GetUsers)
+				r.With(middleware.RequireUsersCreate(queries)).Post("/invite", usersHandler.InviteUser)
+				r.With(middleware.RequireUsersCreate(queries)).Post("/{userID}/resend-invite", usersHandler.ResendInvite)
+				r.With(middleware.RequireUsersDelete(queries)).Post("/{userID}/delete", usersHandler.DeleteUser)
+				r.With(middleware.RequireUsersUpdate(queries)).Post("/{userID}/permissions", usersHandler.UpdateUserPermissions)
 			})
 
 			r.Route("/tenant", func(r chi.Router) {
-				r.Use(middleware.RequireAdmin)
-
-				r.Post("/change-name", usersHandler.ChangeTenantName)
+				r.With(middleware.RequireTenantUpdate(queries)).Post("/change-name", usersHandler.ChangeTenantName)
 			})
 		})
 	})

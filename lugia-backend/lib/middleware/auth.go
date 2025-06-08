@@ -15,7 +15,6 @@ import (
 	"lugia/lib/logger"
 	"lugia/lib/ratelimit"
 	"lugia/queries"
-	"lugia/queries_pregeneration"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -92,7 +91,6 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 		// 4. We have valid claims (either from initial token or from refresh). Populate context.
 		ctx := context.WithValue(r.Context(), libctx.TenantIDKey, finalClaims.TenantID)
 		ctx = context.WithValue(ctx, libctx.UserIDKey, finalClaims.UserID)
-		ctx = context.WithValue(ctx, libctx.UserRoleKey, queries_pregeneration.UserRole(finalClaims.Role))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -170,7 +168,7 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 		return nil, fmt.Errorf("failed to get tenant: %w", err)
 	}
 
-	newAccessTokenString, newExpiresIn, newAccessTokenClaims, err := jwt.GenerateAccessToken(user.ID, tenant.ID, user.Role, []byte(m.env.JWTSecret))
+	newAccessTokenString, newExpiresIn, newAccessTokenClaims, err := jwt.GenerateAccessToken(user.ID, tenant.ID, []byte(m.env.JWTSecret))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate new access token: %w", err)
 	}

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"lugia/lib/utils"
-	"lugia/queries_pregeneration"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -22,10 +21,9 @@ var (
 )
 
 type Claims struct {
-	UserID   pgtype.UUID                    `json:"user_id"`
-	TenantID pgtype.UUID                    `json:"tenant_id"`
-	Role     queries_pregeneration.UserRole `json:"role"`
-	JTI      pgtype.UUID                    `json:"jti"`
+	UserID   pgtype.UUID `json:"user_id"`
+	TenantID pgtype.UUID `json:"tenant_id"`
+	JTI      pgtype.UUID `json:"jti"`
 	jwt.RegisteredClaims
 }
 
@@ -36,7 +34,7 @@ type TokenPair struct {
 	JTI          pgtype.UUID
 }
 
-func GenerateAccessToken(userID, tenantID pgtype.UUID, role queries_pregeneration.UserRole, secret []byte) (string, int64, *Claims, error) {
+func GenerateAccessToken(userID, tenantID pgtype.UUID, secret []byte) (string, int64, *Claims, error) {
 	if len(secret) == 0 {
 		return "", 0, nil, fmt.Errorf("secret cannot be empty")
 	}
@@ -45,7 +43,6 @@ func GenerateAccessToken(userID, tenantID pgtype.UUID, role queries_pregeneratio
 	claims := &Claims{
 		UserID:   userID,
 		TenantID: tenantID,
-		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(15 * time.Minute)), // Access token expires in 15 minutes
@@ -92,8 +89,8 @@ func GenerateRefreshToken(userID pgtype.UUID, secret []byte) (string, pgtype.UUI
 	return refreshToken, jti, nil
 }
 
-func GenerateTokenPair(userID, tenantID pgtype.UUID, role queries_pregeneration.UserRole, secret []byte) (*TokenPair, error) {
-	accessToken, expiresIn, _, err := GenerateAccessToken(userID, tenantID, role, secret)
+func GenerateTokenPair(userID, tenantID pgtype.UUID, secret []byte) (*TokenPair, error) {
+	accessToken, expiresIn, _, err := GenerateAccessToken(userID, tenantID, secret)
 	if err != nil {
 		return nil, err
 	}

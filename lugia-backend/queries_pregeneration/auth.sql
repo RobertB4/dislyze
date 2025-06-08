@@ -8,10 +8,9 @@ WHERE id = $1;
 
 -- name: CreateTenant :one
 INSERT INTO tenants (
-    name,
-    plan
+    name
 ) VALUES (
-    $1, $2
+    $1
 ) RETURNING *;
 
 -- name: CreateUser :one
@@ -20,10 +19,9 @@ INSERT INTO users (
     email,
     password_hash,
     name,
-    role,
     status
 ) VALUES (
-    $1, $2, $3, $4, $5, $6
+    $1, $2, $3, $4, $5
 ) RETURNING *;
 
 -- name: ExistsUserWithEmail :one

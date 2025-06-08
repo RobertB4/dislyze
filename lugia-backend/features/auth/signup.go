@@ -135,10 +135,7 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequestBody, r *htt
 
 	qtx := h.queries.WithTx(tx)
 
-	tenant, err := qtx.CreateTenant(ctx, &queries.CreateTenantParams{
-		Name: req.CompanyName,
-		Plan: "basic",
-	})
+	tenant, err := qtx.CreateTenant(ctx, req.CompanyName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tenant: %w", err)
 	}
@@ -148,14 +145,13 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequestBody, r *htt
 		Email:        req.Email,
 		PasswordHash: string(hashedPassword),
 		Name:         req.UserName,
-		Role:         "admin",
 		Status:       "active",
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, user.Role, []byte(h.env.JWTSecret))
+	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, []byte(h.env.JWTSecret))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token pair: %w", err)
 	}

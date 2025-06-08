@@ -123,7 +123,6 @@ func (h *UsersHandler) inviteUser(ctx context.Context, req InviteUserRequestBody
 		Email:        req.Email,
 		PasswordHash: string(hashedInitialPassword),
 		Name:         req.Name,
-		Role:         req.Role,
 		Status:       "pending_verification",
 	})
 	if err != nil {

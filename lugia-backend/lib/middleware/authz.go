@@ -4,21 +4,41 @@ import (
 	"fmt"
 	"net/http"
 
-	libctx "lugia/lib/ctx"
 	"lugia/lib/errlib"
-	"lugia/queries_pregeneration"
+	"lugia/lib/permissions"
+	"lugia/queries"
 )
 
-func RequireAdmin(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userRole := libctx.GetUserRole(r.Context())
+func RequirePermission(db *queries.Queries, resource, action string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !permissions.UserHasPermission(r.Context(), db, resource, action) {
+				errlib.LogError(fmt.Errorf("Forbidden: Permission required. resource: %s, action: %s", resource, action))
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
 
-		if userRole != queries_pregeneration.AdminRole {
-			errlib.LogError(fmt.Errorf("Forbidden: Administrator access required. user_role: %s", userRole))
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
 
-		next.ServeHTTP(w, r)
-	})
+func RequireUsersView(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, permissions.ResourceUsers, permissions.ActionView)
+}
+
+func RequireUsersCreate(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, permissions.ResourceUsers, permissions.ActionCreate)
+}
+
+func RequireUsersUpdate(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, permissions.ResourceUsers, permissions.ActionUpdate)
+}
+
+func RequireUsersDelete(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, permissions.ResourceUsers, permissions.ActionDelete)
+}
+
+func RequireTenantUpdate(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, permissions.ResourceTenant, permissions.ActionUpdate)
 }
