@@ -19,7 +19,7 @@ type ErrorResponse struct {
 
 var expectedInviteErrorMessages = map[string]string{
 	"emailConflict": "このメールアドレスは既に使用されています。",
-	"invalidRoles":  "一部の役割が無効です。",
+	"invalidRoles":  "一部のロールが無効です。",
 }
 
 func TestInviteUser_Integration(t *testing.T) {

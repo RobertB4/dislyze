@@ -8,7 +8,7 @@
 		class: customClass = "",
 		"data-testid": dataTestid
 	}: {
-		content: string;
+		content: Snippet;
 		children: Snippet;
 		position?: "top" | "bottom" | "left" | "right";
 		class?: string;
@@ -16,57 +16,95 @@
 	} = $props();
 
 	let showTooltip = $state(false);
+	let triggerElement: HTMLElement;
+	let tooltipStyles = $state("");
+	let arrowStyles = $state("");
 
-	const positionClasses = $derived(() => {
+	const updateTooltipPosition = () => {
+		if (!triggerElement) return;
+
+		const rect = triggerElement.getBoundingClientRect();
+		const spacing = 8;
+		const arrowSize = 6;
+
+		let top: number, left: number;
+		let arrowTop: number, arrowLeft: number;
+
 		switch (position) {
 			case "top":
-				return "bottom-full left-1/2 transform -translate-x-1/2 mb-2";
-			case "bottom":
-				return "top-full left-1/2 transform -translate-x-1/2 mt-2";
-			case "left":
-				return "right-full top-1/2 transform -translate-y-1/2 mr-2";
-			case "right":
-				return "left-full top-1/2 transform -translate-y-1/2 ml-2";
-			default:
-				return "bottom-full left-1/2 transform -translate-x-1/2 mb-2";
-		}
-	});
+				top = rect.top - spacing;
+				left = rect.left + rect.width / 2;
+				tooltipStyles = `top: ${top}px; left: ${left}px; transform: translate(-50%, -100%);`;
 
-	const arrowClasses = $derived(() => {
-		switch (position) {
-			case "top":
-				return "top-full left-1/2 transform -translate-x-1/2 border-l-transparent border-r-transparent border-b-transparent border-t-gray-800";
+				arrowTop = rect.top - spacing / 2 - arrowSize / 2 - 1;
+				arrowLeft = rect.left + rect.width / 2;
+				arrowStyles = `top: ${arrowTop}px; left: ${arrowLeft}px; transform: translate(-50%, -50%) rotate(45deg);`;
+				break;
 			case "bottom":
-				return "bottom-full left-1/2 transform -translate-x-1/2 border-l-transparent border-r-transparent border-t-transparent border-b-gray-800";
+				top = rect.bottom + spacing;
+				left = rect.left + rect.width / 2;
+				tooltipStyles = `top: ${top}px; left: ${left}px; transform: translate(-50%, 0);`;
+
+				arrowTop = rect.bottom + spacing / 2 + arrowSize / 2 + 1;
+				arrowLeft = rect.left + rect.width / 2;
+				arrowStyles = `top: ${arrowTop}px; left: ${arrowLeft}px; transform: translate(-50%, -50%) rotate(225deg);`;
+				break;
 			case "left":
-				return "left-full top-1/2 transform -translate-y-1/2 border-t-transparent border-b-transparent border-r-transparent border-l-gray-800";
+				top = rect.top + rect.height / 2;
+				left = rect.left - spacing;
+				tooltipStyles = `top: ${top}px; left: ${left}px; transform: translate(-100%, -50%);`;
+				// Arrow points right, positioned to overlap with right edge of tooltip
+				arrowTop = rect.top + rect.height / 2;
+				arrowLeft = rect.left - spacing / 2 - arrowSize / 2 - 1;
+				arrowStyles = `top: ${arrowTop}px; left: ${arrowLeft}px; transform: translate(-50%, -50%) rotate(315deg);`;
+				break;
 			case "right":
-				return "right-full top-1/2 transform -translate-y-1/2 border-t-transparent border-b-transparent border-l-transparent border-r-gray-800";
+				top = rect.top + rect.height / 2;
+				left = rect.right + spacing;
+				tooltipStyles = `top: ${top}px; left: ${left}px; transform: translate(0, -50%);`;
+
+				arrowTop = rect.top + rect.height / 2;
+				arrowLeft = rect.right + spacing / 2 + arrowSize / 2 + 1;
+				arrowStyles = `top: ${arrowTop}px; left: ${arrowLeft}px; transform: translate(-50%, -50%) rotate(135deg);`;
+				break;
 			default:
-				return "top-full left-1/2 transform -translate-x-1/2 border-l-transparent border-r-transparent border-b-transparent border-t-gray-800";
+				top = rect.top - spacing;
+				left = rect.left + rect.width / 2;
+				tooltipStyles = `top: ${top}px; left: ${left}px; transform: translate(-50%, -100%);`;
+
+				arrowTop = rect.top - spacing / 2 - arrowSize / 2 - 1;
+				arrowLeft = rect.left + rect.width / 2;
+				arrowStyles = `top: ${arrowTop}px; left: ${arrowLeft}px; transform: translate(-50%, -50%) rotate(45deg);`;
 		}
-	});
+	};
+
+	const handleMouseEnter = () => {
+		showTooltip = true;
+		updateTooltipPosition();
+	};
 </script>
 
 <div
+	bind:this={triggerElement}
 	class="relative inline-block {customClass}"
 	data-testid={dataTestid}
-	onmouseenter={() => (showTooltip = true)}
+	onmouseenter={handleMouseEnter}
 	onmouseleave={() => (showTooltip = false)}
-	onfocus={() => (showTooltip = true)}
+	onfocus={handleMouseEnter}
 	onblur={() => (showTooltip = false)}
 	role="button"
 	tabindex="0"
 >
 	{@render children()}
-
-	{#if showTooltip}
-		<div
-			class="absolute z-50 px-3 py-2 text-sm text-white bg-gray-800 rounded-md shadow-lg whitespace-nowrap {positionClasses()}"
-			role="tooltip"
-		>
-			{content}
-			<div class="absolute w-0 h-0 border-4 {arrowClasses()}"></div>
-		</div>
-	{/if}
 </div>
+
+{#if showTooltip}
+	<div
+		class="fixed z-50 px-3 py-2 text-sm text-white bg-gray-800 rounded-md shadow-lg max-w-xs"
+		style={tooltipStyles}
+		role="tooltip"
+	>
+		{@render content()}
+	</div>
+	<div class="fixed z-50 w-2 h-2 bg-gray-800" style={arrowStyles}></div>
+{/if}

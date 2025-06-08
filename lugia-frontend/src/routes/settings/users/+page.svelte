@@ -13,9 +13,11 @@
 	import { mutationFetch } from "$lib/fetch";
 	import Skeleton from "./Skeleton.svelte";
 	import type { User } from "./+page";
+	import { hasPermission } from "$lib/meCache";
 	import { goto } from "$app/navigation";
 	import Spinner from "$components/Spinner.svelte";
 	import Tooltip from "$components/Tooltip.svelte";
+	import RoleCard from "./RoleCard.svelte";
 
 	let { data: pageData }: { data: PageData } = $props();
 
@@ -93,6 +95,9 @@
 			} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
 				errs.email = "メールアドレスの形式が正しくありません";
 			}
+			if (!values.roleIds || values.roleIds.length === 0) {
+				errs.roleIds = "ロールを選択してください";
+			}
 			return errs;
 		},
 		onSubmit: async (values) => {
@@ -157,12 +162,20 @@
 	const {
 		form: editForm,
 		data: editFormData,
+		errors: editErrors,
 		isSubmitting: isEditing,
 		setInitialValues: setEditFormInitialValues,
 		reset: resetEditForm
 	} = createForm({
 		initialValues: {
 			roleIds: [] as string[]
+		},
+		validate: (values) => {
+			const errs: Record<string, string> = {};
+			if (!values.roleIds || values.roleIds.length === 0) {
+				errs.roleIds = "ロールを選択してください";
+			}
+			return errs;
 		},
 		onSubmit: async (values) => {
 			if (!userToEdit) return;
@@ -177,7 +190,7 @@
 
 			if (success) {
 				await invalidate((u) => u.pathname === "/api/users");
-				toast.show("ユーザーの役割を更新しました。", "success");
+				toast.show("ユーザーのロールを更新しました。", "success");
 				userToEdit = null;
 				resetEditForm();
 			}
@@ -258,14 +271,16 @@
 	}}
 >
 	{#snippet buttons()}
-		<Button
-			type="button"
-			variant="primary"
-			onclick={() => (isSlideoverOpen = true)}
-			data-testid="add-user-button"
-		>
-			ユーザーを追加
-		</Button>
+		{#if hasPermission(pageData.me, "users.create")}
+			<Button
+				type="button"
+				variant="primary"
+				onclick={() => (isSlideoverOpen = true)}
+				data-testid="add-user-button"
+			>
+				ユーザーを追加
+			</Button>
+		{/if}
 	{/snippet}
 
 	{#snippet skeleton()}
@@ -333,23 +348,20 @@
 							variant="underlined"
 						/>
 						<div class="space-y-3">
-							<label class="block text-sm font-medium text-gray-700">役割 (複数選択可)</label>
-							<div class="space-y-2">
+							<div class="block text-sm font-medium text-gray-700">ロール (複数選択可)</div>
+							{#if $errors.roleIds?.[0]}
+								<div class="text-sm text-red-600">{$errors.roleIds[0]}</div>
+							{/if}
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 								{#each roles as role (role.id)}
-									<label class="flex items-center">
-										<input
-											type="checkbox"
-											class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-											checked={isRoleSelected(role.id, $data.roleIds)}
-											onchange={() => {
-												$data.roleIds = toggleRole(role.id, $data.roleIds);
-											}}
-										/>
-										<span class="ml-2 text-sm text-gray-900">{role.name}</span>
-										{#if role.description}
-											<span class="ml-1 text-xs text-gray-500">({role.description})</span>
-										{/if}
-									</label>
+									<RoleCard
+										{role}
+										isSelected={isRoleSelected(role.id, $data.roleIds)}
+										onclick={() => {
+											$data.roleIds = toggleRole(role.id, $data.roleIds);
+										}}
+										data-testid={`role-card-${role.id}`}
+									/>
 								{/each}
 							</div>
 						</div>
@@ -411,26 +423,23 @@
 				>
 					<div class="flex-grow space-y-6">
 						<p data-testid="edit-user-title">
-							<strong>{userToEdit.name}</strong> ({userToEdit.email}) の役割を編集
+							<strong>{userToEdit.name}</strong> ({userToEdit.email}) のロールを編集
 						</p>
 						<div class="space-y-3">
-							<label class="block text-sm font-medium text-gray-700">役割 (複数選択可)</label>
-							<div class="space-y-2">
+							<div class="block text-sm font-medium text-gray-700">ロール (複数選択可)</div>
+							{#if $editErrors.roleIds?.[0]}
+								<div class="text-sm text-red-600">{$editErrors.roleIds[0]}</div>
+							{/if}
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 								{#each roles as role (role.id)}
-									<label class="flex items-center">
-										<input
-											type="checkbox"
-											class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-											checked={isRoleSelected(role.id, $editFormData.roleIds)}
-											onchange={() => {
-												$editFormData.roleIds = toggleRole(role.id, $editFormData.roleIds);
-											}}
-										/>
-										<span class="ml-2 text-sm text-gray-900">{role.name}</span>
-										{#if role.description}
-											<span class="ml-1 text-xs text-gray-500">({role.description})</span>
-										{/if}
-									</label>
+									<RoleCard
+										{role}
+										isSelected={isRoleSelected(role.id, $editFormData.roleIds)}
+										onclick={() => {
+											$editFormData.roleIds = toggleRole(role.id, $editFormData.roleIds);
+										}}
+										data-testid={`edit-role-card-${role.id}`}
+									/>
 								{/each}
 							</div>
 						</div>
@@ -480,7 +489,7 @@
 										<th
 											scope="col"
 											class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-											data-testid="user-table-header-role">役割</th
+											data-testid="user-table-header-role">ロール</th
 										>
 										<th
 											scope="col"
@@ -530,23 +539,35 @@
 												data-testid={`user-role-${user.id}`}
 											>
 												{#if user.roles.length === 0}
-													<span class="text-gray-400">役割なし</span>
+													<span class="text-gray-400">ロールなし</span>
 												{:else if user.roles.length === 1}
 													{user.roles[0].name}
 												{:else}
 													<span>
 														{user.roles[0].name}
-														<Tooltip
-															content={user.roles
-																.slice(1)
-																.map((role: { name: string }) => role.name)
-																.join("、")}
-															class="ml-2"
-														>
+														<Tooltip class="ml-2">
+															{#snippet content()}
+																{user.roles
+																	.slice(1)
+																	.map((role: { name: string }) => role.name)
+																	.join("、")}
+															{/snippet}
+
 															<span
-																class="text-gray-400 cursor-help border-b border-dotted border-gray-300"
+																class="text-gray-400 cursor-help border-b border-dotted border-gray-300 flex items-center"
 															>
 																他{user.roles.length - 1}件
+																<svg
+																	class="h-5 w-5 text-gray-800 ml-1"
+																	fill="currentColor"
+																	viewBox="0 0 20 20"
+																>
+																	<path
+																		fill-rule="evenodd"
+																		d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+																		clip-rule="evenodd"
+																	></path>
+																</svg>
 															</span>
 														</Tooltip>
 													</span>
@@ -557,33 +578,37 @@
 												data-testid={`user-actions-${user.id}`}
 											>
 												{#if pageData.me.user_id !== user.id}
-													{#if user.status === "pending_verification"}
+													{#if hasPermission(pageData.me, "users.delete")}
+														{#if user.status === "pending_verification"}
+															<Button
+																variant="link"
+																class="mr-4 text-sm text-red-600 hover:text-red-900"
+																onclick={() => handleDeleteUser(user)}
+																data-testid={`cancel-invite-button-${user.id}`}
+															>
+																招待をキャンセル
+															</Button>
+														{:else}
+															<Button
+																variant="link"
+																class="mr-4 text-sm text-red-600 hover:text-red-900"
+																onclick={() => handleDeleteUser(user)}
+																data-testid={`delete-user-button-${user.id}`}
+															>
+																削除
+															</Button>
+														{/if}
+													{/if}
+													{#if hasPermission(pageData.me, "users.update")}
 														<Button
 															variant="link"
-															class="mr-4 text-sm text-red-600 hover:text-red-900"
-															onclick={() => handleDeleteUser(user)}
-															data-testid={`cancel-invite-button-${user.id}`}
+															class="text-indigo-600 hover:text-indigo-900"
+															onclick={() => handleEditModalOpen(user)}
+															data-testid={`edit-permissions-button-${user.id}`}
 														>
-															招待をキャンセル
-														</Button>
-													{:else}
-														<Button
-															variant="link"
-															class="mr-4 text-sm text-red-600 hover:text-red-900"
-															onclick={() => handleDeleteUser(user)}
-															data-testid={`delete-user-button-${user.id}`}
-														>
-															削除
+															権限編集<span class="sr-only">, {user.name}</span>
 														</Button>
 													{/if}
-													<Button
-														variant="link"
-														class="text-indigo-600 hover:text-indigo-900"
-														onclick={() => handleEditModalOpen(user)}
-														data-testid={`edit-permissions-button-${user.id}`}
-													>
-														権限編集<span class="sr-only">, {user.name}</span>
-													</Button>
 												{/if}
 											</td>
 										</tr>

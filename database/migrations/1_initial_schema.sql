@@ -40,7 +40,7 @@ CREATE INDEX idx_permissions_resource ON permissions(resource);
 INSERT INTO permissions (resource, action, description) VALUES
 ('users', 'view', 'ユーザー一覧の閲覧'),
 ('users', 'create', 'ユーザーの招待'),
-('users', 'update', 'ユーザー権限の変更'),
+('users', 'update', 'ユーザーの権限変更'),
 ('users', 'delete', 'ユーザーの削除'),
 ('tenant', 'update', 'テナント設定の変更');
 

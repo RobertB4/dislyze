@@ -142,7 +142,7 @@ func (h *UsersHandler) inviteUser(ctx context.Context, req InviteUserRequestBody
 		return errlib.New(fmt.Errorf("InviteUser: failed to validate roles: %w", err), http.StatusInternalServerError, "")
 	}
 	if len(validRoleIDs) != len(roleIDs) {
-		return errlib.New(fmt.Errorf("InviteUser: some role IDs do not belong to tenant"), http.StatusBadRequest, "一部の役割が無効です。")
+		return errlib.New(fmt.Errorf("InviteUser: some role IDs do not belong to tenant"), http.StatusBadRequest, "一部のロールが無効です。")
 	}
 
 	for _, roleID := range roleIDs {
