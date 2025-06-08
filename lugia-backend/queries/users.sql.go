@@ -444,20 +444,26 @@ func (q *Queries) GetUserRolesWithDetails(ctx context.Context, arg *GetUserRoles
 }
 
 const GetUsersWithRoles = `-- name: GetUsersWithRoles :many
+WITH paginated_users AS (
+    SELECT users.id
+    FROM users
+    WHERE users.tenant_id = $1
+    AND (
+        $2 = '' OR 
+        users.name ILIKE '%' || $2 || '%' OR 
+        users.email ILIKE '%' || $2 || '%'
+    )
+    ORDER BY users.created_at DESC
+    LIMIT $4 OFFSET $3
+)
 SELECT 
     users.id, users.email, users.name, users.status, users.created_at, users.updated_at,
     roles.id as role_id, roles.name as role_name, roles.description as role_description
 FROM users
+JOIN paginated_users pu ON users.id = pu.id
 LEFT JOIN user_roles ON users.id = user_roles.user_id AND users.tenant_id = user_roles.tenant_id
 LEFT JOIN roles ON user_roles.role_id = roles.id
-WHERE users.tenant_id = $1
-AND (
-    $2 = '' OR 
-    users.name ILIKE '%' || $2 || '%' OR 
-    users.email ILIKE '%' || $2 || '%'
-)
 ORDER BY users.created_at DESC, users.id, roles.name
-LIMIT $4 OFFSET $3
 `
 
 type GetUsersWithRolesParams struct {

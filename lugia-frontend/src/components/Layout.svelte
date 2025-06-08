@@ -9,6 +9,7 @@
 	import type { Snippet } from "svelte";
 	import { safeGoto } from "$lib/routing";
 	import type { Me } from "$lib/meCache";
+	import { hasPermission } from "$lib/meCache";
 
 	let isMobileNavigationOpen = $state(false);
 
@@ -535,7 +536,7 @@
 		</div>
 
 		<nav class="px-2 pb-2">
-			{#if me.user_role == "admin"}
+			{#if hasPermission(me, "users.view")}
 				<a
 					data-testid="navigation-settings"
 					href="/settings/users"

@@ -9,7 +9,6 @@
 	import { toast } from "$components/Toast/toast";
 	import { invalidate } from "$app/navigation";
 	import Badge from "$components/Badge.svelte";
-	import Select from "$components/Select.svelte";
 	import Alert from "$components/Alert.svelte";
 	import { mutationFetch } from "$lib/fetch";
 	import Skeleton from "./Skeleton.svelte";
@@ -78,7 +77,7 @@
 		initialValues: {
 			email: "",
 			name: "",
-			role: "editor"
+			roleIds: [] as string[]
 		},
 		validate: (values) => {
 			const errs: Record<string, string> = {};
@@ -101,7 +100,11 @@
 				headers: {
 					"Content-Type": "application/json"
 				},
-				body: JSON.stringify(values)
+				body: JSON.stringify({
+					email: values.email,
+					name: values.name,
+					role_ids: values.roleIds
+				})
 			});
 
 			if (success) {
@@ -158,7 +161,7 @@
 		reset: resetEditForm
 	} = createForm({
 		initialValues: {
-			role: "editor"
+			roleIds: [] as string[]
 		},
 		onSubmit: async (values) => {
 			if (!userToEdit) return;
@@ -168,7 +171,7 @@
 				headers: {
 					"Content-Type": "application/json"
 				},
-				body: JSON.stringify({ role: values.role })
+				body: JSON.stringify({ role_ids: values.roleIds })
 			});
 
 			if (success) {
@@ -191,7 +194,7 @@
 	};
 
 	const handleEditModalOpen = (user: User) => {
-		setEditFormInitialValues({ role: user.role });
+		setEditFormInitialValues({ roleIds: user.roles.map((role) => role.id) });
 		userToEdit = user;
 	};
 
@@ -232,17 +235,25 @@
 		}
 	};
 
-	const roleMap: Record<string, string> = {
-		admin: "管理者",
-		editor: "編集者"
-	};
+	function isRoleSelected(roleId: string, selectedRoleIds: string[]): boolean {
+		return selectedRoleIds.includes(roleId);
+	}
+
+	function toggleRole(roleId: string, currentRoleIds: string[]): string[] {
+		if (currentRoleIds.includes(roleId)) {
+			return currentRoleIds.filter((id) => id !== roleId);
+		} else {
+			return [...currentRoleIds, roleId];
+		}
+	}
 </script>
 
 <Layout
 	me={pageData.me}
 	pageTitle="ユーザー管理"
 	promises={{
-		usersResponse: pageData.usersPromise
+		usersResponse: pageData.usersPromise,
+		rolesResponse: pageData.rolesPromise
 	}}
 >
 	{#snippet buttons()}
@@ -260,8 +271,9 @@
 		<Skeleton />
 	{/snippet}
 
-	{#snippet children({ usersResponse })}
+	{#snippet children({ usersResponse, rolesResponse })}
 		{@const { users, pagination } = usersResponse}
+		{@const { roles } = rolesResponse}
 
 		<SettingsTabs me={pageData.me} />
 
@@ -319,16 +331,27 @@
 							placeholder="氏名"
 							variant="underlined"
 						/>
-						<Select
-							id="role"
-							name="role"
-							label="役割"
-							options={[
-								{ value: "editor", label: "編集者" },
-								{ value: "admin", label: "管理者" }
-							]}
-							bind:value={$data.role}
-						/>
+						<div class="space-y-3">
+							<label class="block text-sm font-medium text-gray-700">役割 (複数選択可)</label>
+							<div class="space-y-2">
+								{#each roles as role (role.id)}
+									<label class="flex items-center">
+										<input
+											type="checkbox"
+											class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+											checked={isRoleSelected(role.id, $data.roleIds)}
+											onchange={() => {
+												$data.roleIds = toggleRole(role.id, $data.roleIds);
+											}}
+										/>
+										<span class="ml-2 text-sm text-gray-900">{role.name}</span>
+										{#if role.description}
+											<span class="ml-1 text-xs text-gray-500">({role.description})</span>
+										{/if}
+									</label>
+								{/each}
+							</div>
+						</div>
 					</div>
 				</Slideover>
 			</form>
@@ -389,16 +412,27 @@
 						<p data-testid="edit-user-title">
 							<strong>{userToEdit.name}</strong> ({userToEdit.email}) の役割を編集
 						</p>
-						<Select
-							id="edit-role"
-							name="role"
-							label="役割"
-							options={[
-								{ value: "editor", label: roleMap["editor"] },
-								{ value: "admin", label: roleMap["admin"] }
-							]}
-							bind:value={$editFormData.role}
-						/>
+						<div class="space-y-3">
+							<label class="block text-sm font-medium text-gray-700">役割 (複数選択可)</label>
+							<div class="space-y-2">
+								{#each roles as role (role.id)}
+									<label class="flex items-center">
+										<input
+											type="checkbox"
+											class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+											checked={isRoleSelected(role.id, $editFormData.roleIds)}
+											onchange={() => {
+												$editFormData.roleIds = toggleRole(role.id, $editFormData.roleIds);
+											}}
+										/>
+										<span class="ml-2 text-sm text-gray-900">{role.name}</span>
+										{#if role.description}
+											<span class="ml-1 text-xs text-gray-500">({role.description})</span>
+										{/if}
+									</label>
+								{/each}
+							</div>
+						</div>
 					</div>
 				</Slideover>
 			</form>
@@ -494,7 +528,19 @@
 												class="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
 												data-testid={`user-role-${user.id}`}
 											>
-												{roleMap[user.role]}
+												{#if user.roles.length === 0}
+													<span class="text-gray-400">役割なし</span>
+												{:else if user.roles.length === 1}
+													{user.roles[0].name}
+												{:else}
+													<div class="space-y-1">
+														{#each user.roles as role (role.id)}
+															<div class="inline-block">
+																<Badge color="orange" class="mr-1 mb-1">{role.name}</Badge>
+															</div>
+														{/each}
+													</div>
+												{/if}
 											</td>
 											<td
 												class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6"

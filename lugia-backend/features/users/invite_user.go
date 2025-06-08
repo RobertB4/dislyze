@@ -23,19 +23,17 @@ import (
 	"lugia/lib/responder"
 	"lugia/lib/sendgridlib"
 	"lugia/queries"
-	"lugia/queries_pregeneration"
 )
 
 type InviteUserRequestBody struct {
-	Email string                         `json:"email"`
-	Name  string                         `json:"name"`
-	Role  queries_pregeneration.UserRole `json:"role"`
+	Email   string   `json:"email"`
+	Name    string   `json:"name"`
+	RoleIDs []string `json:"role_ids"`
 }
 
 func (r *InviteUserRequestBody) Validate() error {
 	r.Email = strings.TrimSpace(r.Email)
 	r.Name = strings.TrimSpace(r.Name)
-	r.Role = queries_pregeneration.UserRole(strings.TrimSpace(strings.ToLower(r.Role.String())))
 
 	if r.Email == "" {
 		return fmt.Errorf("email is required")
@@ -46,11 +44,8 @@ func (r *InviteUserRequestBody) Validate() error {
 	if r.Name == "" {
 		return fmt.Errorf("name is required and cannot be only whitespace")
 	}
-	if r.Role == "" {
-		return fmt.Errorf("role is required")
-	}
-	if r.Role != "admin" && r.Role != "editor" {
-		return fmt.Errorf("role is invalid, must be 'admin' or 'editor'")
+	if len(r.RoleIDs) == 0 {
+		return fmt.Errorf("at least one role is required")
 	}
 	return nil
 }
@@ -127,6 +122,38 @@ func (h *UsersHandler) inviteUser(ctx context.Context, req InviteUserRequestBody
 	})
 	if err != nil {
 		return errlib.New(fmt.Errorf("InviteUser: InviteUserToTenant failed: %w", err), http.StatusInternalServerError, "")
+	}
+
+	roleIDs := make([]pgtype.UUID, len(req.RoleIDs))
+	for i, roleIDStr := range req.RoleIDs {
+		var roleID pgtype.UUID
+		err := roleID.Scan(roleIDStr)
+		if err != nil {
+			return errlib.New(fmt.Errorf("InviteUser: invalid role ID format %s: %w", roleIDStr, err), http.StatusBadRequest, "")
+		}
+		roleIDs[i] = roleID
+	}
+
+	validRoleIDs, err := qtx.ValidateRolesBelongToTenant(ctx, &queries.ValidateRolesBelongToTenantParams{
+		Column1:  roleIDs,
+		TenantID: tenantID,
+	})
+	if err != nil {
+		return errlib.New(fmt.Errorf("InviteUser: failed to validate roles: %w", err), http.StatusInternalServerError, "")
+	}
+	if len(validRoleIDs) != len(roleIDs) {
+		return errlib.New(fmt.Errorf("InviteUser: some role IDs do not belong to tenant"), http.StatusBadRequest, "一部の役割が無効です。")
+	}
+
+	for _, roleID := range roleIDs {
+		err = qtx.AssignRoleToUser(ctx, &queries.AssignRoleToUserParams{
+			UserID:   createdUserID,
+			RoleID:   roleID,
+			TenantID: tenantID,
+		})
+		if err != nil {
+			return errlib.New(fmt.Errorf("InviteUser: failed to assign role %s to user: %w", roleID.String(), err), http.StatusInternalServerError, "")
+		}
 	}
 
 	tokenBytes := make([]byte, 32)

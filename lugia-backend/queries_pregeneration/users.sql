@@ -119,20 +119,26 @@ JOIN roles ON user_roles.role_id = roles.id
 WHERE user_roles.user_id = $1 AND user_roles.tenant_id = $2;
 
 -- name: GetUsersWithRoles :many
+WITH paginated_users AS (
+    SELECT users.id
+    FROM users
+    WHERE users.tenant_id = @tenant_id
+    AND (
+        @search_term = '' OR 
+        users.name ILIKE '%' || @search_term || '%' OR 
+        users.email ILIKE '%' || @search_term || '%'
+    )
+    ORDER BY users.created_at DESC
+    LIMIT @limit_count OFFSET @offset_count
+)
 SELECT 
     users.id, users.email, users.name, users.status, users.created_at, users.updated_at,
     roles.id as role_id, roles.name as role_name, roles.description as role_description
 FROM users
+JOIN paginated_users pu ON users.id = pu.id
 LEFT JOIN user_roles ON users.id = user_roles.user_id AND users.tenant_id = user_roles.tenant_id
 LEFT JOIN roles ON user_roles.role_id = roles.id
-WHERE users.tenant_id = @tenant_id
-AND (
-    @search_term = '' OR 
-    users.name ILIKE '%' || @search_term || '%' OR 
-    users.email ILIKE '%' || @search_term || '%'
-)
-ORDER BY users.created_at DESC, users.id, roles.name
-LIMIT @limit_count OFFSET @offset_count;
+ORDER BY users.created_at DESC, users.id, roles.name;
 
 -- name: GetTenantRolesWithPermissions :many
 SELECT 

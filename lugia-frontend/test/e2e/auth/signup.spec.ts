@@ -101,7 +101,9 @@ test.describe("Auth - Signup Page", () => {
 		// Wait for the /api/me call that happens after successful registration and login
 		// This ensures cookies are set and the frontend app has processed the login.
 		await page.waitForResponse(
-			(response) => response.url().includes("/api/me") && response.status() === 200,
+			(response) => {
+				return response.url().includes("/api/me") && response.status() === 200;
+			},
 			{ timeout: 15000 }
 		);
 

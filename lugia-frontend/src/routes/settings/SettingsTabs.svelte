@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/state";
 	import type { Me } from "$lib/meCache";
+	import { hasPermission } from "$lib/meCache";
 
 	let { me }: { me: Me } = $props();
 
@@ -10,7 +11,7 @@
 			href: "/settings/profile",
 			id: "profile"
 		},
-		...(me.user_role === "admin"
+		...(hasPermission(me, "users.view")
 			? [
 					{
 						name: "ユーザー管理",

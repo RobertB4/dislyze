@@ -1,14 +1,31 @@
 import type { PageLoad } from "./$types";
 import { loadFunctionFetch } from "$lib/fetch";
 
+export type UserRole = {
+	id: string;
+	name: string;
+	description: string;
+};
+
 export type User = {
 	id: string;
 	email: string;
 	name: string;
-	role: "admin" | "editor";
+	roles: UserRole[];
 	status: string;
 	created_at: string;
 	updated_at: string;
+};
+
+export type RoleInfo = {
+	id: string;
+	name: string;
+	description: string;
+	permissions: string[];
+};
+
+export type GetTenantRolesResponse = {
+	roles: RoleInfo[];
 };
 
 export type PaginationMetadata = {
@@ -43,8 +60,14 @@ export const load: PageLoad = ({ fetch, url }) => {
 		`/api/users?${queryParams.toString()}`
 	).then((res) => res.json());
 
+	const rolesPromise: Promise<GetTenantRolesResponse> = loadFunctionFetch(
+		fetch,
+		`/api/tenant/roles`
+	).then((res) => res.json());
+
 	return {
 		usersPromise,
+		rolesPromise,
 		currentPage: page,
 		currentLimit: limit,
 		currentSearch: search
