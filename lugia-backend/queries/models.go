@@ -70,6 +70,7 @@ type Role struct {
 type RolePermission struct {
 	RoleID       pgtype.UUID        `json:"role_id"`
 	PermissionID pgtype.UUID        `json:"permission_id"`
+	TenantID     pgtype.UUID        `json:"tenant_id"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
 
@@ -96,5 +97,6 @@ type User struct {
 type UserRole struct {
 	UserID    pgtype.UUID        `json:"user_id"`
 	RoleID    pgtype.UUID        `json:"role_id"`
+	TenantID  pgtype.UUID        `json:"tenant_id"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }

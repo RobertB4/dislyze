@@ -27,6 +27,12 @@ func (q *Queries) ActivateInvitedUser(ctx context.Context, arg *ActivateInvitedU
 	return err
 }
 
+type AddRolesToUserParams struct {
+	UserID   pgtype.UUID `json:"user_id"`
+	RoleID   pgtype.UUID `json:"role_id"`
+	TenantID pgtype.UUID `json:"tenant_id"`
+}
+
 const CountUsersByTenantID = `-- name: CountUsersByTenantID :one
 SELECT COUNT(*)
 FROM users
@@ -194,6 +200,36 @@ func (q *Queries) GetInvitationByTokenHash(ctx context.Context, tokenHash string
 	return &i, err
 }
 
+const GetUserRoleIDs = `-- name: GetUserRoleIDs :many
+SELECT role_id FROM user_roles
+WHERE user_id = $1 AND tenant_id = $2
+`
+
+type GetUserRoleIDsParams struct {
+	UserID   pgtype.UUID `json:"user_id"`
+	TenantID pgtype.UUID `json:"tenant_id"`
+}
+
+func (q *Queries) GetUserRoleIDs(ctx context.Context, arg *GetUserRoleIDsParams) ([]pgtype.UUID, error) {
+	rows, err := q.db.Query(ctx, GetUserRoleIDs, arg.UserID, arg.TenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []pgtype.UUID{}
+	for rows.Next() {
+		var role_id pgtype.UUID
+		if err := rows.Scan(&role_id); err != nil {
+			return nil, err
+		}
+		items = append(items, role_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetUsersByTenantID = `-- name: GetUsersByTenantID :many
 SELECT id, email, name, status, created_at, updated_at
 FROM users
@@ -304,6 +340,22 @@ func (q *Queries) MarkInvitationTokenAsUsed(ctx context.Context, id pgtype.UUID)
 	return err
 }
 
+const RemoveRolesFromUser = `-- name: RemoveRolesFromUser :exec
+DELETE FROM user_roles
+WHERE user_id = $1 AND tenant_id = $2 AND role_id = ANY($3::uuid[])
+`
+
+type RemoveRolesFromUserParams struct {
+	UserID   pgtype.UUID   `json:"user_id"`
+	TenantID pgtype.UUID   `json:"tenant_id"`
+	Column3  []pgtype.UUID `json:"column_3"`
+}
+
+func (q *Queries) RemoveRolesFromUser(ctx context.Context, arg *RemoveRolesFromUserParams) error {
+	_, err := q.db.Exec(ctx, RemoveRolesFromUser, arg.UserID, arg.TenantID, arg.Column3)
+	return err
+}
+
 const UpdateUserEmail = `-- name: UpdateUserEmail :exec
 UPDATE users
 SET email = $1, updated_at = CURRENT_TIMESTAMP
@@ -354,12 +406,11 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg *UpdateUserPasswor
 
 const UserHasPermission = `-- name: UserHasPermission :one
 SELECT EXISTS(
-    SELECT 1 FROM user_roles ur
-    JOIN roles r ON ur.role_id = r.id
-    JOIN role_permissions rp ON r.id = rp.role_id
-    JOIN permissions p ON rp.permission_id = p.id
-    WHERE ur.user_id = $1 AND r.tenant_id = $2 
-    AND p.resource = $3 AND p.action = $4
+    SELECT 1 FROM user_roles
+    JOIN role_permissions ON user_roles.role_id = role_permissions.role_id
+    JOIN permissions ON role_permissions.permission_id = permissions.id
+    WHERE user_roles.user_id = $1 AND user_roles.tenant_id = $2 
+    AND permissions.resource = $3 AND permissions.action = $4
 )
 `
 
@@ -380,4 +431,34 @@ func (q *Queries) UserHasPermission(ctx context.Context, arg *UserHasPermissionP
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const ValidateRolesBelongToTenant = `-- name: ValidateRolesBelongToTenant :many
+SELECT id FROM roles 
+WHERE id = ANY($1::uuid[]) AND tenant_id = $2
+`
+
+type ValidateRolesBelongToTenantParams struct {
+	Column1  []pgtype.UUID `json:"column_1"`
+	TenantID pgtype.UUID   `json:"tenant_id"`
+}
+
+func (q *Queries) ValidateRolesBelongToTenant(ctx context.Context, arg *ValidateRolesBelongToTenantParams) ([]pgtype.UUID, error) {
+	rows, err := q.db.Query(ctx, ValidateRolesBelongToTenant, arg.Column1, arg.TenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []pgtype.UUID{}
+	for rows.Next() {
+		var id pgtype.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

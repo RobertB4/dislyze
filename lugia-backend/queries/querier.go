@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	ActivateInvitedUser(ctx context.Context, arg *ActivateInvitedUserParams) error
+	AddRolesToUser(ctx context.Context, arg []*AddRolesToUserParams) (int64, error)
 	CountUsersByTenantID(ctx context.Context, arg *CountUsersByTenantIDParams) (int64, error)
 	CreateEmailChangeToken(ctx context.Context, arg *CreateEmailChangeTokenParams) error
 	CreateInvitationToken(ctx context.Context, arg *CreateInvitationTokenParams) (*InvitationToken, error)
@@ -34,11 +35,13 @@ type Querier interface {
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error)
+	GetUserRoleIDs(ctx context.Context, arg *GetUserRoleIDsParams) ([]pgtype.UUID, error)
 	GetUsersByTenantID(ctx context.Context, arg *GetUsersByTenantIDParams) ([]*GetUsersByTenantIDRow, error)
 	InviteUserToTenant(ctx context.Context, arg *InviteUserToTenantParams) (pgtype.UUID, error)
 	MarkEmailChangeTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	MarkInvitationTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	MarkPasswordResetTokenAsUsed(ctx context.Context, id pgtype.UUID) error
+	RemoveRolesFromUser(ctx context.Context, arg *RemoveRolesFromUserParams) error
 	RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error
 	UpdateRefreshTokenUsed(ctx context.Context, jti pgtype.UUID) error
 	UpdateTenantName(ctx context.Context, arg *UpdateTenantNameParams) error
@@ -46,6 +49,7 @@ type Querier interface {
 	UpdateUserName(ctx context.Context, arg *UpdateUserNameParams) error
 	UpdateUserPassword(ctx context.Context, arg *UpdateUserPasswordParams) error
 	UserHasPermission(ctx context.Context, arg *UserHasPermissionParams) (bool, error)
+	ValidateRolesBelongToTenant(ctx context.Context, arg *ValidateRolesBelongToTenantParams) ([]pgtype.UUID, error)
 }
 
 var _ Querier = (*Queries)(nil)

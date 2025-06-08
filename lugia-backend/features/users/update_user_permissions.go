@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -13,20 +12,15 @@ import (
 	libctx "lugia/lib/ctx"
 	"lugia/lib/errlib"
 	"lugia/lib/responder"
-	"lugia/queries_pregeneration"
 )
 
-type UpdateUserRoleRequestBody struct {
-	Role queries_pregeneration.UserRole `json:"role"`
+type UpdateUserRolesRequestBody struct {
+	RoleIDs []string `json:"role_ids"`
 }
 
-func (r *UpdateUserRoleRequestBody) Validate() error {
-	r.Role = queries_pregeneration.UserRole(strings.TrimSpace(strings.ToLower(string(r.Role))))
-	if r.Role == "" {
-		return fmt.Errorf("role is required")
-	}
-	if r.Role != queries_pregeneration.UserRole("admin") && r.Role != queries_pregeneration.UserRole("editor") {
-		return fmt.Errorf("invalid role specified, must be 'admin' or 'editor'")
+func (r *UpdateUserRolesRequestBody) Validate() error {
+	if len(r.RoleIDs) == 0 {
+		return fmt.Errorf("ユーザーには最低1つの権限が必要です")
 	}
 	return nil
 }
@@ -45,7 +39,7 @@ func (h *UsersHandler) UpdateUserPermissions(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var req UpdateUserRoleRequestBody
+	var req UpdateUserRolesRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserPermissions: failed to decode request: %w", err), http.StatusBadRequest, ""))
 		return
@@ -66,7 +60,7 @@ func (h *UsersHandler) UpdateUserPermissions(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *UsersHandler) updateUserPermissions(ctx context.Context, targetUserID pgtype.UUID, req UpdateUserRoleRequestBody) error {
+func (h *UsersHandler) updateUserPermissions(ctx context.Context, targetUserID pgtype.UUID, req UpdateUserRolesRequestBody) error {
 	requestingUserID := libctx.GetUserID(ctx)
 	requestingTenantID := libctx.GetTenantID(ctx)
 
@@ -88,10 +82,13 @@ func (h *UsersHandler) updateUserPermissions(ctx context.Context, targetUserID p
 
 	// TODO: Implement role assignment using new role-based permission system
 	// This needs to:
-	// 1. Remove user from current roles
-	// 2. Add user to new role based on req.Role
+	// 1. Validate role IDs belong to tenant
+	// 2. Get current role IDs for user
+	// 3. Calculate differences (toAdd, toRemove)
+	// 4. Remove roles in transaction
+	// 5. Add roles in transaction
 	// For now, return success to allow compilation
-	_ = req.Role // Acknowledge the parameter to avoid unused variable error
+	_ = req.RoleIDs // Acknowledge the parameter to avoid unused variable error
 
 	return nil
 }

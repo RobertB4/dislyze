@@ -94,10 +94,25 @@ WHERE id = $2;
 
 -- name: UserHasPermission :one
 SELECT EXISTS(
-    SELECT 1 FROM user_roles ur
-    JOIN roles r ON ur.role_id = r.id
-    JOIN role_permissions rp ON r.id = rp.role_id
-    JOIN permissions p ON rp.permission_id = p.id
-    WHERE ur.user_id = $1 AND r.tenant_id = $2 
-    AND p.resource = $3 AND p.action = $4
+    SELECT 1 FROM user_roles
+    JOIN role_permissions ON user_roles.role_id = role_permissions.role_id
+    JOIN permissions ON role_permissions.permission_id = permissions.id
+    WHERE user_roles.user_id = $1 AND user_roles.tenant_id = $2 
+    AND permissions.resource = $3 AND permissions.action = $4
 );
+
+-- name: GetUserRoleIDs :many
+SELECT role_id FROM user_roles
+WHERE user_id = $1 AND tenant_id = $2;
+
+-- name: AddRolesToUser :copyfrom
+INSERT INTO user_roles (user_id, role_id, tenant_id)
+VALUES ($1, $2, $3);
+
+-- name: RemoveRolesFromUser :exec
+DELETE FROM user_roles
+WHERE user_id = $1 AND tenant_id = $2 AND role_id = ANY($3::uuid[]);
+
+-- name: ValidateRolesBelongToTenant :many
+SELECT id FROM roles 
+WHERE id = ANY($1::uuid[]) AND tenant_id = $2;

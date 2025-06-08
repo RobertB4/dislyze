@@ -39,11 +39,13 @@ CREATE INDEX idx_permissions_resource ON permissions(resource);
 CREATE TABLE role_permissions (
     role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
     permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (role_id, permission_id)
 );
 CREATE INDEX idx_role_permissions_role_id ON role_permissions(role_id);
 CREATE INDEX idx_role_permissions_permission_id ON role_permissions(permission_id);
+CREATE INDEX idx_role_permissions_tenant_id ON role_permissions(tenant_id);
 
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -62,11 +64,13 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE TABLE user_roles (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, role_id)
 );
 CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
 CREATE INDEX idx_user_roles_role_id ON user_roles(role_id);
+CREATE INDEX idx_user_roles_tenant_id ON user_roles(tenant_id);
 
 CREATE TABLE refresh_tokens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -164,8 +168,10 @@ DROP INDEX IF EXISTS idx_email_change_tokens_user_id;
 DROP INDEX IF EXISTS idx_invitation_tokens_email_tenant;
 DROP INDEX IF EXISTS idx_invitation_tokens_expires_at;
 DROP INDEX IF EXISTS idx_invitation_tokens_token_hash;
+DROP INDEX IF EXISTS idx_user_roles_tenant_id;
 DROP INDEX IF EXISTS idx_user_roles_role_id;
 DROP INDEX IF EXISTS idx_user_roles_user_id;
+DROP INDEX IF EXISTS idx_role_permissions_tenant_id;
 DROP INDEX IF EXISTS idx_role_permissions_permission_id;
 DROP INDEX IF EXISTS idx_role_permissions_role_id;
 DROP INDEX IF EXISTS idx_permissions_resource;
