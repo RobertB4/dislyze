@@ -99,7 +99,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		Value:    tokenPair.AccessToken,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   h.env.IsCookieSecure(),
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   int(tokenPair.ExpiresIn),
 	})
@@ -109,7 +109,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		Value:    tokenPair.RefreshToken,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   h.env.IsCookieSecure(),
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   7 * 24 * 60 * 60, // 7 days
 	})

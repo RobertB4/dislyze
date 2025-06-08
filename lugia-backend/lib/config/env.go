@@ -64,3 +64,8 @@ func LoadEnv() (*Env, error) {
 
 	return env, nil
 }
+
+// Returns false for local and e2e environments, true for all others
+func (e *Env) IsCookieSecure() bool {
+	return e.AppEnv != "local" && e.AppEnv != "e2e"
+}

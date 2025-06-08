@@ -10,7 +10,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   h.env.IsCookieSecure(),
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   -1,
 	})
@@ -20,7 +20,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   h.env.IsCookieSecure(),
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   -1,
 	})

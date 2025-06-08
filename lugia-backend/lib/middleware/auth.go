@@ -198,7 +198,7 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 		Value:    newAccessTokenString,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   m.env.IsCookieSecure(),
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   int(newExpiresIn),
 	})
@@ -208,7 +208,7 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 		Value:    newRefreshTokenString,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   m.env.IsCookieSecure(),
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   7 * 24 * 60 * 60, // 7 days
 	})
