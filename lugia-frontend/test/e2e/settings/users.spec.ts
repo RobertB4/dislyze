@@ -262,7 +262,7 @@ test.describe("Settings - Users Page", () => {
 				page.getByTestId(`user-row-${TestUsersData.suspended_editor.userID}`)
 			).toBeVisible();
 			await expect(
-				page.getByTestId(`user-row-${TestUsersData.pending_editor_valid_token.userID}`)
+				page.getByTestId(`user-row-${TestUsersData.suspended_editor.userID}`)
 			).toBeVisible();
 
 			// Users from page 1 should not be visible anymore
@@ -464,7 +464,9 @@ test.describe("Settings - Users Page", () => {
 			// Verify form fields are present
 			await expect(page.locator("#email")).toBeVisible();
 			await expect(page.locator("#name")).toBeVisible();
-			await expect(page.locator("#role")).toBeVisible();
+
+			// Verify role cards are present instead of dropdown
+			await expect(page.getByTestId("role-selection-label")).toBeVisible();
 		});
 
 		test("should show validation errors for empty fields", async ({ page }) => {
@@ -481,6 +483,9 @@ test.describe("Settings - Users Page", () => {
 
 			await expect(page.getByTestId("name-error")).toBeVisible();
 			await expect(page.getByTestId("name-error")).toContainText("氏名は必須です");
+
+			await expect(page.getByTestId("roleIds-error")).toBeVisible();
+			await expect(page.getByTestId("roleIds-error")).toContainText("ロールを選択してください");
 		});
 
 		test("should show validation error for invalid email format", async ({ page }) => {
@@ -507,18 +512,29 @@ test.describe("Settings - Users Page", () => {
 			await page.getByTestId("add-user-button").click();
 			await expect(page.getByTestId("add-user-slideover-panel")).toBeVisible();
 
-			// Check default role selection
-			await expect(page.locator("#role")).toContainText("編集者");
+			// Verify role selection area is visible
+			await expect(page.getByTestId("role-selection-label")).toBeVisible();
+			await expect(page.getByTestId("role-cards-container")).toBeVisible();
 
-			// Open the role dropdown
-			await page.locator("#role").click();
-			await expect(page.getByTestId("role-list")).toBeAttached();
+			// Initially no roles should be selected
+			const adminRoleCard = page.getByTestId("role-card-e0000000-0000-0000-0000-000000000001");
+			const editorRoleCard = page.getByTestId("role-card-e0000000-0000-0000-0000-000000000002");
+
+			await expect(adminRoleCard).toBeVisible();
+			await expect(editorRoleCard).toBeVisible();
 
 			// Select admin role
-			await page.getByTestId("role-option-admin").click();
+			await adminRoleCard.click();
+			await expect(adminRoleCard).toHaveAttribute("aria-pressed", "true");
 
-			// Verify selection changed
-			await expect(page.locator("#role")).toContainText("管理者");
+			// Select editor role as well (multiple selection)
+			await editorRoleCard.click();
+			await expect(editorRoleCard).toHaveAttribute("aria-pressed", "true");
+
+			// Deselect admin role
+			await adminRoleCard.click();
+			await expect(adminRoleCard).toHaveAttribute("aria-pressed", "false");
+			await expect(editorRoleCard).toHaveAttribute("aria-pressed", "true");
 		});
 
 		test("should successfully invite a new user", async ({ page }) => {
@@ -537,7 +553,9 @@ test.describe("Settings - Users Page", () => {
 			await page.locator("#email").fill(uniqueEmail);
 			await page.locator("#name").fill(userName);
 
-			// Use default role (editor)
+			// Select editor role
+			const editorRoleCard = page.getByTestId("role-card-e0000000-0000-0000-0000-000000000002");
+			await editorRoleCard.click();
 
 			// Submit the form and wait for API response
 			const responsePromise = page.waitForResponse(
@@ -696,7 +714,8 @@ test.describe("Settings - Users Page", () => {
 			);
 
 			// Verify the role selector is present
-			await expect(page.locator("#edit-role")).toBeVisible();
+			await expect(page.getByTestId("edit-role-selection-label")).toBeVisible();
+			await expect(page.getByTestId("edit-role-cards-container")).toBeVisible();
 		});
 
 		test("should change user role from editor to admin", async ({ page }) => {
@@ -721,11 +740,15 @@ test.describe("Settings - Users Page", () => {
 			// Wait for the edit form to be visible
 			await expect(page.getByTestId("edit-user-form")).toBeVisible();
 
+			// Deselect the editor role first (user currently has editor role)
+			const editorRoleCard = page.getByTestId(
+				"edit-role-card-e0000000-0000-0000-0000-000000000002"
+			);
+			await editorRoleCard.click();
+
 			// Select the admin role
-			await page.locator("#edit-role").click();
-			// Wait for the dropdown to be visible
-			await page.getByTestId("edit-role-list").waitFor({ state: "visible" });
-			await page.getByTestId("edit-role-option-admin").click();
+			const adminRoleCard = page.getByTestId("edit-role-card-e0000000-0000-0000-0000-000000000001");
+			await adminRoleCard.click();
 
 			const editUserResponse = page.waitForResponse(
 				(response) =>
@@ -742,7 +765,7 @@ test.describe("Settings - Users Page", () => {
 			// Verify toast message appears
 			const toastMessage = page.getByTestId("toast-0");
 			await expect(toastMessage).toBeVisible({ timeout: 10000 });
-			await expect(toastMessage).toContainText("ユーザーの役割を更新しました。");
+			await expect(toastMessage).toContainText("ユーザーのロールを更新しました。");
 
 			await expect(page.getByTestId("edit-user-slideover-panel")).not.toBeVisible();
 
@@ -775,11 +798,15 @@ test.describe("Settings - Users Page", () => {
 			// Wait for the edit form to be visible
 			await expect(page.getByTestId("edit-user-form")).toBeVisible();
 
+			// Deselect the admin role first (user currently has admin role)
+			const adminRoleCard = page.getByTestId("edit-role-card-e0000000-0000-0000-0000-000000000001");
+			await adminRoleCard.click();
+
 			// Select the editor role
-			await page.locator("#edit-role").click();
-			// Wait for the dropdown to be visible
-			await page.getByTestId("edit-role-list").waitFor({ state: "visible" });
-			await page.getByTestId("edit-role-option-editor").click();
+			const editorRoleCard = page.getByTestId(
+				"edit-role-card-e0000000-0000-0000-0000-000000000002"
+			);
+			await editorRoleCard.click();
 
 			const editUserResponse = page.waitForResponse(
 				(response) =>
@@ -796,7 +823,7 @@ test.describe("Settings - Users Page", () => {
 			// Verify toast message appears
 			const toastMessage = page.getByTestId("toast-0");
 			await expect(toastMessage).toBeVisible({ timeout: 10000 });
-			await expect(toastMessage).toContainText("ユーザーの役割を更新しました。");
+			await expect(toastMessage).toContainText("ユーザーのロールを更新しました。");
 
 			await expect(page.getByTestId("edit-user-slideover-panel")).not.toBeVisible();
 
@@ -832,12 +859,16 @@ test.describe("Settings - Users Page", () => {
 				.click(); // Wait for the edit form to be visible
 			await expect(page.getByTestId("edit-user-form")).toBeVisible();
 
-			// Change the role (from admin to editor)
-			// First click the select to open the dropdown
-			await page.locator("#edit-role").click();
-			// Wait for the dropdown to be visible
-			await page.getByTestId("edit-role-list").waitFor({ state: "visible" });
-			await page.getByTestId("edit-role-option-editor").click();
+			// Change the role (from editor to admin)
+			// Deselect the editor role first
+			const editorRoleCard = page.getByTestId(
+				"edit-role-card-e0000000-0000-0000-0000-000000000002"
+			);
+			await editorRoleCard.click();
+
+			// Select the admin role
+			const adminRoleCard = page.getByTestId("edit-role-card-e0000000-0000-0000-0000-000000000001");
+			await adminRoleCard.click();
 
 			// Cancel the form by clicking the cancel button
 			await page.getByTestId("edit-user-slideover-cancel-button").click();
@@ -856,6 +887,208 @@ test.describe("Settings - Users Page", () => {
 			).toContainText("編集者");
 		});
 	});
+
+	// Multiple Role Selection Tests
+	test.describe("Multiple Role Selection", () => {
+		test.beforeAll(async () => {
+			// Reset database to clean seed state before multiple role tests
+			await resetAndSeedDatabase();
+		});
+
+		test.beforeEach(async ({ page }) => {
+			// Login as admin for all tests in this describe block
+			await logInAs(page, TestUsersData.alpha_admin);
+
+			// Navigate to users page
+			await page.goto(usersPageURL);
+
+			// Wait for users to be loaded
+			await expect(page.getByTestId("users-table")).toBeVisible();
+		});
+
+		test("should invite user with multiple roles", async ({ page }) => {
+			// Generate a unique email for this test
+			const uniqueEmail = `multi_role_user@example.com`;
+			const userName = "Multi Role User";
+
+			// Open the invite form
+			await page.getByTestId("add-user-button").click();
+			await expect(page.getByTestId("add-user-slideover-panel")).toBeVisible();
+
+			// Fill the form
+			await page.locator("#email").fill(uniqueEmail);
+			await page.locator("#name").fill(userName);
+
+			// Select both admin and editor roles
+			const adminRoleCard = page.getByTestId("role-card-e0000000-0000-0000-0000-000000000001");
+			const editorRoleCard = page.getByTestId("role-card-e0000000-0000-0000-0000-000000000002");
+
+			await adminRoleCard.click();
+			await expect(adminRoleCard).toHaveAttribute("aria-pressed", "true");
+
+			await editorRoleCard.click();
+			await expect(editorRoleCard).toHaveAttribute("aria-pressed", "true");
+
+			// Submit the form and wait for API response
+			const responsePromise = page.waitForResponse(
+				(response) => response.url().includes("/api/users/invite") && response.status() === 200
+			);
+
+			await page.getByTestId("add-user-slideover-primary-button").click();
+			await responsePromise;
+
+			// Check for success toast
+			const toastMessage = page.getByTestId("toast-0");
+			await expect(toastMessage).toBeVisible({ timeout: 10000 });
+			await expect(toastMessage).toContainText("ユーザーを招待しました。");
+
+			// Form should be closed
+			await expect(page.getByTestId("add-user-slideover")).not.toBeVisible();
+
+			// Search for the new user to verify their roles
+			await page.locator("#user-search").fill(uniqueEmail);
+			await page.waitForResponse(
+				(response) =>
+					response.url().includes("/api/users") &&
+					response.url().includes(encodeURIComponent(uniqueEmail)) &&
+					response.status() === 200
+			);
+
+			// Check user table shows the new user
+			await expect(page.getByTestId("users-table")).toBeVisible();
+			const userRows = page.getByTestId(/^user-row-/);
+			await expect(userRows).toBeVisible();
+
+			// Verify the user shows multiple roles in the table
+			// Should show the first role name and "他1件" for the additional role
+			const userRoleCell = userRows.first().locator('[data-testid*="user-role-"]');
+			await expect(userRoleCell).toContainText("管理者");
+			await expect(userRoleCell).toContainText("他1件");
+		});
+
+		test("should edit user to have multiple roles", async ({ page }) => {
+			// Use the suspended_editor user who will have clean state from database reset
+			await page.locator("#user-search").fill(TestUsersData.suspended_editor.email);
+			await page.waitForResponse(
+				(response) =>
+					response.url().includes("/api/users") &&
+					response.url().includes(encodeURIComponent(TestUsersData.suspended_editor.email)) &&
+					response.status() === 200
+			);
+
+			// This user should reliably have only editor role from seed data
+			const userRoleCell = page.getByTestId(`user-role-${TestUsersData.suspended_editor.userID}`);
+			await expect(userRoleCell).toContainText("編集者");
+
+			// Open edit form
+			await page
+				.getByTestId(`edit-permissions-button-${TestUsersData.suspended_editor.userID}`)
+				.click();
+
+			await expect(page.getByTestId("edit-user-form")).toBeVisible();
+
+			// Editor role should already be selected
+			const editorRoleCard = page.getByTestId(
+				"edit-role-card-e0000000-0000-0000-0000-000000000002"
+			);
+			await expect(editorRoleCard).toHaveAttribute("aria-pressed", "true");
+
+			// Add admin role without removing editor role
+			const adminRoleCard = page.getByTestId("edit-role-card-e0000000-0000-0000-0000-000000000001");
+			await adminRoleCard.click();
+			await expect(adminRoleCard).toHaveAttribute("aria-pressed", "true");
+
+			// Now both roles should be selected
+			await expect(editorRoleCard).toHaveAttribute("aria-pressed", "true");
+			await expect(adminRoleCard).toHaveAttribute("aria-pressed", "true");
+
+			// Submit the form
+			const editUserResponse = page.waitForResponse(
+				(response) =>
+					response.url().includes(`/api/users/${TestUsersData.suspended_editor.userID}/roles`) &&
+					response.status() === 200
+			);
+
+			await page.getByTestId("edit-user-slideover-primary-button").click();
+			await editUserResponse;
+
+			// Verify toast message appears
+			const toastMessage = page.getByTestId("toast-0");
+			await expect(toastMessage).toBeVisible({ timeout: 10000 });
+			await expect(toastMessage).toContainText("ユーザーのロールを更新しました。");
+
+			await expect(page.getByTestId("edit-user-slideover-panel")).not.toBeVisible();
+
+			// Verify the user now shows multiple roles in the table
+			// Should show the first role name and "他1件" for the additional role
+			const updatedUserRoleCell = page.getByTestId(
+				`user-role-${TestUsersData.suspended_editor.userID}`
+			);
+			await expect(updatedUserRoleCell).toContainText("管理者");
+			await expect(updatedUserRoleCell).toContainText("他1件");
+		});
+
+		test("should remove roles individually from users with multiple roles", async ({ page }) => {
+			// Search for the suspended_editor user (who should have multiple roles)
+			await page.locator("#user-search").fill(TestUsersData.suspended_editor.email);
+			await page.waitForResponse(
+				(response) =>
+					response.url().includes("/api/users") &&
+					response.url().includes(encodeURIComponent(TestUsersData.suspended_editor.email)) &&
+					response.status() === 200
+			);
+
+			// Verify user currently shows multiple roles
+			const userRoleCell = page.getByTestId(`user-role-${TestUsersData.suspended_editor.userID}`);
+			await expect(userRoleCell).toContainText("他1件");
+
+			// Open edit form
+			await page
+				.getByTestId(`edit-permissions-button-${TestUsersData.suspended_editor.userID}`)
+				.click();
+
+			await expect(page.getByTestId("edit-user-form")).toBeVisible();
+
+			// Both roles should be selected
+			const editorRoleCard = page.getByTestId(
+				"edit-role-card-e0000000-0000-0000-0000-000000000002"
+			);
+			const adminRoleCard = page.getByTestId("edit-role-card-e0000000-0000-0000-0000-000000000001");
+
+			await expect(editorRoleCard).toHaveAttribute("aria-pressed", "true");
+			await expect(adminRoleCard).toHaveAttribute("aria-pressed", "true");
+
+			// Remove admin role, keep editor role
+			await adminRoleCard.click();
+			await expect(adminRoleCard).toHaveAttribute("aria-pressed", "false");
+			await expect(editorRoleCard).toHaveAttribute("aria-pressed", "true");
+
+			// Submit the form
+			const editUserResponse = page.waitForResponse(
+				(response) =>
+					response.url().includes(`/api/users/${TestUsersData.suspended_editor.userID}/roles`) &&
+					response.status() === 200
+			);
+
+			await page.getByTestId("edit-user-slideover-primary-button").click();
+			await editUserResponse;
+
+			// Verify toast message appears
+			const toastMessage = page.getByTestId("toast-0");
+			await expect(toastMessage).toBeVisible({ timeout: 10000 });
+			await expect(toastMessage).toContainText("ユーザーのロールを更新しました。");
+
+			await expect(page.getByTestId("edit-user-slideover-panel")).not.toBeVisible();
+
+			// Verify the user now shows only single role (no "他X件")
+			const updatedUserRoleCell = page.getByTestId(
+				`user-role-${TestUsersData.suspended_editor.userID}`
+			);
+			await expect(updatedUserRoleCell).toContainText("編集者");
+			await expect(updatedUserRoleCell).not.toContainText("他");
+		});
+	});
+
 	// User Deletion Tests
 	test.describe("User Deletion", () => {
 		test.beforeEach(async ({ page }) => {
@@ -973,8 +1206,9 @@ test.describe("Settings - Users Page", () => {
 		});
 
 		test("should successfully delete a user", async ({ page }) => {
-			// Check initial pagination count before deletion (should be 7 after previous invite test)
-			await expect(page.getByTestId("pagination-info")).toContainText("件中 1 - 2件を表示");
+			// Check initial pagination count before deletion
+			const paginationInfo = await page.getByTestId("pagination-info").textContent();
+			const initialCount = parseInt(paginationInfo?.match(/(\d+)件中/)?.[1] || "0");
 
 			// Search for the editor user
 			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
@@ -1023,7 +1257,10 @@ test.describe("Settings - Users Page", () => {
 			);
 
 			// Check that pagination count has decreased after deletion
-			await expect(page.getByTestId("pagination-info")).toContainText("6件中 1 - 2件を表示");
+			const expectedCount = initialCount - 1;
+			await expect(page.getByTestId("pagination-info")).toContainText(
+				`${expectedCount}件中 1 - 2件を表示`
+			);
 
 			// Verify the user is no longer in the list by searching for them
 			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);

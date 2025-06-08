@@ -348,11 +348,11 @@
 							variant="underlined"
 						/>
 						<div class="space-y-3">
-							<div class="block text-sm font-medium text-gray-700">ロール (複数選択可)</div>
+							<div class="block text-sm font-medium text-gray-700" data-testid="role-selection-label">ロール (複数選択可)</div>
 							{#if $errors.roleIds?.[0]}
-								<div class="text-sm text-red-600">{$errors.roleIds[0]}</div>
+								<div class="text-sm text-red-600" data-testid="roleIds-error">{$errors.roleIds[0]}</div>
 							{/if}
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-3" data-testid="role-cards-container">
 								{#each roles as role (role.id)}
 									<RoleCard
 										{role}
@@ -426,11 +426,11 @@
 							<strong>{userToEdit.name}</strong> ({userToEdit.email}) のロールを編集
 						</p>
 						<div class="space-y-3">
-							<div class="block text-sm font-medium text-gray-700">ロール (複数選択可)</div>
+							<div class="block text-sm font-medium text-gray-700" data-testid="edit-role-selection-label">ロール (複数選択可)</div>
 							{#if $editErrors.roleIds?.[0]}
-								<div class="text-sm text-red-600">{$editErrors.roleIds[0]}</div>
+								<div class="text-sm text-red-600" data-testid="edit-roleIds-error">{$editErrors.roleIds[0]}</div>
 							{/if}
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-3" data-testid="edit-role-cards-container">
 								{#each roles as role (role.id)}
 									<RoleCard
 										{role}
