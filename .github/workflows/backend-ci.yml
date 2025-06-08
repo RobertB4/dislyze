@@ -34,6 +34,9 @@ jobs:
       - name: Install gosec for SAST
         run: go install github.com/securego/gosec/v2/cmd/gosec@latest
 
+      - name: Install gotestfmt
+        run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
+
       # All subsequent Go-related commands are run from the backend directory
       - name: Change to lugia-backend directory
         run: cd lugia-backend
