@@ -15,6 +15,7 @@
 	import type { User } from "./+page";
 	import { goto } from "$app/navigation";
 	import Spinner from "$components/Spinner.svelte";
+	import Tooltip from "$components/Tooltip.svelte";
 
 	let { data: pageData }: { data: PageData } = $props();
 
@@ -533,13 +534,22 @@
 												{:else if user.roles.length === 1}
 													{user.roles[0].name}
 												{:else}
-													<div class="space-y-1">
-														{#each user.roles as role (role.id)}
-															<div class="inline-block">
-																<Badge color="orange" class="mr-1 mb-1">{role.name}</Badge>
-															</div>
-														{/each}
-													</div>
+													<span>
+														{user.roles[0].name}
+														<Tooltip
+															content={user.roles
+																.slice(1)
+																.map((role: { name: string }) => role.name)
+																.join("、")}
+															class="ml-2"
+														>
+															<span
+																class="text-gray-400 cursor-help border-b border-dotted border-gray-300"
+															>
+																他{user.roles.length - 1}件
+															</span>
+														</Tooltip>
+													</span>
 												{/if}
 											</td>
 											<td
