@@ -1,4 +1,4 @@
-package users
+package roles
 
 import (
 	"context"
@@ -21,15 +21,15 @@ type RoleInfo struct {
 	Permissions []string `json:"permissions"`
 }
 
-type GetTenantRolesResponse struct {
+type GetRolesResponse struct {
 	Roles []RoleInfo `json:"roles"`
 }
 
-func (h *UsersHandler) GetTenantRoles(w http.ResponseWriter, r *http.Request) {
+func (h *RolesHandler) GetRoles(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rawTenantID := libctx.GetTenantID(ctx)
 
-	response, err := h.getTenantRoles(ctx, rawTenantID)
+	response, err := h.getRoles(ctx, rawTenantID)
 	if err != nil {
 		responder.RespondWithError(w, err)
 		return
@@ -38,16 +38,16 @@ func (h *UsersHandler) GetTenantRoles(w http.ResponseWriter, r *http.Request) {
 	responder.RespondWithJSON(w, http.StatusOK, response)
 }
 
-func (h *UsersHandler) getTenantRoles(ctx context.Context, tenantID pgtype.UUID) (*GetTenantRolesResponse, error) {
+func (h *RolesHandler) getRoles(ctx context.Context, tenantID pgtype.UUID) (*GetRolesResponse, error) {
 	rolesWithPermissions, err := h.q.GetTenantRolesWithPermissions(ctx, tenantID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			response := &GetTenantRolesResponse{
+			response := &GetRolesResponse{
 				Roles: []RoleInfo{},
 			}
 			return response, nil
 		}
-		return nil, errlib.New(fmt.Errorf("GetTenantRoles: failed to get roles with permissions: %w", err), http.StatusInternalServerError, "")
+		return nil, errlib.New(fmt.Errorf("GetRoles: failed to get roles with permissions: %w", err), http.StatusInternalServerError, "")
 	}
 
 	var roleOrder []string
@@ -77,7 +77,7 @@ func (h *UsersHandler) getTenantRoles(ctx context.Context, tenantID pgtype.UUID)
 		roleInfos[i] = *roleMap[roleID]
 	}
 
-	response := &GetTenantRolesResponse{
+	response := &GetRolesResponse{
 		Roles: roleInfos,
 	}
 

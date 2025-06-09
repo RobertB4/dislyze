@@ -24,7 +24,7 @@ export type RoleInfo = {
 	permissions: string[];
 };
 
-export type GetTenantRolesResponse = {
+export type GetRolesResponse = {
 	roles: RoleInfo[];
 };
 
@@ -60,10 +60,9 @@ export const load: PageLoad = ({ fetch, url }) => {
 		`/api/users?${queryParams.toString()}`
 	).then((res) => res.json());
 
-	const rolesPromise: Promise<GetTenantRolesResponse> = loadFunctionFetch(
-		fetch,
-		`/api/tenant/roles`
-	).then((res) => res.json());
+	const rolesPromise: Promise<GetRolesResponse> = loadFunctionFetch(fetch, `/api/roles`).then(
+		(res) => res.json()
+	);
 
 	return {
 		usersPromise,

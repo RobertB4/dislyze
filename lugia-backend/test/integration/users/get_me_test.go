@@ -32,7 +32,7 @@ func TestGetMe_Integration(t *testing.T) {
 			loginUserKey:        "alpha_admin",
 			expectedStatus:      http.StatusOK,
 			expectedTenantName:  "Tenant Alpha",
-			expectedPermissions: []string{"users.view", "users.create", "users.update", "users.delete", "tenant.update"},
+			expectedPermissions: []string{"users.view", "users.create", "users.update", "users.delete", "tenant.update", "roles.view", "roles.create", "roles.update", "roles.delete"},
 		},
 		{
 			name:                "alpha_editor gets their details",

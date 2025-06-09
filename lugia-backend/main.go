@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"lugia/features/auth"
+	"lugia/features/roles"
 	"lugia/features/users"
 	"lugia/lib/config"
 	"lugia/lib/db"
@@ -42,6 +43,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 
 	authHandler := auth.NewAuthHandler(dbConn, env, authRateLimiter, queries)
 	usersHandler := users.NewUsersHandler(dbConn, queries, env, resendInviteRateLimiter, deleteUserRateLimiter, changeEmailRateLimiter)
+	rolesHandler := roles.NewRolesHandler(dbConn, queries, env)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -78,9 +80,13 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 				r.With(middleware.RequireUsersDelete(queries)).Post("/{userID}/delete", usersHandler.DeleteUser)
 			})
 
+			r.Route("/roles", func(r chi.Router) {
+				r.With(middleware.RequireRolesView(queries)).Get("/", rolesHandler.GetRoles)
+				r.With(middleware.RequireRolesCreate(queries)).Post("/create", rolesHandler.CreateRole)
+			})
+
 			r.Route("/tenant", func(r chi.Router) {
 				r.With(middleware.RequireTenantUpdate(queries)).Post("/change-name", usersHandler.ChangeTenantName)
-				r.With(middleware.RequireUsersUpdate(queries)).Get("/roles", usersHandler.GetTenantRoles)
 			})
 		})
 	})

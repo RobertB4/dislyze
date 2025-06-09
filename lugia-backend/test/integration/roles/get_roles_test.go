@@ -1,4 +1,4 @@
-package users
+package roles
 
 import (
 	"encoding/json"
@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"testing"
 
-	"lugia/features/users"
+	"lugia/features/roles"
 	"lugia/test/integration/setup"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetTenantRoles_Integration(t *testing.T) {
+func TestGetRoles_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
@@ -23,7 +23,7 @@ func TestGetTenantRoles_Integration(t *testing.T) {
 		loginUserKey   string // Key for setup.TestUsersData map
 		expectedStatus int
 		expectUnauth   bool
-		validateFunc   func(t *testing.T, response *users.GetTenantRolesResponse)
+		validateFunc   func(t *testing.T, response *roles.GetRolesResponse)
 	}{
 		{
 			name:           "unauthenticated user gets 401",
@@ -31,15 +31,15 @@ func TestGetTenantRoles_Integration(t *testing.T) {
 			expectUnauth:   true,
 		},
 		{
-			name:           "user without users.update permission gets 403 forbidden",
+			name:           "user without roles.create permission gets 403 forbidden",
 			loginUserKey:   "alpha_editor",
 			expectedStatus: http.StatusForbidden,
 		},
 		{
-			name:           "user with users.update permission successfully retrieves tenant roles (Tenant Alpha)",
+			name:           "user with roles.create permission successfully retrieves tenant roles (Tenant Alpha)",
 			loginUserKey:   "alpha_admin",
 			expectedStatus: http.StatusOK,
-			validateFunc: func(t *testing.T, response *users.GetTenantRolesResponse) {
+			validateFunc: func(t *testing.T, response *roles.GetRolesResponse) {
 				require.NotNil(t, response)
 				require.Len(t, response.Roles, 2, "Should have exactly 2 roles for Tenant Alpha")
 
@@ -51,7 +51,7 @@ func TestGetTenantRoles_Integration(t *testing.T) {
 				assert.Equal(t, "e0000000-0000-0000-0000-000000000001", adminRole.ID, "Should get Tenant Alpha admin role ID")
 				assert.Equal(t, "管理者", adminRole.Name)
 				assert.Equal(t, "すべての管理機能にアクセス可能", adminRole.Description)
-				assert.Len(t, adminRole.Permissions, 5, "Admin role should have 5 permissions")
+				assert.Len(t, adminRole.Permissions, 9, "Admin role should have 9 permissions")
 
 				// Validate editor role (no permissions) - Tenant Alpha editor role
 				assert.Equal(t, "e0000000-0000-0000-0000-000000000002", editorRole.ID, "Should get Tenant Alpha editor role ID")
@@ -66,6 +66,10 @@ func TestGetTenantRoles_Integration(t *testing.T) {
 					"ユーザーの招待",
 					"ユーザー一覧の閲覧",
 					"ユーザー権限の変更",
+					"ロールの作成",
+					"ロールの削除",
+					"ロールの編集",
+					"ロール一覧の閲覧",
 				}
 				assert.Equal(t, expectedPermissions, adminRole.Permissions)
 			},
@@ -74,7 +78,7 @@ func TestGetTenantRoles_Integration(t *testing.T) {
 			name:           "beta admin user successfully retrieves tenant roles (Tenant Beta)",
 			loginUserKey:   "beta_admin",
 			expectedStatus: http.StatusOK,
-			validateFunc: func(t *testing.T, response *users.GetTenantRolesResponse) {
+			validateFunc: func(t *testing.T, response *roles.GetRolesResponse) {
 				require.NotNil(t, response)
 				require.Len(t, response.Roles, 2, "Should have exactly 2 roles for Tenant Beta")
 
@@ -85,7 +89,7 @@ func TestGetTenantRoles_Integration(t *testing.T) {
 				// Validate Tenant Beta admin role - should have different ID than Alpha
 				assert.Equal(t, "e0000000-0000-0000-0000-000000000003", adminRole.ID, "Should get Tenant Beta admin role ID")
 				assert.Equal(t, "管理者", adminRole.Name)
-				assert.Len(t, adminRole.Permissions, 5, "Beta admin role should have 5 permissions")
+				assert.Len(t, adminRole.Permissions, 9, "Beta admin role should have 9 permissions")
 
 				// Validate Tenant Beta editor role - should have different ID than Alpha
 				assert.Equal(t, "e0000000-0000-0000-0000-000000000004", editorRole.ID, "Should get Tenant Beta editor role ID")
@@ -99,7 +103,7 @@ func TestGetTenantRoles_Integration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reqURL := fmt.Sprintf("%s/tenant/roles", setup.BaseURL)
+			reqURL := fmt.Sprintf("%s/roles", setup.BaseURL)
 			req, err := http.NewRequest("GET", reqURL, nil)
 			assert.NoError(t, err)
 
@@ -128,7 +132,7 @@ func TestGetTenantRoles_Integration(t *testing.T) {
 
 			// If success, validate response
 			if tt.expectedStatus == http.StatusOK && tt.validateFunc != nil {
-				var response users.GetTenantRolesResponse
+				var response roles.GetRolesResponse
 				err := json.NewDecoder(resp.Body).Decode(&response)
 				require.NoError(t, err, "Should be able to decode JSON response")
 
@@ -138,7 +142,7 @@ func TestGetTenantRoles_Integration(t *testing.T) {
 	}
 }
 
-func TestGetTenantRoles_ResponseFormat(t *testing.T) {
+func TestGetRoles_ResponseFormat(t *testing.T) {
 	pool := setup.InitDB(t)
 	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
@@ -150,7 +154,7 @@ func TestGetTenantRoles_ResponseFormat(t *testing.T) {
 	client := &http.Client{}
 
 	// Make the request
-	reqURL := fmt.Sprintf("%s/tenant/roles", setup.BaseURL)
+	reqURL := fmt.Sprintf("%s/roles", setup.BaseURL)
 	req, err := http.NewRequest("GET", reqURL, nil)
 	assert.NoError(t, err)
 	req.AddCookie(&http.Cookie{
@@ -169,7 +173,7 @@ func TestGetTenantRoles_ResponseFormat(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	var response users.GetTenantRolesResponse
+	var response roles.GetRolesResponse
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	require.NoError(t, err)
 

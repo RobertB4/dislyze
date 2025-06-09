@@ -23,6 +23,10 @@ func RequirePermission(db *queries.Queries, resource, action string) func(http.H
 	}
 }
 
+func RequireTenantUpdate(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, permissions.ResourceTenant, permissions.ActionUpdate)
+}
+
 func RequireUsersView(db *queries.Queries) func(http.Handler) http.Handler {
 	return RequirePermission(db, permissions.ResourceUsers, permissions.ActionView)
 }
@@ -39,6 +43,18 @@ func RequireUsersDelete(db *queries.Queries) func(http.Handler) http.Handler {
 	return RequirePermission(db, permissions.ResourceUsers, permissions.ActionDelete)
 }
 
-func RequireTenantUpdate(db *queries.Queries) func(http.Handler) http.Handler {
-	return RequirePermission(db, permissions.ResourceTenant, permissions.ActionUpdate)
+func RequireRolesView(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, permissions.ResourceRoles, permissions.ActionView)
+}
+
+func RequireRolesCreate(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, permissions.ResourceRoles, permissions.ActionCreate)
+}
+
+func RequireRolesUpdate(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, permissions.ResourceRoles, permissions.ActionUpdate)
+}
+
+func RequireRolesDelete(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, permissions.ResourceRoles, permissions.ActionDelete)
 }

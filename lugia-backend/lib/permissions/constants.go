@@ -2,8 +2,9 @@ package permissions
 
 // Resources
 const (
-	ResourceUsers  = "users"
 	ResourceTenant = "tenant"
+	ResourceUsers  = "users"
+	ResourceRoles  = "roles"
 )
 
 const (
