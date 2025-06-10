@@ -9,6 +9,7 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI === "true" ? 1 : 0,
 	workers: 1,
+	timeout: 10 * 1000, // 10 seconds
 	reporter: [["html", { outputFolder: "./test-results", open: "never" }], ["list"]],
 	use: {
 		baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:23000",
