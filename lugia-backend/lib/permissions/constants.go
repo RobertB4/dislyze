@@ -8,8 +8,6 @@ const (
 )
 
 const (
-	ActionView   = "view"
-	ActionCreate = "create"
-	ActionUpdate = "update"
-	ActionDelete = "delete"
+	ActionView = "view"
+	ActionEdit = "edit"
 )

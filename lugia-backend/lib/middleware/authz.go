@@ -23,38 +23,22 @@ func RequirePermission(db *queries.Queries, resource, action string) func(http.H
 	}
 }
 
-func RequireTenantUpdate(db *queries.Queries) func(http.Handler) http.Handler {
-	return RequirePermission(db, permissions.ResourceTenant, permissions.ActionUpdate)
+func RequireTenantEdit(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, permissions.ResourceTenant, permissions.ActionEdit)
 }
 
 func RequireUsersView(db *queries.Queries) func(http.Handler) http.Handler {
 	return RequirePermission(db, permissions.ResourceUsers, permissions.ActionView)
 }
 
-func RequireUsersCreate(db *queries.Queries) func(http.Handler) http.Handler {
-	return RequirePermission(db, permissions.ResourceUsers, permissions.ActionCreate)
-}
-
-func RequireUsersUpdate(db *queries.Queries) func(http.Handler) http.Handler {
-	return RequirePermission(db, permissions.ResourceUsers, permissions.ActionUpdate)
-}
-
-func RequireUsersDelete(db *queries.Queries) func(http.Handler) http.Handler {
-	return RequirePermission(db, permissions.ResourceUsers, permissions.ActionDelete)
+func RequireUsersEdit(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, permissions.ResourceUsers, permissions.ActionEdit)
 }
 
 func RequireRolesView(db *queries.Queries) func(http.Handler) http.Handler {
 	return RequirePermission(db, permissions.ResourceRoles, permissions.ActionView)
 }
 
-func RequireRolesCreate(db *queries.Queries) func(http.Handler) http.Handler {
-	return RequirePermission(db, permissions.ResourceRoles, permissions.ActionCreate)
-}
-
-func RequireRolesUpdate(db *queries.Queries) func(http.Handler) http.Handler {
-	return RequirePermission(db, permissions.ResourceRoles, permissions.ActionUpdate)
-}
-
-func RequireRolesDelete(db *queries.Queries) func(http.Handler) http.Handler {
-	return RequirePermission(db, permissions.ResourceRoles, permissions.ActionDelete)
+func RequireRolesEdit(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, permissions.ResourceRoles, permissions.ActionEdit)
 }
