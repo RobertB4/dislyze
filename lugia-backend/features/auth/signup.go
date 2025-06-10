@@ -12,6 +12,7 @@ import (
 
 	"lugia/lib/errlib"
 	"lugia/lib/jwt"
+	permissionslib "lugia/lib/permissions"
 	"lugia/lib/responder"
 	"lugia/queries"
 
@@ -195,9 +196,11 @@ func (h *AuthHandler) setupDefaultRoles(ctx context.Context, qtx *queries.Querie
 		return fmt.Errorf("failed to create admin role: %w", err)
 	}
 
-	permissionIDs := make([]pgtype.UUID, len(permissions))
-	for i, permission := range permissions {
-		permissionIDs[i] = permission.ID
+	var permissionIDs []pgtype.UUID
+	for _, permission := range permissions {
+		if permission.Action == permissionslib.ActionEdit {
+			permissionIDs = append(permissionIDs, permission.ID)
+		}
 	}
 
 	err = qtx.CreateRolePermissionsBulk(ctx, &queries.CreateRolePermissionsBulkParams{

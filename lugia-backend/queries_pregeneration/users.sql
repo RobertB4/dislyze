@@ -86,7 +86,11 @@ SELECT EXISTS(
     JOIN role_permissions ON user_roles.role_id = role_permissions.role_id
     JOIN permissions ON role_permissions.permission_id = permissions.id
     WHERE user_roles.user_id = $1 AND user_roles.tenant_id = $2 
-    AND permissions.resource = $3 AND permissions.action = $4
+    AND permissions.resource = $3 
+    AND (
+        permissions.action = $4 OR 
+        ($4 = 'view' AND permissions.action = 'edit')
+    )
 );
 
 -- name: GetUserRoleIDs :many

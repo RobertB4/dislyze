@@ -59,15 +59,8 @@
 					permissionIds.push(viewId);
 				}
 			} else if (level === "edit") {
-				const viewKey = `${resource}.view`;
 				const editKey = `${resource}.edit`;
-
-				const viewId = permissionMap.get(viewKey);
 				const editId = permissionMap.get(editKey);
-
-				if (viewId) {
-					permissionIds.push(viewId);
-				}
 				if (editId) {
 					permissionIds.push(editId);
 				}

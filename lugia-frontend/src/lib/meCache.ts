@@ -8,17 +8,20 @@ export type Me = {
 	tenant_name: string;
 };
 
-/**
- * Check if the user has a specific permission
- * @param me - The Me object containing user permissions
- * @param permission - Permission in format "resource.action" (e.g., "users.view")
- * @returns boolean indicating if user has the permission
- */
 export function hasPermission(
 	me: Me,
 	permission: `${"tenant" | "users" | "roles"}.${"view" | "edit"}`
 ): boolean {
-	return me.permissions.includes(permission);
+	if (me.permissions.includes(permission)) {
+		return true;
+	}
+
+	if (permission.endsWith(".view")) {
+		const editPermission = permission.replace(".view", ".edit") as typeof permission;
+		return me.permissions.includes(editPermission);
+	}
+
+	return false;
 }
 
 /**

@@ -93,21 +93,24 @@
 	<div class="space-y-4">
 		{#each resources() as resource (resource.key)}
 			<div class="border border-gray-200 rounded-lg p-4">
-				<h4 class="text-sm font-medium text-gray-900 mb-3">{resource.label}</h4>
-				<div class="flex gap-2">
-					{#each levels as level (level.value)}
-						<Pill
-							selected={permissions[resource.key as "tenant" | "users" | "roles"] === level.value}
-							onclick={() => {
-								setFields(`permissions.${resource.key}` as any, level.value);
-								permissions[resource.key as "tenant" | "users" | "roles"] = level.value;
-							}}
-							variant="orange"
-							data-testid={`permission-${resource.key}-${level.value}`}
-						>
-							{level.label}
-						</Pill>
-					{/each}
+				<div class="flex items-center justify-between">
+					<h4 class="text-sm font-medium text-gray-900 min-w-0 flex-shrink-0">
+						{resource.label}
+					</h4>
+					<div class="flex gap-2 ml-4">
+						{#each levels as level (level.value)}
+							<Pill
+								selected={permissions[resource.key as "tenant" | "users" | "roles"] === level.value}
+								onclick={() => {
+									setFields(`permissions.${resource.key}` as any, level.value);
+								}}
+								variant="orange"
+								data-testid={`permission-${resource.key}-${level.value}`}
+							>
+								{level.label}
+							</Pill>
+						{/each}
+					</div>
 				</div>
 			</div>
 		{/each}

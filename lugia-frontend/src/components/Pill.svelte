@@ -78,6 +78,6 @@
 	});
 </script>
 
-<button class={computedStyles()} {onclick} {disabled} {...rest}>
+<button type="button" class={computedStyles()} {onclick} {disabled} {...rest}>
 	{@render children()}
 </button>
