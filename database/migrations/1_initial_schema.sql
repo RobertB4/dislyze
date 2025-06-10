@@ -39,6 +39,7 @@ CREATE INDEX idx_permissions_resource ON permissions(resource);
 
 -- fixed data shared for all tenants
 INSERT INTO permissions (resource, action, description) VALUES
+('tenant', 'view', 'テナント設定の閲覧'),
 ('tenant', 'edit', 'テナント設定の編集'),
 ('users', 'view', 'ユーザー一覧の閲覧'),
 ('users', 'edit', 'ユーザーの編集'),
