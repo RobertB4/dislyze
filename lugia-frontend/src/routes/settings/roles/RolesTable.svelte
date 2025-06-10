@@ -158,7 +158,7 @@
 					label="説明"
 					bind:value={$data.description}
 					error={$errors.description?.[0]}
-					placeholder="このロールの説明（任意）"
+					placeholder="ロールの説明（任意）"
 					variant="underlined"
 				/>
 				<PermissionSelector
