@@ -19,6 +19,15 @@
 						id: "users"
 					}
 				]
+			: []),
+		...(hasPermission(me, "roles.view")
+			? [
+					{
+						name: "ロール管理",
+						href: "/settings/roles",
+						id: "roles"
+					}
+				]
 			: [])
 	];
 

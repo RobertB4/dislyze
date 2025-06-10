@@ -1,4 +1,12 @@
 <div class="animate-pulse">
+	<div class="border-b border-gray-200 mb-6">
+		<nav class="mb-2 flex space-x-8" aria-label="Tabs">
+			<div class="h-6 bg-gray-300 rounded w-20"></div>
+			<div class="h-6 bg-gray-300 rounded w-24"></div>
+			<div class="h-6 bg-gray-300 rounded w-20"></div>
+		</nav>
+	</div>
+
 	<div class="overflow-hidden shadow ring-1 ring-black/5 sm:rounded-lg">
 		<div class="min-w-full divide-y divide-gray-300">
 			<div class="bg-gray-50">
