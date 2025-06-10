@@ -131,63 +131,6 @@ func (q *Queries) CreateInvitationToken(ctx context.Context, arg *CreateInvitati
 	return &i, err
 }
 
-const CreateRole = `-- name: CreateRole :one
-INSERT INTO roles (tenant_id, name, description, is_default)
-VALUES ($1, $2, $3, $4)
-RETURNING id, tenant_id, name, description, created_at, updated_at
-`
-
-type CreateRoleParams struct {
-	TenantID    pgtype.UUID `json:"tenant_id"`
-	Name        string      `json:"name"`
-	Description pgtype.Text `json:"description"`
-	IsDefault   bool        `json:"is_default"`
-}
-
-type CreateRoleRow struct {
-	ID          pgtype.UUID        `json:"id"`
-	TenantID    pgtype.UUID        `json:"tenant_id"`
-	Name        string             `json:"name"`
-	Description pgtype.Text        `json:"description"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-}
-
-func (q *Queries) CreateRole(ctx context.Context, arg *CreateRoleParams) (*CreateRoleRow, error) {
-	row := q.db.QueryRow(ctx, CreateRole,
-		arg.TenantID,
-		arg.Name,
-		arg.Description,
-		arg.IsDefault,
-	)
-	var i CreateRoleRow
-	err := row.Scan(
-		&i.ID,
-		&i.TenantID,
-		&i.Name,
-		&i.Description,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return &i, err
-}
-
-const CreateRolePermissionsBulk = `-- name: CreateRolePermissionsBulk :exec
-INSERT INTO role_permissions (role_id, permission_id, tenant_id)
-SELECT $1, UNNEST($2::uuid[]), $3
-`
-
-type CreateRolePermissionsBulkParams struct {
-	RoleID        pgtype.UUID   `json:"role_id"`
-	PermissionIds []pgtype.UUID `json:"permission_ids"`
-	TenantID      pgtype.UUID   `json:"tenant_id"`
-}
-
-func (q *Queries) CreateRolePermissionsBulk(ctx context.Context, arg *CreateRolePermissionsBulkParams) error {
-	_, err := q.db.Exec(ctx, CreateRolePermissionsBulk, arg.RoleID, arg.PermissionIds, arg.TenantID)
-	return err
-}
-
 const DeleteEmailChangeTokensByUserID = `-- name: DeleteEmailChangeTokensByUserID :exec
 DELETE FROM email_change_tokens
 WHERE user_id = $1
@@ -233,42 +176,6 @@ func (q *Queries) DeleteUser(ctx context.Context, id pgtype.UUID) error {
 	return err
 }
 
-const GetAllPermissions = `-- name: GetAllPermissions :many
-SELECT id, resource, action, description FROM permissions
-`
-
-type GetAllPermissionsRow struct {
-	ID          pgtype.UUID `json:"id"`
-	Resource    string      `json:"resource"`
-	Action      string      `json:"action"`
-	Description string      `json:"description"`
-}
-
-func (q *Queries) GetAllPermissions(ctx context.Context) ([]*GetAllPermissionsRow, error) {
-	rows, err := q.db.Query(ctx, GetAllPermissions)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetAllPermissionsRow{}
-	for rows.Next() {
-		var i GetAllPermissionsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Resource,
-			&i.Action,
-			&i.Description,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const GetEmailChangeTokenByHash = `-- name: GetEmailChangeTokenByHash :one
 SELECT id, user_id, new_email, token_hash, expires_at, created_at, used_at FROM email_change_tokens
 WHERE token_hash = $1 AND used_at IS NULL
@@ -307,51 +214,6 @@ func (q *Queries) GetInvitationByTokenHash(ctx context.Context, tokenHash string
 		&i.UsedAt,
 	)
 	return &i, err
-}
-
-const GetTenantRolesWithPermissions = `-- name: GetTenantRolesWithPermissions :many
-SELECT 
-    roles.id, roles.name, roles.description, roles.is_default,
-    permissions.description as permission_description
-FROM roles
-LEFT JOIN role_permissions ON roles.id = role_permissions.role_id
-LEFT JOIN permissions ON role_permissions.permission_id = permissions.id
-WHERE roles.tenant_id = $1
-ORDER BY roles.name, permissions.description
-`
-
-type GetTenantRolesWithPermissionsRow struct {
-	ID                    pgtype.UUID `json:"id"`
-	Name                  string      `json:"name"`
-	Description           pgtype.Text `json:"description"`
-	IsDefault             bool        `json:"is_default"`
-	PermissionDescription pgtype.Text `json:"permission_description"`
-}
-
-func (q *Queries) GetTenantRolesWithPermissions(ctx context.Context, tenantID pgtype.UUID) ([]*GetTenantRolesWithPermissionsRow, error) {
-	rows, err := q.db.Query(ctx, GetTenantRolesWithPermissions, tenantID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetTenantRolesWithPermissionsRow{}
-	for rows.Next() {
-		var i GetTenantRolesWithPermissionsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Description,
-			&i.IsDefault,
-			&i.PermissionDescription,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const GetUserPermissions = `-- name: GetUserPermissions :many
@@ -677,34 +539,4 @@ func (q *Queries) UserHasPermission(ctx context.Context, arg *UserHasPermissionP
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
-}
-
-const ValidateRolesBelongToTenant = `-- name: ValidateRolesBelongToTenant :many
-SELECT id FROM roles 
-WHERE id = ANY($1::uuid[]) AND tenant_id = $2
-`
-
-type ValidateRolesBelongToTenantParams struct {
-	Column1  []pgtype.UUID `json:"column_1"`
-	TenantID pgtype.UUID   `json:"tenant_id"`
-}
-
-func (q *Queries) ValidateRolesBelongToTenant(ctx context.Context, arg *ValidateRolesBelongToTenantParams) ([]pgtype.UUID, error) {
-	rows, err := q.db.Query(ctx, ValidateRolesBelongToTenant, arg.Column1, arg.TenantID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []pgtype.UUID{}
-	for rows.Next() {
-		var id pgtype.UUID
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		items = append(items, id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }

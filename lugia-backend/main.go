@@ -83,6 +83,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 			r.Route("/roles", func(r chi.Router) {
 				r.With(middleware.RequireRolesView(queries)).Get("/", rolesHandler.GetRoles)
 				r.With(middleware.RequireRolesCreate(queries)).Post("/create", rolesHandler.CreateRole)
+				r.With(middleware.RequireRolesUpdate(queries)).Post("/{roleID}/update", rolesHandler.UpdateRole)
 			})
 
 			r.Route("/tenant", func(r chi.Router) {

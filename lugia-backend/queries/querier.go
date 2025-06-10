@@ -14,6 +14,7 @@ type Querier interface {
 	ActivateInvitedUser(ctx context.Context, arg *ActivateInvitedUserParams) error
 	AddRolesToUser(ctx context.Context, arg []*AddRolesToUserParams) (int64, error)
 	AssignRoleToUser(ctx context.Context, arg *AssignRoleToUserParams) error
+	CheckRoleNameExists(ctx context.Context, arg *CheckRoleNameExistsParams) (bool, error)
 	CountUsersByTenantID(ctx context.Context, arg *CountUsersByTenantIDParams) (int64, error)
 	CreateEmailChangeToken(ctx context.Context, arg *CreateEmailChangeTokenParams) error
 	CreateInvitationToken(ctx context.Context, arg *CreateInvitationTokenParams) (*InvitationToken, error)
@@ -28,6 +29,7 @@ type Querier interface {
 	DeleteInvitationTokensByUserIDAndTenantID(ctx context.Context, arg *DeleteInvitationTokensByUserIDAndTenantIDParams) error
 	DeletePasswordResetTokenByUserID(ctx context.Context, userID pgtype.UUID) error
 	DeleteRefreshTokensByUserID(ctx context.Context, userID pgtype.UUID) error
+	DeleteRolePermissions(ctx context.Context, arg *DeleteRolePermissionsParams) error
 	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	ExistsUserWithEmail(ctx context.Context, email string) (bool, error)
 	GetAllPermissions(ctx context.Context) ([]*GetAllPermissionsRow, error)
@@ -36,6 +38,7 @@ type Querier interface {
 	GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error)
 	GetRefreshTokenByJTI(ctx context.Context, jti pgtype.UUID) (*RefreshToken, error)
 	GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUID) (*RefreshToken, error)
+	GetRoleByID(ctx context.Context, arg *GetRoleByIDParams) (*Role, error)
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error)
 	GetTenantRolesWithPermissions(ctx context.Context, tenantID pgtype.UUID) ([]*GetTenantRolesWithPermissionsRow, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
@@ -51,6 +54,7 @@ type Querier interface {
 	RemoveRolesFromUser(ctx context.Context, arg *RemoveRolesFromUserParams) error
 	RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error
 	UpdateRefreshTokenUsed(ctx context.Context, jti pgtype.UUID) error
+	UpdateRole(ctx context.Context, arg *UpdateRoleParams) error
 	UpdateTenantName(ctx context.Context, arg *UpdateTenantNameParams) error
 	UpdateUserEmail(ctx context.Context, arg *UpdateUserEmailParams) error
 	UpdateUserName(ctx context.Context, arg *UpdateUserNameParams) error

@@ -101,10 +101,6 @@ VALUES ($1, $2, $3);
 DELETE FROM user_roles
 WHERE user_id = $1 AND tenant_id = $2 AND role_id = ANY($3::uuid[]);
 
--- name: ValidateRolesBelongToTenant :many
-SELECT id FROM roles 
-WHERE id = ANY($1::uuid[]) AND tenant_id = $2;
-
 -- name: GetUserPermissions :many
 SELECT permissions.resource, permissions.action
 FROM user_roles
@@ -139,28 +135,6 @@ JOIN paginated_users pu ON users.id = pu.id
 LEFT JOIN user_roles ON users.id = user_roles.user_id AND users.tenant_id = user_roles.tenant_id
 LEFT JOIN roles ON user_roles.role_id = roles.id
 ORDER BY users.created_at DESC, users.id, roles.name;
-
--- name: GetTenantRolesWithPermissions :many
-SELECT 
-    roles.id, roles.name, roles.description, roles.is_default,
-    permissions.description as permission_description
-FROM roles
-LEFT JOIN role_permissions ON roles.id = role_permissions.role_id
-LEFT JOIN permissions ON role_permissions.permission_id = permissions.id
-WHERE roles.tenant_id = $1
-ORDER BY roles.name, permissions.description;
-
--- name: GetAllPermissions :many
-SELECT id, resource, action, description FROM permissions;
-
--- name: CreateRole :one
-INSERT INTO roles (tenant_id, name, description, is_default)
-VALUES ($1, $2, $3, $4)
-RETURNING id, tenant_id, name, description, created_at, updated_at;
-
--- name: CreateRolePermissionsBulk :exec
-INSERT INTO role_permissions (role_id, permission_id, tenant_id)
-SELECT @role_id, UNNEST(@permission_ids::uuid[]), @tenant_id;
 
 -- name: AssignRoleToUser :exec
 INSERT INTO user_roles (user_id, role_id, tenant_id)
