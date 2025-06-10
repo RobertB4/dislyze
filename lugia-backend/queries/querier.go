@@ -14,6 +14,7 @@ type Querier interface {
 	ActivateInvitedUser(ctx context.Context, arg *ActivateInvitedUserParams) error
 	AddRolesToUser(ctx context.Context, arg []*AddRolesToUserParams) (int64, error)
 	AssignRoleToUser(ctx context.Context, arg *AssignRoleToUserParams) error
+	CheckRoleInUse(ctx context.Context, arg *CheckRoleInUseParams) (bool, error)
 	CheckRoleNameExists(ctx context.Context, arg *CheckRoleNameExistsParams) (bool, error)
 	CountUsersByTenantID(ctx context.Context, arg *CountUsersByTenantIDParams) (int64, error)
 	CreateEmailChangeToken(ctx context.Context, arg *CreateEmailChangeTokenParams) error
@@ -29,6 +30,7 @@ type Querier interface {
 	DeleteInvitationTokensByUserIDAndTenantID(ctx context.Context, arg *DeleteInvitationTokensByUserIDAndTenantIDParams) error
 	DeletePasswordResetTokenByUserID(ctx context.Context, userID pgtype.UUID) error
 	DeleteRefreshTokensByUserID(ctx context.Context, userID pgtype.UUID) error
+	DeleteRole(ctx context.Context, arg *DeleteRoleParams) error
 	DeleteRolePermissions(ctx context.Context, arg *DeleteRolePermissionsParams) error
 	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	ExistsUserWithEmail(ctx context.Context, email string) (bool, error)

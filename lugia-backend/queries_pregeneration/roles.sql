@@ -42,3 +42,13 @@ SELECT EXISTS(
     SELECT 1 FROM roles 
     WHERE tenant_id = $1 AND name = $2 AND id != $3
 ) as exists;
+
+-- name: CheckRoleInUse :one
+SELECT EXISTS(
+    SELECT 1 FROM user_roles
+    WHERE role_id = $1 AND tenant_id = $2
+) as exists;
+
+-- name: DeleteRole :exec
+DELETE FROM roles
+WHERE id = $1 AND tenant_id = $2 AND is_default = false;

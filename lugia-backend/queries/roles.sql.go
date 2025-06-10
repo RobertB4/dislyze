@@ -11,6 +11,25 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const CheckRoleInUse = `-- name: CheckRoleInUse :one
+SELECT EXISTS(
+    SELECT 1 FROM user_roles
+    WHERE role_id = $1 AND tenant_id = $2
+) as exists
+`
+
+type CheckRoleInUseParams struct {
+	RoleID   pgtype.UUID `json:"role_id"`
+	TenantID pgtype.UUID `json:"tenant_id"`
+}
+
+func (q *Queries) CheckRoleInUse(ctx context.Context, arg *CheckRoleInUseParams) (bool, error) {
+	row := q.db.QueryRow(ctx, CheckRoleInUse, arg.RoleID, arg.TenantID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const CheckRoleNameExists = `-- name: CheckRoleNameExists :one
 SELECT EXISTS(
     SELECT 1 FROM roles 
@@ -85,6 +104,21 @@ type CreateRolePermissionsBulkParams struct {
 
 func (q *Queries) CreateRolePermissionsBulk(ctx context.Context, arg *CreateRolePermissionsBulkParams) error {
 	_, err := q.db.Exec(ctx, CreateRolePermissionsBulk, arg.RoleID, arg.PermissionIds, arg.TenantID)
+	return err
+}
+
+const DeleteRole = `-- name: DeleteRole :exec
+DELETE FROM roles
+WHERE id = $1 AND tenant_id = $2 AND is_default = false
+`
+
+type DeleteRoleParams struct {
+	ID       pgtype.UUID `json:"id"`
+	TenantID pgtype.UUID `json:"tenant_id"`
+}
+
+func (q *Queries) DeleteRole(ctx context.Context, arg *DeleteRoleParams) error {
+	_, err := q.db.Exec(ctx, DeleteRole, arg.ID, arg.TenantID)
 	return err
 }
 
