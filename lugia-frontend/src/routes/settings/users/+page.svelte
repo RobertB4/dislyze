@@ -271,7 +271,7 @@
 	}}
 >
 	{#snippet buttons()}
-		{#if hasPermission(pageData.me, "users.create")}
+		{#if hasPermission(pageData.me, "users.edit")}
 			<Button
 				type="button"
 				variant="primary"
@@ -595,7 +595,7 @@
 												data-testid={`user-actions-${user.id}`}
 											>
 												{#if pageData.me.user_id !== user.id}
-													{#if hasPermission(pageData.me, "users.delete")}
+													{#if hasPermission(pageData.me, "users.edit")}
 														{#if user.status === "pending_verification"}
 															<Button
 																variant="link"
@@ -616,7 +616,7 @@
 															</Button>
 														{/if}
 													{/if}
-													{#if hasPermission(pageData.me, "users.update")}
+													{#if hasPermission(pageData.me, "users.edit")}
 														<Button
 															variant="link"
 															class="text-indigo-600 hover:text-indigo-900"

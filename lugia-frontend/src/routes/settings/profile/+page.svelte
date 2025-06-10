@@ -200,7 +200,7 @@
 		{ id: "change-name-section", label: "氏名を変更" },
 		{ id: "change-password-section", label: "パスワードを変更" },
 		{ id: "change-email-section", label: "メールアドレスを変更" },
-		...(hasPermission(pageData.me, "tenant.update")
+		...(hasPermission(pageData.me, "tenant.edit")
 			? [{ id: "change-tenant-section", label: "組織名を変更" }]
 			: [])
 	];
@@ -373,7 +373,7 @@
 				</div>
 
 				<!-- Change Tenant Name Section -->
-				{#if hasPermission(pageData.me, "tenant.update")}
+				{#if hasPermission(pageData.me, "tenant.edit")}
 					<div
 						id="change-tenant-section"
 						class="bg-white shadow rounded-lg p-6"

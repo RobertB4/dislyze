@@ -4,7 +4,7 @@ export type Me = {
 	user_id: string;
 	email: string;
 	user_name: string;
-	permissions: string[]; // array of {resource}.{action}, e.g. users.update
+	permissions: `${string}.${"view" | "edit"}`[]; // array of {resource}.{action}, e.g. users.view
 	tenant_name: string;
 };
 
@@ -14,7 +14,7 @@ export type Me = {
  * @param permission - Permission in format "resource.action" (e.g., "users.view")
  * @returns boolean indicating if user has the permission
  */
-export function hasPermission(me: Me, permission: string): boolean {
+export function hasPermission(me: Me, permission: `${string}.${"view" | "edit"}`): boolean {
 	return me.permissions.includes(permission);
 }
 
