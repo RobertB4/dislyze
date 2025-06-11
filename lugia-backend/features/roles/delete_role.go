@@ -38,7 +38,7 @@ func (h *RolesHandler) DeleteRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *RolesHandler) deleteRole(ctx context.Context, roleID pgtype.UUID) error {

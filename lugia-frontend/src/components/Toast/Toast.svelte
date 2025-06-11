@@ -61,6 +61,7 @@
 				class="ml-4 inline-flex h-5 w-5 flex-shrink-0 cursor-pointer rounded-md p-0.5 text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
 				onclick={closeToast}
 				aria-label="閉じる"
+				data-testid={dataTestId ? `${dataTestId}-close` : undefined}
 			>
 				<span class="sr-only">Close</span>
 				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

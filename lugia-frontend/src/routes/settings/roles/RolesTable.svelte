@@ -421,6 +421,7 @@
 
 														<span
 															class="text-gray-400 cursor-help border-b border-dotted border-gray-300 flex items-center"
+															data-testid={`role-permissions-overflow-${role.id}`}
 														>
 															他{role.permissions.length - 3}件
 															<svg
@@ -447,12 +448,14 @@
 										{#if role.is_default}
 											<span
 												class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800"
+												data-testid={`role-type-badge-default-${role.id}`}
 											>
 												デフォルト
 											</span>
 										{:else}
 											<span
 												class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800"
+												data-testid={`role-type-badge-custom-${role.id}`}
 											>
 												カスタム
 											</span>

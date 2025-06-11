@@ -49,7 +49,7 @@ func assignRoleToUser(t *testing.T, pool *pgxpool.Pool, userID, roleID, tenantID
 // Helper function to verify role is deleted
 func verifyRoleDeleted(t *testing.T, pool *pgxpool.Pool, roleID, tenantID string) {
 	ctx := context.Background()
-	
+
 	// Check role is deleted
 	var count int
 	err := pool.QueryRow(ctx,
@@ -57,7 +57,7 @@ func verifyRoleDeleted(t *testing.T, pool *pgxpool.Pool, roleID, tenantID string
 		roleID, tenantID).Scan(&count)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, count, "Role should be deleted")
-	
+
 	// Check role permissions are deleted
 	err = pool.QueryRow(ctx,
 		`SELECT COUNT(*) FROM role_permissions WHERE role_id = $1 AND tenant_id = $2`,
@@ -85,43 +85,43 @@ func TestDeleteRole_Integration(t *testing.T) {
 	tests := []deleteRoleTestCase{
 		// Authentication & Authorization Tests
 		{
-			name:         "error for unauthorized request",
-			expectUnauth: true,
-			roleID:       "b0000000-0000-0000-0000-000000000001", // Any ID for unauth test
+			name:           "error for unauthorized request",
+			expectUnauth:   true,
+			roleID:         "b0000000-0000-0000-0000-000000000001", // Any ID for unauth test
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
-			name:         "user without roles.edit permission gets 403 forbidden",
-			loginUserKey: "alpha_editor",
-			roleID:       "b0000000-0000-0000-0000-000000000001", // Any ID for forbidden test
+			name:           "user without roles.edit permission gets 403 forbidden",
+			loginUserKey:   "alpha_editor",
+			roleID:         "b0000000-0000-0000-0000-000000000001", // Any ID for forbidden test
 			expectedStatus: http.StatusForbidden,
 		},
 
 		// Input Validation Tests
 		{
-			name:         "invalid role ID format returns 400",
-			loginUserKey: "alpha_admin",
-			roleID:       "not-a-valid-uuid",
+			name:           "invalid role ID format returns 400",
+			loginUserKey:   "alpha_admin",
+			roleID:         "not-a-valid-uuid",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:         "non-existent role ID returns 404",
-			loginUserKey: "alpha_admin",
-			roleID:       "99999999-9999-9999-9999-999999999999",
+			name:           "non-existent role ID returns 404",
+			loginUserKey:   "alpha_admin",
+			roleID:         "99999999-9999-9999-9999-999999999999",
 			expectedStatus: http.StatusNotFound,
 		},
 
 		// Business Logic Protection Tests
 		{
-			name:         "cannot delete default admin role",
-			loginUserKey: "alpha_admin",
-			roleID:       "e0000000-0000-0000-0000-000000000001", // Default admin role from seed
+			name:           "cannot delete default admin role",
+			loginUserKey:   "alpha_admin",
+			roleID:         "e0000000-0000-0000-0000-000000000001", // Default admin role from seed
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:         "cannot delete default editor role",
-			loginUserKey: "alpha_admin",
-			roleID:       "e0000000-0000-0000-0000-000000000002", // Default editor role from seed
+			name:           "cannot delete default editor role",
+			loginUserKey:   "alpha_admin",
+			roleID:         "e0000000-0000-0000-0000-000000000002", // Default editor role from seed
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -140,9 +140,9 @@ func TestDeleteRole_Integration(t *testing.T) {
 
 		// Security & Tenant Isolation Tests
 		{
-			name:         "attempt to delete role from different tenant returns 404",
-			loginUserKey: "alpha_admin", // Tenant Alpha user
-			roleID:       "e0000000-0000-0000-0000-000000000003", // Tenant Beta role from seed
+			name:           "attempt to delete role from different tenant returns 404",
+			loginUserKey:   "alpha_admin",                          // Tenant Alpha user
+			roleID:         "e0000000-0000-0000-0000-000000000003", // Tenant Beta role from seed
 			expectedStatus: http.StatusNotFound,
 		},
 
@@ -154,7 +154,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 				return createTestRoleForDeletion(t, pool, "Deletable Role", "Can be deleted",
 					[]string{"d0000000-0000-0000-0000-000000000001"}, "a0000000-0000-0000-0000-000000000001")
 			},
-			expectedStatus: http.StatusNoContent,
+			expectedStatus: http.StatusOK,
 			verifyDeleted:  true,
 		},
 		{
@@ -167,7 +167,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 						"d0000000-0000-0000-0000-000000000002", // users.edit
 					}, "a0000000-0000-0000-0000-000000000001")
 			},
-			expectedStatus: http.StatusNoContent,
+			expectedStatus: http.StatusOK,
 			verifyDeleted:  true,
 		},
 		{
@@ -177,7 +177,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 				return createTestRoleForDeletion(t, pool, "Role No Permissions", "No permissions assigned",
 					[]string{}, "a0000000-0000-0000-0000-000000000001")
 			},
-			expectedStatus: http.StatusNoContent,
+			expectedStatus: http.StatusOK,
 			verifyDeleted:  true,
 		},
 
@@ -189,7 +189,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 				return createTestRoleForDeletion(t, pool, "To Be Verified Gone", "This role will be verified as deleted",
 					[]string{"d0000000-0000-0000-0000-000000000001"}, "a0000000-0000-0000-0000-000000000001")
 			},
-			expectedStatus: http.StatusNoContent,
+			expectedStatus: http.StatusOK,
 			verifyDeleted:  true,
 		},
 	}
@@ -236,7 +236,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Test: %s", tt.name)
 
 			// Verify role is actually deleted for success cases
-			if tt.verifyDeleted && resp.StatusCode == http.StatusNoContent {
+			if tt.verifyDeleted && resp.StatusCode == http.StatusOK {
 				verifyRoleDeleted(t, pool, roleID, "a0000000-0000-0000-0000-000000000001")
 			}
 		})
@@ -277,7 +277,7 @@ func TestDeleteRole_VerifyGoneAfterDeletion(t *testing.T) {
 		}
 	}()
 
-	assert.Equal(t, http.StatusNoContent, deleteResp.StatusCode)
+	assert.Equal(t, http.StatusOK, deleteResp.StatusCode)
 
 	// Try to delete the same role again - should return 404
 	deleteReq2, err := http.NewRequest("POST", deleteURL, nil)

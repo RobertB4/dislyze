@@ -109,8 +109,8 @@
 
 	<div class="space-y-4">
 		{#each groupedPermissions() as group (group.resource)}
-			<div class="border border-gray-200 rounded-lg p-4">
-				<h4 class="text-sm font-medium text-gray-900 mb-3">
+			<div class="border border-gray-200 rounded-lg p-4" data-testid={`permission-group-${group.resource}`}>
+				<h4 class="text-sm font-medium text-gray-900 mb-3" data-testid={`permission-group-title-${group.resource}`}>
 					{group.displayName}
 				</h4>
 				<div class="flex flex-wrap gap-2">
