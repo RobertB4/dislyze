@@ -4,6 +4,7 @@
 	import Tooltip from "$components/Tooltip.svelte";
 	import Slideover from "$components/Slideover.svelte";
 	import Input from "$components/Input.svelte";
+	import Alert from "$components/Alert.svelte";
 	import PermissionSelector from "./PermissionSelector.svelte";
 	import type { PermissionInfo, RoleInfo } from "./+page";
 	import { hasPermission, type Me } from "$lib/meCache";
@@ -25,6 +26,7 @@
 	} = $props();
 
 	let editingRole = $state<RoleInfo | null>(null);
+	let roleToDelete = $state<RoleInfo | null>(null);
 
 	function sortRoles(roles: RoleInfo[]): RoleInfo[] {
 		const defaultRoleOrder = ["管理者", "編集者", "閲覧者"];
@@ -157,6 +159,50 @@
 		editReset();
 	};
 
+	const handleDeleteRole = (role: RoleInfo) => {
+		roleToDelete = role;
+	};
+
+	const handleDeleteModalClose = () => {
+		roleToDelete = null;
+		deleteReset();
+	};
+
+	const {
+		form: deleteForm,
+		data: deleteData,
+		errors: deleteErrors,
+		isSubmitting: isDeleting,
+		reset: deleteReset
+	} = createForm({
+		initialValues: {
+			confirmName: ""
+		},
+		validate: (values) => {
+			const errs: Record<string, string> = {};
+			values.confirmName = values.confirmName.trim();
+
+			if (values.confirmName !== roleToDelete?.name) {
+				errs.confirmName = "ロール名が一致しません";
+			}
+			return errs;
+		},
+		onSubmit: async () => {
+			if (!roleToDelete) return;
+
+			const { success } = await mutationFetch(`/api/roles/${roleToDelete.id}/delete`, {
+				method: "POST"
+			});
+
+			if (success) {
+				await invalidate((u) => u.pathname === "/api/roles");
+				deleteReset();
+				toast.show("ロールを削除しました。", "success");
+				roleToDelete = null;
+			}
+		}
+	});
+
 	let sortedRoles = $derived(sortRoles(roles));
 </script>
 
@@ -241,6 +287,41 @@
 					setFields={editSetFields}
 					error={$editErrors.hasPermission?.[0]}
 					data-testid="edit-role-permissions"
+				/>
+			</div>
+		</Slideover>
+	</form>
+{/if}
+
+{#if roleToDelete}
+	<form use:deleteForm class="space-y-6 p-1 flex flex-col h-full" data-testid="delete-role-form">
+		<Slideover
+			title="ロールを削除"
+			primaryButtonText="削除"
+			primaryButtonTypeSubmit={true}
+			onClose={handleDeleteModalClose}
+			loading={$isDeleting}
+			data-testid="delete-role-slideover"
+		>
+			<div class="flex-grow space-y-6">
+				<Alert type="danger" title="この操作は元に戻せません。" data-testid="delete-role-warning">
+					<p>
+						削除を確認するには、ロール名<strong>「{roleToDelete.name}」</strong>を入力してください。
+					</p>
+					<p class="mt-2 text-sm">
+						このロールが他のユーザーに割り当てられている場合、削除できません。
+					</p>
+				</Alert>
+				<Input
+					id="confirmName"
+					name="confirmName"
+					type="text"
+					label="ロール名を入力して確認"
+					bind:value={$deleteData.confirmName}
+					error={$deleteErrors.confirmName?.[0]}
+					required
+					placeholder={roleToDelete.name}
+					variant="underlined"
 				/>
 			</div>
 		</Slideover>
@@ -385,9 +466,7 @@
 											<Button
 												variant="link"
 												class="mr-4 text-sm text-red-600 hover:text-red-900"
-												onclick={() => {
-													/* TODO: Open delete modal */
-												}}
+												onclick={() => handleDeleteRole(role)}
 												data-testid={`delete-role-button-${role.id}`}
 											>
 												削除
