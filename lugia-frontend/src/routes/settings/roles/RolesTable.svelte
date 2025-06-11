@@ -4,8 +4,8 @@
 	import Tooltip from "$components/Tooltip.svelte";
 	import Slideover from "$components/Slideover.svelte";
 	import Input from "$components/Input.svelte";
-	import PermissionSelector, { type ResourcePermissions } from "./PermissionSelector.svelte";
-	import type { RoleInfo, PermissionInfo } from "./+page";
+	import PermissionSelector from "./PermissionSelector.svelte";
+	import type { PermissionInfo, RoleInfo } from "./+page";
 	import { hasPermission, type Me } from "$lib/meCache";
 	import { createForm } from "felte";
 	import { toast } from "$components/Toast/toast";
@@ -24,6 +24,8 @@
 		isCreateSlideoverOpen: boolean;
 	} = $props();
 
+	let editingRole = $state<RoleInfo | null>(null);
+
 	function sortRoles(roles: RoleInfo[]): RoleInfo[] {
 		const defaultRoleOrder = ["管理者", "編集者", "閲覧者"];
 
@@ -39,46 +41,11 @@
 		});
 	}
 
-	function getPermissionIds(
-		resourcePermissions: ResourcePermissions,
-		permissions: PermissionInfo[]
-	): string[] {
-		const permissionIds: string[] = [];
-
-		const permissionMap = new Map<string, string>();
-		permissions.forEach((p) => {
-			const key = `${p.resource}.${p.action}`;
-			permissionMap.set(key, p.id);
-		});
-
-		Object.entries(resourcePermissions).forEach(([resource, level]) => {
-			if (level === "view") {
-				const viewKey = `${resource}.view`;
-				const viewId = permissionMap.get(viewKey);
-				if (viewId) {
-					permissionIds.push(viewId);
-				}
-			} else if (level === "edit") {
-				const editKey = `${resource}.edit`;
-				const editId = permissionMap.get(editKey);
-				if (editId) {
-					permissionIds.push(editId);
-				}
-			}
-		});
-
-		return permissionIds;
-	}
-
 	const { form, data, errors, isSubmitting, reset, setFields } = createForm({
 		initialValues: {
 			name: "",
 			description: "",
-			permissions: {
-				users: "none",
-				roles: "none",
-				tenant: "none"
-			} as ResourcePermissions,
+			permission_ids: [] as string[],
 			hasPermission: null
 		},
 		validate: (values) => {
@@ -90,16 +57,13 @@
 				errs.name = "ロール名は必須です";
 			}
 
-			const hasPermission = Object.values(values.permissions).some((level) => level !== "none");
-			if (!hasPermission) {
-				errs.hasPermission = "権限を選択してください";
+			if (values.permission_ids.length === 0) {
+				errs.hasPermission = "権限を選択してください。";
 			}
 
 			return errs;
 		},
 		onSubmit: async (values) => {
-			const permissionIds = getPermissionIds(values.permissions, permissions);
-
 			const { success } = await mutationFetch(`/api/roles/create`, {
 				method: "POST",
 				headers: {
@@ -108,7 +72,7 @@
 				body: JSON.stringify({
 					name: values.name,
 					description: values.description,
-					permission_ids: permissionIds
+					permission_ids: values.permission_ids
 				})
 			});
 
@@ -124,6 +88,73 @@
 	const handleCreateClose = () => {
 		isCreateSlideoverOpen = false;
 		reset();
+	};
+
+	const {
+		form: editForm,
+		data: editData,
+		errors: editErrors,
+		isSubmitting: editIsSubmitting,
+		reset: editReset,
+		setInitialValues: setEditFormInitialValues,
+		setFields: editSetFields
+	} = createForm({
+		initialValues: {
+			name: "",
+			description: "",
+			permission_ids: [] as string[],
+			hasPermission: null
+		},
+		validate: (values) => {
+			const errs: Record<string, string> = {};
+			values.name = values.name.trim();
+			values.description = values.description.trim();
+
+			if (!values.name) {
+				errs.name = "ロール名は必須です。";
+			}
+
+			if (values.permission_ids.length === 0) {
+				errs.hasPermission = "権限を選択してください。";
+			}
+
+			return errs;
+		},
+		onSubmit: async (values) => {
+			if (!editingRole) return;
+
+			const { success } = await mutationFetch(`/api/roles/${editingRole.id}/update`, {
+				method: "POST",
+				body: JSON.stringify({
+					name: values.name,
+					description: values.description,
+					permission_ids: values.permission_ids
+				})
+			});
+
+			if (success) {
+				await invalidate((u) => u.pathname === "/api/roles");
+				editReset();
+				toast.show("ロールを更新しました。", "success");
+				editingRole = null;
+			}
+		}
+	});
+
+	const handleEditModalOpen = (role: RoleInfo) => {
+		const rolePermissionIds = role.permissions.map((p) => p.id);
+		setEditFormInitialValues({
+			name: role.name,
+			description: role.description,
+			permission_ids: rolePermissionIds,
+			hasPermission: null
+		});
+		editingRole = role;
+	};
+
+	const handleEditClose = () => {
+		editingRole = null;
+		editReset();
 	};
 
 	let sortedRoles = $derived(sortRoles(roles));
@@ -162,11 +193,54 @@
 					variant="underlined"
 				/>
 				<PermissionSelector
-					bind:permissions={$data.permissions}
+					bind:permissionIds={$data.permission_ids}
 					availablePermissions={permissions}
 					{setFields}
 					error={$errors.hasPermission?.[0]}
 					data-testid="create-role-permissions"
+				/>
+			</div>
+		</Slideover>
+	</form>
+{/if}
+
+{#if editingRole}
+	<form use:editForm class="space-y-6 p-1 flex flex-col h-full" data-testid="edit-role-form">
+		<Slideover
+			title="ロールを編集"
+			primaryButtonText="更新"
+			primaryButtonTypeSubmit={true}
+			onClose={handleEditClose}
+			loading={$editIsSubmitting}
+			data-testid="edit-role-slideover"
+		>
+			<div class="flex-grow space-y-6">
+				<Input
+					id="edit-name"
+					name="name"
+					type="text"
+					label="ロール名"
+					bind:value={$editData.name}
+					error={$editErrors.name?.[0]}
+					placeholder="例: カスタムロール"
+					variant="underlined"
+				/>
+				<Input
+					id="edit-description"
+					name="description"
+					type="text"
+					label="説明"
+					bind:value={$editData.description}
+					error={$editErrors.description?.[0]}
+					placeholder="ロールの説明（任意）"
+					variant="underlined"
+				/>
+				<PermissionSelector
+					bind:permissionIds={$editData.permission_ids}
+					availablePermissions={permissions}
+					setFields={editSetFields}
+					error={$editErrors.hasPermission?.[0]}
+					data-testid="edit-role-permissions"
 				/>
 			</div>
 		</Slideover>
@@ -321,9 +395,7 @@
 											<Button
 												variant="link"
 												class="text-indigo-600 hover:text-indigo-900"
-												onclick={() => {
-													/* TODO: Open edit modal */
-												}}
+												onclick={() => handleEditModalOpen(role)}
 												data-testid={`edit-role-button-${role.id}`}
 											>
 												編集

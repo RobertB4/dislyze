@@ -1,84 +1,101 @@
-<script module lang="ts">
-	export type PermissionLevel = "none" | "view" | "edit";
-
-	export type ResourcePermissions = {
-		users: PermissionLevel;
-		roles: PermissionLevel;
-		tenant: PermissionLevel;
-	};
-
-	export type PermissionInfo = {
-		id: string;
-		resource: string;
-		action: string;
-		description: string;
-	};
-</script>
-
 <script lang="ts">
 	import Pill from "$components/Pill.svelte";
+	import type { PermissionInfo } from "./+page";
 
 	let {
-		permissions = $bindable(),
+		permissionIds = $bindable(),
 		availablePermissions,
 		setFields,
 		error,
 		"data-testid": dataTestid
 	}: {
-		permissions: ResourcePermissions;
+		permissionIds: string[];
 		availablePermissions: PermissionInfo[];
 		setFields: (
-			fields: Record<
-				| "permissions"
-				| "name"
-				| "description"
-				| "hasPermission"
-				| "permissions.tenant"
-				| "permissions.users"
-				| "permissions.roles",
-				string
-			>,
-			value: string
+			key: "permission_ids" | "name" | "description" | "hasPermission" | `permission_ids.${number}`,
+			value: any
 		) => void;
 		error?: string;
 		"data-testid"?: string;
 	} = $props();
-	let resources = $derived(() => {
-		const resourceMap = new Map<string, string>();
 
+	function getResourceDisplayName(resource: string): string {
 		const resourceLabels: Record<string, string> = {
 			users: "ユーザー管理",
 			roles: "ロール管理",
 			tenant: "テナント設定"
 		};
+		return resourceLabels[resource] || resource;
+	}
 
-		availablePermissions.forEach((permission) => {
-			if (!resourceMap.has(permission.resource)) {
-				resourceMap.set(
-					permission.resource,
-					resourceLabels[permission.resource] || permission.resource
-				);
+	function getCurrentSelection(resource: string): "none" | "view" | "edit" {
+		// Find which permission from this resource is currently selected
+		const resourcePermissions = availablePermissions.filter((p) => p.resource === resource);
+
+		for (const permission of resourcePermissions) {
+			if (permissionIds.includes(permission.id)) {
+				return permission.action as "view" | "edit";
+			}
+		}
+
+		return "none";
+	}
+
+	function selectOption(resource: string, option: "none" | "view" | "edit") {
+		const currentIds = [...permissionIds];
+
+		// Remove all existing permissions for this resource
+		const resourcePermissions = availablePermissions.filter((p) => p.resource === resource);
+		resourcePermissions.forEach((permission) => {
+			const index = currentIds.indexOf(permission.id);
+			if (index > -1) {
+				currentIds.splice(index, 1);
 			}
 		});
 
-		return Array.from(resourceMap.entries()).map(([key, label]) => ({
-			key,
-			label
+		// Add the selected permission if not "none"
+		if (option !== "none") {
+			const selectedPermission = resourcePermissions.find((p) => p.action === option);
+			if (selectedPermission) {
+				currentIds.push(selectedPermission.id);
+			}
+		}
+
+		setFields("permission_ids", currentIds);
+	}
+
+	function getActionLabel(action: "none" | "view" | "edit"): string {
+		const labels = {
+			none: "なし",
+			view: "閲覧",
+			edit: "編集"
+		};
+		return labels[action];
+	}
+
+	// Group permissions by resource for better UI organization
+	let groupedPermissions = $derived(() => {
+		const groups = new Map<string, PermissionInfo[]>();
+
+		availablePermissions.forEach((permission) => {
+			if (!groups.has(permission.resource)) {
+				groups.set(permission.resource, []);
+			}
+			groups.get(permission.resource)!.push(permission);
+		});
+
+		return Array.from(groups.entries()).map(([resource, permissions]) => ({
+			resource,
+			displayName: getResourceDisplayName(resource),
+			permissions
 		}));
 	});
-
-	const levels = [
-		{ value: "none", label: "なし" },
-		{ value: "view", label: "閲覧" },
-		{ value: "edit", label: "編集" }
-	] as const;
 </script>
 
 <div class="space-y-6" data-testid={dataTestid}>
 	<div class="text-xs text-gray-500">
-		<p><strong>なし:</strong> 該当機能にアクセスできません</p>
-		<p><strong>閲覧:</strong> 一覧表示や詳細確認ができます</p>
-		<p><strong>編集:</strong> 閲覧権限に加えて、作成・更新・削除ができます</p>
+		<p><strong>編集権限:</strong> 閲覧権限も自動的に含まれます</p>
+		<p>必要な権限を選択してください</p>
 	</div>
 
 	<div>
@@ -91,26 +108,45 @@
 	</div>
 
 	<div class="space-y-4">
-		{#each resources() as resource (resource.key)}
+		{#each groupedPermissions() as group (group.resource)}
 			<div class="border border-gray-200 rounded-lg p-4">
-				<div class="flex items-center justify-between">
-					<h4 class="text-sm font-medium text-gray-900 min-w-0 flex-shrink-0">
-						{resource.label}
-					</h4>
-					<div class="flex gap-2 ml-4">
-						{#each levels as level (level.value)}
-							<Pill
-								selected={permissions[resource.key as "tenant" | "users" | "roles"] === level.value}
-								onclick={() => {
-									setFields(`permissions.${resource.key}` as any, level.value);
-								}}
-								variant="orange"
-								data-testid={`permission-${resource.key}-${level.value}`}
-							>
-								{level.label}
-							</Pill>
-						{/each}
-					</div>
+				<h4 class="text-sm font-medium text-gray-900 mb-3">
+					{group.displayName}
+				</h4>
+				<div class="flex flex-wrap gap-2">
+					<!-- None option -->
+					<Pill
+						selected={getCurrentSelection(group.resource) === "none"}
+						onclick={() => selectOption(group.resource, "none")}
+						variant="orange"
+						data-testid={`permission-${group.resource}-none`}
+					>
+						{getActionLabel("none")}
+					</Pill>
+
+					<!-- View option (if available) -->
+					{#if group.permissions.some((p) => p.action === "view")}
+						<Pill
+							selected={getCurrentSelection(group.resource) === "view"}
+							onclick={() => selectOption(group.resource, "view")}
+							variant="orange"
+							data-testid={`permission-${group.resource}-view`}
+						>
+							{getActionLabel("view")}
+						</Pill>
+					{/if}
+
+					<!-- Edit option (if available) -->
+					{#if group.permissions.some((p) => p.action === "edit")}
+						<Pill
+							selected={getCurrentSelection(group.resource) === "edit"}
+							onclick={() => selectOption(group.resource, "edit")}
+							variant="orange"
+							data-testid={`permission-${group.resource}-edit`}
+						>
+							{getActionLabel("edit")}
+						</Pill>
+					{/if}
 				</div>
 			</div>
 		{/each}
