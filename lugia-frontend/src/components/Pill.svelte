@@ -78,6 +78,13 @@
 	});
 </script>
 
-<button type="button" class={computedStyles()} {onclick} {disabled} data-selected={selected} {...rest}>
+<button
+	type="button"
+	class={computedStyles()}
+	{onclick}
+	{disabled}
+	data-selected={selected}
+	{...rest}
+>
 	{@render children()}
 </button>
