@@ -5,6 +5,9 @@ WHERE id = ANY($1::uuid[]) AND tenant_id = $2;
 -- name: GetTenantRolesWithPermissions :many
 SELECT 
     roles.id, roles.name, roles.description, roles.is_default,
+    permissions.id as permission_id,
+    permissions.resource,
+    permissions.action,
     permissions.description as permission_description
 FROM roles
 LEFT JOIN role_permissions ON roles.id = role_permissions.role_id

@@ -247,19 +247,19 @@
 											<span class="text-gray-400">権限なし</span>
 										{:else}
 											<div class="flex flex-wrap gap-1 items-center">
-												{#each role.permissions.slice(0, 3) as permission (permission)}
+												{#each role.permissions.slice(0, 3) as permission (permission.id)}
 													<span
 														class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800"
 													>
-														{permission}
+														{permission.description}
 													</span>
 												{/each}
 												{#if role.permissions.length > 3}
 													<Tooltip class="ml-2">
 														{#snippet content()}
 															<div class="space-y-1">
-																{#each role.permissions.slice(3) as permission (permission)}
-																	<div class="text-xs">{permission}</div>
+																{#each role.permissions.slice(3) as permission (permission.id)}
+																	<div class="text-xs">{permission.description}</div>
 																{/each}
 															</div>
 														{/snippet}

@@ -59,6 +59,23 @@ func TestGetRoles_Integration(t *testing.T) {
 				assert.Equal(t, "限定的な編集権限", editorRole.Description)
 				assert.Len(t, editorRole.Permissions, 0, "Editor role should have no permissions")
 
+				// Validate permission structure and content
+				require.Len(t, adminRole.Permissions, 5, "Admin role should have 5 permissions")
+				
+				// Check that each permission has the required fields
+				for _, perm := range adminRole.Permissions {
+					assert.NotEmpty(t, perm.ID, "Permission ID should not be empty")
+					assert.NotEmpty(t, perm.Resource, "Permission resource should not be empty")
+					assert.NotEmpty(t, perm.Action, "Permission action should not be empty")
+					assert.NotEmpty(t, perm.Description, "Permission description should not be empty")
+				}
+				
+				// Extract permission descriptions for validation
+				var permissionDescriptions []string
+				for _, perm := range adminRole.Permissions {
+					permissionDescriptions = append(permissionDescriptions, perm.Description)
+				}
+				
 				// Permissions should be ordered by description alphabetically
 				expectedPermissions := []string{
 					"テナント設定の編集",
@@ -67,7 +84,7 @@ func TestGetRoles_Integration(t *testing.T) {
 					"ロールの編集",
 					"ロール一覧の閲覧",
 				}
-				assert.Equal(t, expectedPermissions, adminRole.Permissions)
+				assert.Equal(t, expectedPermissions, permissionDescriptions)
 			},
 		},
 		{
@@ -186,9 +203,12 @@ func TestGetRoles_ResponseFormat(t *testing.T) {
 
 		// Validate permission format
 		for _, permission := range role.Permissions {
-			assert.NotEmpty(t, permission, "Permission should not be empty")
+			assert.NotEmpty(t, permission.ID, "Permission ID should not be empty")
+			assert.NotEmpty(t, permission.Resource, "Permission resource should not be empty")
+			assert.NotEmpty(t, permission.Action, "Permission action should not be empty")
+			assert.NotEmpty(t, permission.Description, "Permission description should not be empty")
 			// Permissions should be Japanese descriptions
-			assert.Greater(t, len(permission), 0, "Permission description should not be empty")
+			assert.Greater(t, len(permission.Description), 0, "Permission description should not be empty")
 		}
 	}
 }

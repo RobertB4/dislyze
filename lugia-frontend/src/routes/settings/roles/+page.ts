@@ -1,12 +1,19 @@
 import type { PageLoad } from "./$types";
 import { loadFunctionFetch } from "$lib/fetch";
 
+export type Permission = {
+	id: string;
+	resource: string;
+	action: string;
+	description: string;
+};
+
 export type RoleInfo = {
 	id: string;
 	name: string;
 	description: string;
 	is_default: boolean;
-	permissions: string[];
+	permissions: Permission[];
 };
 
 export type PermissionInfo = {

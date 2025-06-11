@@ -13,12 +13,19 @@ import (
 	"lugia/lib/responder"
 )
 
+type Permission struct {
+	ID          string `json:"id"`
+	Resource    string `json:"resource"`
+	Action      string `json:"action"`
+	Description string `json:"description"`
+}
+
 type RoleInfo struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	IsDefault   bool     `json:"is_default"`
-	Permissions []string `json:"permissions"`
+	ID          string       `json:"id"`
+	Name        string       `json:"name"`
+	Description string       `json:"description"`
+	IsDefault   bool         `json:"is_default"`
+	Permissions []Permission `json:"permissions"`
 }
 
 type GetRolesResponse struct {
@@ -62,12 +69,17 @@ func (h *RolesHandler) getRoles(ctx context.Context, tenantID pgtype.UUID) (*Get
 				Name:        row.Name,
 				Description: row.Description.String,
 				IsDefault:   row.IsDefault,
-				Permissions: []string{},
+				Permissions: []Permission{},
 			}
 		}
 
 		if row.PermissionDescription.Valid {
-			permission := row.PermissionDescription.String
+			permission := Permission{
+				ID:          row.PermissionID.String(),
+				Resource:    row.Resource.String,
+				Action:      row.Action.String,
+				Description: row.PermissionDescription.String,
+			}
 			roleMap[roleID].Permissions = append(roleMap[roleID].Permissions, permission)
 		}
 	}

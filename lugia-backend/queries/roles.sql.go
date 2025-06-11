@@ -201,6 +201,9 @@ func (q *Queries) GetRoleByID(ctx context.Context, arg *GetRoleByIDParams) (*Rol
 const GetTenantRolesWithPermissions = `-- name: GetTenantRolesWithPermissions :many
 SELECT 
     roles.id, roles.name, roles.description, roles.is_default,
+    permissions.id as permission_id,
+    permissions.resource,
+    permissions.action,
     permissions.description as permission_description
 FROM roles
 LEFT JOIN role_permissions ON roles.id = role_permissions.role_id
@@ -214,6 +217,9 @@ type GetTenantRolesWithPermissionsRow struct {
 	Name                  string      `json:"name"`
 	Description           pgtype.Text `json:"description"`
 	IsDefault             bool        `json:"is_default"`
+	PermissionID          pgtype.UUID `json:"permission_id"`
+	Resource              pgtype.Text `json:"resource"`
+	Action                pgtype.Text `json:"action"`
 	PermissionDescription pgtype.Text `json:"permission_description"`
 }
 
@@ -231,6 +237,9 @@ func (q *Queries) GetTenantRolesWithPermissions(ctx context.Context, tenantID pg
 			&i.Name,
 			&i.Description,
 			&i.IsDefault,
+			&i.PermissionID,
+			&i.Resource,
+			&i.Action,
 			&i.PermissionDescription,
 		); err != nil {
 			return nil, err
