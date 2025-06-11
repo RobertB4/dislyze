@@ -17,11 +17,19 @@ export type User = {
 	updated_at: string;
 };
 
+export type Permission = {
+	id: string;
+	resource: string;
+	action: string;
+	description: string;
+};
+
 export type RoleInfo = {
 	id: string;
 	name: string;
 	description: string;
-	permissions: string[];
+	is_default: boolean;
+	permissions: Permission[];
 };
 
 export type GetRolesResponse = {

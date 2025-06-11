@@ -1,14 +1,7 @@
 <script lang="ts">
 	import Tooltip from "$components/Tooltip.svelte";
+	import type { RoleInfo } from "./+page";
 
-	type Role = {
-		id: string;
-		name: string;
-		description?: string;
-		permissions?: string[];
-	};
-
-	// eslint-disable-next-line svelte/no-unused-props
 	let {
 		role,
 		isSelected = false,
@@ -16,7 +9,7 @@
 		class: customClass = "",
 		"data-testid": dataTestid
 	}: {
-		role: Role;
+		role: RoleInfo;
 		isSelected?: boolean;
 		onclick?: () => void;
 		class?: string;
@@ -76,7 +69,7 @@
 				<h4 class="text-xs font-medium text-gray-700 mb-2">権限:</h4>
 				<div class="grid grid-cols-2 gap-x-4">
 					<ul class="space-y-1">
-						{#each role.permissions.slice(0, 3) as permission (permission)}
+						{#each role.permissions.slice(0, 3) as permission (permission.id)}
 							<li class="text-xs text-gray-600 flex items-center">
 								<svg
 									class="h-3 w-3 text-gray-400 mr-2 flex-shrink-0"
@@ -89,12 +82,12 @@
 										clip-rule="evenodd"
 									></path>
 								</svg>
-								{permission}
+								{permission.description}
 							</li>
 						{/each}
 					</ul>
 					<ul class="space-y-1">
-						{#each role.permissions.slice(3, 5) as permission (permission)}
+						{#each role.permissions.slice(3, 5) as permission (permission.id)}
 							<li class="text-xs text-gray-600 flex items-center">
 								<svg
 									class="h-3 w-3 text-gray-400 mr-2 flex-shrink-0"
@@ -107,7 +100,7 @@
 										clip-rule="evenodd"
 									></path>
 								</svg>
-								{permission}
+								{permission.description}
 							</li>
 						{/each}
 						{#if role.permissions.length > 5}
@@ -126,8 +119,8 @@
 								<Tooltip position="right">
 									{#snippet content()}
 										<div class="space-y-1">
-											{#each (role.permissions || []).slice(5) as permission (permission)}
-												<div class="text-xs">{permission}</div>
+											{#each (role.permissions || []).slice(5) as permission (permission.id)}
+												<div class="text-xs">{permission.description}</div>
 											{/each}
 										</div>
 									{/snippet}
