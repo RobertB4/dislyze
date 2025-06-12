@@ -130,7 +130,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				// Create a role and assign it to a user
 				roleID := createTestRoleForDeletion(t, pool, "Role With Users", "Test Description",
-					[]string{"d0000000-0000-0000-0000-000000000001"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
 				// Assign to alpha_admin user
 				assignRoleToUser(t, pool, "b0000000-0000-0000-0000-000000000001", roleID, "a0000000-0000-0000-0000-000000000001")
 				return roleID
@@ -152,7 +152,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 			loginUserKey: "alpha_admin",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRoleForDeletion(t, pool, "Deletable Role", "Can be deleted",
-					[]string{"d0000000-0000-0000-0000-000000000001"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
 			},
 			expectedStatus: http.StatusOK,
 			verifyDeleted:  true,
@@ -163,8 +163,8 @@ func TestDeleteRole_Integration(t *testing.T) {
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRoleForDeletion(t, pool, "Role With Permissions", "Has permissions but no users",
 					[]string{
-						"d0000000-0000-0000-0000-000000000001", // users.view
-						"d0000000-0000-0000-0000-000000000002", // users.edit
+						"3a52c807-ddcb-4044-8682-658e04800a8e", // users.view
+						"db994eda-6ff7-4ae5-a675-3abe735ce9cc", // users.edit
 					}, "a0000000-0000-0000-0000-000000000001")
 			},
 			expectedStatus: http.StatusOK,
@@ -187,7 +187,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 			loginUserKey: "alpha_admin",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRoleForDeletion(t, pool, "To Be Verified Gone", "This role will be verified as deleted",
-					[]string{"d0000000-0000-0000-0000-000000000001"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
 			},
 			expectedStatus: http.StatusOK,
 			verifyDeleted:  true,
@@ -252,7 +252,7 @@ func TestDeleteRole_VerifyGoneAfterDeletion(t *testing.T) {
 
 	// Create a test role
 	roleID := createTestRoleForDeletion(t, pool, "Role To Delete And Verify", "Will be deleted",
-		[]string{"d0000000-0000-0000-0000-000000000001"}, "a0000000-0000-0000-0000-000000000001")
+		[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
 
 	// Get auth token
 	loginDetails, ok := setup.TestUsersData["alpha_admin"]

@@ -33,7 +33,7 @@ func TestCreateRole_Integration(t *testing.T) {
 			requestBody: roles.CreateRoleRequestBody{
 				Name:          "Unauthorized Role",
 				Description:   "This should fail",
-				PermissionIDs: []string{"d0000000-0000-0000-0000-000000000001"}, // users.view permission
+				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, // users.view permission
 			},
 			expectedStatus: http.StatusUnauthorized,
 		},
@@ -43,7 +43,7 @@ func TestCreateRole_Integration(t *testing.T) {
 			requestBody: roles.CreateRoleRequestBody{
 				Name:          "Forbidden Role",
 				Description:   "This should be forbidden",
-				PermissionIDs: []string{"d0000000-0000-0000-0000-000000000001"}, // users.view permission
+				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, // users.view permission
 			},
 			expectedStatus: http.StatusForbidden,
 		},
@@ -55,7 +55,7 @@ func TestCreateRole_Integration(t *testing.T) {
 			requestBody: roles.CreateRoleRequestBody{
 				Name:          "",
 				Description:   "Valid description",
-				PermissionIDs: []string{"d0000000-0000-0000-0000-000000000001"},
+				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"},
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -77,7 +77,7 @@ func TestCreateRole_Integration(t *testing.T) {
 			requestBody: roles.CreateRoleRequestBody{
 				Name:          "管理者", // Same as existing admin role in tenant Alpha
 				Description:   "Duplicate name role",
-				PermissionIDs: []string{"d0000000-0000-0000-0000-000000000001"},
+				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"},
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -109,7 +109,7 @@ func TestCreateRole_Integration(t *testing.T) {
 			requestBody: roles.CreateRoleRequestBody{
 				Name:          "Test Role Single",
 				Description:   "A test role with one permission",
-				PermissionIDs: []string{"d0000000-0000-0000-0000-000000000001"}, // users.view
+				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, // users.view
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -120,8 +120,8 @@ func TestCreateRole_Integration(t *testing.T) {
 				Name:        "Test Role Multi",
 				Description: "A test role with multiple permissions",
 				PermissionIDs: []string{
-					"d0000000-0000-0000-0000-000000000001", // users.view
-					"d0000000-0000-0000-0000-000000000002", // users.create
+					"3a52c807-ddcb-4044-8682-658e04800a8e", // users.view
+					"db994eda-6ff7-4ae5-a675-3abe735ce9cc", // users.edit
 				},
 			},
 			expectedStatus: http.StatusOK,
@@ -132,7 +132,7 @@ func TestCreateRole_Integration(t *testing.T) {
 			requestBody: roles.CreateRoleRequestBody{
 				Name:          "No Description Role",
 				Description:   "",
-				PermissionIDs: []string{"d0000000-0000-0000-0000-000000000001"}, // users.view
+				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, // users.view
 			},
 			expectedStatus: http.StatusOK,
 		},

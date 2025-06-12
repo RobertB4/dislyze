@@ -38,13 +38,13 @@ CREATE TABLE permissions (
 CREATE INDEX idx_permissions_resource ON permissions(resource);
 
 -- fixed data shared for all tenants
-INSERT INTO permissions (resource, action, description) VALUES
-('tenant', 'view', 'テナント設定の閲覧'),
-('tenant', 'edit', 'テナント設定の編集'),
-('users', 'view', 'ユーザー一覧の閲覧'),
-('users', 'edit', 'ユーザーの編集'),
-('roles', 'view', 'ロール一覧の閲覧'),
-('roles', 'edit', 'ロールの編集');
+INSERT INTO permissions (id, resource, action, description) VALUES
+('98ca3771-c1d3-46fc-8ec6-04d53ea38322', 'tenant', 'view', 'テナント情報の閲覧'),
+('6e95ed87-f380-41fe-bc5b-f8af002345a4', 'tenant', 'edit', 'テナント情報の編集'),
+('3a52c807-ddcb-4044-8682-658e04800a8e', 'users', 'view', 'ユーザー一覧の閲覧'),
+('db994eda-6ff7-4ae5-a675-3abe735ce9cc', 'users', 'edit', 'ユーザーの編集'),
+('44b8962d-5dc5-490e-8469-03078668dd52', 'roles', 'view', 'ロール一覧の閲覧'),
+('cccf277b-5fd5-4f1d-b763-ebf69973e5b7', 'roles', 'edit', 'ロールの編集');
 
 CREATE TABLE role_permissions (
     role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,

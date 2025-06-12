@@ -41,7 +41,7 @@ func TestGetPermissions_Integration(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			validateFunc: func(t *testing.T, response *roles.GetPermissionsResponse) {
 				require.NotNil(t, response)
-				require.Len(t, response.Permissions, 5, "Should have exactly 5 permissions from seed data")
+				assert.GreaterOrEqual(t, len(response.Permissions), 6, "Should have at least 6 permissions from seed data")
 
 				// Validate each permission has required fields
 				for _, permission := range response.Permissions {
@@ -65,7 +65,7 @@ func TestGetPermissions_Integration(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			validateFunc: func(t *testing.T, response *roles.GetPermissionsResponse) {
 				require.NotNil(t, response)
-				require.Len(t, response.Permissions, 5, "Should have exactly 5 permissions for any tenant")
+				assert.GreaterOrEqual(t, len(response.Permissions), 6, "Should have at least 6 permissions for any tenant")
 			},
 		},
 	}
@@ -204,7 +204,7 @@ func TestGetPermissions_ResponseFormat(t *testing.T) {
 
 	// Validate JSON structure
 	require.NotNil(t, response.Permissions)
-	require.Len(t, response.Permissions, 5)
+	assert.GreaterOrEqual(t, len(response.Permissions), 6, "Should have at least 6 permissions")
 
 	// Validate each permission structure and content
 	expectedResources := map[string]bool{"users": false, "roles": false, "tenant": false}

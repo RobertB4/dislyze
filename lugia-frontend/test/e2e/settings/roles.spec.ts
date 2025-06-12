@@ -103,7 +103,10 @@ test.describe("Settings - Roles Page", () => {
 			const adminRoleRow = page.getByTestId("role-row-e0000000-0000-0000-0000-000000000001");
 			await expect(
 				adminRoleRow.getByTestId("role-permissions-e0000000-0000-0000-0000-000000000001")
-			).toContainText("ユーザー一覧の閲覧");
+			).toContainText("テナント情報の編集");
+			await expect(
+				adminRoleRow.getByTestId("role-permissions-e0000000-0000-0000-0000-000000000001")
+			).toContainText("テナント情報の閲覧");
 			await expect(
 				adminRoleRow.getByTestId("role-permissions-e0000000-0000-0000-0000-000000000001")
 			).toContainText("ユーザーの編集");
@@ -850,8 +853,12 @@ test.describe("Settings - Roles Page", () => {
 			await expect(page.getByTestId("delete-role-slideover")).not.toBeVisible();
 
 			// All should work smoothly without state conflicts
-			const modalTestRoleRow = page.locator('[data-testid*="role-row-"]').filter({ hasText: "Modal Test Role" });
-			await expect(modalTestRoleRow.locator('[data-testid*="role-name-"]')).toContainText("Modal Test Role");
+			const modalTestRoleRow = page
+				.locator('[data-testid*="role-row-"]')
+				.filter({ hasText: "Modal Test Role" });
+			await expect(modalTestRoleRow.locator('[data-testid*="role-name-"]')).toContainText(
+				"Modal Test Role"
+			);
 		});
 	});
 });
