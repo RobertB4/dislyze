@@ -1,14 +1,19 @@
 import { test, expect } from "@playwright/test";
-import { resetAndSeedDatabase } from "../setup/helpers";
+import { resetAndSeedDatabase2 } from "../setup/helpers";
+import { TestUsersData2, TestInvitationTokensData2 } from "../setup/seed";
 
-// Use valid tokens from seed data
-const VALID_TOKEN = "26U7PPxCPCFwWifs8gMD73Gq4tLIBlKBgroHOpkb1bQ";
+// Use data from seed structures instead of hardcoded values
+const VALID_TOKEN = TestInvitationTokensData2.enterprise_11_valid.token;
 const INVALID_TOKEN = "invalid_token_12345";
-const INVITER_NAME = "Test Inviter";
-const INVITED_EMAIL = "pending_editor_valid_token@example.com";
+const EXPIRED_TOKEN = TestInvitationTokensData2.enterprise_14_expired.token;
+const ACTIVE_USER_TOKEN = TestInvitationTokensData2.enterprise_10_active_user.token;
+const INVITER_NAME = TestUsersData2.enterprise_1.name; // 田中 太郎
+const INVITED_EMAIL = TestUsersData2.enterprise_11.email; // enterprise11@localhost.com
+const EXPIRED_TOKEN_EMAIL = TestUsersData2.enterprise_14.email; // enterprise14@localhost.com
+const ACTIVE_USER_EMAIL = TestUsersData2.enterprise_10.email; // enterprise10@localhost.com
 
 test.beforeAll(async () => {
-	await resetAndSeedDatabase();
+	await resetAndSeedDatabase2();
 });
 
 test.describe("Accept Invite Page", () => {
@@ -198,6 +203,46 @@ test.describe("Accept Invite Page", () => {
 				"招待リンクが無効か、期限切れです。お手数ですが、招待者に再度依頼してください。"
 			);
 		});
+
+		test("should handle API error - expired token from seed data", async ({ page }) => {
+			await page.goto(
+				`/auth/accept-invite?token=${EXPIRED_TOKEN}&inviter_name=${INVITER_NAME}&invited_email=${EXPIRED_TOKEN_EMAIL}`
+			);
+
+			const passwordInput = page.locator("#password");
+			const passwordConfirmInput = page.locator("#password_confirm");
+			const submitButton = page.getByTestId("submit-button");
+
+			await passwordInput.fill("password123");
+			await passwordConfirmInput.fill("password123");
+			await submitButton.click();
+
+			// Should show error toast for expired token
+			const toastMessage = page.getByTestId("toast-0");
+			await expect(toastMessage).toBeVisible({ timeout: 10000 });
+			await expect(toastMessage).toContainText(
+				"招待リンクが無効か、期限切れです。お手数ですが、招待者に再度依頼してください。"
+			);
+		});
+
+		test("should handle API error - token for already active user", async ({ page }) => {
+			await page.goto(
+				`/auth/accept-invite?token=${ACTIVE_USER_TOKEN}&inviter_name=${INVITER_NAME}&invited_email=${ACTIVE_USER_EMAIL}`
+			);
+
+			const passwordInput = page.locator("#password");
+			const passwordConfirmInput = page.locator("#password_confirm");
+			const submitButton = page.getByTestId("submit-button");
+
+			await passwordInput.fill("password123");
+			await passwordConfirmInput.fill("password123");
+			await submitButton.click();
+
+			// Should show error toast - user is already active
+			const toastMessage = page.getByTestId("toast-0");
+			await expect(toastMessage).toBeVisible({ timeout: 10000 });
+			await expect(toastMessage).toContainText("このユーザーはすでに承諾済みです。");
+		});
 	});
 
 	test.describe("Security", () => {
@@ -225,6 +270,24 @@ test.describe("Accept Invite Page", () => {
 			// Should display safely escaped content
 			await expect(page.getByTestId("accept-invite-form")).toBeVisible();
 			await expect(page.locator("#email")).toHaveValue(maliciousEmail);
+
+			// Script should not execute
+			page.on("dialog", () => {
+				throw new Error("XSS script executed");
+			});
+		});
+
+		test("should handle malicious inviter name safely", async ({ page }) => {
+			const maliciousScript = "<script>alert('xss')</script>";
+			const maliciousInviterName = `悪意のある${maliciousScript}招待者`;
+
+			await page.goto(
+				`/auth/accept-invite?token=${VALID_TOKEN}&inviter_name=${encodeURIComponent(maliciousInviterName)}&invited_email=${INVITED_EMAIL}`
+			);
+
+			// Should display safely escaped content
+			await expect(page.getByTestId("accept-invite-form")).toBeVisible();
+			await expect(page.locator("#email")).toHaveValue(INVITED_EMAIL);
 
 			// Script should not execute
 			page.on("dialog", () => {

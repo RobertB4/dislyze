@@ -54,6 +54,24 @@ export async function resetAndSeedDatabase(): Promise<void> {
 	}
 }
 
+export async function resetAndSeedDatabase2(): Promise<void> {
+	try {
+		const deleteFilePath = "../database/delete.sql";
+		const seedFilePath = "../database/seed_localhost.sql";
+
+		console.log("Starting database reset (running delete.sql)...");
+		await executeSqlFile(deleteFilePath);
+		console.log("Database reset (delete.sql executed).");
+
+		console.log("Starting database seeding...");
+		await executeSqlFile(seedFilePath);
+		console.log("Database seeded.");
+	} catch (error) {
+		console.error("Critical error during database reset/seed process:", error);
+		throw error;
+	}
+}
+
 /**
  * Creates a new tenant with RBAC feature disabled via signup API
  * Returns credentials for the created admin user

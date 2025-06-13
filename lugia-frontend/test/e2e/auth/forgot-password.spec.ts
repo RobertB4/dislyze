@@ -1,6 +1,6 @@
 import { test, expect, APIRequestContext } from "@playwright/test";
-import { resetAndSeedDatabase } from "../setup/helpers";
-import { TestUsersData } from "../setup/seed";
+import { resetAndSeedDatabase2 } from "../setup/helpers";
+import { TestUsersData2 } from "../setup/seed";
 
 const FORGOT_PASSWORD_URL = "/auth/forgot-password";
 const RESET_PASSWORD_URL = "/auth/reset-password";
@@ -52,7 +52,7 @@ async function getResetToken(
 
 test.describe("Auth - Forgot Password & Reset Password", () => {
 	test.beforeAll(async () => {
-		await resetAndSeedDatabase();
+		await resetAndSeedDatabase2();
 	});
 
 	test.describe("Forgot Password Page", () => {
@@ -100,7 +100,7 @@ test.describe("Auth - Forgot Password & Reset Password", () => {
 			page,
 			request
 		}) => {
-			await page.locator("#email").fill(TestUsersData.alpha_editor.email);
+			await page.locator("#email").fill(TestUsersData2.enterprise_2.email);
 			await page.getByTestId("forgot-password-submit-button").click();
 
 			const toastMessage = page.getByTestId("toast-0");
@@ -110,7 +110,7 @@ test.describe("Auth - Forgot Password & Reset Password", () => {
 			);
 			await expect(page).toHaveURL(FORGOT_PASSWORD_URL);
 
-			const token = await getResetToken(request, TestUsersData.alpha_editor.email);
+			const token = await getResetToken(request, TestUsersData2.enterprise_2.email);
 			expect(token).not.toBeNull();
 		});
 	});
@@ -151,7 +151,7 @@ test.describe("Auth - Forgot Password & Reset Password", () => {
 	});
 
 	test.describe("End-to-End Password Reset Flow", () => {
-		const testUser = TestUsersData.alpha_editor;
+		const testUser = TestUsersData2.enterprise_2;
 		const newPassword = "newPassword";
 
 		test("should allow user to reset password and login with new password", async ({
@@ -209,14 +209,14 @@ test.describe("Auth - Forgot Password & Reset Password", () => {
 		let validResetToken: string | null;
 
 		test.beforeEach(async ({ page, request }) => {
-			await resetAndSeedDatabase();
+			await resetAndSeedDatabase2();
 
 			await page.goto(FORGOT_PASSWORD_URL);
-			await page.locator("#email").fill(TestUsersData.alpha_editor.email);
+			await page.locator("#email").fill(TestUsersData2.enterprise_2.email);
 			await page.getByTestId("forgot-password-submit-button").click();
 			await expect(page.getByTestId("toast-0")).toBeVisible({ timeout: 10000 });
 
-			validResetToken = await getResetToken(request, TestUsersData.alpha_editor.email);
+			validResetToken = await getResetToken(request, TestUsersData2.enterprise_2.email);
 			expect(
 				validResetToken,
 				"Failed to obtain a valid reset token for validation tests"

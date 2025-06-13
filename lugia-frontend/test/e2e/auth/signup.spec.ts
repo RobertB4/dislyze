@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { resetAndSeedDatabase } from "../setup/helpers";
-import { TestUsersData } from "../setup/seed";
+import { resetAndSeedDatabase2 } from "../setup/helpers";
+import { TestUsersData2 } from "../setup/seed";
 
 test.describe("Auth - Signup Page", () => {
 	const signupURL = "/auth/signup";
@@ -8,7 +8,7 @@ test.describe("Auth - Signup Page", () => {
 	const uniqueUserEmail = `testuser_${Date.now()}@example.com`;
 
 	test.beforeAll(async () => {
-		await resetAndSeedDatabase();
+		await resetAndSeedDatabase2();
 	});
 
 	test.beforeEach(async ({ page }) => {
@@ -37,7 +37,7 @@ test.describe("Auth - Signup Page", () => {
 
 		await companyNameLocator.fill("Test Company Existing Email");
 		await page.locator("#user_name").fill("Test User Existing");
-		await page.locator("#email").fill(TestUsersData.alpha_admin.email);
+		await page.locator("#email").fill(TestUsersData2.enterprise_1.email);
 		await page.locator("#password").fill("password123");
 		await page.locator("#password_confirm").fill("password123");
 
