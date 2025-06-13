@@ -47,7 +47,7 @@ func CheckPasswordResetTokensExistForUser(t *testing.T, pool *pgxpool.Pool, user
 
 func TestDeleteUser_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -63,48 +63,48 @@ func TestDeleteUser_Integration(t *testing.T) {
 	}{
 		{
 			name:           "Admin Deletes Editor - Success",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor",
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2",
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:             "Admin Tries to Delete Self - Conflict",
-			loginUserKey:     "alpha_admin",
-			targetUserKey:    "alpha_admin",
+			loginUserKey:     "enterprise_1",
+			targetUserKey:    "enterprise_1",
 			expectedStatus:   http.StatusConflict,
 			expectedErrorMsg: "自分自身を削除することはできません。",
 		},
 		{
 			name:           "Admin Tries to Delete User in Another Tenant - Forbidden",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "beta_admin", // beta_admin is in a different tenant
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "smb_1", // smb_1 is in a different tenant
 			expectedStatus: http.StatusForbidden,
 		},
 		{
 			name:           "Editor Tries to Delete User - Forbidden",
-			loginUserKey:   "alpha_editor",
-			targetUserKey:  "pending_editor_valid_token",
+			loginUserKey:   "enterprise_2",
+			targetUserKey:  "enterprise_3",
 			expectedStatus: http.StatusForbidden, // Middleware RequireAdmin should block this
 			preTestSetup: func(t *testing.T) {
-				// Reset DB because alpha_editor was deleted in a prior test case
-				setup.ResetAndSeedDB(t, pool)
+				// Reset DB because enterprise_2 was deleted in a prior test case
+				setup.ResetAndSeedDB2(t, pool)
 			},
 		},
 		{
 			name:              "Delete Non-Existent User - NotFound",
-			loginUserKey:      "alpha_admin",
+			loginUserKey:      "enterprise_1",
 			targetUserIDInput: "00000000-0000-0000-0000-000000000000", // A valid UUID that won't exist
 			expectedStatus:    http.StatusNotFound,
 		},
 		{
 			name:           "Unauthenticated Delete Attempt - Unauthorized",
 			loginUserKey:   "", // No login
-			targetUserKey:  "alpha_editor",
+			targetUserKey:  "enterprise_2",
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
 			name:              "Invalid UserID Format in URL - BadRequest",
-			loginUserKey:      "alpha_admin",
+			loginUserKey:      "enterprise_1",
 			targetUserIDInput: "not-a-uuid",
 			expectedStatus:    http.StatusBadRequest,
 		},
@@ -120,7 +120,7 @@ func TestDeleteUser_Integration(t *testing.T) {
 			var targetUserID string
 
 			if tt.loginUserKey != "" {
-				loginUserDetails, ok := setup.TestUsersData[tt.loginUserKey]
+				loginUserDetails, ok := setup.TestUsersData2[tt.loginUserKey]
 				if !ok {
 					t.Fatalf("Test setup error: Login user key '%s' not found in TestUsersData", tt.loginUserKey)
 				}
@@ -132,7 +132,7 @@ func TestDeleteUser_Integration(t *testing.T) {
 			}
 
 			if tt.targetUserKey != "" {
-				targetUserDetails, ok := setup.TestUsersData[tt.targetUserKey]
+				targetUserDetails, ok := setup.TestUsersData2[tt.targetUserKey]
 				if !ok {
 					t.Fatalf("Test setup error: Target user key '%s' not found in TestUsersData", tt.targetUserKey)
 				}
@@ -181,7 +181,7 @@ func TestDeleteUser_Integration(t *testing.T) {
 
 			// For tests where user should NOT be deleted, verify they still exist
 			if tt.expectedStatus != http.StatusOK && tt.targetUserKey != "" {
-				originalTargetUserDetails, ok := setup.TestUsersData[tt.targetUserKey]
+				originalTargetUserDetails, ok := setup.TestUsersData2[tt.targetUserKey]
 				if ok {
 					assert.True(t, CheckUserExists(t, pool, originalTargetUserDetails.UserID), "User %s should still exist in DB for test: %s", originalTargetUserDetails.UserID, tt.name)
 				}

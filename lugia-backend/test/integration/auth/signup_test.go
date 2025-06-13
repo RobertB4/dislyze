@@ -21,7 +21,7 @@ type SignupRequestBody struct {
 
 func TestSignup(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	tests := []struct {
@@ -160,7 +160,7 @@ func TestSignup(t *testing.T) {
 
 func TestSignupDuplicateEmail(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	request := SignupRequestBody{

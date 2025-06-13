@@ -14,7 +14,7 @@ import (
 
 func TestGetMe_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -24,21 +24,21 @@ func TestGetMe_Integration(t *testing.T) {
 		loginUserKey           string // Key for setup.TestUsersData map
 		expectedStatus         int
 		expectedTenantName     string
-		expectedMinPermissions int    // Minimum number of permissions expected
+		expectedMinPermissions int // Minimum number of permissions expected
 		expectErrorResponse    bool
 	}{
 		{
-			name:                   "alpha_admin gets their details",
-			loginUserKey:           "alpha_admin",
+			name:                   "enterprise_1 gets their details",
+			loginUserKey:           "enterprise_1",
 			expectedStatus:         http.StatusOK,
-			expectedTenantName:     "Tenant Alpha",
-			expectedMinPermissions: 6, // Should have at least 6 permissions
+			expectedTenantName:     "エンタープライズ株式会社",
+			expectedMinPermissions: 3,
 		},
 		{
-			name:                   "alpha_editor gets their details",
-			loginUserKey:           "alpha_editor",
+			name:                   "enterprise_2 gets their details",
+			loginUserKey:           "enterprise_2",
 			expectedStatus:         http.StatusOK,
-			expectedTenantName:     "Tenant Alpha",
+			expectedTenantName:     "エンタープライズ株式会社",
 			expectedMinPermissions: 0, // Should have exactly 0 permissions
 		},
 		{
@@ -57,7 +57,7 @@ func TestGetMe_Integration(t *testing.T) {
 
 			if tt.loginUserKey != "" {
 				var ok bool
-				currentUserDetails, ok = setup.TestUsersData[tt.loginUserKey]
+				currentUserDetails, ok = setup.TestUsersData2[tt.loginUserKey]
 				if !ok {
 					t.Fatalf("Test setup error: User key '%s' not found in TestUsersData", tt.loginUserKey)
 				}
@@ -97,14 +97,14 @@ func TestGetMe_Integration(t *testing.T) {
 				assert.Equal(t, currentUserDetails.Email, meResponse.Email)
 				assert.Equal(t, currentUserDetails.Name, meResponse.UserName)
 				assert.Equal(t, tt.expectedTenantName, meResponse.TenantName)
-				
+
 				// Check permission count based on user role
 				if tt.expectedMinPermissions == 0 {
 					// Editor should have exactly 0 permissions
 					assert.Len(t, meResponse.Permissions, 0, "Editor should have no permissions")
 				} else {
 					// Admin should have at least the expected minimum permissions
-					assert.GreaterOrEqual(t, len(meResponse.Permissions), tt.expectedMinPermissions, 
+					assert.GreaterOrEqual(t, len(meResponse.Permissions), tt.expectedMinPermissions,
 						"Should have at least %d permissions", tt.expectedMinPermissions)
 				}
 			} else if tt.expectErrorResponse {

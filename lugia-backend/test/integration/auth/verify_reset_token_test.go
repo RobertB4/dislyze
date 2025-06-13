@@ -19,7 +19,7 @@ import (
 
 func TestVerifyResetToken(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -51,7 +51,7 @@ func TestVerifyResetToken(t *testing.T) {
 	}
 
 	t.Run("TestVerifyResetToken_ValidToken", func(t *testing.T) {
-		testUser := setup.TestUsersData["alpha_admin"]
+		testUser := setup.TestUsersData2["enterprise_1"]
 		rawToken := getRawResetToken(testUser.Email)
 		fmt.Println("Raw token for user:", testUser.Email, "is", rawToken)
 
@@ -107,7 +107,7 @@ func TestVerifyResetToken(t *testing.T) {
 	})
 
 	t.Run("TestVerifyResetToken_ExpiredToken", func(t *testing.T) {
-		testUser := setup.TestUsersData["alpha_editor"]
+		testUser := setup.TestUsersData2["enterprise_2"]
 		rawToken := getRawResetToken(testUser.Email)
 
 		// Manually expire the token in the DB
@@ -136,7 +136,7 @@ func TestVerifyResetToken(t *testing.T) {
 	})
 
 	t.Run("TestVerifyResetToken_AlreadyUsedToken", func(t *testing.T) {
-		testUser := setup.TestUsersData["beta_admin"]
+		testUser := setup.TestUsersData2["enterprise_3"]
 		rawToken := getRawResetToken(testUser.Email)
 
 		// Manually mark the token as used in the DB

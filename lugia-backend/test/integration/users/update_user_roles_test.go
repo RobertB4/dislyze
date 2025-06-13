@@ -26,7 +26,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 	}
 
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -44,165 +44,165 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 		// Authentication & Authorization Tests
 		{
 			name:           "unauthenticated request gets 401",
-			targetUserKey:  "alpha_editor",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000001")}},
+			targetUserKey:  "enterprise_2",
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}},
 			expectedStatus: http.StatusUnauthorized,
 			expectUnauth:   true,
 		},
 		{
 			name:           "user without users.update permission gets 403 forbidden",
-			loginUserKey:   "alpha_editor",
-			targetUserKey:  "pending_editor_valid_token",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000001")}},
+			loginUserKey:   "enterprise_2",
+			targetUserKey:  "enterprise_11",
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}},
 			expectedStatus: http.StatusForbidden,
 		},
 		{
 			name:           "user from different tenant gets 403 forbidden",
-			loginUserKey:   "beta_admin",   // Tenant B
-			targetUserKey:  "alpha_editor", // Tenant A
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000001")}},
+			loginUserKey:   "smb_1",         // SMB tenant
+			targetUserKey:  "enterprise_2", // Enterprise tenant
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}},
 			expectedStatus: http.StatusForbidden,
 		},
 
 		// Input Validation Tests
 		{
 			name:                 "invalid userID format gets 400",
-			loginUserKey:         "alpha_admin",
+			loginUserKey:         "enterprise_1",
 			targetUserIDOverride: "not-a-uuid",
-			requestBody:          users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000001")}},
+			requestBody:          users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}},
 			expectedStatus:       http.StatusBadRequest,
 		},
 		{
 			name:           "empty role gets 400",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor",
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2",
 			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{}},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "invalid role value gets 400",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor",
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2",
 			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{}},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "malformed JSON request gets 400",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor",
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "empty request body gets 400",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor",
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "null role_ids field gets 400",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor",
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2",
 			expectedStatus: http.StatusBadRequest,
 		},
 
 		// Business Logic Tests
 		{
 			name:                 "non-existent user gets 404",
-			loginUserKey:         "alpha_admin",
+			loginUserKey:         "enterprise_1",
 			targetUserIDOverride: "00000000-0000-0000-0000-000000000000", // Valid UUID that doesn't exist
-			requestBody:          users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000001")}},
+			requestBody:          users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}},
 			expectedStatus:       http.StatusNotFound,
 		},
 		{
 			name:           "user trying to update own role gets 400",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_admin", // Same user
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000002")}},
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_1", // Same user
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")}},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "invalid role IDs get 400",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor",
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2",
 			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("00000000-0000-0000-0000-000000000000")}}, // Non-existent role
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "roles from different tenant get 400",
-			loginUserKey:   "alpha_admin",                                                                                                   // Tenant A admin
-			targetUserKey:  "alpha_editor",                                                                                                  // Tenant A user
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000003")}}, // Tenant B admin role
+			loginUserKey:   "enterprise_1",                                                                                        // Enterprise admin
+			targetUserKey:  "enterprise_2",                                                                                        // Enterprise user
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")}}, // SMB admin role
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "malformed UUID in role_ids gets 400",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor",
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "empty string UUID in role_ids gets 400",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor",
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "duplicate role IDs get 400",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000001"), mustParseUUID("e0000000-0000-0000-0000-000000000001")}}, // Same role twice
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2",
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}}, // Same role twice
 			expectedStatus: http.StatusBadRequest,                                                                                                                                                  // Validation correctly rejects duplicates
 		},
 		{
 			name:           "mixed valid and invalid role IDs get 400",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000001"), mustParseUUID("00000000-0000-0000-0000-000000000000")}}, // Valid + invalid
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2",
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), mustParseUUID("00000000-0000-0000-0000-000000000000")}}, // Valid + invalid
 			expectedStatus: http.StatusBadRequest,
 		},
 
 		// Success Tests
 		{
 			name:           "user with users.update permission successfully updates roles",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000001")}},
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2",
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}},
 			expectedStatus: http.StatusOK,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
 		},
 		{
 			name:           "successfully replaces existing roles",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor", // Was updated to admin in previous test
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000002")}},
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2", // Was updated to admin in previous test
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")}},
 			expectedStatus: http.StatusOK,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
 		},
 		{
 			name:           "successfully assigns multiple roles",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000001"), mustParseUUID("e0000000-0000-0000-0000-000000000002")}},
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2",
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), mustParseUUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")}},
 			expectedStatus: http.StatusOK,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
 		},
 		{
 			name:           "successfully sets same roles (no changes needed)",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor", // Should have both roles from previous test
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000001"), mustParseUUID("e0000000-0000-0000-0000-000000000002")}},
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2", // Should have both roles from previous test
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), mustParseUUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")}},
 			expectedStatus: http.StatusOK,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
 		},
 		{
 			name:           "successfully removes some roles (partial update)",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor", // Should have both roles, remove one
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("e0000000-0000-0000-0000-000000000002")}},
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2", // Should have both roles, remove one
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")}},
 			expectedStatus: http.StatusOK,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
@@ -213,7 +213,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var targetUserID string
 			if tt.targetUserKey != "" {
-				targetUserDetails, ok := setup.TestUsersData[tt.targetUserKey]
+				targetUserDetails, ok := setup.TestUsersData2[tt.targetUserKey]
 				assert.True(t, ok, "Target user key '%s' not found in setup.TestUsersData", tt.targetUserKey)
 				targetUserID = targetUserDetails.UserID
 			} else if tt.targetUserIDOverride != "" {
@@ -252,7 +252,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 
 			// Add authentication if not testing unauthenticated scenario
 			if !tt.expectUnauth && tt.loginUserKey != "" {
-				loginDetails, ok := setup.TestUsersData[tt.loginUserKey]
+				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
 				assert.True(t, ok, "Login user key '%s' not found in setup.TestUsersData", tt.loginUserKey)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)

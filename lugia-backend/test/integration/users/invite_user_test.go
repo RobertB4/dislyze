@@ -26,7 +26,7 @@ func TestInviteUser_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 
 	type inviteUserTestCase struct {
 		name                   string
@@ -47,17 +47,17 @@ func TestInviteUser_Integration(t *testing.T) {
 			requestBody: users.InviteUserRequestBody{
 				Email:   "unauth_invitee@example.com",
 				Name:    "Unauth Invitee",
-				RoleIDs: []string{"e0000000-0000-0000-0000-000000000002"}, // Alpha editor role
+				RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}, // Enterprise editor role
 			},
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
 			name:         "user without users.create permission gets 403 forbidden",
-			loginUserKey: "alpha_editor", // Only has editor role, no users.create permission
+			loginUserKey: "enterprise_2", // Only has editor role, no users.create permission
 			requestBody: users.InviteUserRequestBody{
 				Email:   "forbidden_invitee@example.com",
 				Name:    "Forbidden Invitee",
-				RoleIDs: []string{"e0000000-0000-0000-0000-000000000002"}, // Alpha editor role
+				RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}, // Enterprise editor role
 			},
 			expectedStatus: http.StatusForbidden,
 		},
@@ -65,47 +65,47 @@ func TestInviteUser_Integration(t *testing.T) {
 		// Input Validation Tests
 		{
 			name:         "validation error: missing email",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: users.InviteUserRequestBody{
 				Email:   "",
 				Name:    "Test Name",
-				RoleIDs: []string{"e0000000-0000-0000-0000-000000000002"},
+				RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"},
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:         "validation error: invalid email format",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: users.InviteUserRequestBody{
 				Email:   "invalid-email",
 				Name:    "Test Name",
-				RoleIDs: []string{"e0000000-0000-0000-0000-000000000002"},
+				RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"},
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:         "validation error: missing name",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: users.InviteUserRequestBody{
 				Email:   "valid@example.com",
 				Name:    "",
-				RoleIDs: []string{"e0000000-0000-0000-0000-000000000002"},
+				RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"},
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:         "validation error: name with only whitespace",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: users.InviteUserRequestBody{
 				Email:   "whitespace@example.com",
 				Name:    "   ",
-				RoleIDs: []string{"e0000000-0000-0000-0000-000000000002"},
+				RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"},
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:         "validation error: missing role_ids (empty array)",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: users.InviteUserRequestBody{
 				Email:   "valid@example.com",
 				Name:    "Test Name",
@@ -115,7 +115,7 @@ func TestInviteUser_Integration(t *testing.T) {
 		},
 		{
 			name:         "validation error: missing role_ids (nil)",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: users.InviteUserRequestBody{
 				Email:   "valid@example.com",
 				Name:    "Test Name",
@@ -127,7 +127,7 @@ func TestInviteUser_Integration(t *testing.T) {
 		// Role ID Validation Tests
 		{
 			name:         "validation error: invalid UUID format in role_ids",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: users.InviteUserRequestBody{
 				Email:   "valid@example.com",
 				Name:    "Test Name",
@@ -137,7 +137,7 @@ func TestInviteUser_Integration(t *testing.T) {
 		},
 		{
 			name:         "validation error: non-existent role ID",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: users.InviteUserRequestBody{
 				Email:   "valid@example.com",
 				Name:    "Test Name",
@@ -148,24 +148,24 @@ func TestInviteUser_Integration(t *testing.T) {
 		},
 		{
 			name:         "security: role ID from different tenant",
-			loginUserKey: "alpha_admin", // Tenant Alpha admin
+			loginUserKey: "enterprise_1", // Enterprise tenant admin
 			requestBody: users.InviteUserRequestBody{
 				Email:   "cross_tenant@example.com",
 				Name:    "Cross Tenant Test",
-				RoleIDs: []string{"e0000000-0000-0000-0000-000000000003"}, // Tenant Beta admin role
+				RoleIDs: []string{"eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"}, // SMB admin role
 			},
 			expectedStatus:   http.StatusBadRequest,
 			expectedErrorKey: "invalidRoles",
 		},
 		{
 			name:         "security: mix of valid and invalid role IDs (cross-tenant)",
-			loginUserKey: "alpha_admin", // Tenant Alpha admin
+			loginUserKey: "enterprise_1", // Enterprise tenant admin
 			requestBody: users.InviteUserRequestBody{
 				Email: "mixed_roles@example.com",
 				Name:  "Mixed Roles Test",
 				RoleIDs: []string{
-					"e0000000-0000-0000-0000-000000000001", // Valid: Alpha admin role
-					"e0000000-0000-0000-0000-000000000003", // Invalid: Beta admin role
+					"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", // Valid: Enterprise admin role
+					"eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", // Invalid: SMB admin role
 				},
 			},
 			expectedStatus:   http.StatusBadRequest,
@@ -175,22 +175,22 @@ func TestInviteUser_Integration(t *testing.T) {
 		// Business Logic Tests
 		{
 			name:         "error when email already exists",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: users.InviteUserRequestBody{
-				Email:   setup.TestUsersData["alpha_editor"].Email,
+				Email:   setup.TestUsersData2["enterprise_2"].Email,
 				Name:    "Duplicate Invitee",
-				RoleIDs: []string{"e0000000-0000-0000-0000-000000000002"}, // Alpha editor role
+				RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}, // Enterprise editor role
 			},
 			expectedStatus:   http.StatusConflict,
 			expectedErrorKey: "emailConflict",
 		},
 		{
 			name:         "successful invitation with single role",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: users.InviteUserRequestBody{
 				Email:   "single_role@example.com",
 				Name:    "Single Role User",
-				RoleIDs: []string{"e0000000-0000-0000-0000-000000000002"}, // Alpha editor role
+				RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}, // Enterprise editor role
 			},
 			expectedStatus:         http.StatusOK,
 			validateRoleAssignment: true,
@@ -198,13 +198,13 @@ func TestInviteUser_Integration(t *testing.T) {
 		},
 		{
 			name:         "successful invitation with multiple roles",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: users.InviteUserRequestBody{
 				Email: "multi_role@example.com",
 				Name:  "Multi Role User",
 				RoleIDs: []string{
-					"e0000000-0000-0000-0000-000000000001", // Alpha admin role
-					"e0000000-0000-0000-0000-000000000002", // Alpha editor role
+					"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", // Enterprise admin role
+					"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", // Enterprise editor role
 				},
 			},
 			expectedStatus:         http.StatusOK,
@@ -213,11 +213,11 @@ func TestInviteUser_Integration(t *testing.T) {
 		},
 		{
 			name:         "successful invitation with admin role",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: users.InviteUserRequestBody{
 				Email:   "new_admin@example.com",
 				Name:    "New Admin User",
-				RoleIDs: []string{"e0000000-0000-0000-0000-000000000001"}, // Alpha admin role
+				RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}, // Enterprise admin role
 			},
 			expectedStatus:         http.StatusOK,
 			validateRoleAssignment: true,
@@ -237,8 +237,8 @@ func TestInviteUser_Integration(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 
 			if !tt.expectUnauth && tt.loginUserKey != "" {
-				loginDetails, ok := setup.TestUsersData[tt.loginUserKey]
-				assert.True(t, ok, "Login user key not found in setup.TestUsersData: %s for test: %s", tt.loginUserKey, tt.name)
+				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
+				assert.True(t, ok, "Login user key not found in setup.TestUsersData2: %s for test: %s", tt.loginUserKey, tt.name)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 				req.AddCookie(&http.Cookie{

@@ -19,7 +19,7 @@ import (
 
 func TestResetPassword(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -54,7 +54,7 @@ func TestResetPassword(t *testing.T) {
 	}
 
 	t.Run("_ValidTokenAndMatchingPasswords_Successful", func(t *testing.T) {
-		testUser := setup.TestUsersData["alpha_admin"]
+		testUser := setup.TestUsersData2["enterprise_1"]
 		originalPassword := testUser.PlainTextPassword
 		fmt.Println("test user: ", testUser.Email, "original password: ", originalPassword)
 		newPassword := "newSecurePassword123"
@@ -105,7 +105,7 @@ func TestResetPassword(t *testing.T) {
 	})
 
 	t.Run("_InvalidToken_NonExistent", func(t *testing.T) {
-		testUser := setup.TestUsersData["alpha_editor"]
+		testUser := setup.TestUsersData2["enterprise_2"]
 		originalPassword := testUser.PlainTextPassword
 		newPassword := "attemptedNewPass1"
 
@@ -148,7 +148,7 @@ func TestResetPassword(t *testing.T) {
 	})
 
 	t.Run("_ExpiredToken", func(t *testing.T) {
-		testUser := setup.TestUsersData["beta_admin"]
+		testUser := setup.TestUsersData2["enterprise_3"]
 		originalPassword := testUser.PlainTextPassword
 		newPassword := "attemptedNewPass2"
 		rawToken := getRawResetTokenForTest(t, testUser.Email)
@@ -195,7 +195,7 @@ func TestResetPassword(t *testing.T) {
 	})
 
 	t.Run("_AlreadyUsedToken", func(t *testing.T) {
-		testUser := setup.TestUsersData["alpha_editor"]
+		testUser := setup.TestUsersData2["enterprise_2"]
 		originalPassword := testUser.PlainTextPassword
 		newPassword := "attemptedNewPass3"
 		rawToken := getRawResetTokenForTest(t, testUser.Email)
@@ -242,7 +242,7 @@ func TestResetPassword(t *testing.T) {
 	})
 
 	t.Run("_EmptyToken", func(t *testing.T) {
-		testUser := setup.TestUsersData["alpha_editor"]
+		testUser := setup.TestUsersData2["enterprise_2"]
 		originalPassword := testUser.PlainTextPassword
 		newPassword := "attemptedNewPass4"
 
@@ -283,7 +283,7 @@ func TestResetPassword(t *testing.T) {
 	})
 
 	t.Run("_MissingPassword", func(t *testing.T) {
-		testUser := setup.TestUsersData["beta_admin"]
+		testUser := setup.TestUsersData2["enterprise_3"]
 		originalPassword := testUser.PlainTextPassword
 		rawToken := getRawResetTokenForTest(t, testUser.Email)
 
@@ -323,7 +323,7 @@ func TestResetPassword(t *testing.T) {
 	})
 
 	t.Run("_PasswordTooShort", func(t *testing.T) {
-		testUser := setup.TestUsersData["alpha_editor"]
+		testUser := setup.TestUsersData2["enterprise_2"]
 		originalPassword := testUser.PlainTextPassword
 		newPassword := "short"
 		rawToken := getRawResetTokenForTest(t, testUser.Email)
@@ -372,7 +372,7 @@ func TestResetPassword(t *testing.T) {
 	})
 
 	t.Run("_PasswordsDoNotMatch", func(t *testing.T) {
-		testUser := setup.TestUsersData["alpha_editor"]
+		testUser := setup.TestUsersData2["enterprise_2"]
 		originalPassword := testUser.PlainTextPassword
 		rawToken := getRawResetTokenForTest(t, testUser.Email)
 

@@ -15,7 +15,7 @@ import (
 
 func TestChangeTenantName_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	tests := []struct {
@@ -34,13 +34,13 @@ func TestChangeTenantName_Integration(t *testing.T) {
 		},
 		{
 			name:           "editor role gets 403 (not admin)",
-			loginUserKey:   "alpha_editor",
+			loginUserKey:   "enterprise_2",
 			requestBody:    map[string]string{"name": "New Tenant Name"},
 			expectedStatus: http.StatusForbidden,
 		},
 		{
 			name:           "admin role gets 200 (authorized)",
-			loginUserKey:   "alpha_admin",
+			loginUserKey:   "enterprise_1",
 			requestBody:    map[string]string{"name": "New Tenant Name"},
 			expectedStatus: http.StatusOK,
 		},
@@ -48,31 +48,31 @@ func TestChangeTenantName_Integration(t *testing.T) {
 		// Request Validation
 		{
 			name:           "empty request body returns 400",
-			loginUserKey:   "alpha_admin",
+			loginUserKey:   "enterprise_1",
 			requestBody:    "",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "invalid JSON returns 400",
-			loginUserKey:   "alpha_admin",
+			loginUserKey:   "enterprise_1",
 			requestBody:    `{"name": "unclosed string`,
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "missing name field returns 400",
-			loginUserKey:   "alpha_admin",
+			loginUserKey:   "enterprise_1",
 			requestBody:    map[string]string{},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "empty name string returns 400",
-			loginUserKey:   "alpha_admin",
+			loginUserKey:   "enterprise_1",
 			requestBody:    map[string]string{"name": ""},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "name with only whitespace returns 400",
-			loginUserKey:   "alpha_admin",
+			loginUserKey:   "enterprise_1",
 			requestBody:    map[string]string{"name": "   \t\n   "},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -80,13 +80,13 @@ func TestChangeTenantName_Integration(t *testing.T) {
 		// Business Logic
 		{
 			name:           "successful update with no response body",
-			loginUserKey:   "alpha_admin",
+			loginUserKey:   "enterprise_1",
 			requestBody:    map[string]string{"name": "Updated Company Name"},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "name too long (>255 chars) returns 500",
-			loginUserKey:   "alpha_admin",
+			loginUserKey:   "enterprise_1",
 			requestBody:    map[string]string{"name": strings.Repeat("a", 256)},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -122,7 +122,7 @@ func TestChangeTenantName_Integration(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 
 			if !tt.expectUnauth {
-				loginDetails, ok := setup.TestUsersData[tt.loginUserKey]
+				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
 				assert.True(t, ok, "Login user key not found in setup.TestUsersData: %s", tt.loginUserKey)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)

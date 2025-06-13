@@ -14,7 +14,7 @@ import (
 
 func TestChangeEmail_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	type ChangeEmailRequest struct {
@@ -32,7 +32,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 	}{
 		{
 			name:         "successful email change request",
-			loginUserKey: "beta_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: ChangeEmailRequest{
 				NewEmail: "newemail@example.com",
 			},
@@ -43,7 +43,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 				var tokenCount int
 				err := pool.QueryRow(ctx,
 					"SELECT COUNT(*) FROM email_change_tokens WHERE user_id = $1 AND new_email = $2",
-					setup.TestUsersData["beta_admin"].UserID, "newemail@example.com").Scan(&tokenCount)
+					setup.TestUsersData2["enterprise_1"].UserID, "newemail@example.com").Scan(&tokenCount)
 				assert.NoError(t, err)
 				assert.Equal(t, 1, tokenCount, "Email change token should be created")
 
@@ -51,14 +51,14 @@ func TestChangeEmail_Integration(t *testing.T) {
 				var currentEmail string
 				err = pool.QueryRow(ctx,
 					"SELECT email FROM users WHERE id = $1",
-					setup.TestUsersData["beta_admin"].UserID).Scan(&currentEmail)
+					setup.TestUsersData2["enterprise_1"].UserID).Scan(&currentEmail)
 				assert.NoError(t, err)
-				assert.Equal(t, setup.TestUsersData["beta_admin"].Email, currentEmail, "User's email should not change yet")
+				assert.Equal(t, setup.TestUsersData2["enterprise_1"].Email, currentEmail, "User's email should not change yet")
 			},
 		},
 		{
 			name:         "empty email",
-			loginUserKey: "alpha_editor",
+			loginUserKey: "enterprise_2",
 			requestBody: ChangeEmailRequest{
 				NewEmail: "",
 			},
@@ -66,7 +66,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 		},
 		{
 			name:         "whitespace only email",
-			loginUserKey: "alpha_editor",
+			loginUserKey: "enterprise_2",
 			requestBody: ChangeEmailRequest{
 				NewEmail: "   ",
 			},
@@ -74,7 +74,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 		},
 		{
 			name:         "email without @ symbol",
-			loginUserKey: "alpha_editor",
+			loginUserKey: "enterprise_2",
 			requestBody: ChangeEmailRequest{
 				NewEmail: "invalidemail.com",
 			},
@@ -82,27 +82,27 @@ func TestChangeEmail_Integration(t *testing.T) {
 		},
 		{
 			name:         "email already in use by another user",
-			loginUserKey: "alpha_editor",
+			loginUserKey: "enterprise_3",
 			requestBody: ChangeEmailRequest{
-				NewEmail: setup.TestUsersData["beta_admin"].Email, // Use beta_admin's email
+				NewEmail: setup.TestUsersData2["enterprise_4"].Email, // Use enterprise_4's email
 			},
 			expectedStatus: http.StatusConflict,
 			expectedError:  "このメールアドレスは既に使用されています。",
 		},
 		{
 			name:         "email already in use by user in different tenant",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: ChangeEmailRequest{
-				NewEmail: setup.TestUsersData["beta_admin"].Email, // Beta tenant user's email
+				NewEmail: setup.TestUsersData2["smb_1"].Email, // SMB tenant user's email
 			},
 			expectedStatus: http.StatusConflict,
 			expectedError:  "このメールアドレスは既に使用されています。",
 		},
 		{
 			name:         "user tries to change to their own current email",
-			loginUserKey: "beta_admin",
+			loginUserKey: "enterprise_5",
 			requestBody: ChangeEmailRequest{
-				NewEmail: setup.TestUsersData["beta_admin"].Email,
+				NewEmail: setup.TestUsersData2["enterprise_5"].Email,
 			},
 			expectedStatus: http.StatusConflict,
 			expectedError:  "このメールアドレスは既に使用されています。",
@@ -116,7 +116,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 			}
 
 			client := &http.Client{}
-			testUser := setup.TestUsersData[tt.loginUserKey]
+			testUser := setup.TestUsersData2[tt.loginUserKey]
 			accessToken, refreshToken := setup.LoginUserAndGetTokens(t, testUser.Email, testUser.PlainTextPassword)
 
 			jsonBody, err := json.Marshal(tt.requestBody)
@@ -150,11 +150,11 @@ func TestChangeEmail_Integration(t *testing.T) {
 
 func TestChangeEmailRateLimit_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Use a dedicated user for rate limit testing to avoid interfering with other tests
-	rateLimitTestUser := setup.TestUsersData["alpha_editor"]
+	rateLimitTestUser := setup.TestUsersData2["enterprise_6"]
 	accessToken, refreshToken := setup.LoginUserAndGetTokens(t, rateLimitTestUser.Email, rateLimitTestUser.PlainTextPassword)
 
 	client := &http.Client{}
@@ -196,7 +196,7 @@ func TestChangeEmailRateLimit_Integration(t *testing.T) {
 
 func TestChangeEmailAuthentication_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}

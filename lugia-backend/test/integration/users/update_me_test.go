@@ -15,7 +15,7 @@ import (
 
 func TestUpdateMe_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -39,69 +39,69 @@ func TestUpdateMe_Integration(t *testing.T) {
 		// Input Validation Tests
 		{
 			name:           "empty name gets 400",
-			loginUserKey:   "alpha_admin",
+			loginUserKey:   "enterprise_1",
 			requestBody:    users.UpdateMeRequestBody{Name: ""},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "name with only whitespace gets 400",
-			loginUserKey:   "alpha_admin",
+			loginUserKey:   "enterprise_1",
 			requestBody:    users.UpdateMeRequestBody{Name: "   "},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "malformed JSON request gets 400",
-			loginUserKey:   "alpha_admin",
+			loginUserKey:   "enterprise_1",
 			customJSON:     `{"name": "Valid Name", invalid}`,
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "missing name field gets 400",
-			loginUserKey:   "alpha_admin",
+			loginUserKey:   "enterprise_1",
 			customJSON:     `{}`,
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "name exceeding 255 characters gets 500",
-			loginUserKey:   "alpha_admin",
+			loginUserKey:   "enterprise_1",
 			requestBody:    users.UpdateMeRequestBody{Name: strings.Repeat("a", 256)}, // 256 chars, over limit
 			expectedStatus: http.StatusInternalServerError,
 		},
 
 		// Success Tests
 		{
-			name:           "alpha_admin successfully updates name",
-			loginUserKey:   "alpha_admin",
-			requestBody:    users.UpdateMeRequestBody{Name: "Updated Alpha Admin"},
+			name:           "enterprise_1 successfully updates name",
+			loginUserKey:   "enterprise_1",
+			requestBody:    users.UpdateMeRequestBody{Name: "Updated Enterprise Admin"},
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "beta_admin successfully updates name",
-			loginUserKey:   "beta_admin",
-			requestBody:    users.UpdateMeRequestBody{Name: "Updated Beta Admin"},
+			name:           "smb_1 successfully updates name",
+			loginUserKey:   "smb_1",
+			requestBody:    users.UpdateMeRequestBody{Name: "Updated SMB Admin"},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "name with leading/trailing whitespace is trimmed",
-			loginUserKey:   "alpha_editor",
+			loginUserKey:   "enterprise_2",
 			requestBody:    users.UpdateMeRequestBody{Name: "  Trimmed Name  "},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "name with special characters works",
-			loginUserKey:   "alpha_editor",
+			loginUserKey:   "enterprise_2",
 			requestBody:    users.UpdateMeRequestBody{Name: "Jean-Claude O'Connor"},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "name with unicode characters works",
-			loginUserKey:   "alpha_editor",
+			loginUserKey:   "enterprise_2",
 			requestBody:    users.UpdateMeRequestBody{Name: "田中太郎 🎉 Émilie"},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "maximum length name (255 chars) works",
-			loginUserKey:   "alpha_editor",
+			loginUserKey:   "enterprise_2",
 			requestBody:    users.UpdateMeRequestBody{Name: strings.Repeat("a", 255)}, // Exactly 255 chars
 			expectedStatus: http.StatusOK,
 		},
@@ -126,7 +126,7 @@ func TestUpdateMe_Integration(t *testing.T) {
 
 			// Add authentication cookies if not testing unauth
 			if !tt.expectUnauth && tt.loginUserKey != "" {
-				userDetails, ok := setup.TestUsersData[tt.loginUserKey]
+				userDetails, ok := setup.TestUsersData2[tt.loginUserKey]
 				assert.True(t, ok, "User key '%s' not found in setup.TestUsersData", tt.loginUserKey)
 
 				accessToken, refreshToken := setup.LoginUserAndGetTokens(t, userDetails.Email, userDetails.PlainTextPassword)

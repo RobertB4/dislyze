@@ -12,38 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func createTestUser(t *testing.T) {
-	body, err := json.Marshal(SignupRequestBody{
-		CompanyName:     "Test Company",
-		UserName:        "Test User",
-		Email:           "test@example.com",
-		Password:        "password123",
-		PasswordConfirm: "password123",
-	})
-	assert.NoError(t, err)
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/auth/signup", setup.BaseURL), bytes.NewBuffer(body))
-	assert.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	assert.NoError(t, err)
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			t.Logf("Error closing response body: %v", err)
-		}
-	}()
-
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-}
-
 func TestLogin(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
-	createTestUser(t)
+	testUser := setup.TestUsersData2["enterprise_1"]
 
 	tests := []struct {
 		name           string
@@ -53,15 +27,15 @@ func TestLogin(t *testing.T) {
 		{
 			name: "successful login",
 			request: auth.LoginRequestBody{
-				Email:    "test@example.com",
-				Password: "password123",
+				Email:    testUser.Email,
+				Password: testUser.PlainTextPassword,
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "wrong password",
 			request: auth.LoginRequestBody{
-				Email:    "test@example.com",
+				Email:    testUser.Email,
 				Password: "wrongpassword",
 			},
 			expectedStatus: http.StatusUnauthorized,
@@ -70,21 +44,21 @@ func TestLogin(t *testing.T) {
 			name: "non-existent email",
 			request: auth.LoginRequestBody{
 				Email:    "nonexistent@example.com",
-				Password: "password123",
+				Password: testUser.PlainTextPassword,
 			},
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
 			name: "missing email",
 			request: auth.LoginRequestBody{
-				Password: "password123",
+				Password: testUser.PlainTextPassword,
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "missing password",
 			request: auth.LoginRequestBody{
-				Email: "test@example.com",
+				Email: testUser.Email,
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -144,17 +118,16 @@ func TestLogin(t *testing.T) {
 
 func TestLoginLogoutAndVerifyMeEndpoint(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
-	createTestUser(t)
-
+	testUser := setup.TestUsersData2["enterprise_1"]
 	client := &http.Client{}
 
 	// 1. Log in
 	loginPayload := auth.LoginRequestBody{
-		Email:    "test@example.com",
-		Password: "password123",
+		Email:    testUser.Email,
+		Password: testUser.PlainTextPassword,
 	}
 	loginBody, err := json.Marshal(loginPayload)
 	assert.NoError(t, err)

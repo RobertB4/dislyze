@@ -36,7 +36,7 @@ func extractInvitationTokenFromEmail(t *testing.T, email *sendgridlib.SendGridMa
 
 func TestResendInvite_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -58,9 +58,9 @@ func TestResendInvite_Integration(t *testing.T) {
 		isRateLimitTest      bool // Indicates if this is the multi-call rate limit test
 	}{
 		{
-			name:           "successful resend by admin for pending user (pending_editor_valid_token)",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "pending_editor_valid_token",
+			name:           "successful resend by admin for pending user (enterprise_11)",
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_11",
 			expectedStatus: http.StatusOK,
 			customAssertions: func(t *testing.T, resp *http.Response, invokerUser setup.UserTestData, targetUser setup.UserTestData, firstCallRespStatus int) {
 				assert.Equal(t, http.StatusOK, resp.StatusCode, "Response status should be OK")
@@ -68,7 +68,7 @@ func TestResendInvite_Integration(t *testing.T) {
 				var countOldToken int
 				err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM invitation_tokens WHERE token_hash = $1 AND user_id = $2", initialTokenHashForPendingUser, targetUser.UserID).Scan(&countOldToken)
 				assert.NoError(t, err, "DB query for old token count failed")
-				assert.Equal(t, 0, countOldToken, "Old token for pending_editor_valid_token should be deleted from DB")
+				assert.Equal(t, 0, countOldToken, "Old token for enterprise_11 should be deleted from DB")
 
 				email, err := setup.GetLatestEmailFromSendgridMock(t, targetUser.Email)
 				assert.NoError(t, err, "Failed to get email from SendGrid mock")
@@ -143,52 +143,52 @@ func TestResendInvite_Integration(t *testing.T) {
 		},
 		{
 			name:                 "target user not found",
-			loginUserKey:         "alpha_admin",
+			loginUserKey:         "enterprise_1",
 			targetUserIDOverride: "00000000-0000-0000-0000-000000000000", // Non-existent UUID
 			expectedStatus:       http.StatusInternalServerError,
 		},
 		{
 			name:           "target user not pending - active",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "alpha_editor", // An active user
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_2", // An active user
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
 			name:           "target user not pending - suspended",
-			loginUserKey:   "alpha_admin",
-			targetUserKey:  "suspended_editor",
+			loginUserKey:   "enterprise_1",
+			targetUserKey:  "enterprise_16",
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
 			name:            "invoker not admin",
-			loginUserKey:    "alpha_editor",
-			targetUserKey:   "pending_editor_valid_token",
+			loginUserKey:    "enterprise_2",
+			targetUserKey:   "enterprise_11",
 			expectedStatus:  http.StatusForbidden,
 			expectForbidden: true,
 		},
 		{
 			name:           "unauthenticated request",
-			targetUserKey:  "pending_editor_valid_token",
+			targetUserKey:  "enterprise_11",
 			expectedStatus: http.StatusUnauthorized,
 			expectUnauth:   true,
 		},
 		{
 			name:            "invoker and target in different tenants",
-			loginUserKey:    "beta_admin",                                // Tenant B
-			targetUserKey:   "pending_editor_tenant_A_for_x_tenant_test", // Tenant A
+			loginUserKey:    "smb_1",         // SMB tenant
+			targetUserKey:   "enterprise_12", // Enterprise tenant
 			expectedStatus:  http.StatusForbidden,
 			expectForbidden: true,
 		},
 		{
 			name:                 "invalid target user ID format",
-			loginUserKey:         "alpha_admin",
+			loginUserKey:         "enterprise_1",
 			targetUserIDOverride: "not-a-uuid",
 			expectedStatus:       http.StatusInternalServerError,
 		},
 		{
 			name:            "rate limit: first call OK, second call TooManyRequests",
-			loginUserKey:    "alpha_admin",
-			targetUserKey:   "pending_editor_for_rate_limit_test",
+			loginUserKey:    "enterprise_1",
+			targetUserKey:   "enterprise_13",
 			isRateLimitTest: true,
 			// For rate limit tests, expectedStatus in the struct is for the *second* call if not handled by customAssertions.
 			// Here, customAssertions will handle all checks.
@@ -221,7 +221,7 @@ func TestResendInvite_Integration(t *testing.T) {
 
 			if !tt.expectUnauth && tt.loginUserKey != "" {
 				var ok bool
-				invokerDataFromSetup, ok := setup.TestUsersData[tt.loginUserKey]
+				invokerDataFromSetup, ok := setup.TestUsersData2[tt.loginUserKey]
 				assert.True(t, ok, "Login user key '%s' not found in setup.TestUsersData", tt.loginUserKey)
 				invokerDetails = setup.UserTestData(invokerDataFromSetup)
 
@@ -234,7 +234,7 @@ func TestResendInvite_Integration(t *testing.T) {
 			targetUserID := ""
 			if tt.targetUserKey != "" {
 				var ok bool
-				targetDataFromSetup, ok := setup.TestUsersData[tt.targetUserKey]
+				targetDataFromSetup, ok := setup.TestUsersData2[tt.targetUserKey]
 				assert.True(t, ok, "Target user key '%s' not found in setup.TestUsersData", tt.targetUserKey)
 				targetDetails = setup.UserTestData(targetDataFromSetup)
 				targetUserID = targetDetails.UserID

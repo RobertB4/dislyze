@@ -12,19 +12,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+
 func TestLogout(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
-	createTestUser(t)
-
+	testUser := setup.TestUsersData2["enterprise_1"]
 	client := &http.Client{}
 
 	// First, log in to get cookies
 	loginPayload := auth.LoginRequestBody{
-		Email:    "test@example.com",
-		Password: "password123",
+		Email:    testUser.Email,
+		Password: testUser.PlainTextPassword,
 	}
 	loginBody, err := json.Marshal(loginPayload)
 	assert.NoError(t, err)
@@ -82,7 +82,7 @@ func TestLogout(t *testing.T) {
 
 func TestLogoutWithoutCookies(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.CleanupDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
