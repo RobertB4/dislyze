@@ -5,19 +5,19 @@ import (
 	"net/http"
 	"time"
 
+	"lugia/lib/authz"
 	libctx "lugia/lib/ctx"
 	"lugia/lib/logger"
-	"lugia/lib/permissions"
 	"lugia/queries"
 )
 
 func RequirePermission(db *queries.Queries, resource, action string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !permissions.UserHasPermission(r.Context(), db, resource, action) {
+			if !authz.UserHasPermission(r.Context(), db, resource, action) {
 				userID := libctx.GetUserID(r.Context())
 				tenantID := libctx.GetTenantID(r.Context())
-				
+
 				logger.LogAccessEvent(logger.AccessEvent{
 					EventType: "permission",
 					UserID:    userID.String(),
@@ -30,7 +30,7 @@ func RequirePermission(db *queries.Queries, resource, action string) func(http.H
 					Resource:  resource,
 					Action:    action,
 				})
-				
+
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}
@@ -41,21 +41,21 @@ func RequirePermission(db *queries.Queries, resource, action string) func(http.H
 }
 
 func RequireTenantEdit(db *queries.Queries) func(http.Handler) http.Handler {
-	return RequirePermission(db, permissions.ResourceTenant, permissions.ActionEdit)
+	return RequirePermission(db, authz.ResourceTenant, authz.ActionEdit)
 }
 
 func RequireUsersView(db *queries.Queries) func(http.Handler) http.Handler {
-	return RequirePermission(db, permissions.ResourceUsers, permissions.ActionView)
+	return RequirePermission(db, authz.ResourceUsers, authz.ActionView)
 }
 
 func RequireUsersEdit(db *queries.Queries) func(http.Handler) http.Handler {
-	return RequirePermission(db, permissions.ResourceUsers, permissions.ActionEdit)
+	return RequirePermission(db, authz.ResourceUsers, authz.ActionEdit)
 }
 
 func RequireRolesView(db *queries.Queries) func(http.Handler) http.Handler {
-	return RequirePermission(db, permissions.ResourceRoles, permissions.ActionView)
+	return RequirePermission(db, authz.ResourceRoles, authz.ActionView)
 }
 
 func RequireRolesEdit(db *queries.Queries) func(http.Handler) http.Handler {
-	return RequirePermission(db, permissions.ResourceRoles, permissions.ActionEdit)
+	return RequirePermission(db, authz.ResourceRoles, authz.ActionEdit)
 }

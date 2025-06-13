@@ -1,4 +1,4 @@
-INSERT INTO tenants (id, name, features_config, stripe_customer_id, created_at, updated_at) VALUES
+INSERT INTO tenants (id, name, enterprise_features, stripe_customer_id, created_at, updated_at) VALUES
 ('a0000000-0000-0000-0000-000000000001', 'Tenant Alpha', '{}', null, '2024-01-01 10:00:00+00', '2024-01-01 10:00:00+00'),
 ('a0000000-0000-0000-0000-000000000002', 'Tenant Beta', '{}', null, '2024-01-01 10:01:00+00', '2024-01-01 10:01:00+00');
 

@@ -1,4 +1,4 @@
-package permissions
+package authz
 
 import (
 	"context"
@@ -15,7 +15,7 @@ const (
 	FeatureRBAC = "rbac"
 )
 
-type FeaturesConfig struct {
+type EnterpriseFeatures struct {
 	RBAC RBAC `json:"rbac"`
 }
 
@@ -36,15 +36,15 @@ func TenantHasFeature(ctx context.Context, db *queries.Queries, feature string) 
 		return false
 	}
 
-	var featuresConfig FeaturesConfig
-	if err := json.Unmarshal(tenant.FeaturesConfig, &featuresConfig); err != nil {
+	var enterpriseFeatures EnterpriseFeatures
+	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
 		errlib.LogError(errlib.New(err, 500, "failed to unmarshal features config"))
 		return false
 	}
 
 	switch feature {
 	case FeatureRBAC:
-		return featuresConfig.RBAC.Enabled
+		return enterpriseFeatures.RBAC.Enabled
 	default:
 		return false
 	}

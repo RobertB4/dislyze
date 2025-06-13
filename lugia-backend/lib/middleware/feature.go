@@ -5,19 +5,19 @@ import (
 	"net/http"
 	"time"
 
+	"lugia/lib/authz"
 	libctx "lugia/lib/ctx"
 	"lugia/lib/logger"
-	"lugia/lib/permissions"
 	"lugia/queries"
 )
 
 func RequireFeature(db *queries.Queries, feature string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !permissions.TenantHasFeature(r.Context(), db, feature) {
+			if !authz.TenantHasFeature(r.Context(), db, feature) {
 				userID := libctx.GetUserID(r.Context())
 				tenantID := libctx.GetTenantID(r.Context())
-				
+
 				logger.LogAccessEvent(logger.AccessEvent{
 					EventType: "feature",
 					UserID:    userID.String(),
@@ -29,7 +29,7 @@ func RequireFeature(db *queries.Queries, feature string) func(http.Handler) http
 					Error:     fmt.Sprintf("Feature not enabled: %s", feature),
 					Feature:   feature,
 				})
-				
+
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}
@@ -40,5 +40,5 @@ func RequireFeature(db *queries.Queries, feature string) func(http.Handler) http
 }
 
 func RequireRBAC(db *queries.Queries) func(http.Handler) http.Handler {
-	return RequireFeature(db, permissions.FeatureRBAC)
+	return RequireFeature(db, authz.FeatureRBAC)
 }

@@ -6,12 +6,12 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE tenants (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
-    features_config JSONB DEFAULT '{}', -- Feature toggles: {"feature_name": {"enabled": boolean, ...config}}
+    enterprise_features JSONB DEFAULT '{}', -- Feature toggles: {"feature_name": {"enabled": boolean, ...config}}
     stripe_customer_id VARCHAR(255) UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX idx_tenants_features_config ON tenants USING GIN (features_config);
+CREATE INDEX idx_tenants_enterprise_features ON tenants USING GIN (enterprise_features);
 CREATE INDEX idx_tenants_stripe_customer_id ON tenants(stripe_customer_id);
 
 CREATE TABLE roles (
@@ -187,7 +187,7 @@ DROP INDEX IF EXISTS idx_role_permissions_role_id;
 DROP INDEX IF EXISTS idx_permissions_resource;
 DROP INDEX IF EXISTS idx_roles_tenant_id;
 DROP INDEX IF EXISTS idx_tenants_stripe_customer_id;
-DROP INDEX IF EXISTS idx_tenants_features_config;
+DROP INDEX IF EXISTS idx_tenants_enterprise_features;
 DROP INDEX IF EXISTS idx_users_email;
 DROP INDEX IF EXISTS idx_refresh_tokens_user_id;
 DROP INDEX IF EXISTS idx_password_reset_tokens_user_id;

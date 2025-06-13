@@ -10,9 +10,9 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	"lugia/lib/authz"
 	"lugia/lib/errlib"
 	"lugia/lib/jwt"
-	permissionslib "lugia/lib/permissions"
 	"lugia/lib/responder"
 	"lugia/queries"
 
@@ -198,7 +198,7 @@ func (h *AuthHandler) setupDefaultRoles(ctx context.Context, qtx *queries.Querie
 
 	var permissionIDs []pgtype.UUID
 	for _, permission := range permissions {
-		if permission.Action == permissionslib.ActionEdit {
+		if permission.Action == authz.ActionEdit {
 			permissionIDs = append(permissionIDs, permission.ID)
 		}
 	}

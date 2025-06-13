@@ -8,20 +8,20 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"lugia/lib/authz"
 	libctx "lugia/lib/ctx"
 	"lugia/lib/errlib"
-	"lugia/lib/permissions"
 	"lugia/lib/responder"
 	"lugia/queries"
 )
 
 type MeResponse struct {
-	TenantName     string                     `json:"tenant_name"`
-	UserID         string                     `json:"user_id"`
-	Email          string                     `json:"email"`
-	UserName       string                     `json:"user_name"`
-	Permissions    []string                   `json:"permissions"`
-	FeaturesConfig permissions.FeaturesConfig `json:"features_config"`
+	TenantName         string                   `json:"tenant_name"`
+	UserID             string                   `json:"user_id"`
+	Email              string                   `json:"email"`
+	UserName           string                   `json:"user_name"`
+	Permissions        []string                 `json:"permissions"`
+	EnterpriseFeatures authz.EnterpriseFeatures `json:"enterprise_features"`
 }
 
 func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
@@ -69,18 +69,18 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 		permissionsRes[i] = fmt.Sprintf("%s.%s", row.Resource, row.Action)
 	}
 
-	var featuresConfig permissions.FeaturesConfig
-	if err := json.Unmarshal(tenant.FeaturesConfig, &featuresConfig); err != nil {
+	var enterpriseFeatures authz.EnterpriseFeatures
+	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
 		return nil, errlib.New(fmt.Errorf("GetMe: failed to unmarshal features config for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
 	}
 
 	response := &MeResponse{
-		TenantName:     tenant.Name,
-		UserID:         user.ID.String(),
-		Email:          user.Email,
-		UserName:       user.Name,
-		Permissions:    permissionsRes,
-		FeaturesConfig: featuresConfig,
+		TenantName:         tenant.Name,
+		UserID:             user.ID.String(),
+		Email:              user.Email,
+		UserName:           user.Name,
+		Permissions:        permissionsRes,
+		EnterpriseFeatures: enterpriseFeatures,
 	}
 
 	return response, nil

@@ -88,7 +88,7 @@ INSERT INTO tenants (
     name
 ) VALUES (
     $1
-) RETURNING id, name, features_config, stripe_customer_id, created_at, updated_at
+) RETURNING id, name, enterprise_features, stripe_customer_id, created_at, updated_at
 `
 
 func (q *Queries) CreateTenant(ctx context.Context, name string) (*Tenant, error) {
@@ -97,7 +97,7 @@ func (q *Queries) CreateTenant(ctx context.Context, name string) (*Tenant, error
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.FeaturesConfig,
+		&i.EnterpriseFeatures,
 		&i.StripeCustomerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -249,7 +249,7 @@ func (q *Queries) GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUI
 }
 
 const GetTenantByID = `-- name: GetTenantByID :one
-SELECT id, name, features_config, stripe_customer_id, created_at, updated_at FROM tenants
+SELECT id, name, enterprise_features, stripe_customer_id, created_at, updated_at FROM tenants
 WHERE id = $1
 `
 
@@ -259,7 +259,7 @@ func (q *Queries) GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, e
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.FeaturesConfig,
+		&i.EnterpriseFeatures,
 		&i.StripeCustomerID,
 		&i.CreatedAt,
 		&i.UpdatedAt,

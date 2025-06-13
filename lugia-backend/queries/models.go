@@ -76,12 +76,12 @@ type RolePermission struct {
 }
 
 type Tenant struct {
-	ID               pgtype.UUID        `json:"id"`
-	Name             string             `json:"name"`
-	FeaturesConfig   []byte             `json:"features_config"`
-	StripeCustomerID pgtype.Text        `json:"stripe_customer_id"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	ID                 pgtype.UUID        `json:"id"`
+	Name               string             `json:"name"`
+	EnterpriseFeatures []byte             `json:"enterprise_features"`
+	StripeCustomerID   pgtype.Text        `json:"stripe_customer_id"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
 }
 
 type User struct {
