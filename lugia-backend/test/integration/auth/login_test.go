@@ -17,7 +17,7 @@ func TestLogin(t *testing.T) {
 	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
-	testUser := setup.TestUsersData2["enterprise_1"]
+	testUser := setup.TestUsersData["enterprise_1"]
 
 	tests := []struct {
 		name           string
@@ -121,7 +121,7 @@ func TestLoginLogoutAndVerifyMeEndpoint(t *testing.T) {
 	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
-	testUser := setup.TestUsersData2["enterprise_1"]
+	testUser := setup.TestUsersData["enterprise_1"]
 	client := &http.Client{}
 
 	// 1. Log in

@@ -122,7 +122,7 @@ func TestChangeTenantName_Integration(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 
 			if !tt.expectUnauth {
-				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
+				loginDetails, ok := setup.TestUsersData[tt.loginUserKey]
 				assert.True(t, ok, "Login user key not found in setup.TestUsersData: %s", tt.loginUserKey)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)

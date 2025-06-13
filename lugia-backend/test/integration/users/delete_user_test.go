@@ -120,7 +120,7 @@ func TestDeleteUser_Integration(t *testing.T) {
 			var targetUserID string
 
 			if tt.loginUserKey != "" {
-				loginUserDetails, ok := setup.TestUsersData2[tt.loginUserKey]
+				loginUserDetails, ok := setup.TestUsersData[tt.loginUserKey]
 				if !ok {
 					t.Fatalf("Test setup error: Login user key '%s' not found in TestUsersData", tt.loginUserKey)
 				}
@@ -132,7 +132,7 @@ func TestDeleteUser_Integration(t *testing.T) {
 			}
 
 			if tt.targetUserKey != "" {
-				targetUserDetails, ok := setup.TestUsersData2[tt.targetUserKey]
+				targetUserDetails, ok := setup.TestUsersData[tt.targetUserKey]
 				if !ok {
 					t.Fatalf("Test setup error: Target user key '%s' not found in TestUsersData", tt.targetUserKey)
 				}
@@ -181,7 +181,7 @@ func TestDeleteUser_Integration(t *testing.T) {
 
 			// For tests where user should NOT be deleted, verify they still exist
 			if tt.expectedStatus != http.StatusOK && tt.targetUserKey != "" {
-				originalTargetUserDetails, ok := setup.TestUsersData2[tt.targetUserKey]
+				originalTargetUserDetails, ok := setup.TestUsersData[tt.targetUserKey]
 				if ok {
 					assert.True(t, CheckUserExists(t, pool, originalTargetUserDetails.UserID), "User %s should still exist in DB for test: %s", originalTargetUserDetails.UserID, tt.name)
 				}

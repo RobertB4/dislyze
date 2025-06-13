@@ -110,8 +110,8 @@ func TestGetUsers_Integration(t *testing.T) {
 
 			var loginUser setup.UserTestData
 			if !tt.expectUnauth {
-				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
-				assert.True(t, ok, "Login user key not found in setup.TestUsersData2: %s", tt.loginUserKey)
+				loginDetails, ok := setup.TestUsersData[tt.loginUserKey]
+				assert.True(t, ok, "Login user key not found in setup.TestUsersData: %s", tt.loginUserKey)
 				loginUser = loginDetails
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
@@ -179,7 +179,7 @@ func TestGetUsersPagination_Integration(t *testing.T) {
 	defer setup.CloseDB(pool)
 
 	// Use enterprise_1 who has access to users in Enterprise tenant
-	loginDetails := setup.TestUsersData2["enterprise_1"]
+	loginDetails := setup.TestUsersData["enterprise_1"]
 	accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 
 	client := &http.Client{}
@@ -340,7 +340,7 @@ func TestGetUsersSearch_Integration(t *testing.T) {
 	defer setup.CloseDB(pool)
 
 	// Use enterprise_1 who has access to users in Enterprise tenant
-	loginDetails := setup.TestUsersData2["enterprise_1"]
+	loginDetails := setup.TestUsersData["enterprise_1"]
 	accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 
 	// We'll validate search functionality dynamically rather than comparing to static test data
@@ -453,7 +453,7 @@ func TestGetUsersSearchWithPagination_Integration(t *testing.T) {
 	defer setup.CloseDB(pool)
 
 	// Use enterprise_1 who has access to users in Enterprise tenant
-	loginDetails := setup.TestUsersData2["enterprise_1"]
+	loginDetails := setup.TestUsersData["enterprise_1"]
 	accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 
 	client := &http.Client{}
@@ -524,7 +524,7 @@ func TestGetUsersInvalidParameters_Integration(t *testing.T) {
 	defer setup.CloseDB(pool)
 
 	// Use enterprise_1 who has access to users
-	loginDetails := setup.TestUsersData2["enterprise_1"]
+	loginDetails := setup.TestUsersData["enterprise_1"]
 	accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 
 	client := &http.Client{}

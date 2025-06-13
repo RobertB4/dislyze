@@ -82,7 +82,7 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Get access token for the specific user
-			accessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData2[tt.userKey].Email, setup.TestUsersData2[tt.userKey].PlainTextPassword)
+			accessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData[tt.userKey].Email, setup.TestUsersData[tt.userKey].PlainTextPassword)
 
 			// Make the request with the payload
 			reqBody, _ := json.Marshal(tt.payload)
@@ -121,7 +121,7 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 				JOIN roles r ON ur.role_id = r.id 
 				WHERE u.email = $1
 				LIMIT 1`,
-				setup.TestUsersData2["enterprise_2"].Email).Scan(&enterpriseEditorRoleName)
+				setup.TestUsersData["enterprise_2"].Email).Scan(&enterpriseEditorRoleName)
 			assert.NoError(t, err)
 			assert.Equal(t, "編集者", enterpriseEditorRoleName, "Enterprise editor should still have editor role - SQL injection should not have escalated privileges")
 		})
@@ -134,7 +134,7 @@ func TestSecurityXSSProtection_Integration(t *testing.T) {
 	defer setup.CloseDB(pool)
 
 	// Login as enterprise_1 (admin user)
-	accessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData2["enterprise_1"].Email, setup.TestUsersData2["enterprise_1"].PlainTextPassword)
+	accessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData["enterprise_1"].Email, setup.TestUsersData["enterprise_1"].PlainTextPassword)
 
 	xssPayloads := []string{
 		"<script>alert('xss')</script>",
@@ -199,7 +199,7 @@ func TestSecurityXSSProtection_Integration(t *testing.T) {
 			var storedName string
 			err = pool.QueryRow(context.Background(),
 				"SELECT name FROM users WHERE email = $1",
-				setup.TestUsersData2["enterprise_1"].Email).Scan(&storedName)
+				setup.TestUsersData["enterprise_1"].Email).Scan(&storedName)
 			assert.NoError(t, err)
 
 			// The stored name should be the exact payload (safely stored as text)
@@ -235,7 +235,7 @@ func TestSecurityHorizontalPrivilegeEscalation_Integration(t *testing.T) {
 	defer setup.CloseDB(pool)
 
 	// Login as enterprise_2 (editor user)
-	editorAccessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData2["enterprise_2"].Email, setup.TestUsersData2["enterprise_2"].PlainTextPassword)
+	editorAccessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData["enterprise_2"].Email, setup.TestUsersData["enterprise_2"].PlainTextPassword)
 
 	tests := []struct {
 		name           string
@@ -288,9 +288,9 @@ func TestSecurityHorizontalPrivilegeEscalation_Integration(t *testing.T) {
 				var adminName string
 				err = pool.QueryRow(context.Background(),
 					"SELECT name FROM users WHERE id = $1",
-					setup.TestUsersData2["enterprise_1"].UserID).Scan(&adminName)
+					setup.TestUsersData["enterprise_1"].UserID).Scan(&adminName)
 				assert.NoError(t, err)
-				assert.Equal(t, setup.TestUsersData2["enterprise_1"].Name, adminName,
+				assert.Equal(t, setup.TestUsersData["enterprise_1"].Name, adminName,
 					"Admin user's name should not have been modified by another user")
 			}
 		})
@@ -303,7 +303,7 @@ func TestSecurityJWTSecurity_Integration(t *testing.T) {
 	defer setup.CloseDB(pool)
 
 	// Login as enterprise_2 (editor) to get valid access token
-	editorAccessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData2["enterprise_2"].Email, setup.TestUsersData2["enterprise_2"].PlainTextPassword)
+	editorAccessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData["enterprise_2"].Email, setup.TestUsersData["enterprise_2"].PlainTextPassword)
 
 	// First verify that valid JWT works correctly
 	t.Run("Valid JWT should work correctly", func(t *testing.T) {

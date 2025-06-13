@@ -213,7 +213,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var targetUserID string
 			if tt.targetUserKey != "" {
-				targetUserDetails, ok := setup.TestUsersData2[tt.targetUserKey]
+				targetUserDetails, ok := setup.TestUsersData[tt.targetUserKey]
 				assert.True(t, ok, "Target user key '%s' not found in setup.TestUsersData", tt.targetUserKey)
 				targetUserID = targetUserDetails.UserID
 			} else if tt.targetUserIDOverride != "" {
@@ -252,7 +252,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 
 			// Add authentication if not testing unauthenticated scenario
 			if !tt.expectUnauth && tt.loginUserKey != "" {
-				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
+				loginDetails, ok := setup.TestUsersData[tt.loginUserKey]
 				assert.True(t, ok, "Login user key '%s' not found in setup.TestUsersData", tt.loginUserKey)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)

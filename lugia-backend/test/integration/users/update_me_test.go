@@ -126,7 +126,7 @@ func TestUpdateMe_Integration(t *testing.T) {
 
 			// Add authentication cookies if not testing unauth
 			if !tt.expectUnauth && tt.loginUserKey != "" {
-				userDetails, ok := setup.TestUsersData2[tt.loginUserKey]
+				userDetails, ok := setup.TestUsersData[tt.loginUserKey]
 				assert.True(t, ok, "User key '%s' not found in setup.TestUsersData", tt.loginUserKey)
 
 				accessToken, refreshToken := setup.LoginUserAndGetTokens(t, userDetails.Email, userDetails.PlainTextPassword)

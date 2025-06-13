@@ -17,7 +17,7 @@ func TestLogout(t *testing.T) {
 	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
-	testUser := setup.TestUsersData2["enterprise_1"]
+	testUser := setup.TestUsersData["enterprise_1"]
 	client := &http.Client{}
 
 	// First, log in to get cookies

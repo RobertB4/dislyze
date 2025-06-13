@@ -13,6 +13,6 @@ dev-sendgrid-mock:
 migrate: 
 	goose --dir ./database/migrations postgres postgresql://postgres:password@localhost:5432/dislyze up
 seed:
-	psql -U postgres -h localhost -p 5432 -d dislyze -f ./database/seed_localhost.sql
+	psql -U postgres -h localhost -p 5432 -d dislyze -f ./database/seed.sql
 initdb:
 	psql -U postgres -h localhost -p 5432 -d dislyze -f ./database/drop.sql && make migrate && make seed

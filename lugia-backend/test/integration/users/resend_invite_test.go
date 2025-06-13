@@ -221,7 +221,7 @@ func TestResendInvite_Integration(t *testing.T) {
 
 			if !tt.expectUnauth && tt.loginUserKey != "" {
 				var ok bool
-				invokerDataFromSetup, ok := setup.TestUsersData2[tt.loginUserKey]
+				invokerDataFromSetup, ok := setup.TestUsersData[tt.loginUserKey]
 				assert.True(t, ok, "Login user key '%s' not found in setup.TestUsersData", tt.loginUserKey)
 				invokerDetails = setup.UserTestData(invokerDataFromSetup)
 
@@ -234,7 +234,7 @@ func TestResendInvite_Integration(t *testing.T) {
 			targetUserID := ""
 			if tt.targetUserKey != "" {
 				var ok bool
-				targetDataFromSetup, ok := setup.TestUsersData2[tt.targetUserKey]
+				targetDataFromSetup, ok := setup.TestUsersData[tt.targetUserKey]
 				assert.True(t, ok, "Target user key '%s' not found in setup.TestUsersData", tt.targetUserKey)
 				targetDetails = setup.UserTestData(targetDataFromSetup)
 				targetUserID = targetDetails.UserID

@@ -43,7 +43,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 				var tokenCount int
 				err := pool.QueryRow(ctx,
 					"SELECT COUNT(*) FROM email_change_tokens WHERE user_id = $1 AND new_email = $2",
-					setup.TestUsersData2["enterprise_1"].UserID, "newemail@example.com").Scan(&tokenCount)
+					setup.TestUsersData["enterprise_1"].UserID, "newemail@example.com").Scan(&tokenCount)
 				assert.NoError(t, err)
 				assert.Equal(t, 1, tokenCount, "Email change token should be created")
 
@@ -51,9 +51,9 @@ func TestChangeEmail_Integration(t *testing.T) {
 				var currentEmail string
 				err = pool.QueryRow(ctx,
 					"SELECT email FROM users WHERE id = $1",
-					setup.TestUsersData2["enterprise_1"].UserID).Scan(&currentEmail)
+					setup.TestUsersData["enterprise_1"].UserID).Scan(&currentEmail)
 				assert.NoError(t, err)
-				assert.Equal(t, setup.TestUsersData2["enterprise_1"].Email, currentEmail, "User's email should not change yet")
+				assert.Equal(t, setup.TestUsersData["enterprise_1"].Email, currentEmail, "User's email should not change yet")
 			},
 		},
 		{
@@ -84,7 +84,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 			name:         "email already in use by another user",
 			loginUserKey: "enterprise_3",
 			requestBody: ChangeEmailRequest{
-				NewEmail: setup.TestUsersData2["enterprise_4"].Email, // Use enterprise_4's email
+				NewEmail: setup.TestUsersData["enterprise_4"].Email, // Use enterprise_4's email
 			},
 			expectedStatus: http.StatusConflict,
 			expectedError:  "このメールアドレスは既に使用されています。",
@@ -93,7 +93,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 			name:         "email already in use by user in different tenant",
 			loginUserKey: "enterprise_1",
 			requestBody: ChangeEmailRequest{
-				NewEmail: setup.TestUsersData2["smb_1"].Email, // SMB tenant user's email
+				NewEmail: setup.TestUsersData["smb_1"].Email, // SMB tenant user's email
 			},
 			expectedStatus: http.StatusConflict,
 			expectedError:  "このメールアドレスは既に使用されています。",
@@ -102,7 +102,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 			name:         "user tries to change to their own current email",
 			loginUserKey: "enterprise_5",
 			requestBody: ChangeEmailRequest{
-				NewEmail: setup.TestUsersData2["enterprise_5"].Email,
+				NewEmail: setup.TestUsersData["enterprise_5"].Email,
 			},
 			expectedStatus: http.StatusConflict,
 			expectedError:  "このメールアドレスは既に使用されています。",
@@ -116,7 +116,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 			}
 
 			client := &http.Client{}
-			testUser := setup.TestUsersData2[tt.loginUserKey]
+			testUser := setup.TestUsersData[tt.loginUserKey]
 			accessToken, refreshToken := setup.LoginUserAndGetTokens(t, testUser.Email, testUser.PlainTextPassword)
 
 			jsonBody, err := json.Marshal(tt.requestBody)
@@ -154,7 +154,7 @@ func TestChangeEmailRateLimit_Integration(t *testing.T) {
 	defer setup.CloseDB(pool)
 
 	// Use a dedicated user for rate limit testing to avoid interfering with other tests
-	rateLimitTestUser := setup.TestUsersData2["enterprise_6"]
+	rateLimitTestUser := setup.TestUsersData["enterprise_6"]
 	accessToken, refreshToken := setup.LoginUserAndGetTokens(t, rateLimitTestUser.Email, rateLimitTestUser.PlainTextPassword)
 
 	client := &http.Client{}

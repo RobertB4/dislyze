@@ -57,7 +57,7 @@ func TestGetMe_Integration(t *testing.T) {
 
 			if tt.loginUserKey != "" {
 				var ok bool
-				currentUserDetails, ok = setup.TestUsersData2[tt.loginUserKey]
+				currentUserDetails, ok = setup.TestUsersData[tt.loginUserKey]
 				if !ok {
 					t.Fatalf("Test setup error: User key '%s' not found in TestUsersData", tt.loginUserKey)
 				}

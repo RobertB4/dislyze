@@ -74,7 +74,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 
 	type deleteRoleTestCase struct {
 		name           string
-		loginUserKey   string                                        // Key for setup.TestUsersData2 map, empty for unauth
+		loginUserKey   string                                        // Key for setup.TestUsersData map, empty for unauth
 		setupRole      func(t *testing.T, pool *pgxpool.Pool) string // Function to setup a role and return its ID
 		roleID         string                                        // For tests that don't need setup
 		expectedStatus int
@@ -212,8 +212,8 @@ func TestDeleteRole_Integration(t *testing.T) {
 
 			// Add authentication if needed
 			if !tt.expectUnauth && tt.loginUserKey != "" {
-				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
-				assert.True(t, ok, "Login user key not found in setup.TestUsersData2: %s for test: %s", tt.loginUserKey, tt.name)
+				loginDetails, ok := setup.TestUsersData[tt.loginUserKey]
+				assert.True(t, ok, "Login user key not found in setup.TestUsersData: %s for test: %s", tt.loginUserKey, tt.name)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 				req.AddCookie(&http.Cookie{
@@ -255,7 +255,7 @@ func TestDeleteRole_VerifyGoneAfterDeletion(t *testing.T) {
 		[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 
 	// Get auth token
-	loginDetails, ok := setup.TestUsersData2["enterprise_1"]
+	loginDetails, ok := setup.TestUsersData["enterprise_1"]
 	assert.True(t, ok)
 	accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 

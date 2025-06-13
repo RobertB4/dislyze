@@ -20,7 +20,7 @@ func TestGetRoles_Integration(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		loginUserKey   string // Key for setup.TestUsersData2 map
+		loginUserKey   string // Key for setup.TestUsersData map
 		expectedStatus int
 		expectUnauth   bool
 		validateFunc   func(t *testing.T, response *roles.GetRolesResponse)
@@ -119,8 +119,8 @@ func TestGetRoles_Integration(t *testing.T) {
 			assert.NoError(t, err)
 
 			if !tt.expectUnauth {
-				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
-				assert.True(t, ok, "Login user key not found in setup.TestUsersData2: %s", tt.loginUserKey)
+				loginDetails, ok := setup.TestUsersData[tt.loginUserKey]
+				assert.True(t, ok, "Login user key not found in setup.TestUsersData: %s", tt.loginUserKey)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 				req.AddCookie(&http.Cookie{
@@ -159,7 +159,7 @@ func TestGetRoles_ResponseFormat(t *testing.T) {
 	defer setup.CloseDB(pool)
 
 	// Login as enterprise admin
-	userData := setup.TestUsersData2["enterprise_1"]
+	userData := setup.TestUsersData["enterprise_1"]
 	accessToken, _ := setup.LoginUserAndGetTokens(t, userData.Email, userData.PlainTextPassword)
 
 	client := &http.Client{}

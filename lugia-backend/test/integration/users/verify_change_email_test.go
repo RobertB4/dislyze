@@ -42,7 +42,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 	invalidPlaintext, _ := createTestToken(2)
 
 	// Insert expired token directly into database (expired 1 hour ago)
-	validUser := setup.TestUsersData2["enterprise_1"]
+	validUser := setup.TestUsersData["enterprise_1"]
 	expiredTime := time.Now().Add(-1 * time.Hour)
 	_, err := pool.Exec(ctx,
 		"INSERT INTO email_change_tokens (user_id, new_email, token_hash, expires_at) VALUES ($1, $2, $3, $4)",
@@ -114,7 +114,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 
 	// Test successful verification
 	t.Run("successful verification", func(t *testing.T) {
-		testUser := setup.TestUsersData2["enterprise_2"]
+		testUser := setup.TestUsersData["enterprise_2"]
 		successEmail := "success.verify@example.com"
 		successPlaintext, successHash := createTestToken(99)
 
@@ -182,7 +182,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 
 	// Test token reuse (should fail on second attempt)
 	t.Run("token reuse fails", func(t *testing.T) {
-		reuseUser := setup.TestUsersData2["smb_1"]
+		reuseUser := setup.TestUsersData["smb_1"]
 		reuseEmail := "reuse.test@example.com"
 		reusePlaintext, reuseHash := createTestToken(88)
 
@@ -238,7 +238,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 	t.Run("unauthenticated access returns 401", func(t *testing.T) {
 		// Create a valid token for testing
 		unauthPlaintext, unauthHash := createTestToken(77)
-		unauthUser := setup.TestUsersData2["enterprise_1"]
+		unauthUser := setup.TestUsersData["enterprise_1"]
 
 		// Clean up any existing tokens for this user first
 		_, err := pool.Exec(ctx, "DELETE FROM email_change_tokens WHERE user_id = $1", unauthUser.UserID)

@@ -22,7 +22,7 @@ func TestCreateRole_Integration(t *testing.T) {
 
 	type createRoleTestCase struct {
 		name           string
-		loginUserKey   string // Key for setup.TestUsersData2 map, empty for unauth
+		loginUserKey   string // Key for setup.TestUsersData map, empty for unauth
 		requestBody    roles.CreateRoleRequestBody
 		expectedStatus int
 		expectUnauth   bool
@@ -153,8 +153,8 @@ func TestCreateRole_Integration(t *testing.T) {
 
 			// Add authentication if needed
 			if !tt.expectUnauth && tt.loginUserKey != "" {
-				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
-				assert.True(t, ok, "Login user key not found in setup.TestUsersData2: %s for test: %s", tt.loginUserKey, tt.name)
+				loginDetails, ok := setup.TestUsersData[tt.loginUserKey]
+				assert.True(t, ok, "Login user key not found in setup.TestUsersData: %s for test: %s", tt.loginUserKey, tt.name)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 				req.AddCookie(&http.Cookie{

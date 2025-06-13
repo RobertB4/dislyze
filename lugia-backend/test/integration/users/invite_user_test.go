@@ -177,7 +177,7 @@ func TestInviteUser_Integration(t *testing.T) {
 			name:         "error when email already exists",
 			loginUserKey: "enterprise_1",
 			requestBody: users.InviteUserRequestBody{
-				Email:   setup.TestUsersData2["enterprise_2"].Email,
+				Email:   setup.TestUsersData["enterprise_2"].Email,
 				Name:    "Duplicate Invitee",
 				RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}, // Enterprise editor role
 			},
@@ -237,8 +237,8 @@ func TestInviteUser_Integration(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 
 			if !tt.expectUnauth && tt.loginUserKey != "" {
-				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
-				assert.True(t, ok, "Login user key not found in setup.TestUsersData2: %s for test: %s", tt.loginUserKey, tt.name)
+				loginDetails, ok := setup.TestUsersData[tt.loginUserKey]
+				assert.True(t, ok, "Login user key not found in setup.TestUsersData: %s for test: %s", tt.loginUserKey, tt.name)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 				req.AddCookie(&http.Cookie{

@@ -26,7 +26,7 @@ func TestForgotPassword(t *testing.T) {
 	client := &http.Client{}
 
 	t.Run("TestForgotPassword_ExistingEmail_Successful", func(t *testing.T) {
-		testUser := setup.TestUsersData2["enterprise_1"]
+		testUser := setup.TestUsersData["enterprise_1"]
 		payload := auth.ForgotPasswordRequestBody{Email: testUser.Email}
 		body, err := json.Marshal(payload)
 		assert.NoError(t, err)
@@ -143,7 +143,7 @@ func TestForgotPassword(t *testing.T) {
 	})
 
 	t.Run("TestForgotPassword_MultipleRequestsForSameUser", func(t *testing.T) {
-		testUser := setup.TestUsersData2["enterprise_2"]
+		testUser := setup.TestUsersData["enterprise_2"]
 
 		// --- First Request ---
 		payload1 := auth.ForgotPasswordRequestBody{Email: testUser.Email}

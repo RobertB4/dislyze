@@ -44,7 +44,7 @@ func TestChangePassword_Integration(t *testing.T) {
 			name:         "password mismatch",
 			loginUserKey: "enterprise_1",
 			requestBody: ChangePasswordRequest{
-				CurrentPassword: setup.TestUsersData2["enterprise_1"].PlainTextPassword,
+				CurrentPassword: setup.TestUsersData["enterprise_1"].PlainTextPassword,
 				NewPassword:     "newSecurePassword123",
 				PasswordConfirm: "differentPassword123",
 			},
@@ -54,7 +54,7 @@ func TestChangePassword_Integration(t *testing.T) {
 			name:         "new password too short",
 			loginUserKey: "enterprise_1",
 			requestBody: ChangePasswordRequest{
-				CurrentPassword: setup.TestUsersData2["enterprise_1"].PlainTextPassword,
+				CurrentPassword: setup.TestUsersData["enterprise_1"].PlainTextPassword,
 				NewPassword:     "short",
 				PasswordConfirm: "short",
 			},
@@ -74,7 +74,7 @@ func TestChangePassword_Integration(t *testing.T) {
 			name:         "empty new password",
 			loginUserKey: "enterprise_1",
 			requestBody: ChangePasswordRequest{
-				CurrentPassword: setup.TestUsersData2["enterprise_1"].PlainTextPassword,
+				CurrentPassword: setup.TestUsersData["enterprise_1"].PlainTextPassword,
 				NewPassword:     "",
 				PasswordConfirm: "",
 			},
@@ -94,7 +94,7 @@ func TestChangePassword_Integration(t *testing.T) {
 			name:         "successful password change",
 			loginUserKey: "enterprise_1",
 			requestBody: ChangePasswordRequest{
-				CurrentPassword: setup.TestUsersData2["enterprise_1"].PlainTextPassword,
+				CurrentPassword: setup.TestUsersData["enterprise_1"].PlainTextPassword,
 				NewPassword:     "newSecurePassword123",
 				PasswordConfirm: "newSecurePassword123",
 			},
@@ -115,7 +115,7 @@ func TestChangePassword_Integration(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 
 			if !tt.expectUnauth && tt.loginUserKey != "" {
-				userDetails, ok := setup.TestUsersData2[tt.loginUserKey]
+				userDetails, ok := setup.TestUsersData[tt.loginUserKey]
 				assert.True(t, ok, "User key '%s' not found in setup.TestUsersData", tt.loginUserKey)
 
 				accessToken, refreshToken := setup.LoginUserAndGetTokens(t, userDetails.Email, userDetails.PlainTextPassword)
@@ -135,7 +135,7 @@ func TestChangePassword_Integration(t *testing.T) {
 
 			if tt.expectedStatus == http.StatusOK {
 				// Test that the new password works for login
-				attemptLoginResp := setup.AttemptLogin(t, setup.TestUsersData2[tt.loginUserKey].Email, tt.requestBody.NewPassword)
+				attemptLoginResp := setup.AttemptLogin(t, setup.TestUsersData[tt.loginUserKey].Email, tt.requestBody.NewPassword)
 				defer func() {
 					if err := attemptLoginResp.Body.Close(); err != nil {
 						t.Logf("Error closing login attempt response body: %v", err)
@@ -144,7 +144,7 @@ func TestChangePassword_Integration(t *testing.T) {
 				assert.Equal(t, http.StatusOK, attemptLoginResp.StatusCode, "Login with new password should succeed for test: %s", tt.name)
 
 				// Test that the old password no longer works
-				attemptOldLoginResp := setup.AttemptLogin(t, setup.TestUsersData2[tt.loginUserKey].Email, setup.TestUsersData2[tt.loginUserKey].PlainTextPassword)
+				attemptOldLoginResp := setup.AttemptLogin(t, setup.TestUsersData[tt.loginUserKey].Email, setup.TestUsersData[tt.loginUserKey].PlainTextPassword)
 				defer func() {
 					if err := attemptOldLoginResp.Body.Close(); err != nil {
 						t.Logf("Error closing old login attempt response body: %v", err)
@@ -171,7 +171,7 @@ func TestChangePasswordSessionInvalidation_Integration(t *testing.T) {
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
-	testUser := setup.TestUsersData2["enterprise_1"]
+	testUser := setup.TestUsersData["enterprise_1"]
 
 	// Login to get initial tokens
 	accessToken1, refreshToken1 := setup.LoginUserAndGetTokens(t, testUser.Email, testUser.PlainTextPassword)
