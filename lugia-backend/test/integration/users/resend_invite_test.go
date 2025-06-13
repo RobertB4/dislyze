@@ -36,7 +36,7 @@ func extractInvitationTokenFromEmail(t *testing.T, email *sendgridlib.SendGridMa
 
 func TestResendInvite_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}

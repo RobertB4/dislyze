@@ -12,10 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 func TestLogout(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	testUser := setup.TestUsersData2["enterprise_1"]
@@ -82,7 +81,7 @@ func TestLogout(t *testing.T) {
 
 func TestLogoutWithoutCookies(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}

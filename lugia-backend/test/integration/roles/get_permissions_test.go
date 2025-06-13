@@ -15,7 +15,7 @@ import (
 
 func TestGetPermissions_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	tests := []struct {
@@ -115,7 +115,7 @@ func TestGetPermissions_Integration(t *testing.T) {
 
 func TestGetPermissions_InvalidToken(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -169,7 +169,7 @@ func TestGetPermissions_InvalidToken(t *testing.T) {
 
 func TestGetPermissions_ResponseFormat(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Login as enterprise admin

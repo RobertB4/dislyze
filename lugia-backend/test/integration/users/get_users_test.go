@@ -42,7 +42,7 @@ func validateTenantIsolation(t *testing.T, users []users.UserInfo, expectedTenan
 
 func TestGetUsers_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	tests := []struct {
@@ -175,7 +175,7 @@ func TestGetUsers_Integration(t *testing.T) {
 
 func TestGetUsersPagination_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Use enterprise_1 who has access to users in Enterprise tenant
@@ -336,7 +336,7 @@ func TestGetUsersPagination_Integration(t *testing.T) {
 
 func TestGetUsersSearch_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Use enterprise_1 who has access to users in Enterprise tenant
@@ -449,7 +449,7 @@ func TestGetUsersSearch_Integration(t *testing.T) {
 
 func TestGetUsersSearchWithPagination_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Use enterprise_1 who has access to users in Enterprise tenant
@@ -520,7 +520,7 @@ func TestGetUsersSearchWithPagination_Integration(t *testing.T) {
 
 func TestGetUsersInvalidParameters_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Use enterprise_1 who has access to users

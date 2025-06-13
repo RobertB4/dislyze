@@ -18,7 +18,7 @@ func TestCreateRole_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 
 	type createRoleTestCase struct {
 		name           string
@@ -230,7 +230,7 @@ func TestCreateRole_RBACFeatureFlag(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 
 	// Create a new tenant via signup (all features disabled by default)
 	signupEmail := "rbac_feature_test@example.com"

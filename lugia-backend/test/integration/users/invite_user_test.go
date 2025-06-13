@@ -26,7 +26,7 @@ func TestInviteUser_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 
 	type inviteUserTestCase struct {
 		name                   string

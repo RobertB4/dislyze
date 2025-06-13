@@ -16,7 +16,7 @@ import (
 
 func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	tests := []struct {
@@ -130,7 +130,7 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 
 func TestSecurityXSSProtection_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Login as enterprise_1 (admin user)
@@ -194,7 +194,7 @@ func TestSecurityXSSProtection_Integration(t *testing.T) {
 			// XSS payloads should be safely stored as text (most systems allow special chars in names)
 			// The key is that they're stored as text, not executed as scripts
 			assert.Equal(t, 200, resp.StatusCode, "XSS payload should be safely stored as text, got %d", resp.StatusCode)
-			
+
 			// Verify the payload was safely stored (not executed)
 			var storedName string
 			err = pool.QueryRow(context.Background(),
@@ -231,7 +231,7 @@ func TestSecurityXSSProtection_Integration(t *testing.T) {
 
 func TestSecurityHorizontalPrivilegeEscalation_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Login as enterprise_2 (editor user)
@@ -299,7 +299,7 @@ func TestSecurityHorizontalPrivilegeEscalation_Integration(t *testing.T) {
 
 func TestSecurityJWTSecurity_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Login as enterprise_2 (editor) to get valid access token

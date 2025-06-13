@@ -17,7 +17,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 
 	var (
 		plainValidTokenForAccept       = setup.TestInvitationTokensData["enterprise_11_token"].UnhashedToken

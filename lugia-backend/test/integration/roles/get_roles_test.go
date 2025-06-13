@@ -15,7 +15,7 @@ import (
 
 func TestGetRoles_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	tests := []struct {
@@ -155,7 +155,7 @@ func TestGetRoles_Integration(t *testing.T) {
 
 func TestGetRoles_ResponseFormat(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	// Login as enterprise admin

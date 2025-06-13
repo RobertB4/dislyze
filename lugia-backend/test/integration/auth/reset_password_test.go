@@ -19,7 +19,7 @@ import (
 
 func TestResetPassword(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}

@@ -47,7 +47,7 @@ func CheckPasswordResetTokensExistForUser(t *testing.T, pool *pgxpool.Pool, user
 
 func TestDeleteUser_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -87,7 +87,7 @@ func TestDeleteUser_Integration(t *testing.T) {
 			expectedStatus: http.StatusForbidden, // Middleware RequireAdmin should block this
 			preTestSetup: func(t *testing.T) {
 				// Reset DB because enterprise_2 was deleted in a prior test case
-				setup.ResetAndSeedDB2(t, pool)
+				setup.ResetAndSeedDB(t, pool)
 			},
 		},
 		{

@@ -47,7 +47,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 
 	type updateRoleTestCase struct {
 		name           string
@@ -122,7 +122,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "attempt to update role from different tenant returns 404",
-			loginUserKey: "enterprise_1", // Enterprise tenant user
+			loginUserKey: "enterprise_1",                         // Enterprise tenant user
 			roleID:       "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", // SMB tenant role from seed
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Cross Tenant Attack",
@@ -216,7 +216,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 				// First: Create a role in SMB tenant with name "Marketing Manager"
 				createTestRole(t, pool, "Marketing Manager", "Marketing role in SMB tenant",
 					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "22222222-2222-2222-2222-222222222222")
-				
+
 				// Second: Create a role in Enterprise tenant with different name to be updated
 				return createTestRole(t, pool, "Sales Representative", "Sales role in Enterprise tenant",
 					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
@@ -374,7 +374,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 
 			// Add authentication if needed
 			if !tt.expectUnauth && tt.loginUserKey != "" {
-					loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
+				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
 				assert.True(t, ok, "Login user key not found in setup.TestUsersData2: %s for test: %s", tt.loginUserKey, tt.name)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)

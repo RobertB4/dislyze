@@ -70,7 +70,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 
 	type deleteRoleTestCase struct {
 		name           string
@@ -212,7 +212,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 
 			// Add authentication if needed
 			if !tt.expectUnauth && tt.loginUserKey != "" {
-					loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
+				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
 				assert.True(t, ok, "Login user key not found in setup.TestUsersData2: %s for test: %s", tt.loginUserKey, tt.name)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
@@ -248,7 +248,7 @@ func TestDeleteRole_VerifyGoneAfterDeletion(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 
 	// Create a test role
 	roleID := createTestRoleForDeletion(t, pool, "Role To Delete And Verify", "Will be deleted",

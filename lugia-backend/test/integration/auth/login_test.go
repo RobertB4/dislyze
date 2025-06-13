@@ -14,7 +14,7 @@ import (
 
 func TestLogin(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	testUser := setup.TestUsersData2["enterprise_1"]
@@ -118,7 +118,7 @@ func TestLogin(t *testing.T) {
 
 func TestLoginLogoutAndVerifyMeEndpoint(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	testUser := setup.TestUsersData2["enterprise_1"]

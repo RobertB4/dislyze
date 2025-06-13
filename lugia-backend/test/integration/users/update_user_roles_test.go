@@ -26,7 +26,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 	}
 
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB2(t, pool)
+	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -58,7 +58,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 		},
 		{
 			name:           "user from different tenant gets 403 forbidden",
-			loginUserKey:   "smb_1",         // SMB tenant
+			loginUserKey:   "smb_1",        // SMB tenant
 			targetUserKey:  "enterprise_2", // Enterprise tenant
 			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}},
 			expectedStatus: http.StatusForbidden,
@@ -129,8 +129,8 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 		},
 		{
 			name:           "roles from different tenant get 400",
-			loginUserKey:   "enterprise_1",                                                                                        // Enterprise admin
-			targetUserKey:  "enterprise_2",                                                                                        // Enterprise user
+			loginUserKey:   "enterprise_1",                                                                                                  // Enterprise admin
+			targetUserKey:  "enterprise_2",                                                                                                  // Enterprise user
 			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")}}, // SMB admin role
 			expectedStatus: http.StatusBadRequest,
 		},
