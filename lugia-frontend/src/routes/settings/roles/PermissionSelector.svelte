@@ -121,39 +121,39 @@
 						{group.displayName}
 					</h4>
 					<div class="flex gap-2">
-					<!-- None option -->
-					<Pill
-						selected={getCurrentSelection(group.resource) === "none"}
-						onclick={() => selectOption(group.resource, "none")}
-						variant="orange"
-						data-testid={`permission-${group.resource}-none`}
-					>
-						{getActionLabel("none")}
-					</Pill>
-
-					<!-- View option (if available) -->
-					{#if group.permissions.some((p) => p.action === "view")}
+						<!-- None option -->
 						<Pill
-							selected={getCurrentSelection(group.resource) === "view"}
-							onclick={() => selectOption(group.resource, "view")}
+							selected={getCurrentSelection(group.resource) === "none"}
+							onclick={() => selectOption(group.resource, "none")}
 							variant="orange"
-							data-testid={`permission-${group.resource}-view`}
+							data-testid={`permission-${group.resource}-none`}
 						>
-							{getActionLabel("view")}
+							{getActionLabel("none")}
 						</Pill>
-					{/if}
 
-					<!-- Edit option (if available) -->
-					{#if group.permissions.some((p) => p.action === "edit")}
-						<Pill
-							selected={getCurrentSelection(group.resource) === "edit"}
-							onclick={() => selectOption(group.resource, "edit")}
-							variant="orange"
-							data-testid={`permission-${group.resource}-edit`}
-						>
-							{getActionLabel("edit")}
-						</Pill>
-					{/if}
+						<!-- View option (if available) -->
+						{#if group.permissions.some((p) => p.action === "view")}
+							<Pill
+								selected={getCurrentSelection(group.resource) === "view"}
+								onclick={() => selectOption(group.resource, "view")}
+								variant="orange"
+								data-testid={`permission-${group.resource}-view`}
+							>
+								{getActionLabel("view")}
+							</Pill>
+						{/if}
+
+						<!-- Edit option (if available) -->
+						{#if group.permissions.some((p) => p.action === "edit")}
+							<Pill
+								selected={getCurrentSelection(group.resource) === "edit"}
+								onclick={() => selectOption(group.resource, "edit")}
+								variant="orange"
+								data-testid={`permission-${group.resource}-edit`}
+							>
+								{getActionLabel("edit")}
+							</Pill>
+						{/if}
 					</div>
 				</div>
 			</div>

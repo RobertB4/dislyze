@@ -34,7 +34,7 @@ func TestGetUsers_Integration(t *testing.T) {
 			name:           "user with users.view permission successfully retrieves user list (Tenant A)",
 			loginUserKey:   "alpha_admin",
 			expectedStatus: http.StatusOK,
-			// Order by created_at DESC from seed.sql
+			// Order by created_at DESC from seed_test.sql
 			expectedUserEmails: []string{
 				setup.TestUsersData["pending_editor_tenant_A_for_x_tenant_test"].Email,
 				setup.TestUsersData["pending_editor_for_rate_limit_test"].Email,
@@ -102,12 +102,12 @@ func TestGetUsers_Integration(t *testing.T) {
 				// Define expected roles based on seed data
 				expectedUserRoles := map[string][]string{
 					setup.TestUsersData["alpha_admin"].Email:                               {"管理者"},
-					setup.TestUsersData["alpha_editor"].Email:                             {"編集者"},
-					setup.TestUsersData["pending_editor_valid_token"].Email:               {"編集者"},
-					setup.TestUsersData["suspended_editor"].Email:                         {"編集者"},
-					setup.TestUsersData["pending_editor_for_rate_limit_test"].Email:       {"編集者"},
+					setup.TestUsersData["alpha_editor"].Email:                              {"編集者"},
+					setup.TestUsersData["pending_editor_valid_token"].Email:                {"編集者"},
+					setup.TestUsersData["suspended_editor"].Email:                          {"編集者"},
+					setup.TestUsersData["pending_editor_for_rate_limit_test"].Email:        {"編集者"},
 					setup.TestUsersData["pending_editor_tenant_A_for_x_tenant_test"].Email: {"編集者"},
-					setup.TestUsersData["beta_admin"].Email:                               {"管理者"},
+					setup.TestUsersData["beta_admin"].Email:                                {"管理者"},
 				}
 
 				actualEmails := make([]string, len(usersResponse.Users))
@@ -129,21 +129,21 @@ func TestGetUsers_Integration(t *testing.T) {
 					assert.True(t, foundInTestData, "User with email %s not found in setup.TestUsersData. Check setup.sql and setup.TestUsersData map.", u.Email)
 					assert.Equal(t, expectedUserID, u.ID, "ID mismatch for user %s", u.Email)
 					assert.Equal(t, expectedName, u.Name, "Name mismatch for user %s", u.Email)
-					
+
 					// Verify user has at least one role
 					assert.NotEmpty(t, u.Roles, "User %s should have at least one role", u.Email)
 
 					// Verify role structure and content matches seed data
 					expectedRoles, hasExpectedRoles := expectedUserRoles[u.Email]
 					assert.True(t, hasExpectedRoles, "User %s not found in expected roles map", u.Email)
-					
+
 					actualRoleNames := make([]string, len(u.Roles))
 					for j, role := range u.Roles {
 						assert.NotEmpty(t, role.ID, "Role ID should not be empty for user %s", u.Email)
 						assert.NotEmpty(t, role.Name, "Role name should not be empty for user %s", u.Email)
 						assert.NotEmpty(t, role.Description, "Role description should not be empty for user %s", u.Email)
 						actualRoleNames[j] = role.Name
-						
+
 						// Verify role description matches expected values from seed data
 						if role.Name == "管理者" {
 							assert.Equal(t, "すべての管理機能にアクセス可能", role.Description, "Admin role description mismatch for user %s", u.Email)
@@ -151,10 +151,10 @@ func TestGetUsers_Integration(t *testing.T) {
 							assert.Equal(t, "限定的な編集権限", role.Description, "Editor role description mismatch for user %s", u.Email)
 						}
 					}
-					
+
 					// Verify user has exactly the expected roles from seed data
 					assert.ElementsMatch(t, expectedRoles, actualRoleNames, "User %s roles don't match expected roles from seed data", u.Email)
-					
+
 					assert.Equal(t, expectedStatus, u.Status, "Status mismatch for user %s", u.Email)
 				}
 				assert.Equal(t, tt.expectedUserEmails, actualEmails, "User email list or order mismatch for test: %s", tt.name)

@@ -39,7 +39,7 @@ async function executeSqlFile(filePath: string): Promise<void> {
 export async function resetAndSeedDatabase(): Promise<void> {
 	try {
 		const deleteFilePath = "../database/delete.sql";
-		const seedFilePath = "../database/seed.sql";
+		const seedFilePath = "../database/seed_test.sql";
 
 		console.log("Starting database reset (running delete.sql)...");
 		await executeSqlFile(deleteFilePath);

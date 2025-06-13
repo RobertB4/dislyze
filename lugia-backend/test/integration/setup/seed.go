@@ -10,7 +10,7 @@ type UserTestData struct {
 	Status            string
 }
 
-// TestUsersData provides easy access to details of users seeded by seed.sql
+// TestUsersData provides easy access to details of users seeded by seed_test.sql
 var TestUsersData = map[string]UserTestData{
 	"alpha_admin": {
 		Email:             "alpha_admin@example.com",

@@ -68,14 +68,14 @@ func seedDB(t *testing.T, pool *pgxpool.Pool) {
 
 	t.Log("seedDB: Starting database seeding")
 
-	seedSQL, err := os.ReadFile("/database/seed.sql")
+	seedSQL, err := os.ReadFile("/database/seed_test.sql")
 	if err != nil {
-		t.Fatalf("seedDB: Failed to read seed.sql: %v", err)
+		t.Fatalf("seedDB: Failed to read seed_test.sql: %v", err)
 	}
 
 	_, err = pool.Exec(context.Background(), string(seedSQL))
 	if err != nil {
-		t.Fatalf("seedDB: Failed to execute seed.sql: %v", err)
+		t.Fatalf("seedDB: Failed to execute seed_test.sql: %v", err)
 	}
 
 	t.Log("seedDB: Database seeding completed successfully")
