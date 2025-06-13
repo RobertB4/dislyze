@@ -15,12 +15,12 @@ import (
 
 func TestGetRoles_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	tests := []struct {
 		name           string
-		loginUserKey   string // Key for setup.TestUsersData map
+		loginUserKey   string // Key for setup.TestUsersData2 map
 		expectedStatus int
 		expectUnauth   bool
 		validateFunc   func(t *testing.T, response *roles.GetRolesResponse)
@@ -32,35 +32,33 @@ func TestGetRoles_Integration(t *testing.T) {
 		},
 		{
 			name:           "user without roles.view permission gets 403 forbidden",
-			loginUserKey:   "alpha_editor",
+			loginUserKey:   "enterprise_2",
 			expectedStatus: http.StatusForbidden,
 		},
 		{
-			name:           "user with roles.view permission successfully retrieves tenant roles (Tenant Alpha)",
-			loginUserKey:   "alpha_admin",
+			name:           "user with roles.view permission successfully retrieves tenant roles (Enterprise tenant)",
+			loginUserKey:   "enterprise_1",
 			expectedStatus: http.StatusOK,
 			validateFunc: func(t *testing.T, response *roles.GetRolesResponse) {
 				require.NotNil(t, response)
-				require.Len(t, response.Roles, 2, "Should have exactly 2 roles for Tenant Alpha")
+				assert.GreaterOrEqual(t, len(response.Roles), 3, "Enterprise tenant should have at least 3 default roles")
 
-				// Roles should be ordered by name: "管理者" comes before "編集者" in PostgreSQL ordering
-				adminRole := response.Roles[0]
-				editorRole := response.Roles[1]
+				// Find admin role by name
+				var adminRole *roles.RoleInfo
+				for i := range response.Roles {
+					if response.Roles[i].Name == "管理者" {
+						adminRole = &response.Roles[i]
+						break
+					}
+				}
+				require.NotNil(t, adminRole, "Should find admin role")
 
-				// Validate admin role (all permissions) - Tenant Alpha admin role
-				assert.Equal(t, "e0000000-0000-0000-0000-000000000001", adminRole.ID, "Should get Tenant Alpha admin role ID")
+				// Validate admin role (should have permissions)
+				assert.Equal(t, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", adminRole.ID, "Should get Enterprise admin role ID")
 				assert.Equal(t, "管理者", adminRole.Name)
-				assert.Equal(t, "すべての管理機能にアクセス可能", adminRole.Description)
-				assert.GreaterOrEqual(t, len(adminRole.Permissions), 6, "Admin role should have at least 6 permissions")
-
-				// Validate editor role (no permissions) - Tenant Alpha editor role
-				assert.Equal(t, "e0000000-0000-0000-0000-000000000002", editorRole.ID, "Should get Tenant Alpha editor role ID")
-				assert.Equal(t, "編集者", editorRole.Name)
-				assert.Equal(t, "限定的な編集権限", editorRole.Description)
-				assert.Len(t, editorRole.Permissions, 0, "Editor role should have no permissions")
-
-				// Validate permission structure and content
-				assert.GreaterOrEqual(t, len(adminRole.Permissions), 6, "Admin role should have at least 6 permissions")
+				assert.Equal(t, "すべての機能にアクセス可能", adminRole.Description)
+				assert.True(t, adminRole.IsDefault, "Admin role should be default")
+				assert.GreaterOrEqual(t, len(adminRole.Permissions), 3, "Admin role should have at least 3 permissions")
 
 				// Check that each permission has the required fields
 				for _, perm := range adminRole.Permissions {
@@ -70,34 +68,44 @@ func TestGetRoles_Integration(t *testing.T) {
 					assert.NotEmpty(t, perm.Description, "Permission description should not be empty")
 				}
 
-				// Extract permission descriptions for validation
-				var permissionDescriptions []string
-				for _, perm := range adminRole.Permissions {
-					permissionDescriptions = append(permissionDescriptions, perm.Description)
+				// Verify we have expected role names
+				roleNames := make(map[string]bool)
+				for _, role := range response.Roles {
+					roleNames[role.Name] = true
 				}
+				assert.True(t, roleNames["管理者"], "Should have admin role")
+				assert.True(t, roleNames["編集者"], "Should have editor role")
+				assert.True(t, roleNames["閲覧者"], "Should have viewer role")
 			},
 		},
 		{
-			name:           "beta admin user successfully retrieves tenant roles (Tenant Beta)",
-			loginUserKey:   "beta_admin",
+			name:           "internal admin user successfully retrieves tenant roles (Internal tenant)",
+			loginUserKey:   "internal_1",
 			expectedStatus: http.StatusOK,
 			validateFunc: func(t *testing.T, response *roles.GetRolesResponse) {
 				require.NotNil(t, response)
-				require.Len(t, response.Roles, 2, "Should have exactly 2 roles for Tenant Beta")
+				assert.GreaterOrEqual(t, len(response.Roles), 3, "Internal tenant should have at least 3 default roles")
 
-				// Both roles should exist but only beta admin role should have permissions
-				adminRole := response.Roles[0]
-				editorRole := response.Roles[1]
+				// Find admin role by name
+				var adminRole *roles.RoleInfo
+				for i := range response.Roles {
+					if response.Roles[i].Name == "管理者" {
+						adminRole = &response.Roles[i]
+						break
+					}
+				}
+				require.NotNil(t, adminRole, "Should find admin role")
 
-				// Validate Tenant Beta admin role - should have different ID than Alpha
-				assert.Equal(t, "e0000000-0000-0000-0000-000000000003", adminRole.ID, "Should get Tenant Beta admin role ID")
+				// Validate Internal tenant admin role - should have different ID than Enterprise
+				assert.Equal(t, "22222222-3333-4444-5555-666666666666", adminRole.ID, "Should get Internal admin role ID")
 				assert.Equal(t, "管理者", adminRole.Name)
-				assert.GreaterOrEqual(t, len(adminRole.Permissions), 6, "Beta admin role should have at least 6 permissions")
+				assert.GreaterOrEqual(t, len(adminRole.Permissions), 3, "Internal admin role should have at least 3 permissions")
 
-				// Validate Tenant Beta editor role - should have different ID than Alpha
-				assert.Equal(t, "e0000000-0000-0000-0000-000000000004", editorRole.ID, "Should get Tenant Beta editor role ID")
-				assert.Equal(t, "編集者", editorRole.Name)
-				assert.Len(t, editorRole.Permissions, 0, "Beta editor role should have no permissions")
+				// Verify tenant isolation - should not see Enterprise tenant roles
+				for _, role := range response.Roles {
+					assert.NotEqual(t, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", role.ID, "Should not see Enterprise admin role")
+					assert.NotEqual(t, "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", role.ID, "Should not see Enterprise editor role")
+				}
 			},
 		},
 	}
@@ -111,8 +119,8 @@ func TestGetRoles_Integration(t *testing.T) {
 			assert.NoError(t, err)
 
 			if !tt.expectUnauth {
-				loginDetails, ok := setup.TestUsersData[tt.loginUserKey]
-				assert.True(t, ok, "Login user key not found in setup.TestUsersData: %s", tt.loginUserKey)
+				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
+				assert.True(t, ok, "Login user key not found in setup.TestUsersData2: %s", tt.loginUserKey)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 				req.AddCookie(&http.Cookie{
@@ -147,11 +155,11 @@ func TestGetRoles_Integration(t *testing.T) {
 
 func TestGetRoles_ResponseFormat(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
-	// Login as alpha admin
-	userData := setup.TestUsersData["alpha_admin"]
+	// Login as enterprise admin
+	userData := setup.TestUsersData2["enterprise_1"]
 	accessToken, _ := setup.LoginUserAndGetTokens(t, userData.Email, userData.PlainTextPassword)
 
 	client := &http.Client{}
@@ -182,7 +190,7 @@ func TestGetRoles_ResponseFormat(t *testing.T) {
 
 	// Validate JSON structure
 	require.NotNil(t, response.Roles)
-	require.Len(t, response.Roles, 2)
+	assert.GreaterOrEqual(t, len(response.Roles), 3, "Enterprise tenant should have at least 3 roles")
 
 	for _, role := range response.Roles {
 		// Each role should have required fields

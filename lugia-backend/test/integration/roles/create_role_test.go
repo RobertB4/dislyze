@@ -18,11 +18,11 @@ func TestCreateRole_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 
 	type createRoleTestCase struct {
 		name           string
-		loginUserKey   string // Key for setup.TestUsersData map, empty for unauth
+		loginUserKey   string // Key for setup.TestUsersData2 map, empty for unauth
 		requestBody    roles.CreateRoleRequestBody
 		expectedStatus int
 		expectUnauth   bool
@@ -42,7 +42,7 @@ func TestCreateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "user without roles.create permission gets 403 forbidden",
-			loginUserKey: "alpha_editor",
+			loginUserKey: "enterprise_2",
 			requestBody: roles.CreateRoleRequestBody{
 				Name:          "Forbidden Role",
 				Description:   "This should be forbidden",
@@ -54,7 +54,7 @@ func TestCreateRole_Integration(t *testing.T) {
 		// Input Validation Tests
 		{
 			name:         "validation error: missing name",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: roles.CreateRoleRequestBody{
 				Name:          "",
 				Description:   "Valid description",
@@ -64,7 +64,7 @@ func TestCreateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "validation error: no permissions",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: roles.CreateRoleRequestBody{
 				Name:          "Valid Name",
 				Description:   "Valid description",
@@ -76,9 +76,9 @@ func TestCreateRole_Integration(t *testing.T) {
 		// Business Logic Tests
 		{
 			name:         "error: duplicate role name in same tenant",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: roles.CreateRoleRequestBody{
-				Name:          "管理者", // Same as existing admin role in tenant Alpha
+				Name:          "管理者", // Same as existing admin role in Enterprise tenant
 				Description:   "Duplicate name role",
 				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"},
 			},
@@ -86,7 +86,7 @@ func TestCreateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "error: invalid permission ID",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: roles.CreateRoleRequestBody{
 				Name:          "Role with Invalid Permission",
 				Description:   "This has an invalid permission",
@@ -96,7 +96,7 @@ func TestCreateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "error: malformed permission UUID",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: roles.CreateRoleRequestBody{
 				Name:          "Role with Malformed UUID",
 				Description:   "This has a malformed permission ID",
@@ -108,7 +108,7 @@ func TestCreateRole_Integration(t *testing.T) {
 		// Success Tests
 		{
 			name:         "success: create role with single permission",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: roles.CreateRoleRequestBody{
 				Name:          "Test Role Single",
 				Description:   "A test role with one permission",
@@ -118,7 +118,7 @@ func TestCreateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "success: create role with multiple permissions",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: roles.CreateRoleRequestBody{
 				Name:        "Test Role Multi",
 				Description: "A test role with multiple permissions",
@@ -131,7 +131,7 @@ func TestCreateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "success: create role with empty description",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			requestBody: roles.CreateRoleRequestBody{
 				Name:          "No Description Role",
 				Description:   "",
@@ -153,8 +153,8 @@ func TestCreateRole_Integration(t *testing.T) {
 
 			// Add authentication if needed
 			if !tt.expectUnauth && tt.loginUserKey != "" {
-				loginDetails, ok := setup.TestUsersData[tt.loginUserKey]
-				assert.True(t, ok, "Login user key not found in setup.TestUsersData: %s for test: %s", tt.loginUserKey, tt.name)
+				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
+				assert.True(t, ok, "Login user key not found in setup.TestUsersData2: %s for test: %s", tt.loginUserKey, tt.name)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 				req.AddCookie(&http.Cookie{
@@ -230,7 +230,7 @@ func TestCreateRole_RBACFeatureFlag(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 
 	// Create a new tenant via signup (all features disabled by default)
 	signupEmail := "rbac_feature_test@example.com"

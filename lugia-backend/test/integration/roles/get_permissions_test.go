@@ -15,12 +15,12 @@ import (
 
 func TestGetPermissions_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	tests := []struct {
 		name           string
-		loginUserKey   string // Key for setup.TestUsersData map
+		loginUserKey   string // Key for setup.TestUsersData2 map
 		expectedStatus int
 		expectUnauth   bool
 		validateFunc   func(t *testing.T, response *roles.GetPermissionsResponse)
@@ -32,12 +32,12 @@ func TestGetPermissions_Integration(t *testing.T) {
 		},
 		{
 			name:           "user without roles.view permission gets 403 forbidden",
-			loginUserKey:   "alpha_editor",
+			loginUserKey:   "enterprise_2",
 			expectedStatus: http.StatusForbidden,
 		},
 		{
 			name:           "user with roles.view permission successfully retrieves all permissions",
-			loginUserKey:   "alpha_admin",
+			loginUserKey:   "enterprise_1",
 			expectedStatus: http.StatusOK,
 			validateFunc: func(t *testing.T, response *roles.GetPermissionsResponse) {
 				require.NotNil(t, response)
@@ -60,8 +60,8 @@ func TestGetPermissions_Integration(t *testing.T) {
 			},
 		},
 		{
-			name:           "beta admin user also gets all permissions (permissions are global)",
-			loginUserKey:   "beta_admin",
+			name:           "Internal admin user also gets all permissions (permissions are global)",
+			loginUserKey:   "internal_1",
 			expectedStatus: http.StatusOK,
 			validateFunc: func(t *testing.T, response *roles.GetPermissionsResponse) {
 				require.NotNil(t, response)
@@ -79,8 +79,8 @@ func TestGetPermissions_Integration(t *testing.T) {
 			assert.NoError(t, err)
 
 			if !tt.expectUnauth {
-				loginDetails, ok := setup.TestUsersData[tt.loginUserKey]
-				assert.True(t, ok, "Login user key not found in setup.TestUsersData: %s", tt.loginUserKey)
+				loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
+				assert.True(t, ok, "Login user key not found in setup.TestUsersData2: %s", tt.loginUserKey)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 				req.AddCookie(&http.Cookie{
@@ -115,7 +115,7 @@ func TestGetPermissions_Integration(t *testing.T) {
 
 func TestGetPermissions_InvalidToken(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
 	client := &http.Client{}
@@ -169,11 +169,11 @@ func TestGetPermissions_InvalidToken(t *testing.T) {
 
 func TestGetPermissions_ResponseFormat(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
-	// Login as alpha admin
-	userData := setup.TestUsersData["alpha_admin"]
+	// Login as enterprise admin
+	userData := setup.TestUsersData2["enterprise_1"]
 	accessToken, _ := setup.LoginUserAndGetTokens(t, userData.Email, userData.PlainTextPassword)
 
 	client := &http.Client{}

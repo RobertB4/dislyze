@@ -16,16 +16,16 @@ import (
 
 func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
-	// Login as alpha_admin
-	accessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData["alpha_admin"].Email, setup.TestUsersData["alpha_admin"].PlainTextPassword)
-
 	tests := []struct {
-		name     string
-		endpoint string
-		payload  interface{}
+		name           string
+		endpoint       string
+		payload        interface{}
+		userKey        string // Which user to use for this test
+		expectedStatus int
+		description    string
 	}{
 		{
 			name:     "SQL injection in change name",
@@ -33,6 +33,9 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 			payload: map[string]string{
 				"name": "'; DROP TABLE users; --",
 			},
+			userKey:        "enterprise_1",
+			expectedStatus: 200, // Should be safely stored as text (most systems allow special chars in names)
+			description:    "SQL injection in name field should be safely stored as text",
 		},
 		{
 			name:     "SQL injection in change email",
@@ -40,6 +43,9 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 			payload: map[string]string{
 				"new_email": "evil'; DROP TABLE users; --@example.com",
 			},
+			userKey:        "enterprise_2", // Use different user to avoid rate limiting
+			expectedStatus: 200,            // Based on test results, it's being accepted (safely stored)
+			description:    "SQL injection in email field should be safely handled",
 		},
 		{
 			name:     "SQL injection in tenant name change",
@@ -47,12 +53,38 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 			payload: map[string]string{
 				"name": "'; UPDATE user_roles SET role_id='e0000000-0000-0000-0000-000000000001' WHERE user_id='b0000000-0000-0000-0000-000000000002'; --",
 			},
+			userKey:        "enterprise_1", // Admin user for tenant operations
+			expectedStatus: 200,            // Should be safely stored as text
+			description:    "SQL injection in tenant name should be safely stored as text",
+		},
+		{
+			name:     "Legitimate name change should work",
+			endpoint: "/me/change-name",
+			payload: map[string]string{
+				"name": "Valid User Name",
+			},
+			userKey:        "enterprise_3", // Use different user
+			expectedStatus: 200,            // Should succeed
+			description:    "Legitimate name change operation should work correctly",
+		},
+		{
+			name:     "Legitimate email change should work",
+			endpoint: "/me/change-email",
+			payload: map[string]string{
+				"new_email": "newemail@example.com",
+			},
+			userKey:        "enterprise_4", // Use different user to avoid rate limiting
+			expectedStatus: 200,            // Should succeed
+			description:    "Legitimate email change operation should work correctly",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Make the request with SQL injection payload
+			// Get access token for the specific user
+			accessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData2[tt.userKey].Email, setup.TestUsersData2[tt.userKey].PlainTextPassword)
+
+			// Make the request with the payload
 			reqBody, _ := json.Marshal(tt.payload)
 			req, err := http.NewRequest("POST", fmt.Sprintf("%s%s", setup.BaseURL, tt.endpoint), bytes.NewBuffer(reqBody))
 			assert.NoError(t, err)
@@ -69,10 +101,8 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 			assert.NoError(t, err)
 			defer resp.Body.Close()
 
-			// Verify the application doesn't crash and returns proper error
-			// Should get 400 (validation error) or 200 (successful but safe processing)
-			assert.True(t, resp.StatusCode == 400 || resp.StatusCode == 200,
-				"Expected 400 or 200, got %d. SQL injection may have caused unexpected behavior", resp.StatusCode)
+			// Assert the exact expected status code
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "%s: got %d", tt.description, resp.StatusCode)
 
 			// Verify database integrity - check that users table still exists and data is intact
 			var userCount int
@@ -81,9 +111,9 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 			assert.Greater(t, userCount, 0, "Users table should still contain data")
 
 			// Verify no unauthorized privilege escalation occurred
-			// This SQL injection attempted to change alpha_editor from editor role to admin role
+			// This SQL injection attempted to change enterprise_2 from editor role to admin role
 			// If successful, it would grant them admin permissions like users.view
-			var alphaEditorRoleName string
+			var enterpriseEditorRoleName string
 			err = pool.QueryRow(context.Background(), `
 				SELECT r.name 
 				FROM users u
@@ -91,20 +121,20 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 				JOIN roles r ON ur.role_id = r.id 
 				WHERE u.email = $1
 				LIMIT 1`,
-				setup.TestUsersData["alpha_editor"].Email).Scan(&alphaEditorRoleName)
+				setup.TestUsersData2["enterprise_2"].Email).Scan(&enterpriseEditorRoleName)
 			assert.NoError(t, err)
-			assert.Equal(t, "編集者", alphaEditorRoleName, "Alpha editor should still have editor role - SQL injection should not have escalated privileges")
+			assert.Equal(t, "編集者", enterpriseEditorRoleName, "Enterprise editor should still have editor role - SQL injection should not have escalated privileges")
 		})
 	}
 }
 
 func TestSecurityXSSProtection_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
-	// Login as alpha_admin
-	accessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData["alpha_admin"].Email, setup.TestUsersData["alpha_admin"].PlainTextPassword)
+	// Login as enterprise_1 (admin user)
+	accessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData2["enterprise_1"].Email, setup.TestUsersData2["enterprise_1"].PlainTextPassword)
 
 	xssPayloads := []string{
 		"<script>alert('xss')</script>",
@@ -115,6 +145,31 @@ func TestSecurityXSSProtection_Integration(t *testing.T) {
 		"<iframe src=javascript:alert('xss')></iframe>",
 	}
 
+	// First test legitimate operations work
+	t.Run("Legitimate operations should work correctly", func(t *testing.T) {
+		// Test legitimate user name change
+		reqBody, _ := json.Marshal(map[string]string{
+			"name": "正当なユーザー名",
+		})
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/me/change-name", setup.BaseURL), bytes.NewBuffer(reqBody))
+		assert.NoError(t, err)
+
+		req.Header.Set("Content-Type", "application/json")
+		req.AddCookie(&http.Cookie{
+			Name:  "dislyze_access_token",
+			Value: accessToken,
+			Path:  "/",
+		})
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, 200, resp.StatusCode, "Legitimate name change should succeed")
+	})
+
+	// Then test XSS protection
 	for _, payload := range xssPayloads {
 		t.Run(fmt.Sprintf("XSS protection for payload: %s", payload[:min(20, len(payload))]), func(t *testing.T) {
 			// Test XSS in user name change
@@ -136,19 +191,19 @@ func TestSecurityXSSProtection_Integration(t *testing.T) {
 			assert.NoError(t, err)
 			defer resp.Body.Close()
 
-			// Should either reject the payload or safely store it
-			if resp.StatusCode == 200 {
-				// If accepted, verify the payload was safely stored (not executed)
-				var storedName string
-				err = pool.QueryRow(context.Background(),
-					"SELECT name FROM users WHERE email = $1",
-					setup.TestUsersData["alpha_admin"].Email).Scan(&storedName)
-				assert.NoError(t, err)
+			// XSS payloads should be safely stored as text (most systems allow special chars in names)
+			// The key is that they're stored as text, not executed as scripts
+			assert.Equal(t, 200, resp.StatusCode, "XSS payload should be safely stored as text, got %d", resp.StatusCode)
+			
+			// Verify the payload was safely stored (not executed)
+			var storedName string
+			err = pool.QueryRow(context.Background(),
+				"SELECT name FROM users WHERE email = $1",
+				setup.TestUsersData2["enterprise_1"].Email).Scan(&storedName)
+			assert.NoError(t, err)
 
-				// The stored name should be the exact payload (safely stored as text)
-				// but should not contain executable script elements when rendered
-				assert.Equal(t, payload, storedName, "XSS payload should be stored as-is (safe text)")
-			}
+			// The stored name should be the exact payload (safely stored as text)
+			assert.Equal(t, payload, storedName, "XSS payload should be stored as-is (safe text)")
 
 			// Test XSS in tenant name change
 			reqBody, _ = json.Marshal(map[string]string{
@@ -168,20 +223,19 @@ func TestSecurityXSSProtection_Integration(t *testing.T) {
 			assert.NoError(t, err)
 			defer resp.Body.Close()
 
-			// Should either reject the payload or safely store it
-			assert.True(t, resp.StatusCode == 200 || resp.StatusCode == 400,
-				"XSS payload should be safely handled, got status %d", resp.StatusCode)
+			// XSS payloads in tenant names should also be safely stored as text
+			assert.Equal(t, 200, resp.StatusCode, "XSS payload in tenant name should be safely stored as text, got %d", resp.StatusCode)
 		})
 	}
 }
 
 func TestSecurityHorizontalPrivilegeEscalation_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
-	// Login as alpha_editor (normal user)
-	editorAccessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData["alpha_editor"].Email, setup.TestUsersData["alpha_editor"].PlainTextPassword)
+	// Login as enterprise_2 (editor user)
+	editorAccessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData2["enterprise_2"].Email, setup.TestUsersData2["enterprise_2"].PlainTextPassword)
 
 	tests := []struct {
 		name           string
@@ -234,9 +288,9 @@ func TestSecurityHorizontalPrivilegeEscalation_Integration(t *testing.T) {
 				var adminName string
 				err = pool.QueryRow(context.Background(),
 					"SELECT name FROM users WHERE id = $1",
-					setup.TestUsersData["alpha_admin"].UserID).Scan(&adminName)
+					setup.TestUsersData2["enterprise_1"].UserID).Scan(&adminName)
 				assert.NoError(t, err)
-				assert.Equal(t, setup.TestUsersData["alpha_admin"].Name, adminName,
+				assert.Equal(t, setup.TestUsersData2["enterprise_1"].Name, adminName,
 					"Admin user's name should not have been modified by another user")
 			}
 		})
@@ -245,11 +299,32 @@ func TestSecurityHorizontalPrivilegeEscalation_Integration(t *testing.T) {
 
 func TestSecurityJWTSecurity_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 	defer setup.CloseDB(pool)
 
-	// Login as alpha_editor to get valid access token
-	editorAccessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData["alpha_editor"].Email, setup.TestUsersData["alpha_editor"].PlainTextPassword)
+	// Login as enterprise_2 (editor) to get valid access token
+	editorAccessToken, _ := setup.LoginUserAndGetTokens(t, setup.TestUsersData2["enterprise_2"].Email, setup.TestUsersData2["enterprise_2"].PlainTextPassword)
+
+	// First verify that valid JWT works correctly
+	t.Run("Valid JWT should work correctly", func(t *testing.T) {
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/me/change-name", setup.BaseURL),
+			bytes.NewBuffer([]byte(`{"name":"Valid JWT Test"}`)))
+		assert.NoError(t, err)
+
+		req.Header.Set("Content-Type", "application/json")
+		req.AddCookie(&http.Cookie{
+			Name:  "dislyze_access_token",
+			Value: editorAccessToken,
+			Path:  "/",
+		})
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, 200, resp.StatusCode, "Valid JWT should allow legitimate operations")
+	})
 
 	tests := []struct {
 		name             string

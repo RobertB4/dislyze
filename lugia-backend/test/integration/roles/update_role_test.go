@@ -47,11 +47,11 @@ func TestUpdateRole_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 
 	type updateRoleTestCase struct {
 		name           string
-		loginUserKey   string                                        // Key for setup.TestUsersData map, empty for unauth
+		loginUserKey   string                                        // Key for setup.TestUsersData2 map, empty for unauth
 		setupRole      func(t *testing.T, pool *pgxpool.Pool) string // Function to setup a role and return its ID
 		roleID         string                                        // For tests that don't need setup
 		requestBody    roles.UpdateRoleRequestBody
@@ -74,7 +74,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "user without roles.update permission gets 403 forbidden",
-			loginUserKey: "alpha_editor",
+			loginUserKey: "enterprise_2",
 			roleID:       "b0000000-0000-0000-0000-000000000001", // Any ID for forbidden test
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Forbidden Update",
@@ -87,8 +87,8 @@ func TestUpdateRole_Integration(t *testing.T) {
 		// Default Role Protection Tests
 		{
 			name:         "attempt to update default role returns 400",
-			loginUserKey: "alpha_admin",
-			roleID:       "e0000000-0000-0000-0000-000000000001", // Default admin role from seed (is_default = true)
+			loginUserKey: "enterprise_1",
+			roleID:       "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", // Default admin role from seed (is_default = true)
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Updated Default Role",
 				Description:   "This should fail",
@@ -100,7 +100,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 		// Input Validation Tests
 		{
 			name:         "invalid role ID format returns 400",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			roleID:       "not-a-valid-uuid",
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Valid Name",
@@ -111,7 +111,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "non-existent role ID returns 404",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			roleID:       "99999999-9999-9999-9999-999999999999",
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Valid Name",
@@ -122,8 +122,8 @@ func TestUpdateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "attempt to update role from different tenant returns 404",
-			loginUserKey: "alpha_admin", // Tenant Alpha user
-			roleID:       "e0000000-0000-0000-0000-000000000003", // Tenant Beta role from seed
+			loginUserKey: "enterprise_1", // Enterprise tenant user
+			roleID:       "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", // SMB tenant role from seed
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Cross Tenant Attack",
 				Description:   "Should not be allowed",
@@ -133,10 +133,10 @@ func TestUpdateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "empty role name returns 400",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRole(t, pool, "Test Role for Empty Name", "Test Description",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "",
@@ -147,10 +147,10 @@ func TestUpdateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "invalid permission ID format returns 500",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRole(t, pool, "Test Role for Invalid Permission", "Test Description",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Valid Name",
@@ -161,10 +161,10 @@ func TestUpdateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "non-existent permission ID returns 500",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRole(t, pool, "Test Role for Non-existent Permission", "Test Description",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Valid Name",
@@ -175,10 +175,10 @@ func TestUpdateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "mix of valid and invalid permission IDs returns 500",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRole(t, pool, "Test Role for Mixed Permissions", "Test Description",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:        "Valid Name",
@@ -194,13 +194,13 @@ func TestUpdateRole_Integration(t *testing.T) {
 		// Name Uniqueness Tests
 		{
 			name:         "update role name to existing role name in same tenant returns 400",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				// Create two roles, try to update second to have first's name
 				createTestRole(t, pool, "Existing Role Name", "First Role",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 				return createTestRole(t, pool, "Second Role Name", "Second Role",
-					[]string{"db994eda-6ff7-4ae5-a675-3abe735ce9cc"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"db994eda-6ff7-4ae5-a675-3abe735ce9cc"}, "11111111-1111-1111-1111-111111111111")
 			},
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Existing Role Name",
@@ -211,18 +211,18 @@ func TestUpdateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "success: update role name to same name as role in different tenant",
-			loginUserKey: "alpha_admin", // Tenant Alpha user
+			loginUserKey: "enterprise_1", // Enterprise tenant user
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
-				// First: Create a role in Tenant Beta with name "Marketing Manager"
-				createTestRole(t, pool, "Marketing Manager", "Marketing role in Beta tenant",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000002")
+				// First: Create a role in SMB tenant with name "Marketing Manager"
+				createTestRole(t, pool, "Marketing Manager", "Marketing role in SMB tenant",
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "22222222-2222-2222-2222-222222222222")
 				
-				// Second: Create a role in Tenant Alpha with different name to be updated
-				return createTestRole(t, pool, "Sales Representative", "Sales role in Alpha tenant",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
+				// Second: Create a role in Enterprise tenant with different name to be updated
+				return createTestRole(t, pool, "Sales Representative", "Sales role in Enterprise tenant",
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
 			requestBody: roles.UpdateRoleRequestBody{
-				Name:          "Marketing Manager", // Same name as the role we created in Beta tenant
+				Name:          "Marketing Manager", // Same name as the role we created in SMB tenant
 				Description:   "Cross tenant name should be allowed",
 				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"},
 			},
@@ -232,10 +232,10 @@ func TestUpdateRole_Integration(t *testing.T) {
 		// Edge Cases
 		{
 			name:         "role name exceeding 255 characters fails with DB error",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRole(t, pool, "Test Role for Long Name", "Test Description",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          strings.Repeat("a", 256), // 256 characters
@@ -246,10 +246,10 @@ func TestUpdateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "description exceeding 255 characters fails with DB error",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRole(t, pool, "Test Role for Long Description", "Test Description",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Valid Name",
@@ -262,10 +262,10 @@ func TestUpdateRole_Integration(t *testing.T) {
 		// Happy Path Tests
 		{
 			name:         "success: update role with valid data",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRole(t, pool, "Original Role", "Original Description",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Updated Role",
@@ -276,10 +276,10 @@ func TestUpdateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "success: update role with empty permissions array",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRole(t, pool, "Role with Permissions", "Test Description",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Role without Permissions",
@@ -290,10 +290,10 @@ func TestUpdateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "success: update role with same name (no-op)",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRole(t, pool, "Same Name Role", "Original Description",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Same Name Role",
@@ -304,10 +304,10 @@ func TestUpdateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "success: update only description keeping same name",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRole(t, pool, "Constant Name", "Original Description",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Constant Name",
@@ -318,10 +318,10 @@ func TestUpdateRole_Integration(t *testing.T) {
 		},
 		{
 			name:         "success: update role with empty description",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRole(t, pool, "Role to Clear Description", "Will be cleared",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
 			requestBody: roles.UpdateRoleRequestBody{
 				Name:          "Role with Empty Description",
@@ -334,10 +334,10 @@ func TestUpdateRole_Integration(t *testing.T) {
 		// Request Format Tests
 		{
 			name:         "malformed JSON body returns 400",
-			loginUserKey: "alpha_admin",
+			loginUserKey: "enterprise_1",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRole(t, pool, "Role for Malformed JSON", "Test Description",
-					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "a0000000-0000-0000-0000-000000000001")
+					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
 			requestBody:    roles.UpdateRoleRequestBody{}, // Will be overridden in test
 			expectedStatus: http.StatusBadRequest,
@@ -374,8 +374,8 @@ func TestUpdateRole_Integration(t *testing.T) {
 
 			// Add authentication if needed
 			if !tt.expectUnauth && tt.loginUserKey != "" {
-				loginDetails, ok := setup.TestUsersData[tt.loginUserKey]
-				assert.True(t, ok, "Login user key not found in setup.TestUsersData: %s for test: %s", tt.loginUserKey, tt.name)
+					loginDetails, ok := setup.TestUsersData2[tt.loginUserKey]
+				assert.True(t, ok, "Login user key not found in setup.TestUsersData2: %s for test: %s", tt.loginUserKey, tt.name)
 
 				accessToken, _ := setup.LoginUserAndGetTokens(t, loginDetails.Email, loginDetails.PlainTextPassword)
 				req.AddCookie(&http.Cookie{
