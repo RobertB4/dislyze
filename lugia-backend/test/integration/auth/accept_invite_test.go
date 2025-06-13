@@ -17,13 +17,13 @@ func TestAcceptInvite_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	setup.ResetAndSeedDB(t, pool)
+	setup.ResetAndSeedDB2(t, pool)
 
-	const (
-		plainValidTokenForAccept       = "26U7PPxCPCFwWifs8gMD73Gq4tLIBlKBgroHOpkb1bQ"
+	var (
+		plainValidTokenForAccept       = setup.TestInvitationTokensData["enterprise_11_token"].UnhashedToken
 		plainNonExistentTokenForAccept = "accept-invite-plain-nonexistent-token-for-testing-456"
-		plainExpiredTokenForAccept     = "accept-invite-plain-expired-token-for-testing-789"
-		plainTokenForActiveUserAccept  = "accept-invite-plain-token-for-active-user-000"
+		plainExpiredTokenForAccept     = setup.TestInvitationTokensData["enterprise_14_expired_token"].UnhashedToken
+		plainTokenForActiveUserAccept  = setup.TestInvitationTokensData["enterprise_10_active_user_token"].UnhashedToken
 		newPasswordForAcceptInvite     = "SuP3rS3cur3N3wP@sswOrd!"
 	)
 
