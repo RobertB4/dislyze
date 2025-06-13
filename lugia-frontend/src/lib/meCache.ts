@@ -4,8 +4,13 @@ export type Me = {
 	user_id: string;
 	email: string;
 	user_name: string;
-	permissions: `${"tenant" | "users" | "roles"}.${"view" | "edit"}`[]; // array of {resource}.{action}, e.g. users.view
 	tenant_name: string;
+	permissions: `${"tenant" | "users" | "roles"}.${"view" | "edit"}`[]; // array of {resource}.{action}, e.g. users.view
+	enterprise_features: EnterpriseFeatures;
+};
+
+type EnterpriseFeatures = {
+	rbac: { enabled: boolean };
 };
 
 export function hasPermission(
@@ -22,6 +27,10 @@ export function hasPermission(
 	}
 
 	return false;
+}
+
+export function hasFeature(me: Me, feature: keyof EnterpriseFeatures): boolean {
+	return me.enterprise_features[feature].enabled;
 }
 
 /**

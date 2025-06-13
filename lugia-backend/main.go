@@ -74,6 +74,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 
 			r.Route("/users", func(r chi.Router) {
 				r.With(middleware.RequireUsersView(queries)).Get("/", usersHandler.GetUsers)
+				r.With(middleware.RequireUsersView(queries)).Get("/roles", rolesHandler.GetRoles)
 				r.With(middleware.RequireUsersEdit(queries)).Post("/invite", usersHandler.InviteUser)
 				r.With(middleware.RequireUsersEdit(queries)).Post("/{userID}/resend-invite", usersHandler.ResendInvite)
 				r.With(middleware.RequireUsersEdit(queries)).Post("/{userID}/roles", usersHandler.UpdateUserRoles)
@@ -81,11 +82,13 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 			})
 
 			r.Route("/roles", func(r chi.Router) {
+				r.Use(middleware.RequireRBAC(queries))
+
 				r.With(middleware.RequireRolesView(queries)).Get("/", rolesHandler.GetRoles)
 				r.With(middleware.RequireRolesView(queries)).Get("/permissions", rolesHandler.GetPermissions)
-				r.With(middleware.RequireRBAC(queries), middleware.RequireRolesEdit(queries)).Post("/create", rolesHandler.CreateRole)
-				r.With(middleware.RequireRBAC(queries), middleware.RequireRolesEdit(queries)).Post("/{roleID}/update", rolesHandler.UpdateRole)
-				r.With(middleware.RequireRBAC(queries), middleware.RequireRolesEdit(queries)).Post("/{roleID}/delete", rolesHandler.DeleteRole)
+				r.With(middleware.RequireRolesEdit(queries)).Post("/create", rolesHandler.CreateRole)
+				r.With(middleware.RequireRolesEdit(queries)).Post("/{roleID}/update", rolesHandler.UpdateRole)
+				r.With(middleware.RequireRolesEdit(queries)).Post("/{roleID}/delete", rolesHandler.DeleteRole)
 			})
 
 			r.Route("/tenant", func(r chi.Router) {

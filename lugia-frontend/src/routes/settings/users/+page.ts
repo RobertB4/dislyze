@@ -69,7 +69,7 @@ export const load: PageLoad = ({ fetch, url }) => {
 		`/api/users?${queryParams.toString()}`
 	).then((res) => res.json());
 
-	const rolesPromise: Promise<GetRolesResponse> = loadFunctionFetch(fetch, `/api/roles`).then(
+	const rolesPromise: Promise<GetRolesResponse> = loadFunctionFetch(fetch, `/api/users/roles`).then(
 		(res) => res.json()
 	);
 

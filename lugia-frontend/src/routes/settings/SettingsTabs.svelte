@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/state";
 	import type { Me } from "$lib/meCache";
-	import { hasPermission } from "$lib/meCache";
+	import { hasFeature, hasPermission } from "$lib/meCache";
 
 	let { me }: { me: Me } = $props();
 
@@ -20,7 +20,7 @@
 					}
 				]
 			: []),
-		...(hasPermission(me, "roles.view")
+		...(hasPermission(me, "roles.view") && hasFeature(me, "rbac")
 			? [
 					{
 						name: "ロール管理",
