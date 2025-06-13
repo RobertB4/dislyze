@@ -5,8 +5,6 @@ services:
       dockerfile: ./lugia-frontend/test/Dockerfile.frontend.e2e # Path to Dockerfile from new context
     ports:
       - "23000:23000"
-    environment:
-      - API_URL=http://lugia-backend:23001
     depends_on:
       - lugia-backend
     container_name: lugia-frontend-e2e
