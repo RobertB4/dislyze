@@ -61,7 +61,7 @@ test.describe("Settings - Profile Page", () => {
 		});
 
 		test("should allow authenticated users access to profile page", async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_editor);
+			await logInAs(page, TestUsersData.enterprise_2);
 			await page.goto(PROFILE_URL);
 
 			await expect(page).toHaveURL(PROFILE_URL);
@@ -70,7 +70,7 @@ test.describe("Settings - Profile Page", () => {
 
 		test("should show tenant section only for admin users", async ({ page }) => {
 			// Test as admin - should see tenant section
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto(PROFILE_URL);
 
 			await expect(page.getByTestId("change-tenant-section")).toBeVisible();
@@ -79,7 +79,7 @@ test.describe("Settings - Profile Page", () => {
 
 		test("should hide tenant section for editor users", async ({ page }) => {
 			// Test as editor - should not see tenant section
-			await logInAs(page, TestUsersData.alpha_editor);
+			await logInAs(page, TestUsersData.enterprise_2);
 			await page.goto(PROFILE_URL);
 
 			await expect(page.getByTestId("change-tenant-section")).not.toBeVisible();
@@ -89,7 +89,7 @@ test.describe("Settings - Profile Page", () => {
 
 	test.describe("Name Change Form", () => {
 		test.beforeEach(async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_editor);
+			await logInAs(page, TestUsersData.enterprise_2);
 			await page.goto(PROFILE_URL);
 			await expect(page.getByTestId("change-name-section")).toBeVisible();
 		});
@@ -126,7 +126,7 @@ test.describe("Settings - Profile Page", () => {
 
 	test.describe("Password Change Form", () => {
 		test.beforeEach(async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_editor);
+			await logInAs(page, TestUsersData.enterprise_2);
 			await page.goto(PROFILE_URL);
 			await expect(page.getByTestId("change-password-section")).toBeVisible();
 		});
@@ -168,7 +168,7 @@ test.describe("Settings - Profile Page", () => {
 		});
 
 		test("should successfully change password and update authentication", async ({ page }) => {
-			const currentPassword = TestUsersData.alpha_editor.plainTextPassword;
+			const currentPassword = TestUsersData.enterprise_2.plainTextPassword;
 			const newPassword = "newPassword123";
 
 			// Fill password change form
@@ -192,7 +192,7 @@ test.describe("Settings - Profile Page", () => {
 			await expect(page).toHaveURL(/.*\/auth\/login.*/);
 
 			// Try to log in with old password - should fail
-			await page.locator("#email").fill(TestUsersData.alpha_editor.email);
+			await page.locator("#email").fill(TestUsersData.enterprise_2.email);
 			await page.locator("#password").fill(currentPassword);
 			await page.getByTestId("login-submit-button").click();
 
@@ -214,13 +214,13 @@ test.describe("Settings - Profile Page", () => {
 	test.describe("Email Change Form", () => {
 		test.beforeEach(async ({ page }) => {
 			// Use beta_admin instead of alpha_editor to avoid rate limiting conflicts
-			await logInAs(page, TestUsersData.beta_admin);
+			await logInAs(page, TestUsersData.smb_1);
 			await page.goto(PROFILE_URL);
 			await expect(page.getByTestId("change-email-section")).toBeVisible();
 		});
 
 		test("should display current email address", async ({ page }) => {
-			await expect(page.getByTestId("current-email")).toContainText(TestUsersData.beta_admin.email);
+			await expect(page.getByTestId("current-email")).toContainText(TestUsersData.smb_1.email);
 		});
 
 		test("should display validation errors for email field", async ({ page }) => {
@@ -238,7 +238,7 @@ test.describe("Settings - Profile Page", () => {
 			);
 
 			// Test same email as current
-			await page.locator("#newEmail").fill(TestUsersData.beta_admin.email);
+			await page.locator("#newEmail").fill(TestUsersData.smb_1.email);
 			await page.getByTestId("save-email-button").click();
 			await expect(page.getByTestId("newEmail-error")).toContainText(
 				"現在のメールアドレスと同じです"
@@ -273,7 +273,7 @@ test.describe("Settings - Profile Page", () => {
 
 	test.describe("Tenant Name Change (Admin Only)", () => {
 		test.beforeEach(async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto(PROFILE_URL);
 			await expect(page.getByTestId("change-tenant-section")).toBeVisible();
 		});
@@ -311,7 +311,7 @@ test.describe("Settings - Profile Page", () => {
 	test.describe("Email Verification Success Handling", () => {
 		test("should show success toast when returning from email verification", async ({ page }) => {
 			// Use alpha_admin to avoid rate limiting issues with alpha_editor
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 
 			// Navigate to profile page with email-verified=true parameter
 			await page.goto(`${PROFILE_URL}?email-verified=true`);
@@ -324,7 +324,7 @@ test.describe("Settings - Profile Page", () => {
 
 		test("should not show toast without email-verified parameter", async ({ page }) => {
 			// Use alpha_admin to avoid rate limiting issues with alpha_editor
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto(PROFILE_URL);
 
 			// Should not show any toast

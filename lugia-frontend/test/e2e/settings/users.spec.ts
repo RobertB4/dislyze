@@ -18,7 +18,7 @@ test.describe("Settings - Users Page", () => {
 		});
 
 		test("should allow admin access to users page", async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto(usersPageURL);
 
 			await expect(page).toHaveURL(usersPageURL);
@@ -26,7 +26,7 @@ test.describe("Settings - Users Page", () => {
 		});
 
 		test("should display 403 error when editor tries to access users page", async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_editor);
+			await logInAs(page, TestUsersData.enterprise_2);
 			await page.goto(usersPageURL);
 
 			// Should show the error elements with the correct content
@@ -40,7 +40,7 @@ test.describe("Settings - Users Page", () => {
 	test.describe("Viewing Users and Search", () => {
 		test.beforeEach(async ({ page }) => {
 			// Login as admin for all tests in this describe block using the helper function
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 
 			// Navigate to users page
 			await page.goto(usersPageURL);
@@ -55,45 +55,38 @@ test.describe("Settings - Users Page", () => {
 
 			// Check for the PendingXT Editor (first user in order)
 			await expect(
-				page.getByTestId(
-					`user-row-${TestUsersData.pending_editor_tenant_A_for_x_tenant_test.userID}`
-				)
+				page.getByTestId(`user-row-${TestUsersData.enterprise_11.userID}`)
 			).toBeVisible();
 			await expect(
-				page.getByTestId(
-					`user-name-${TestUsersData.pending_editor_tenant_A_for_x_tenant_test.userID}`
-				)
-			).toContainText("PendingXT Editor");
+				page.getByTestId(`user-name-${TestUsersData.enterprise_11.userID}`)
+			).toContainText("吉田 雄二");
 
 			// Check for the Rate Limit Test user (second user in order)
 			await expect(
-				page.getByTestId(`user-row-${TestUsersData.pending_editor_for_rate_limit_test.userID}`)
+				page.getByTestId(`user-row-${TestUsersData.enterprise_12.userID}`)
 			).toBeVisible();
 			await expect(
-				page.getByTestId(`user-name-${TestUsersData.pending_editor_for_rate_limit_test.userID}`)
-			).toContainText("Pending Editor Rate Limit Test");
+				page.getByTestId(`user-name-${TestUsersData.enterprise_12.userID}`)
+			).toContainText("福田 あかり");
 
 			// The first page should only contain 2 users due to pagination
-			expect(await page.getByTestId(/^user-row-/).count()).toBe(2);
+			expect(await page.getByTestId(/^user-row-/).count()).toBe(50);
 		});
 
 		test("should search for users by name", async ({ page }) => {
 			// Enter search term in the search input using id selector
-			await page.locator("#user-search").fill("Alpha Editor");
+			await page.locator("#user-search").fill("佐藤 花子");
 
 			// Since we're changing the URL with search, wait for navigation to complete
 			await page.waitForResponse(
-				(response) =>
-					response.url().includes("/api/users") &&
-					response.url().includes("search=Alpha") &&
-					response.status() === 200
+				(response) => response.url().includes("/api/users") && response.status() === 200
 			);
 
 			// Verify only matching users are displayed
-			await expect(page.getByTestId(`user-row-${TestUsersData.alpha_editor.userID}`)).toBeVisible();
+			await expect(page.getByTestId(`user-row-${TestUsersData.enterprise_2.userID}`)).toBeVisible();
 
 			// User should see their search term in the URL
-			await expect(page).toHaveURL(/.*search=Alpha\+Editor.*/);
+			await expect(page).toHaveURL(/.*search=%E4%BD%90%E8%97%A4.*%E8%8A%B1%E5%AD%90.*/);
 
 			// Only the editor user should be visible
 			expect(await page.getByTestId(/^user-row-/).count()).toBe(1);
@@ -101,21 +94,21 @@ test.describe("Settings - Users Page", () => {
 
 		test("should search for users by email", async ({ page }) => {
 			// Enter search term in the search input using id selector
-			await page.locator("#user-search").fill("alpha_editor@example.com");
+			await page.locator("#user-search").fill("enterprise2@localhost.com");
 
 			// Since we're changing the URL with search, wait for navigation to complete
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes("alpha_editor") &&
+					response.url().includes("enterprise2") &&
 					response.status() === 200
 			);
 
 			// Verify only matching users are displayed
-			await expect(page.getByTestId(`user-row-${TestUsersData.alpha_editor.userID}`)).toBeVisible();
+			await expect(page.getByTestId(`user-row-${TestUsersData.enterprise_2.userID}`)).toBeVisible();
 
 			// User should see their search term in the URL
-			await expect(page).toHaveURL(/.*search=alpha_editor%40example.com.*/);
+			await expect(page).toHaveURL(/.*search=enterprise2%40localhost.com.*/);
 
 			// Only the editor user should be visible
 			expect(await page.getByTestId(/^user-row-/).count()).toBe(1);
@@ -145,7 +138,7 @@ test.describe("Settings - Users Page", () => {
 
 		test("should display different status badges with appropriate colors", async ({ page }) => {
 			// First we'll check the pending status badge on the first page
-			const pendingUser = TestUsersData.pending_editor_for_rate_limit_test;
+			const pendingUser = TestUsersData.enterprise_12;
 			await expect(page.getByTestId(`user-status-${pendingUser.userID}`)).toBeVisible();
 
 			// For pending users, check the badge color and text
@@ -155,43 +148,43 @@ test.describe("Settings - Users Page", () => {
 			);
 
 			// Now search for the admin user specifically to test active status
-			await page.locator("#user-search").fill(TestUsersData.alpha_admin.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_1.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_admin.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_1.email)) &&
 					response.status() === 200
 			);
 
 			// Check active user status
 			await expect(
-				page.getByTestId(`user-status-${TestUsersData.alpha_admin.userID}`)
+				page.getByTestId(`user-status-${TestUsersData.enterprise_1.userID}`)
 			).toBeVisible();
 			await expect(
-				page.getByTestId(`user-status-${TestUsersData.alpha_admin.userID}`)
+				page.getByTestId(`user-status-${TestUsersData.enterprise_1.userID}`)
 			).toContainText("有効");
 			await expect(
-				page.getByTestId(`user-status-badge-${TestUsersData.alpha_admin.userID}`)
+				page.getByTestId(`user-status-badge-${TestUsersData.enterprise_1.userID}`)
 			).toHaveClass(/bg-green-100/);
 
 			// Clear search and search for suspended user
-			await page.locator("#user-search").fill(TestUsersData.suspended_editor.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_16.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.suspended_editor.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_16.email)) &&
 					response.status() === 200
 			);
 
 			// Check suspended user status
 			await expect(
-				page.getByTestId(`user-status-${TestUsersData.suspended_editor.userID}`)
+				page.getByTestId(`user-status-${TestUsersData.enterprise_16.userID}`)
 			).toBeVisible();
 			await expect(
-				page.getByTestId(`user-status-${TestUsersData.suspended_editor.userID}`)
+				page.getByTestId(`user-status-${TestUsersData.enterprise_16.userID}`)
 			).toContainText("停止中");
 			await expect(
-				page.getByTestId(`user-status-badge-${TestUsersData.suspended_editor.userID}`)
+				page.getByTestId(`user-status-badge-${TestUsersData.enterprise_16.userID}`)
 			).toHaveClass(/bg-red-100/);
 		});
 	});
@@ -199,7 +192,7 @@ test.describe("Settings - Users Page", () => {
 	test.describe("Pagination", () => {
 		test.beforeEach(async ({ page }) => {
 			// Login as admin for all tests in this describe block
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 
 			// Navigate to users page
 			await page.goto(usersPageURL);
@@ -214,8 +207,8 @@ test.describe("Settings - Users Page", () => {
 			await expect(page.getByTestId("pagination-info")).toBeVisible();
 			await expect(page.getByTestId("pagination-buttons")).toBeVisible();
 
-			// Check pagination info shows correct counts (6 total users, showing 1-2)
-			await expect(page.getByTestId("pagination-info")).toContainText("6件中 1 - 2件を表示");
+			// Check pagination info shows correct counts (101 total users, showing 1-50)
+			await expect(page.getByTestId("pagination-info")).toContainText("101件中 1 - 50件を表示");
 
 			// Check current page indicator
 			await expect(page.getByTestId("pagination-current")).toContainText("1 / 3");
@@ -230,11 +223,8 @@ test.describe("Settings - Users Page", () => {
 		});
 
 		test("should navigate to next page and show correct users", async ({ page }) => {
-			// We're on page 1, which shows users b...6 and b...5
 			await expect(
-				page.getByTestId(
-					`user-row-${TestUsersData.pending_editor_tenant_A_for_x_tenant_test.userID}`
-				)
+				page.getByTestId(`user-row-${TestUsersData.enterprise_11.userID}`)
 			).toBeVisible();
 
 			const responsePromise = page.waitForResponse((response) => {
@@ -255,21 +245,12 @@ test.describe("Settings - Users Page", () => {
 
 			// Should be on page 2
 			await expect(page.getByTestId("pagination-current")).toContainText("2 / 3");
-			await expect(page.getByTestId("pagination-info")).toContainText("6件中 3 - 4件を表示");
+			await expect(page.getByTestId("pagination-info")).toContainText("101件中 51 - 100件を表示");
 
-			// Page 2 should show users b...4 and b...3
-			await expect(
-				page.getByTestId(`user-row-${TestUsersData.suspended_editor.userID}`)
-			).toBeVisible();
-			await expect(
-				page.getByTestId(`user-row-${TestUsersData.suspended_editor.userID}`)
-			).toBeVisible();
-
+			await expect(page.getByTestId(`user-row-a0000000-0000-0000-0000-000000000064`)).toBeVisible();
 			// Users from page 1 should not be visible anymore
 			await expect(
-				page.getByTestId(
-					`user-row-${TestUsersData.pending_editor_tenant_A_for_x_tenant_test.userID}`
-				)
+				page.getByTestId(`user-row-${TestUsersData.enterprise_11.userID}`)
 			).not.toBeVisible();
 
 			// First and Previous buttons should be enabled now
@@ -312,13 +293,11 @@ test.describe("Settings - Users Page", () => {
 
 			// Should be back on page 1
 			await expect(page.getByTestId("pagination-current")).toContainText("1 / 3");
-			await expect(page.getByTestId("pagination-info")).toContainText("6件中 1 - 2件を表示");
+			await expect(page.getByTestId("pagination-info")).toContainText("101件中 1 - 50件を表示");
 
 			// Page 1 users should be visible again
 			await expect(
-				page.getByTestId(
-					`user-row-${TestUsersData.pending_editor_tenant_A_for_x_tenant_test.userID}`
-				)
+				page.getByTestId(`user-row-${TestUsersData.enterprise_11.userID}`)
 			).toBeVisible();
 		});
 
@@ -339,13 +318,11 @@ test.describe("Settings - Users Page", () => {
 
 			await expect(page.getByTestId("users-table")).toBeVisible();
 
-			// Should be on page 3
+			// Should be on page 14
 			await expect(page.getByTestId("pagination-current")).toContainText("3 / 3");
-			await expect(page.getByTestId("pagination-info")).toContainText("6件中 5 - 6件を表示");
+			await expect(page.getByTestId("pagination-info")).toContainText("101件中 101 - 101件を表示");
 
-			// Page 3 should show users b...2 and b...1 (Alpha Editor and Alpha Admin)
-			await expect(page.getByTestId(`user-row-${TestUsersData.alpha_editor.userID}`)).toBeVisible();
-			await expect(page.getByTestId(`user-row-${TestUsersData.alpha_admin.userID}`)).toBeVisible();
+			await expect(page.getByTestId(`user-row-a0000000-0000-0000-0000-000000000101`)).toBeVisible();
 
 			// Next and Last buttons should be disabled on the last page
 			await expect(page.getByTestId("pagination-next")).toBeDisabled();
@@ -390,9 +367,7 @@ test.describe("Settings - Users Page", () => {
 
 			// First page users should be visible
 			await expect(
-				page.getByTestId(
-					`user-row-${TestUsersData.pending_editor_tenant_A_for_x_tenant_test.userID}`
-				)
+				page.getByTestId(`user-row-${TestUsersData.enterprise_11.userID}`)
 			).toBeVisible();
 		});
 
@@ -400,13 +375,13 @@ test.describe("Settings - Users Page", () => {
 			const searchResponsePromise = page.waitForResponse((response) => {
 				return (
 					response.url().includes("/api/users") &&
-					response.url().includes("search=Editor") &&
+					response.url().includes("search=enterprise") &&
 					response.status() === 200
 				);
 			});
 
-			// Search for "Editor" which should match multiple users across pages
-			await page.locator("#user-search").fill("Editor");
+			// Search for "中島" which should match a user
+			await page.locator("#user-search").fill("enterprise");
 
 			// Wait for search to complete
 			await searchResponsePromise;
@@ -419,7 +394,7 @@ test.describe("Settings - Users Page", () => {
 			const pageResponsePromise = page.waitForResponse((response) => {
 				return (
 					response.url().includes("/api/users") &&
-					response.url().includes("search=Editor") &&
+					response.url().includes("search=enterprise") &&
 					response.url().includes("page=2") &&
 					response.status() === 200
 				);
@@ -434,7 +409,7 @@ test.describe("Settings - Users Page", () => {
 			await expect(page.getByTestId("users-table")).toBeVisible();
 
 			// URL should contain both search term and page number (in any order)
-			expect(page.url()).toContain("search=Editor");
+			expect(page.url()).toContain("search=enterprise");
 			expect(page.url()).toContain("page=2");
 
 			// Should still be showing search results, but for page 2
@@ -445,7 +420,7 @@ test.describe("Settings - Users Page", () => {
 	test.describe("User Invitation", () => {
 		test.beforeEach(async ({ page }) => {
 			// Login as admin for all tests in this describe block
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 
 			// Navigate to users page
 			await page.goto(usersPageURL);
@@ -517,8 +492,8 @@ test.describe("Settings - Users Page", () => {
 			await expect(page.getByTestId("role-cards-container")).toBeVisible();
 
 			// Initially no roles should be selected
-			const adminRoleCard = page.getByTestId("role-card-e0000000-0000-0000-0000-000000000001");
-			const editorRoleCard = page.getByTestId("role-card-e0000000-0000-0000-0000-000000000002");
+			const adminRoleCard = page.getByTestId("role-card-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+			const editorRoleCard = page.getByTestId("role-card-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
 			await expect(adminRoleCard).toBeVisible();
 			await expect(editorRoleCard).toBeVisible();
@@ -543,7 +518,7 @@ test.describe("Settings - Users Page", () => {
 			const userName = "Test Invitation User";
 
 			// Check initial pagination count before invitation
-			await expect(page.getByTestId("pagination-info")).toContainText("6件中 1 - 2件を表示");
+			await expect(page.getByTestId("pagination-info")).toContainText("101件中 1 - 50件を表示");
 
 			// Open the invite form
 			await page.getByTestId("add-user-button").click();
@@ -554,7 +529,7 @@ test.describe("Settings - Users Page", () => {
 			await page.locator("#name").fill(userName);
 
 			// Select editor role
-			const editorRoleCard = page.getByTestId("role-card-e0000000-0000-0000-0000-000000000002");
+			const editorRoleCard = page.getByTestId("role-card-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 			await editorRoleCard.click();
 
 			// Submit the form and wait for API response
@@ -574,7 +549,7 @@ test.describe("Settings - Users Page", () => {
 			await expect(page.getByTestId("add-user-slideover")).not.toBeVisible();
 
 			// Check that pagination count has increased after invitation
-			await expect(page.getByTestId("pagination-info")).toContainText("7件中 1 - 2件を表示");
+			await expect(page.getByTestId("pagination-info")).toContainText("102件中 1 - 50件を表示");
 
 			// Verify the new user appears in the list (might require searching for them)
 			await page.locator("#user-search").fill(uniqueEmail);
@@ -614,7 +589,7 @@ test.describe("Settings - Users Page", () => {
 	test.describe("Resending Invitation", () => {
 		test.beforeEach(async ({ page }) => {
 			// Login as admin for all tests in this describe block
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 
 			// Navigate to users page
 			await page.goto(usersPageURL);
@@ -625,7 +600,7 @@ test.describe("Settings - Users Page", () => {
 
 		test("should show resend button for pending users", async ({ page }) => {
 			// Find a pending user (we know the first one on the list is pending)
-			const pendingUserId = TestUsersData.pending_editor_tenant_A_for_x_tenant_test.userID;
+			const pendingUserId = TestUsersData.enterprise_11.userID;
 
 			// Check that the resend button is present for this user
 			await expect(page.getByTestId(`resend-invite-button-${pendingUserId}`)).toBeVisible();
@@ -638,23 +613,23 @@ test.describe("Settings - Users Page", () => {
 
 		test("should not show resend button for active users", async ({ page }) => {
 			// Search for an active user (Alpha Admin)
-			await page.locator("#user-search").fill(TestUsersData.alpha_admin.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_1.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_admin.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_1.email)) &&
 					response.status() === 200
 			);
 
 			// Check that there's no resend button for this active user
 			await expect(
-				page.getByTestId(`resend-invite-button-${TestUsersData.alpha_admin.userID}`)
+				page.getByTestId(`resend-invite-button-${TestUsersData.enterprise_1.userID}`)
 			).not.toBeVisible();
 		});
 
 		test("should successfully resend invitation", async ({ page }) => {
 			// Find a pending user to resend invitation to
-			const pendingUserId = TestUsersData.pending_editor_tenant_A_for_x_tenant_test.userID;
+			const pendingUserId = TestUsersData.enterprise_11.userID;
 
 			// Setup an observer for the API request that will be made
 			const responsePromise = page.waitForResponse(
@@ -677,7 +652,7 @@ test.describe("Settings - Users Page", () => {
 	test.describe("Role Editing", () => {
 		test.beforeEach(async ({ page }) => {
 			// Login as admin for all tests in this describe block
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 
 			// Navigate to users page
 			await page.goto(usersPageURL);
@@ -688,17 +663,17 @@ test.describe("Settings - Users Page", () => {
 
 		test("should open edit role form", async ({ page }) => {
 			// Search for the editor user to make sure it's visible
-			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_2.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_editor.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_2.email)) &&
 					response.status() === 200
 			);
 
 			// Find and click the edit permissions button for the editor user
 			await page
-				.getByTestId(`edit-permissions-button-${TestUsersData.alpha_editor.userID}`)
+				.getByTestId(`edit-permissions-button-${TestUsersData.enterprise_2.userID}`)
 				.click();
 
 			// Wait for the edit form to be visible
@@ -707,10 +682,10 @@ test.describe("Settings - Users Page", () => {
 
 			// Verify that the edit form contains the user's information
 			await expect(page.getByTestId("edit-user-title")).toContainText(
-				TestUsersData.alpha_editor.name
+				TestUsersData.enterprise_2.name
 			);
 			await expect(page.getByTestId("edit-user-title")).toContainText(
-				TestUsersData.alpha_editor.email
+				TestUsersData.enterprise_2.email
 			);
 
 			// Verify the role selector is present
@@ -720,21 +695,21 @@ test.describe("Settings - Users Page", () => {
 
 		test("should change user role from editor to admin", async ({ page }) => {
 			// Search for the editor user
-			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_2.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_editor.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_2.email)) &&
 					response.status() === 200
 			);
 
 			await expect(
-				page.getByTestId(`user-role-${TestUsersData.alpha_editor.userID}`)
+				page.getByTestId(`user-role-${TestUsersData.enterprise_2.userID}`)
 			).toContainText("編集者");
 
 			// Find and click the edit permissions button
 			await page
-				.getByTestId(`edit-permissions-button-${TestUsersData.alpha_editor.userID}`)
+				.getByTestId(`edit-permissions-button-${TestUsersData.enterprise_2.userID}`)
 				.click();
 
 			// Wait for the edit form to be visible
@@ -742,17 +717,17 @@ test.describe("Settings - Users Page", () => {
 
 			// Deselect the editor role first (user currently has editor role)
 			const editorRoleCard = page.getByTestId(
-				"edit-role-card-e0000000-0000-0000-0000-000000000002"
+				"edit-role-card-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
 			);
 			await editorRoleCard.click();
 
 			// Select the admin role
-			const adminRoleCard = page.getByTestId("edit-role-card-e0000000-0000-0000-0000-000000000001");
+			const adminRoleCard = page.getByTestId("edit-role-card-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 			await adminRoleCard.click();
 
 			const editUserResponse = page.waitForResponse(
 				(response) =>
-					response.url().includes(`/api/users/${TestUsersData.alpha_editor.userID}/roles`) &&
+					response.url().includes(`/api/users/${TestUsersData.enterprise_2.userID}/roles`) &&
 					response.status() === 200
 			);
 
@@ -771,46 +746,46 @@ test.describe("Settings - Users Page", () => {
 
 			// Verify the role shown in the UI is now "管理者" (admin)
 			await expect(
-				page.getByTestId(`user-role-${TestUsersData.alpha_editor.userID}`)
+				page.getByTestId(`user-role-${TestUsersData.enterprise_2.userID}`)
 			).toContainText("管理者");
 		});
 
 		test("should change user role from admin to editor", async ({ page }) => {
 			// For this test, we'll use a user that's already an admin and change them to editor
 			// First, search for the new admin user (we converted in previous test)
-			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_2.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_editor.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_2.email)) &&
 					response.status() === 200
 			);
 
 			await expect(
-				page.getByTestId(`user-role-${TestUsersData.alpha_editor.userID}`)
+				page.getByTestId(`user-role-${TestUsersData.enterprise_2.userID}`)
 			).toContainText("管理者");
 
 			// Find and click the edit permissions button
 			await page
-				.getByTestId(`edit-permissions-button-${TestUsersData.alpha_editor.userID}`)
+				.getByTestId(`edit-permissions-button-${TestUsersData.enterprise_2.userID}`)
 				.click();
 
 			// Wait for the edit form to be visible
 			await expect(page.getByTestId("edit-user-form")).toBeVisible();
 
 			// Deselect the admin role first (user currently has admin role)
-			const adminRoleCard = page.getByTestId("edit-role-card-e0000000-0000-0000-0000-000000000001");
+			const adminRoleCard = page.getByTestId("edit-role-card-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 			await adminRoleCard.click();
 
 			// Select the editor role
 			const editorRoleCard = page.getByTestId(
-				"edit-role-card-e0000000-0000-0000-0000-000000000002"
+				"edit-role-card-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
 			);
 			await editorRoleCard.click();
 
 			const editUserResponse = page.waitForResponse(
 				(response) =>
-					response.url().includes(`/api/users/${TestUsersData.alpha_editor.userID}/roles`) &&
+					response.url().includes(`/api/users/${TestUsersData.enterprise_2.userID}/roles`) &&
 					response.status() === 200
 			);
 
@@ -829,7 +804,7 @@ test.describe("Settings - Users Page", () => {
 
 			// Verify the role shown in the UI is now "編集者" (editor)
 			await expect(
-				page.getByTestId(`user-role-${TestUsersData.alpha_editor.userID}`)
+				page.getByTestId(`user-role-${TestUsersData.enterprise_2.userID}`)
 			).toContainText("編集者");
 		});
 
@@ -837,37 +812,37 @@ test.describe("Settings - Users Page", () => {
 			const searchResponse = page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_editor.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_2.email)) &&
 					response.status() === 200
 			);
 			// Search for the admin user
-			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_2.email);
 			await searchResponse;
 
 			// Store the original role text for comparison after cancelation
 			const originalRoleText = await page
-				.getByTestId(`user-role-${TestUsersData.alpha_editor.userID}`)
+				.getByTestId(`user-role-${TestUsersData.enterprise_2.userID}`)
 				.textContent();
 
 			await expect(
-				page.getByTestId(`user-role-${TestUsersData.alpha_editor.userID}`)
+				page.getByTestId(`user-role-${TestUsersData.enterprise_2.userID}`)
 			).toContainText("編集者");
 
 			// Find and click the edit permissions button
 			await page
-				.getByTestId(`edit-permissions-button-${TestUsersData.alpha_editor.userID}`)
+				.getByTestId(`edit-permissions-button-${TestUsersData.enterprise_2.userID}`)
 				.click(); // Wait for the edit form to be visible
 			await expect(page.getByTestId("edit-user-form")).toBeVisible();
 
 			// Change the role (from editor to admin)
 			// Deselect the editor role first
 			const editorRoleCard = page.getByTestId(
-				"edit-role-card-e0000000-0000-0000-0000-000000000002"
+				"edit-role-card-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
 			);
 			await editorRoleCard.click();
 
 			// Select the admin role
-			const adminRoleCard = page.getByTestId("edit-role-card-e0000000-0000-0000-0000-000000000001");
+			const adminRoleCard = page.getByTestId("edit-role-card-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 			await adminRoleCard.click();
 
 			// Cancel the form by clicking the cancel button
@@ -878,12 +853,12 @@ test.describe("Settings - Users Page", () => {
 
 			// Verify the role hasn't changed
 			const currentRoleText = await page
-				.getByTestId(`user-role-${TestUsersData.alpha_editor.userID}`)
+				.getByTestId(`user-role-${TestUsersData.enterprise_2.userID}`)
 				.textContent();
 			expect(currentRoleText).toContain(originalRoleText!.trim());
 			// Should still be "編集者"
 			await expect(
-				page.getByTestId(`user-role-${TestUsersData.alpha_editor.userID}`)
+				page.getByTestId(`user-role-${TestUsersData.enterprise_2.userID}`)
 			).toContainText("編集者");
 		});
 	});
@@ -897,7 +872,7 @@ test.describe("Settings - Users Page", () => {
 
 		test.beforeEach(async ({ page }) => {
 			// Login as admin for all tests in this describe block
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 
 			// Navigate to users page
 			await page.goto(usersPageURL);
@@ -920,8 +895,8 @@ test.describe("Settings - Users Page", () => {
 			await page.locator("#name").fill(userName);
 
 			// Select both admin and editor roles
-			const adminRoleCard = page.getByTestId("role-card-e0000000-0000-0000-0000-000000000001");
-			const editorRoleCard = page.getByTestId("role-card-e0000000-0000-0000-0000-000000000002");
+			const adminRoleCard = page.getByTestId("role-card-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+			const editorRoleCard = page.getByTestId("role-card-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
 			await adminRoleCard.click();
 			await expect(adminRoleCard).toHaveAttribute("aria-pressed", "true");
@@ -968,33 +943,33 @@ test.describe("Settings - Users Page", () => {
 
 		test("should edit user to have multiple roles", async ({ page }) => {
 			// Use the suspended_editor user who will have clean state from database reset
-			await page.locator("#user-search").fill(TestUsersData.suspended_editor.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_16.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.suspended_editor.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_16.email)) &&
 					response.status() === 200
 			);
 
 			// This user should reliably have only editor role from seed data
-			const userRoleCell = page.getByTestId(`user-role-${TestUsersData.suspended_editor.userID}`);
-			await expect(userRoleCell).toContainText("編集者");
+			const userRoleCell = page.getByTestId(`user-role-${TestUsersData.enterprise_16.userID}`);
+			await expect(userRoleCell).toContainText("閲覧者");
 
 			// Open edit form
 			await page
-				.getByTestId(`edit-permissions-button-${TestUsersData.suspended_editor.userID}`)
+				.getByTestId(`edit-permissions-button-${TestUsersData.enterprise_16.userID}`)
 				.click();
 
 			await expect(page.getByTestId("edit-user-form")).toBeVisible();
 
 			// Editor role should already be selected
 			const editorRoleCard = page.getByTestId(
-				"edit-role-card-e0000000-0000-0000-0000-000000000002"
+				"edit-role-card-cccccccc-cccc-cccc-cccc-cccccccccccc"
 			);
 			await expect(editorRoleCard).toHaveAttribute("aria-pressed", "true");
 
 			// Add admin role without removing editor role
-			const adminRoleCard = page.getByTestId("edit-role-card-e0000000-0000-0000-0000-000000000001");
+			const adminRoleCard = page.getByTestId("edit-role-card-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 			await adminRoleCard.click();
 			await expect(adminRoleCard).toHaveAttribute("aria-pressed", "true");
 
@@ -1005,7 +980,7 @@ test.describe("Settings - Users Page", () => {
 			// Submit the form
 			const editUserResponse = page.waitForResponse(
 				(response) =>
-					response.url().includes(`/api/users/${TestUsersData.suspended_editor.userID}/roles`) &&
+					response.url().includes(`/api/users/${TestUsersData.enterprise_16.userID}/roles`) &&
 					response.status() === 200
 			);
 
@@ -1022,7 +997,7 @@ test.describe("Settings - Users Page", () => {
 			// Verify the user now shows multiple roles in the table
 			// Should show the first role name and "他1件" for the additional role
 			const updatedUserRoleCell = page.getByTestId(
-				`user-role-${TestUsersData.suspended_editor.userID}`
+				`user-role-${TestUsersData.enterprise_16.userID}`
 			);
 			await expect(updatedUserRoleCell).toContainText("管理者");
 			await expect(updatedUserRoleCell).toContainText("他1件");
@@ -1030,30 +1005,30 @@ test.describe("Settings - Users Page", () => {
 
 		test("should remove roles individually from users with multiple roles", async ({ page }) => {
 			// Search for the suspended_editor user (who should have multiple roles)
-			await page.locator("#user-search").fill(TestUsersData.suspended_editor.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_16.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.suspended_editor.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_16.email)) &&
 					response.status() === 200
 			);
 
 			// Verify user currently shows multiple roles
-			const userRoleCell = page.getByTestId(`user-role-${TestUsersData.suspended_editor.userID}`);
+			const userRoleCell = page.getByTestId(`user-role-${TestUsersData.enterprise_16.userID}`);
 			await expect(userRoleCell).toContainText("他1件");
 
 			// Open edit form
 			await page
-				.getByTestId(`edit-permissions-button-${TestUsersData.suspended_editor.userID}`)
+				.getByTestId(`edit-permissions-button-${TestUsersData.enterprise_16.userID}`)
 				.click();
 
 			await expect(page.getByTestId("edit-user-form")).toBeVisible();
 
 			// Both roles should be selected
 			const editorRoleCard = page.getByTestId(
-				"edit-role-card-e0000000-0000-0000-0000-000000000002"
+				"edit-role-card-cccccccc-cccc-cccc-cccc-cccccccccccc"
 			);
-			const adminRoleCard = page.getByTestId("edit-role-card-e0000000-0000-0000-0000-000000000001");
+			const adminRoleCard = page.getByTestId("edit-role-card-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
 			await expect(editorRoleCard).toHaveAttribute("aria-pressed", "true");
 			await expect(adminRoleCard).toHaveAttribute("aria-pressed", "true");
@@ -1066,7 +1041,7 @@ test.describe("Settings - Users Page", () => {
 			// Submit the form
 			const editUserResponse = page.waitForResponse(
 				(response) =>
-					response.url().includes(`/api/users/${TestUsersData.suspended_editor.userID}/roles`) &&
+					response.url().includes(`/api/users/${TestUsersData.enterprise_16.userID}/roles`) &&
 					response.status() === 200
 			);
 
@@ -1082,9 +1057,9 @@ test.describe("Settings - Users Page", () => {
 
 			// Verify the user now shows only single role (no "他X件")
 			const updatedUserRoleCell = page.getByTestId(
-				`user-role-${TestUsersData.suspended_editor.userID}`
+				`user-role-${TestUsersData.enterprise_16.userID}`
 			);
-			await expect(updatedUserRoleCell).toContainText("編集者");
+			await expect(updatedUserRoleCell).toContainText("閲覧者");
 			await expect(updatedUserRoleCell).not.toContainText("他");
 		});
 	});
@@ -1093,7 +1068,7 @@ test.describe("Settings - Users Page", () => {
 	test.describe("User Deletion", () => {
 		test.beforeEach(async ({ page }) => {
 			// Login as admin for all tests in this describe block
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 
 			// Navigate to users page
 			await page.goto(usersPageURL);
@@ -1104,16 +1079,16 @@ test.describe("Settings - Users Page", () => {
 
 		test("should open delete confirmation dialog for active user", async ({ page }) => {
 			// Search for the editor user to make sure it's visible
-			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_2.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_editor.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_2.email)) &&
 					response.status() === 200
 			);
 
 			// Find and click the delete button for the editor user
-			await page.getByTestId(`delete-user-button-${TestUsersData.alpha_editor.userID}`).click();
+			await page.getByTestId(`delete-user-button-${TestUsersData.enterprise_2.userID}`).click();
 
 			// Wait for the delete form to be visible
 			await expect(page.getByTestId("delete-user-form")).toBeVisible();
@@ -1121,7 +1096,7 @@ test.describe("Settings - Users Page", () => {
 
 			// Verify that the delete warning contains the user's email
 			await expect(page.getByTestId("delete-user-warning")).toContainText(
-				TestUsersData.alpha_editor.email
+				TestUsersData.enterprise_2.email
 			);
 
 			// Verify the confirmation field is present
@@ -1132,7 +1107,7 @@ test.describe("Settings - Users Page", () => {
 			page
 		}) => {
 			// Find a pending user
-			const pendingUser = TestUsersData.pending_editor_tenant_A_for_x_tenant_test;
+			const pendingUser = TestUsersData.enterprise_11;
 
 			// Ensure the user is visible by searching for them
 			await page.locator("#user-search").fill(pendingUser.email);
@@ -1156,16 +1131,16 @@ test.describe("Settings - Users Page", () => {
 
 		test("should show validation error for empty email field", async ({ page }) => {
 			// Search for the editor user
-			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_2.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_editor.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_2.email)) &&
 					response.status() === 200
 			);
 
 			// Open the delete confirmation dialog
-			await page.getByTestId(`delete-user-button-${TestUsersData.alpha_editor.userID}`).click();
+			await page.getByTestId(`delete-user-button-${TestUsersData.enterprise_2.userID}`).click();
 			await expect(page.getByTestId("delete-user-form")).toBeVisible();
 
 			// Try to submit without entering email
@@ -1180,16 +1155,16 @@ test.describe("Settings - Users Page", () => {
 
 		test("should show validation error for incorrect email", async ({ page }) => {
 			// Search for the editor user
-			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_2.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_editor.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_2.email)) &&
 					response.status() === 200
 			);
 
 			// Open the delete confirmation dialog
-			await page.getByTestId(`delete-user-button-${TestUsersData.alpha_editor.userID}`).click();
+			await page.getByTestId(`delete-user-button-${TestUsersData.enterprise_2.userID}`).click();
 			await expect(page.getByTestId("delete-user-form")).toBeVisible();
 
 			// Enter incorrect email
@@ -1211,25 +1186,25 @@ test.describe("Settings - Users Page", () => {
 			const initialCount = parseInt(paginationInfo?.match(/(\d+)件中/)?.[1] || "0");
 
 			// Search for the editor user
-			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_2.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_editor.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_2.email)) &&
 					response.status() === 200
 			);
 
 			// Open the delete confirmation dialog
-			await page.getByTestId(`delete-user-button-${TestUsersData.alpha_editor.userID}`).click();
+			await page.getByTestId(`delete-user-button-${TestUsersData.enterprise_2.userID}`).click();
 			await expect(page.getByTestId("delete-user-form")).toBeVisible();
 
 			// Enter the correct email to confirm
-			await page.locator("#confirmEmail").fill(TestUsersData.alpha_editor.email);
+			await page.locator("#confirmEmail").fill(TestUsersData.enterprise_2.email);
 
 			// Setup an observer for the API request that will be made
 			const responsePromise = page.waitForResponse(
 				(response) =>
-					response.url().includes(`/api/users/${TestUsersData.alpha_editor.userID}`) &&
+					response.url().includes(`/api/users/${TestUsersData.enterprise_2.userID}`) &&
 					response.status() === 200
 			);
 
@@ -1259,46 +1234,46 @@ test.describe("Settings - Users Page", () => {
 			// Check that pagination count has decreased after deletion
 			const expectedCount = initialCount - 1;
 			await expect(page.getByTestId("pagination-info")).toContainText(
-				`${expectedCount}件中 1 - 2件を表示`
+				`${expectedCount}件中 1 - 50件を表示`
 			);
 
 			// Verify the user is no longer in the list by searching for them
-			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_2.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_editor.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_2.email)) &&
 					response.status() === 200
 			);
 
 			// There should be no results
 			await expect(page.getByTestId("no-users-message")).toBeVisible();
 			await expect(page.getByTestId("no-search-results-message")).toContainText(
-				`「${TestUsersData.alpha_editor.email}」に一致するユーザーはありません`
+				`「${TestUsersData.enterprise_2.email}」に一致するユーザーはありません`
 			);
 		});
 
 		test("should cancel user deletion without deleting", async ({ page }) => {
 			// Search for a user that we're not actually going to delete
-			await page.locator("#user-search").fill(TestUsersData.suspended_editor.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_16.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.suspended_editor.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_16.email)) &&
 					response.status() === 200
 			);
 
 			// Verify the user is present
 			await expect(
-				page.getByTestId(`user-row-${TestUsersData.suspended_editor.userID}`)
+				page.getByTestId(`user-row-${TestUsersData.enterprise_16.userID}`)
 			).toBeVisible();
 
 			// Open the delete confirmation dialog
-			await page.getByTestId(`delete-user-button-${TestUsersData.suspended_editor.userID}`).click();
+			await page.getByTestId(`delete-user-button-${TestUsersData.enterprise_16.userID}`).click();
 			await expect(page.getByTestId("delete-user-form")).toBeVisible();
 
 			// Enter the email (but we will cancel instead of confirming)
-			await page.locator("#confirmEmail").fill(TestUsersData.suspended_editor.email);
+			await page.locator("#confirmEmail").fill(TestUsersData.enterprise_16.email);
 
 			// Cancel the deletion by clicking the cancel button
 			await page.getByTestId("delete-user-slideover-cancel-button").click();
@@ -1308,31 +1283,31 @@ test.describe("Settings - Users Page", () => {
 
 			// Verify the user is still in the list
 			await expect(
-				page.getByTestId(`user-row-${TestUsersData.suspended_editor.userID}`)
+				page.getByTestId(`user-row-${TestUsersData.enterprise_16.userID}`)
 			).toBeVisible();
 		});
 
 		test("should prevent deletion of current user", async ({ page }) => {
 			// Search for the currently logged in user (alpha_admin)
-			await page.locator("#user-search").fill(TestUsersData.alpha_admin.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_1.email);
 			await page.waitForResponse(
 				(response) =>
 					response.url().includes("/api/users") &&
-					response.url().includes(encodeURIComponent(TestUsersData.alpha_admin.email)) &&
+					response.url().includes(encodeURIComponent(TestUsersData.enterprise_1.email)) &&
 					response.status() === 200
 			);
 
 			// Verify the user is present
-			await expect(page.getByTestId(`user-row-${TestUsersData.alpha_admin.userID}`)).toBeVisible();
+			await expect(page.getByTestId(`user-row-${TestUsersData.enterprise_1.userID}`)).toBeVisible();
 
 			// Verify there is no delete button for the current user
 			await expect(
-				page.getByTestId(`delete-user-button-${TestUsersData.alpha_admin.userID}`)
+				page.getByTestId(`delete-user-button-${TestUsersData.enterprise_1.userID}`)
 			).not.toBeVisible();
 
 			// Also verify there's no edit permissions button for the current user
 			await expect(
-				page.getByTestId(`edit-permissions-button-${TestUsersData.alpha_admin.userID}`)
+				page.getByTestId(`edit-permissions-button-${TestUsersData.enterprise_1.userID}`)
 			).not.toBeVisible();
 		});
 	});

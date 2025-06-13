@@ -1,12 +1,12 @@
 import { test, expect } from "@playwright/test";
-import { resetAndSeedDatabase2 } from "../setup/helpers";
-import { TestUsersData2 } from "../setup/seed";
+import { resetAndSeedDatabase } from "../setup/helpers";
+import { TestUsersData } from "../setup/seed";
 
 test.describe("Auth - Login Page", () => {
 	const loginURL = "/auth/login";
 
 	test.beforeAll(async () => {
-		await resetAndSeedDatabase2();
+		await resetAndSeedDatabase();
 	});
 
 	test.beforeEach(async ({ page }) => {
@@ -56,7 +56,7 @@ test.describe("Auth - Login Page", () => {
 	});
 
 	test("should display error for incorrect password", async ({ page }) => {
-		await page.locator("#email").fill(TestUsersData2.enterprise_1.email);
+		await page.locator("#email").fill(TestUsersData.enterprise_1.email);
 		await page.locator("#password").fill("wrongpassword");
 		await page.getByTestId("login-submit-button").click();
 
@@ -67,8 +67,8 @@ test.describe("Auth - Login Page", () => {
 	});
 
 	test("should allow successful login with correct credentials", async ({ page, baseURL }) => {
-		await page.locator("#email").fill(TestUsersData2.enterprise_1.email);
-		await page.locator("#password").fill(TestUsersData2.enterprise_1.plainTextPassword);
+		await page.locator("#email").fill(TestUsersData.enterprise_1.email);
+		await page.locator("#password").fill(TestUsersData.enterprise_1.plainTextPassword);
 		await page.getByTestId("login-submit-button").click();
 
 		await page.waitForResponse(
@@ -82,10 +82,8 @@ test.describe("Auth - Login Page", () => {
 	});
 
 	test("should display error for pending verification account", async ({ page }) => {
-		await page.locator("#email").fill(TestUsersData2.enterprise_11.email);
-		await page
-			.locator("#password")
-			.fill(TestUsersData2.enterprise_11.plainTextPassword);
+		await page.locator("#email").fill(TestUsersData.enterprise_11.email);
+		await page.locator("#password").fill(TestUsersData.enterprise_11.plainTextPassword);
 		await page.getByTestId("login-submit-button").click();
 
 		const toastMessage = page.getByTestId("toast-0");
@@ -97,8 +95,8 @@ test.describe("Auth - Login Page", () => {
 	});
 
 	test("should display error for suspended account", async ({ page }) => {
-		await page.locator("#email").fill(TestUsersData2.enterprise_16.email);
-		await page.locator("#password").fill(TestUsersData2.enterprise_16.plainTextPassword);
+		await page.locator("#email").fill(TestUsersData.enterprise_16.email);
+		await page.locator("#password").fill(TestUsersData.enterprise_16.plainTextPassword);
 		await page.getByTestId("login-submit-button").click();
 
 		const toastMessage = page.getByTestId("toast-0");
@@ -115,9 +113,9 @@ test.describe("Auth - Login Page", () => {
 	});
 
 	test("should allow successful login by pressing Enter in password field", async ({ page }) => {
-		await page.locator("#email").fill(TestUsersData2.enterprise_1.email);
+		await page.locator("#email").fill(TestUsersData.enterprise_1.email);
 		const passwordInput = page.locator("#password");
-		await passwordInput.fill(TestUsersData2.enterprise_1.plainTextPassword);
+		await passwordInput.fill(TestUsersData.enterprise_1.plainTextPassword);
 		await passwordInput.press("Enter");
 
 		await page.waitForResponse(

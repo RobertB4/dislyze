@@ -1,19 +1,19 @@
 import { test, expect } from "@playwright/test";
-import { resetAndSeedDatabase2 } from "../setup/helpers";
-import { TestUsersData2, TestInvitationTokensData2 } from "../setup/seed";
+import { resetAndSeedDatabase } from "../setup/helpers";
+import { TestUsersData, TestInvitationTokensData } from "../setup/seed";
 
 // Use data from seed structures instead of hardcoded values
-const VALID_TOKEN = TestInvitationTokensData2.enterprise_11_valid.token;
+const VALID_TOKEN = TestInvitationTokensData.enterprise_11_valid.token;
 const INVALID_TOKEN = "invalid_token_12345";
-const EXPIRED_TOKEN = TestInvitationTokensData2.enterprise_14_expired.token;
-const ACTIVE_USER_TOKEN = TestInvitationTokensData2.enterprise_10_active_user.token;
-const INVITER_NAME = TestUsersData2.enterprise_1.name; // 田中 太郎
-const INVITED_EMAIL = TestUsersData2.enterprise_11.email; // enterprise11@localhost.com
-const EXPIRED_TOKEN_EMAIL = TestUsersData2.enterprise_14.email; // enterprise14@localhost.com
-const ACTIVE_USER_EMAIL = TestUsersData2.enterprise_10.email; // enterprise10@localhost.com
+const EXPIRED_TOKEN = TestInvitationTokensData.enterprise_14_expired.token;
+const ACTIVE_USER_TOKEN = TestInvitationTokensData.enterprise_10_active_user.token;
+const INVITER_NAME = TestUsersData.enterprise_1.name; // 田中 太郎
+const INVITED_EMAIL = TestUsersData.enterprise_11.email; // enterprise11@localhost.com
+const EXPIRED_TOKEN_EMAIL = TestUsersData.enterprise_14.email; // enterprise14@localhost.com
+const ACTIVE_USER_EMAIL = TestUsersData.enterprise_10.email; // enterprise10@localhost.com
 
 test.beforeAll(async () => {
-	await resetAndSeedDatabase2();
+	await resetAndSeedDatabase();
 });
 
 test.describe("Accept Invite Page", () => {

@@ -23,7 +23,7 @@ test.describe("Settings - Roles Page", () => {
 		});
 
 		test("should allow admin access to roles page", async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto(rolesPageURL);
 
 			await expect(page).toHaveURL(rolesPageURL);
@@ -31,7 +31,7 @@ test.describe("Settings - Roles Page", () => {
 		});
 
 		test("should display 403 error when editor tries to access roles page", async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_editor);
+			await logInAs(page, TestUsersData.enterprise_2);
 			await page.goto(rolesPageURL);
 
 			// Should show the error elements with the correct content
@@ -45,7 +45,7 @@ test.describe("Settings - Roles Page", () => {
 	// Role viewing and basic functionality tests
 	test.describe("Viewing Roles and Basic UI", () => {
 		test.beforeEach(async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto(rolesPageURL);
 			await expect(page.getByTestId("roles-table")).toBeVisible();
 		});
@@ -56,26 +56,26 @@ test.describe("Settings - Roles Page", () => {
 
 			// Admin role should be visible
 			await expect(
-				page.getByTestId("role-name-e0000000-0000-0000-0000-000000000001")
+				page.getByTestId("role-name-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 			).toContainText("管理者");
 			await expect(
-				page.getByTestId("role-description-e0000000-0000-0000-0000-000000000001")
-			).toContainText("すべての管理機能にアクセス可能");
+				page.getByTestId("role-description-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+			).toContainText("すべての機能にアクセス可能");
 
 			// Editor role should be visible
 			await expect(
-				page.getByTestId("role-name-e0000000-0000-0000-0000-000000000002")
+				page.getByTestId("role-name-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
 			).toContainText("編集者");
 			await expect(
-				page.getByTestId("role-description-e0000000-0000-0000-0000-000000000002")
-			).toContainText("限定的な編集権限");
+				page.getByTestId("role-description-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+			).toContainText("ユーザー管理以外の編集権限");
 
 			// Check for "デフォルト" badges
 			await expect(
-				page.getByTestId("role-type-badge-default-e0000000-0000-0000-0000-000000000001")
+				page.getByTestId("role-type-badge-default-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 			).toBeVisible();
 			await expect(
-				page.getByTestId("role-type-badge-default-e0000000-0000-0000-0000-000000000002")
+				page.getByTestId("role-type-badge-default-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
 			).toBeVisible();
 		});
 
@@ -86,39 +86,36 @@ test.describe("Settings - Roles Page", () => {
 
 		test("should show edit and delete buttons only for custom roles", async ({ page }) => {
 			// Default roles should not have edit/delete buttons
-			const adminRoleRow = page.getByTestId("role-row-e0000000-0000-0000-0000-000000000001");
-			const editorRoleRow = page.getByTestId("role-row-e0000000-0000-0000-0000-000000000002");
+			const adminRoleRow = page.getByTestId("role-row-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+			const editorRoleRow = page.getByTestId("role-row-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
 			await expect(
-				adminRoleRow.getByTestId("delete-role-button-e0000000-0000-0000-0000-000000000001")
+				adminRoleRow.getByTestId("delete-role-button-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 			).not.toBeVisible();
 			await expect(
-				adminRoleRow.getByTestId("edit-role-button-e0000000-0000-0000-0000-000000000001")
+				adminRoleRow.getByTestId("edit-role-button-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 			).not.toBeVisible();
 			await expect(
-				editorRoleRow.getByTestId("delete-role-button-e0000000-0000-0000-0000-000000000002")
+				editorRoleRow.getByTestId("delete-role-button-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
 			).not.toBeVisible();
 			await expect(
-				editorRoleRow.getByTestId("edit-role-button-e0000000-0000-0000-0000-000000000002")
+				editorRoleRow.getByTestId("edit-role-button-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
 			).not.toBeVisible();
 		});
 
 		test("should display role permissions correctly", async ({ page }) => {
 			// Admin role should show multiple permissions
-			const adminRoleRow = page.getByTestId("role-row-e0000000-0000-0000-0000-000000000001");
+			const adminRoleRow = page.getByTestId("role-row-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 			await expect(
-				adminRoleRow.getByTestId("role-permissions-e0000000-0000-0000-0000-000000000001")
+				adminRoleRow.getByTestId("role-permissions-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 			).toContainText("テナント情報の編集");
 			await expect(
-				adminRoleRow.getByTestId("role-permissions-e0000000-0000-0000-0000-000000000001")
-			).toContainText("テナント情報の閲覧");
-			await expect(
-				adminRoleRow.getByTestId("role-permissions-e0000000-0000-0000-0000-000000000001")
+				adminRoleRow.getByTestId("role-permissions-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 			).toContainText("ユーザーの編集");
 
 			// Should show "他X件" if more than 3 permissions
 			const overflowElement = adminRoleRow.getByTestId(
-				"role-permissions-overflow-e0000000-0000-0000-0000-000000000001"
+				"role-permissions-overflow-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 			);
 			if (await overflowElement.isVisible()) {
 				await expect(overflowElement).toContainText(/他\d+件/);
@@ -129,7 +126,7 @@ test.describe("Settings - Roles Page", () => {
 	// Role creation tests
 	test.describe("Role Creation", () => {
 		test.beforeEach(async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto(rolesPageURL);
 			await expect(page.getByTestId("roles-table")).toBeVisible();
 		});
@@ -248,7 +245,7 @@ test.describe("Settings - Roles Page", () => {
 		let customRoleName: string;
 
 		test.beforeEach(async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto(rolesPageURL);
 			await expect(page.getByTestId("roles-table")).toBeVisible();
 
@@ -359,7 +356,7 @@ test.describe("Settings - Roles Page", () => {
 		let deletableRoleName: string;
 
 		test.beforeEach(async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto(rolesPageURL);
 			await expect(page.getByTestId("roles-table")).toBeVisible();
 
@@ -501,14 +498,14 @@ test.describe("Settings - Roles Page", () => {
 			await expect(page.getByTestId("users-table")).toBeVisible();
 
 			// Search for a user to assign the role to
-			await page.locator("#user-search").fill(TestUsersData.alpha_editor.email);
+			await page.locator("#user-search").fill(TestUsersData.enterprise_2.email);
 			await page.waitForResponse(
 				(response) => response.url().includes("/api/users") && response.status() === 200
 			);
 
 			// Edit user roles
 			await page
-				.getByTestId(`edit-permissions-button-${TestUsersData.alpha_editor.userID}`)
+				.getByTestId(`edit-permissions-button-${TestUsersData.enterprise_2.userID}`)
 				.click();
 			await expect(page.getByTestId("edit-user-slideover-panel")).toBeVisible();
 
@@ -586,7 +583,7 @@ test.describe("Settings - Roles Page", () => {
 	// Permission selector complex scenarios
 	test.describe("Permission Selection Complex Scenarios", () => {
 		test.beforeEach(async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto(rolesPageURL);
 			await expect(page.getByTestId("roles-table")).toBeVisible();
 		});
@@ -671,7 +668,7 @@ test.describe("Settings - Roles Page", () => {
 	// Edge cases and boundary conditions
 	test.describe("Edge Cases", () => {
 		test.beforeEach(async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto(rolesPageURL);
 			await expect(page.getByTestId("roles-table")).toBeVisible();
 		});
@@ -779,7 +776,7 @@ test.describe("Settings - Roles Page", () => {
 	// UI state management and data consistency
 	test.describe("UI State and Data Consistency", () => {
 		test.beforeEach(async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto(rolesPageURL);
 			await expect(page.getByTestId("roles-table")).toBeVisible();
 		});
@@ -887,7 +884,7 @@ test.describe("RBAC Enterprise Feature Flag", () => {
 			page
 		}) => {
 			// Use alpha_admin which has RBAC enabled and roles.view permission
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto("/settings/profile");
 
 			// Roles tab should be visible
@@ -918,7 +915,7 @@ test.describe("RBAC Enterprise Feature Flag", () => {
 			page
 		}) => {
 			// Use alpha_editor which has RBAC enabled but lacks roles.view permission
-			await logInAs(page, TestUsersData.alpha_editor);
+			await logInAs(page, TestUsersData.enterprise_2);
 			await page.goto("/settings/profile");
 
 			// Roles tab should NOT be visible (lacks permission)
@@ -954,7 +951,7 @@ test.describe("RBAC Enterprise Feature Flag", () => {
 			page
 		}) => {
 			// Use alpha_admin which has RBAC enabled and roles.view permission
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 
 			// Direct access to roles page should work
 			await page.goto("/settings/roles");
@@ -969,7 +966,7 @@ test.describe("RBAC Enterprise Feature Flag", () => {
 			page
 		}) => {
 			// Use alpha_editor which has RBAC enabled but lacks roles.view permission
-			await logInAs(page, TestUsersData.alpha_editor);
+			await logInAs(page, TestUsersData.enterprise_2);
 
 			// Direct access to roles page should show 403 error
 			await page.goto("/settings/roles");
@@ -1051,7 +1048,7 @@ test.describe("RBAC Enterprise Feature Flag", () => {
 	test.describe("Cross-Tenant Isolation", () => {
 		test("should not affect other tenants when disabling RBAC for one tenant", async ({ page }) => {
 			// First verify alpha tenant (seeded) has RBAC enabled and working
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto("/settings/profile");
 			await expect(page.getByTestId("settings-tab-roles")).toBeVisible();
 
@@ -1061,7 +1058,7 @@ test.describe("RBAC Enterprise Feature Flag", () => {
 			await expect(page.getByTestId("page-title")).toBeVisible();
 
 			// Now disable RBAC for alpha tenant
-			await disableRBACForTenant(TestUsersData.alpha_admin.tenantID);
+			await disableRBACForTenant(TestUsersData.enterprise_1.tenantID);
 
 			// Alpha tenant should now be blocked
 			await page.reload();
@@ -1070,20 +1067,20 @@ test.describe("RBAC Enterprise Feature Flag", () => {
 
 			// But beta tenant should still work (separate tenant)
 			await logOut(page);
-			await logInAs(page, TestUsersData.beta_admin);
+			await logInAs(page, TestUsersData.internal_1);
 			await page.goto("/settings/roles");
 			await expect(page).toHaveURL("/settings/roles");
 			await expect(page.getByTestId("page-title")).toBeVisible();
 
 			// Re-enable RBAC for alpha tenant to restore original state
-			await enableRBACForTenant(TestUsersData.alpha_admin.tenantID);
+			await enableRBACForTenant(TestUsersData.enterprise_1.tenantID);
 		});
 
 		test("should maintain feature state per tenant independently", async ({ page }) => {
 			// Test that our test tenant and alpha tenant can have different RBAC states
 
 			// Alpha tenant should have RBAC enabled (default seeded state)
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto("/settings/profile");
 			await expect(page.getByTestId("settings-tab-roles")).toBeVisible();
 
@@ -1107,7 +1104,7 @@ test.describe("RBAC Enterprise Feature Flag", () => {
 
 			// Alpha tenant should still have access (unchanged)
 			await logOut(page);
-			await logInAs(page, TestUsersData.alpha_admin);
+			await logInAs(page, TestUsersData.enterprise_1);
 			await page.goto("/settings/profile");
 			await expect(page.getByTestId("settings-tab-roles")).toBeVisible();
 

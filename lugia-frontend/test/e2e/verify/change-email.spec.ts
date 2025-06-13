@@ -81,10 +81,10 @@ test.describe("Verify Email Change", () => {
 			page,
 			request
 		}) => {
-			// Login as alpha_admin
-			await logInAs(page, TestUsersData.alpha_admin);
+			// Login as enterprise admin
+			await logInAs(page, TestUsersData.enterprise_1);
 
-			const newEmail = "alpha_admin_verified@example.com";
+			const newEmail = "enterprise1_verified@example.com";
 
 			// Request email change and get token
 			const token = await requestEmailChangeAndGetToken(page, request, newEmail);
@@ -125,7 +125,7 @@ test.describe("Verify Email Change", () => {
 
 	test.describe("Authenticated User - Invalid Token Scenarios", () => {
 		test.beforeEach(async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_editor);
+			await logInAs(page, TestUsersData.enterprise_2);
 		});
 
 		test("should show error for invalid token format", async ({ page }) => {
@@ -168,8 +168,8 @@ test.describe("Verify Email Change", () => {
 
 		test("should redirect to login page for unauthenticated user", async ({ page, request }) => {
 			// First, login temporarily to get a valid token
-			await logInAs(page, TestUsersData.beta_admin);
-			const newEmail = "beta_admin_unauth_test@example.com";
+			await logInAs(page, TestUsersData.smb_1);
+			const newEmail = "smb1_unauth_test@example.com";
 			const token = await requestEmailChangeAndGetToken(page, request, newEmail);
 
 			// Logout by clearing cookies
@@ -196,8 +196,8 @@ test.describe("Verify Email Change", () => {
 			request
 		}) => {
 			// Get a valid token while logged in
-			await logInAs(page, TestUsersData.beta_admin);
-			const newEmail = "beta_admin_redirect_test@example.com";
+			await logInAs(page, TestUsersData.smb_1);
+			const newEmail = "smb1_redirect_test@example.com";
 			const token = await requestEmailChangeAndGetToken(page, request, newEmail);
 
 			// Logout
@@ -215,7 +215,7 @@ test.describe("Verify Email Change", () => {
 
 	test.describe("Token Security and Edge Cases", () => {
 		test.beforeEach(async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_editor);
+			await logInAs(page, TestUsersData.enterprise_2);
 		});
 
 		test("should reject malformed tokens", async ({ page }) => {
@@ -238,7 +238,7 @@ test.describe("Verify Email Change", () => {
 
 	test.describe("URL Parameter Validation", () => {
 		test("should handle missing token parameter gracefully", async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_editor);
+			await logInAs(page, TestUsersData.enterprise_2);
 			await page.goto(VERIFY_EMAIL_URL);
 
 			// Should show SvelteKit error page for missing token
@@ -247,7 +247,7 @@ test.describe("Verify Email Change", () => {
 		});
 
 		test("should handle multiple token parameters", async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_editor);
+			await logInAs(page, TestUsersData.enterprise_2);
 			await page.goto(`${VERIFY_EMAIL_URL}?token=first&token=second`);
 
 			// Should still show error (invalid token)
@@ -255,7 +255,7 @@ test.describe("Verify Email Change", () => {
 		});
 
 		test("should handle additional URL parameters", async ({ page }) => {
-			await logInAs(page, TestUsersData.alpha_editor);
+			await logInAs(page, TestUsersData.enterprise_2);
 			await page.goto(`${VERIFY_EMAIL_URL}?token=invalid&extra=param&another=value`);
 
 			// Should still show error (invalid token)
