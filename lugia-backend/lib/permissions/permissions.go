@@ -8,6 +8,17 @@ import (
 	"lugia/queries"
 )
 
+const (
+	ResourceTenant = "tenant"
+	ResourceUsers  = "users"
+	ResourceRoles  = "roles"
+)
+
+const (
+	ActionView = "view"
+	ActionEdit = "edit"
+)
+
 func UserHasPermission(ctx context.Context, db *queries.Queries, resource, action string) bool {
 	userID := libctx.GetUserID(ctx)
 	tenantID := libctx.GetTenantID(ctx)

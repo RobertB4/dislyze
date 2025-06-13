@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -9,16 +10,18 @@ import (
 
 	libctx "lugia/lib/ctx"
 	"lugia/lib/errlib"
+	"lugia/lib/permissions"
 	"lugia/lib/responder"
 	"lugia/queries"
 )
 
 type MeResponse struct {
-	TenantName  string   `json:"tenant_name"`
-	UserID      string   `json:"user_id"`
-	Email       string   `json:"email"`
-	UserName    string   `json:"user_name"`
-	Permissions []string `json:"permissions"`
+	TenantName     string                     `json:"tenant_name"`
+	UserID         string                     `json:"user_id"`
+	Email          string                     `json:"email"`
+	UserName       string                     `json:"user_name"`
+	Permissions    []string                   `json:"permissions"`
+	FeaturesConfig permissions.FeaturesConfig `json:"features_config"`
 }
 
 func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
@@ -61,17 +64,23 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 		return nil, errlib.New(fmt.Errorf("GetMe: failed to get user permissions for user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
 	}
 
-	permissions := make([]string, len(permissionRows))
+	permissionsRes := make([]string, len(permissionRows))
 	for i, row := range permissionRows {
-		permissions[i] = fmt.Sprintf("%s.%s", row.Resource, row.Action)
+		permissionsRes[i] = fmt.Sprintf("%s.%s", row.Resource, row.Action)
+	}
+
+	var featuresConfig permissions.FeaturesConfig
+	if err := json.Unmarshal(tenant.FeaturesConfig, &featuresConfig); err != nil {
+		return nil, errlib.New(fmt.Errorf("GetMe: failed to unmarshal features config for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
 	}
 
 	response := &MeResponse{
-		TenantName:  tenant.Name,
-		UserID:      user.ID.String(),
-		Email:       user.Email,
-		UserName:    user.Name,
-		Permissions: permissions,
+		TenantName:     tenant.Name,
+		UserID:         user.ID.String(),
+		Email:          user.Email,
+		UserName:       user.Name,
+		Permissions:    permissionsRes,
+		FeaturesConfig: featuresConfig,
 	}
 
 	return response, nil

@@ -54,3 +54,50 @@ func LogTokenRefresh(event AuthEvent) {
 		event.TokenType,
 	)
 }
+
+type AccessEvent struct {
+	EventType  string // "permission" or "feature"
+	UserID     string
+	TenantID   string
+	IPAddress  string
+	UserAgent  string
+	Timestamp  time.Time
+	Success    bool
+	Error      string
+	Resource   string // for permission events
+	Action     string // for permission events
+	Feature    string // for feature events
+}
+
+func LogAccessEvent(event AccessEvent) {
+	status := "success"
+	if !event.Success {
+		status = "failure"
+	}
+
+	switch event.EventType {
+	case "permission":
+		log.Printf("[ACCESS] %s | %s | user=%s | tenant=%s | ip=%s | resource=%s | action=%s | status=%s | error=%s",
+			event.EventType,
+			event.Timestamp.Format(time.RFC3339),
+			event.UserID,
+			event.TenantID,
+			event.IPAddress,
+			event.Resource,
+			event.Action,
+			status,
+			event.Error,
+		)
+	case "feature":
+		log.Printf("[ACCESS] %s | %s | user=%s | tenant=%s | ip=%s | feature=%s | status=%s | error=%s",
+			event.EventType,
+			event.Timestamp.Format(time.RFC3339),
+			event.UserID,
+			event.TenantID,
+			event.IPAddress,
+			event.Feature,
+			status,
+			event.Error,
+		)
+	}
+}

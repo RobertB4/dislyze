@@ -3,8 +3,10 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"time"
 
-	"lugia/lib/errlib"
+	libctx "lugia/lib/ctx"
+	"lugia/lib/logger"
 	"lugia/lib/permissions"
 	"lugia/queries"
 )
@@ -13,7 +15,22 @@ func RequirePermission(db *queries.Queries, resource, action string) func(http.H
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !permissions.UserHasPermission(r.Context(), db, resource, action) {
-				errlib.LogError(fmt.Errorf("Forbidden: Permission required. resource: %s, action: %s", resource, action))
+				userID := libctx.GetUserID(r.Context())
+				tenantID := libctx.GetTenantID(r.Context())
+				
+				logger.LogAccessEvent(logger.AccessEvent{
+					EventType: "permission",
+					UserID:    userID.String(),
+					TenantID:  tenantID.String(),
+					IPAddress: r.RemoteAddr,
+					UserAgent: r.UserAgent(),
+					Timestamp: time.Now(),
+					Success:   false,
+					Error:     fmt.Sprintf("Permission required. resource: %s, action: %s", resource, action),
+					Resource:  resource,
+					Action:    action,
+				})
+				
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}
