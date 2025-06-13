@@ -1,7 +1,12 @@
 import { test, expect } from "@playwright/test";
-import { resetAndSeedDatabase } from "../setup/helpers";
+import {
+	createTenant,
+	disableRBACForTenant,
+	enableRBACForTenant,
+	resetAndSeedDatabase
+} from "../setup/helpers";
 import { TestUsersData } from "../setup/seed";
-import { logInAs } from "../setup/auth";
+import { logInAs, logOut } from "../setup/auth";
 
 test.describe("Settings - Roles Page", () => {
 	const rolesPageURL = "/settings/roles";
@@ -859,6 +864,255 @@ test.describe("Settings - Roles Page", () => {
 			await expect(modalTestRoleRow.locator('[data-testid*="role-name-"]')).toContainText(
 				"Modal Test Role"
 			);
+		});
+	});
+});
+
+test.describe("RBAC Enterprise Feature Flag", () => {
+	let rbacDisabledTenant: {
+		email: string;
+		password: string;
+		tenantId: string;
+		userId: string;
+	};
+
+	test.beforeAll(async () => {
+		await resetAndSeedDatabase();
+		// Create tenant with RBAC disabled via signup
+		rbacDisabledTenant = await createTenant();
+	});
+
+	test.describe("Navigation Tab Visibility", () => {
+		test("should show roles tab when RBAC enabled and user has roles.view permission", async ({
+			page
+		}) => {
+			// Use alpha_admin which has RBAC enabled and roles.view permission
+			await logInAs(page, TestUsersData.alpha_admin);
+			await page.goto("/settings/profile");
+
+			// Roles tab should be visible
+			await expect(page.getByTestId("settings-tab-roles")).toBeVisible();
+			await expect(page.getByTestId("settings-tab-roles")).toContainText("ロール管理");
+		});
+
+		test("should hide roles tab when RBAC disabled even if user has roles.view permission", async ({
+			page
+		}) => {
+			// Login with admin user from RBAC-disabled tenant
+			await page.goto("/auth/login");
+			await page.locator("#email").fill(rbacDisabledTenant.email);
+			await page.locator("#password").fill(rbacDisabledTenant.password);
+			await page.getByTestId("login-submit-button").click();
+			await page.waitForURL("/");
+
+			await page.goto("/settings/profile");
+
+			// Roles tab should NOT be visible (feature disabled)
+			await expect(page.getByTestId("settings-tab-roles")).not.toBeVisible();
+
+			// But users tab should still be visible (user has users.view permission)
+			await expect(page.getByTestId("settings-tab-users")).toBeVisible();
+		});
+
+		test("should hide roles tab when user lacks roles.view permission even with RBAC enabled", async ({
+			page
+		}) => {
+			// Use alpha_editor which has RBAC enabled but lacks roles.view permission
+			await logInAs(page, TestUsersData.alpha_editor);
+			await page.goto("/settings/profile");
+
+			// Roles tab should NOT be visible (lacks permission)
+			await expect(page.getByTestId("settings-tab-roles")).not.toBeVisible();
+
+			// But profile tab should be visible
+			await expect(page.getByTestId("settings-tab-profile")).toBeVisible();
+		});
+	});
+
+	test.describe("Direct Route Access", () => {
+		test("should show 403 error when RBAC disabled admin tries to access /settings/roles directly", async ({
+			page
+		}) => {
+			// Login with admin user from RBAC-disabled tenant
+			await page.goto("/auth/login");
+			await page.locator("#email").fill(rbacDisabledTenant.email);
+			await page.locator("#password").fill(rbacDisabledTenant.password);
+			await page.getByTestId("login-submit-button").click();
+			await page.waitForURL("/");
+
+			// Direct access to roles page should show 403 error
+			await page.goto("/settings/roles");
+
+			// Should show the error elements with the correct content
+			await expect(page.getByTestId("error-title")).toBeVisible();
+			await expect(page.getByTestId("error-title")).toContainText("エラーが発生しました (403)");
+			await expect(page.getByTestId("error-message")).toBeVisible();
+			await expect(page.getByTestId("error-message")).toContainText("権限がありません。");
+		});
+
+		test("should allow access when RBAC enabled and user has roles.view permission", async ({
+			page
+		}) => {
+			// Use alpha_admin which has RBAC enabled and roles.view permission
+			await logInAs(page, TestUsersData.alpha_admin);
+
+			// Direct access to roles page should work
+			await page.goto("/settings/roles");
+
+			// Should successfully load the roles page
+			await expect(page).toHaveURL("/settings/roles");
+			await expect(page.getByTestId("page-title")).toBeVisible();
+			await expect(page.getByTestId("roles-table")).toBeVisible();
+		});
+
+		test("should show 403 error when RBAC enabled but user lacks roles.view permission", async ({
+			page
+		}) => {
+			// Use alpha_editor which has RBAC enabled but lacks roles.view permission
+			await logInAs(page, TestUsersData.alpha_editor);
+
+			// Direct access to roles page should show 403 error
+			await page.goto("/settings/roles");
+
+			// Should show the error elements with the correct content
+			await expect(page.getByTestId("error-title")).toBeVisible();
+			await expect(page.getByTestId("error-title")).toContainText("エラーが発生しました (403)");
+			await expect(page.getByTestId("error-message")).toBeVisible();
+			await expect(page.getByTestId("error-message")).toContainText("権限がありません。");
+		});
+	});
+
+	test.describe("Dynamic Feature Toggle", () => {
+		test("should hide/show roles tab when RBAC is disabled/enabled", async ({ page }) => {
+			// Login with admin user from RBAC-disabled tenant
+			await page.goto("/auth/login");
+			await page.locator("#email").fill(rbacDisabledTenant.email);
+			await page.locator("#password").fill(rbacDisabledTenant.password);
+			await page.getByTestId("login-submit-button").click();
+			await page.waitForURL("/");
+
+			await page.goto("/settings/profile");
+
+			// Initially, roles tab should NOT be visible (RBAC disabled)
+			await expect(page.getByTestId("settings-tab-roles")).not.toBeVisible();
+
+			// Enable RBAC for the tenant
+			await enableRBACForTenant(rbacDisabledTenant.tenantId);
+
+			// Refresh the page to get updated user data
+			await page.reload();
+
+			// Now roles tab should be visible
+			await expect(page.getByTestId("settings-tab-roles")).toBeVisible();
+			await expect(page.getByTestId("settings-tab-roles")).toContainText("ロール管理");
+
+			// Disable RBAC again
+			await disableRBACForTenant(rbacDisabledTenant.tenantId);
+
+			// Refresh the page
+			await page.reload();
+
+			// Roles tab should be hidden again
+			await expect(page.getByTestId("settings-tab-roles")).not.toBeVisible();
+		});
+
+		test("should allow/block direct access when RBAC is enabled/disabled", async ({ page }) => {
+			// Login with admin user from RBAC-disabled tenant
+			await page.goto("/auth/login");
+			await page.locator("#email").fill(rbacDisabledTenant.email);
+			await page.locator("#password").fill(rbacDisabledTenant.password);
+			await page.getByTestId("login-submit-button").click();
+			await page.waitForURL("/");
+
+			// Initially, direct access should be blocked (RBAC disabled)
+			await page.goto("/settings/roles");
+			await expect(page.getByTestId("error-title")).toBeVisible();
+			await expect(page.getByTestId("error-title")).toContainText("エラーが発生しました (403)");
+
+			// Enable RBAC for the tenant
+			await enableRBACForTenant(rbacDisabledTenant.tenantId);
+
+			// Now direct access should work
+			await page.goto("/settings/roles");
+			await expect(page).toHaveURL("/settings/roles");
+			await expect(page.getByTestId("page-title")).toBeVisible();
+			await expect(page.getByTestId("roles-table")).toBeVisible();
+
+			// Disable RBAC again
+			await disableRBACForTenant(rbacDisabledTenant.tenantId);
+
+			// Direct access should be blocked again
+			await page.goto("/settings/roles");
+			await expect(page.getByTestId("error-title")).toBeVisible();
+			await expect(page.getByTestId("error-title")).toContainText("エラーが発生しました (403)");
+		});
+	});
+
+	test.describe("Cross-Tenant Isolation", () => {
+		test("should not affect other tenants when disabling RBAC for one tenant", async ({ page }) => {
+			// First verify alpha tenant (seeded) has RBAC enabled and working
+			await logInAs(page, TestUsersData.alpha_admin);
+			await page.goto("/settings/profile");
+			await expect(page.getByTestId("settings-tab-roles")).toBeVisible();
+
+			// Navigate to roles page to verify it works
+			await page.goto("/settings/roles");
+			await expect(page).toHaveURL("/settings/roles");
+			await expect(page.getByTestId("page-title")).toBeVisible();
+
+			// Now disable RBAC for alpha tenant
+			await disableRBACForTenant(TestUsersData.alpha_admin.tenantID);
+
+			// Alpha tenant should now be blocked
+			await page.reload();
+			await expect(page.getByTestId("error-title")).toBeVisible();
+			await expect(page.getByTestId("error-title")).toContainText("エラーが発生しました (403)");
+
+			// But beta tenant should still work (separate tenant)
+			await logOut(page);
+			await logInAs(page, TestUsersData.beta_admin);
+			await page.goto("/settings/roles");
+			await expect(page).toHaveURL("/settings/roles");
+			await expect(page.getByTestId("page-title")).toBeVisible();
+
+			// Re-enable RBAC for alpha tenant to restore original state
+			await enableRBACForTenant(TestUsersData.alpha_admin.tenantID);
+		});
+
+		test("should maintain feature state per tenant independently", async ({ page }) => {
+			// Test that our test tenant and alpha tenant can have different RBAC states
+
+			// Alpha tenant should have RBAC enabled (default seeded state)
+			await logInAs(page, TestUsersData.alpha_admin);
+			await page.goto("/settings/profile");
+			await expect(page.getByTestId("settings-tab-roles")).toBeVisible();
+
+			// RBAC-disabled tenant should have RBAC disabled
+			await logOut(page);
+			await page.goto("/auth/login");
+			await page.locator("#email").fill(rbacDisabledTenant.email);
+			await page.locator("#password").fill(rbacDisabledTenant.password);
+			await page.getByTestId("login-submit-button").click();
+			await page.waitForURL("/");
+
+			await page.goto("/settings/profile");
+			await expect(page.getByTestId("settings-tab-roles")).not.toBeVisible();
+
+			// Verify that enabling RBAC for test tenant doesn't affect alpha tenant
+			await enableRBACForTenant(rbacDisabledTenant.tenantId);
+
+			// Test tenant should now have access
+			await page.reload();
+			await expect(page.getByTestId("settings-tab-roles")).toBeVisible();
+
+			// Alpha tenant should still have access (unchanged)
+			await logOut(page);
+			await logInAs(page, TestUsersData.alpha_admin);
+			await page.goto("/settings/profile");
+			await expect(page.getByTestId("settings-tab-roles")).toBeVisible();
+
+			// Reset test tenant back to disabled state
+			await disableRBACForTenant(rbacDisabledTenant.tenantId);
 		});
 	});
 });
