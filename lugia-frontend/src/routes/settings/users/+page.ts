@@ -1,6 +1,5 @@
 import type { PageLoad } from "./$types";
 import { loadFunctionFetch } from "$lib/fetch";
-import { PUBLIC_PAGINATION_DEFAULT_VALUE } from "$env/static/public";
 
 export type UserRole = {
 	id: string;
@@ -54,7 +53,7 @@ export type GetUsersResponse = {
 export const load: PageLoad = ({ fetch, url }) => {
 	const searchParams = url.searchParams;
 	const page = parseInt(searchParams.get("page") || "1", 10);
-	const limit = parseInt(searchParams.get("limit") || PUBLIC_PAGINATION_DEFAULT_VALUE, 10);
+	const limit = parseInt(searchParams.get("limit") || "50", 10);
 	const search = searchParams.get("search") || "";
 
 	const queryParams = new URLSearchParams();
