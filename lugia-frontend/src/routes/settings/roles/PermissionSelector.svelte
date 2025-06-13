@@ -113,13 +113,14 @@
 				class="border border-gray-200 rounded-lg p-4"
 				data-testid={`permission-group-${group.resource}`}
 			>
-				<h4
-					class="text-sm font-medium text-gray-900 mb-3"
-					data-testid={`permission-group-title-${group.resource}`}
-				>
-					{group.displayName}
-				</h4>
-				<div class="flex flex-wrap gap-2">
+				<div class="flex items-center justify-between">
+					<h4
+						class="text-sm font-medium text-gray-900"
+						data-testid={`permission-group-title-${group.resource}`}
+					>
+						{group.displayName}
+					</h4>
+					<div class="flex gap-2">
 					<!-- None option -->
 					<Pill
 						selected={getCurrentSelection(group.resource) === "none"}
@@ -153,6 +154,7 @@
 							{getActionLabel("edit")}
 						</Pill>
 					{/if}
+					</div>
 				</div>
 			</div>
 		{/each}
