@@ -28,14 +28,14 @@ jobs:
             giratina-frontend/package-lock.json
             zoroark/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci --include=optional
-
       - name: Build zoroark component library
         run: |
           cd ../zoroark
           npm ci --include=optional
           npm run package
+
+      - name: Install dependencies
+        run: npm ci --include=optional
 
       - name: Build application
         run: npm run build
