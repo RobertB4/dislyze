@@ -11,3 +11,5 @@ export { default as Tooltip } from "./Tooltip.svelte";
 export { default as Toast } from "./Toast/Toast.svelte";
 export { default as ToastContainer } from "./Toast/ToastContainer.svelte";
 export * from "./Toast/toast.js";
+export * from "./utils/errors.js";
+export * from "./utils/routing.js";

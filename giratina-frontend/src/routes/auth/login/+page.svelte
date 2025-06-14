@@ -63,16 +63,6 @@
 			>
 				ログイン
 			</h2>
-			<p class="mt-2 text-center text-sm text-gray-600">
-				または
-				<a
-					data-testid="signup-link"
-					href="/auth/signup"
-					class="font-medium text-indigo-600 hover:text-indigo-500"
-				>
-					新規アカウントを作成
-				</a>
-			</p>
 		</div>
 
 		{#if pageData.message}
@@ -110,18 +100,6 @@
 				<Button data-testid="login-submit-button" type="submit" loading={$isSubmitting} fullWidth
 					>ログイン</Button
 				>
-			</div>
-
-			<div class="flex items-center justify-center">
-				<div class="text-sm">
-					<a
-						data-testid="forgot-password-link"
-						href="/auth/forgot-password"
-						class="font-medium text-indigo-600 hover:text-indigo-500"
-					>
-						パスワードをお忘れですか？
-					</a>
-				</div>
 			</div>
 		</form>
 	</div>

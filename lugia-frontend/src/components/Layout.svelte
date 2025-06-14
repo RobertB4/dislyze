@@ -3,11 +3,9 @@
 	generics="PromisesMap extends Record<string, Promise<any>> = Record<string, Promise<any>>"
 >
 	import { page } from "$app/state";
-	import { EmptyAvatar } from "@dislyze/zoroark";
-	import { errorStore } from "$lib/errors";
+	import { EmptyAvatar, toast, safeGoto } from "@dislyze/zoroark";
 	import { slide, fade } from "svelte/transition";
 	import type { Snippet } from "svelte";
-	import { safeGoto } from "$lib/routing";
 	import type { Me } from "$lib/meCache";
 	import { hasPermission } from "$lib/meCache";
 
@@ -40,13 +38,13 @@
 			});
 
 			if (!res.ok) {
-				errorStore.setError(500, "処理中に予期せぬエラーが発生しました。");
+				toast.showError("ログアウト中にエラーが発生しました。");
 			}
 
 			window.location.pathname = "/auth/login";
 		} catch (logoutError) {
 			console.error("Logout request failed:", logoutError);
-			errorStore.setError(500, "処理中に予期せぬエラーが発生しました。");
+			toast.showError("ログアウト中にエラーが発生しました。");
 		}
 	}
 
