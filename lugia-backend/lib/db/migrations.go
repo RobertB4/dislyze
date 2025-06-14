@@ -15,7 +15,7 @@ func RunMigrations(pool *pgxpool.Pool) error {
 	const baseDelay = 1 * time.Second
 
 	var lastErr error
-	
+
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		if attempt > 1 {
 			delay := time.Duration(attempt-1) * baseDelay
@@ -38,7 +38,11 @@ func RunMigrations(pool *pgxpool.Pool) error {
 
 func attemptMigration(pool *pgxpool.Pool) error {
 	db := stdlib.OpenDBFromPool(pool)
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("Failed to close database connection: %v", err)
+		}
+	}()
 
 	if err := goose.SetDialect("postgres"); err != nil {
 		return fmt.Errorf("failed to set dialect: %w", err)

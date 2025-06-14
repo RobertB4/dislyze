@@ -126,6 +126,14 @@ var TestUsersData = map[string]UserTestData{
 		Name:              "運営 花子",
 		Status:            "active",
 	},
+	"enterprise_1": {
+		Email:             "enterprise1@localhost.com",
+		PlainTextPassword: "1234567890",
+		UserID:            "a0000000-0000-0000-0000-000000000001",
+		TenantID:          "11111111-1111-1111-1111-111111111111",
+		Name:              "田中 太郎",
+		Status:            "active",
+	},
 }
 
 var TestUserRolesData = map[string]UserRoleTestData{
