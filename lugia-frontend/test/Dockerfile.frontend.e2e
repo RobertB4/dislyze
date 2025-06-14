@@ -13,11 +13,21 @@ COPY lugia-frontend/tsconfig.json ./
 # Copy the E2E-specific .env file to .env for the build
 COPY lugia-frontend/.env.e2e ./.env
 
-RUN rm -rf node_modules package-lock.json || true
+# Build component library first
+COPY zoroark /zoroark
+WORKDIR /zoroark
 RUN npm install --no-frozen-lockfile
+RUN npm run build
 
 # Copy the rest of the lugia-frontend application source code
+WORKDIR /app
 COPY lugia-frontend/. .
+
+# Create symlink to built zoroark library
+RUN ln -sf /zoroark ../zoroark
+
+RUN rm -rf node_modules package-lock.json || true
+RUN npm install --no-frozen-lockfile
 
 RUN npm run build
 
