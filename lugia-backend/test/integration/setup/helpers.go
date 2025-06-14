@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"lugia/features/auth"
-	"lugia/lib/sendgridlib"
+	"dislyze/jirachi/sendgridlib"
 	"net/http"
 	"net/url"
 	"os"

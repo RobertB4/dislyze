@@ -14,6 +14,9 @@ import (
 	"giratina/lib/db"
 	"giratina/queries"
 
+	jirachi_auth "dislyze/jirachi/auth"
+	"dislyze/jirachi/ratelimit"
+
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -25,6 +28,12 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	r.Use(chiMiddleware.Logger)
 	r.Use(chiMiddleware.Recoverer)
 
+	authRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, 10)
+
+	// Create auth config and middleware using jirachi
+	authConfig := config.NewGiratinaAuthConfig(env)
+	jirachiAuthMiddleware := jirachi_auth.NewAuthMiddleware(authConfig, dbConn, authRateLimiter)
+
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write([]byte("OK")); err != nil {
@@ -33,11 +42,16 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	})
 
 	r.Route("/api", func(r chi.Router) {
-		r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			if _, err := w.Write([]byte(`{"message": "users endpoint"}`)); err != nil {
-				log.Printf("Error writing users response: %v", err)
-			}
+		// Protected admin routes
+		r.Group(func(r chi.Router) {
+			r.Use(jirachiAuthMiddleware.Authenticate)
+
+			r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				if _, err := w.Write([]byte(`{"message": "protected users endpoint"}`)); err != nil {
+					log.Printf("Error writing users response: %v", err)
+				}
+			})
 		})
 	})
 

@@ -1,4 +1,7 @@
 go 1.24.4
 
-use ./lugia-backend
-use ./giratina-backend
+use (
+	./jirachi
+	./lugia-backend
+	./giratina-backend
+)

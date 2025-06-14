@@ -10,8 +10,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"lugia/lib/errlib"
-	"lugia/lib/responder"
+	"dislyze/jirachi/errlib"
+	"dislyze/jirachi/responder"
 	"lugia/queries"
 )
 

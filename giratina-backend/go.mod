@@ -6,7 +6,10 @@ require (
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/joho/godotenv v1.5.1
+	dislyze/jirachi v0.0.0
 )
+
+replace dislyze/jirachi => ../jirachi
 
 require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect

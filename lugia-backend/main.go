@@ -17,8 +17,10 @@ import (
 	"lugia/lib/config"
 	"lugia/lib/db"
 	"lugia/lib/middleware"
-	"lugia/lib/ratelimit"
 	"lugia/queries"
+
+	jirachi_auth "dislyze/jirachi/auth"
+	"dislyze/jirachi/ratelimit"
 
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
@@ -40,6 +42,10 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	resendInviteRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, 1)
 	deleteUserRateLimiter := ratelimit.NewRateLimiter(1*time.Minute, 10)
 	changeEmailRateLimiter := ratelimit.NewRateLimiter(30*time.Minute, 1)
+
+	// Create auth config and middleware using jirachi
+	authConfig := config.NewLugiaAuthConfig(env)
+	jirachiAuthMiddleware := jirachi_auth.NewAuthMiddleware(authConfig, dbConn, authRateLimiter)
 
 	authHandler := auth.NewAuthHandler(dbConn, env, authRateLimiter, queries)
 	usersHandler := users.NewUsersHandler(dbConn, queries, env, resendInviteRateLimiter, deleteUserRateLimiter, changeEmailRateLimiter)
@@ -64,7 +70,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		})
 
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.NewAuthMiddleware(env, queries, authRateLimiter, dbConn).Authenticate)
+			r.Use(jirachiAuthMiddleware.Authenticate)
 
 			r.Get("/me", usersHandler.GetMe)
 			r.Post("/me/change-name", usersHandler.UpdateMe)

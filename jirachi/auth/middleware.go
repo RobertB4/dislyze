@@ -1,4 +1,4 @@
-package middleware
+package auth
 
 import (
 	"context"
@@ -8,13 +8,12 @@ import (
 	"net/http"
 	"time"
 
-	"lugia/lib/config"
-	libctx "lugia/lib/ctx"
-	"lugia/lib/errlib"
-	"lugia/lib/jwt"
-	"lugia/lib/logger"
-	"lugia/lib/ratelimit"
-	"lugia/queries"
+	"dislyze/jirachi/ctx"
+	"dislyze/jirachi/errlib"
+	"dislyze/jirachi/jwt"
+	"dislyze/jirachi/logger"
+	"dislyze/jirachi/queries"
+	"dislyze/jirachi/ratelimit"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -22,16 +21,16 @@ import (
 )
 
 type AuthMiddleware struct {
-	env         *config.Env
+	config      AuthConfig
 	db          *queries.Queries
 	rateLimiter *ratelimit.RateLimiter
 	pool        *pgxpool.Pool
 }
 
-func NewAuthMiddleware(env *config.Env, db *queries.Queries, rateLimiter *ratelimit.RateLimiter, pool *pgxpool.Pool) *AuthMiddleware {
+func NewAuthMiddleware(config AuthConfig, pool *pgxpool.Pool, rateLimiter *ratelimit.RateLimiter) *AuthMiddleware {
 	return &AuthMiddleware{
-		env:         env,
-		db:          db,
+		config:      config,
+		db:          queries.New(pool),
 		rateLimiter: rateLimiter,
 		pool:        pool,
 	}
@@ -45,7 +44,7 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 		// 1. Try to get and validate existing access token from cookie
 		accessCookie, err := r.Cookie("dislyze_access_token")
 		if err == nil { // Access token cookie exists
-			claims, validationErr := jwt.ValidateToken(accessCookie.Value, []byte(m.env.JWTSecret))
+			claims, validationErr := jwt.ValidateToken(accessCookie.Value, []byte(m.config.GetJWTSecret()))
 			if validationErr == nil { // Token is valid
 				finalClaims = claims
 			} else {
@@ -89,9 +88,9 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 		}
 
 		// 4. We have valid claims (either from initial token or from refresh). Populate context.
-		ctx := context.WithValue(r.Context(), libctx.TenantIDKey, finalClaims.TenantID)
-		ctx = context.WithValue(ctx, libctx.UserIDKey, finalClaims.UserID)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		newCtx := context.WithValue(r.Context(), ctx.TenantIDKey, finalClaims.TenantID)
+		newCtx = context.WithValue(newCtx, ctx.UserIDKey, finalClaims.UserID)
+		next.ServeHTTP(w, r.WithContext(newCtx))
 	})
 }
 
@@ -105,7 +104,7 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 		return nil, errors.New("too many refresh attempts")
 	}
 
-	claimsFromCookie, err := jwt.ValidateToken(refreshCookie.Value, []byte(m.env.JWTSecret))
+	claimsFromCookie, err := jwt.ValidateToken(refreshCookie.Value, []byte(m.config.GetJWTSecret()))
 	if err != nil {
 		return nil, fmt.Errorf("refresh token validation failed: %w", err)
 	}
@@ -168,12 +167,12 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 		return nil, fmt.Errorf("failed to get tenant: %w", err)
 	}
 
-	newAccessTokenString, newExpiresIn, newAccessTokenClaims, err := jwt.GenerateAccessToken(user.ID, tenant.ID, []byte(m.env.JWTSecret))
+	newAccessTokenString, newExpiresIn, newAccessTokenClaims, err := jwt.GenerateAccessToken(user.ID, tenant.ID, []byte(m.config.GetJWTSecret()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate new access token: %w", err)
 	}
 
-	newRefreshTokenString, newJTI, err := jwt.GenerateRefreshToken(user.ID, []byte(m.env.JWTSecret))
+	newRefreshTokenString, newJTI, err := jwt.GenerateRefreshToken(user.ID, []byte(m.config.GetJWTSecret()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate new refresh token: %w", err)
 	}
@@ -198,7 +197,7 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 		Value:    newAccessTokenString,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   m.env.IsCookieSecure(),
+		Secure:   m.config.IsCookieSecure(),
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   int(newExpiresIn),
 	})
@@ -208,7 +207,7 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 		Value:    newRefreshTokenString,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   m.env.IsCookieSecure(),
+		Secure:   m.config.IsCookieSecure(),
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   7 * 24 * 60 * 60, // 7 days
 	})

@@ -6,8 +6,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	libctx "lugia/lib/ctx"
-	"lugia/lib/errlib"
+	libctx "dislyze/jirachi/ctx"
+	"dislyze/jirachi/errlib"
 	"lugia/queries"
 )
 

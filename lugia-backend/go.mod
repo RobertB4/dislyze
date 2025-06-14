@@ -10,8 +10,11 @@ require (
 	github.com/pressly/goose/v3 v3.24.2
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible
 	github.com/stretchr/testify v1.10.0
+	dislyze/jirachi v0.0.0
 	golang.org/x/crypto v0.36.0
 )
+
+replace dislyze/jirachi => ../jirachi
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"lugia/lib/errlib"
-	"lugia/lib/responder"
+	"dislyze/jirachi/errlib"
+	"dislyze/jirachi/responder"
 
 	"github.com/jackc/pgx/v5"
 )

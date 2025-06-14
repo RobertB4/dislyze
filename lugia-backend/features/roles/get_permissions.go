@@ -3,8 +3,8 @@ package roles
 import (
 	"context"
 	"fmt"
-	"lugia/lib/errlib"
-	"lugia/lib/responder"
+	"dislyze/jirachi/errlib"
+	"dislyze/jirachi/responder"
 	"net/http"
 
 	"github.com/jackc/pgx/v5"

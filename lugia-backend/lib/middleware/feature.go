@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"lugia/lib/authz"
-	libctx "lugia/lib/ctx"
-	"lugia/lib/logger"
+	libctx "dislyze/jirachi/ctx"
+	"dislyze/jirachi/logger"
 	"lugia/queries"
 )
 

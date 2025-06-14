@@ -2,9 +2,9 @@ package auth
 
 import (
 	"lugia/lib/config"
-	"lugia/lib/ratelimit"
 	"lugia/queries"
 
+	"dislyze/jirachi/ratelimit"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

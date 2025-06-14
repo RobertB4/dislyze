@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	stdErrors "errors"
-	"lugia/lib/errlib"
+	"dislyze/jirachi/errlib"
 )
 
 func RespondWithError(w http.ResponseWriter, err error) {
