@@ -6,6 +6,7 @@
 	import Input from "$components/Input.svelte";
 	import Alert from "$components/Alert.svelte";
 	import PermissionSelector from "./PermissionSelector.svelte";
+	import Badge from "$components/Badge.svelte";
 	import type { PermissionInfo, RoleInfo } from "./+page";
 	import { hasPermission, type Me } from "$lib/meCache";
 	import { createForm } from "felte";
@@ -403,11 +404,9 @@
 										{:else}
 											<div class="flex flex-wrap gap-1 items-center">
 												{#each role.permissions.slice(0, 3) as permission (permission.id)}
-													<span
-														class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800"
-													>
+													<Badge color="blue" size="sm" rounded="md">
 														{permission.description}
-													</span>
+													</Badge>
 												{/each}
 												{#if role.permissions.length > 3}
 													<Tooltip class="ml-2">
@@ -446,19 +445,23 @@
 										data-testid={`role-type-${role.id}`}
 									>
 										{#if role.is_default}
-											<span
-												class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800"
+											<Badge
+												color="gray"
+												size="sm"
+												rounded="md"
 												data-testid={`role-type-badge-default-${role.id}`}
 											>
 												デフォルト
-											</span>
+											</Badge>
 										{:else}
-											<span
-												class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800"
+											<Badge
+												color="green"
+												size="sm"
+												rounded="md"
 												data-testid={`role-type-badge-custom-${role.id}`}
 											>
 												カスタム
-											</span>
+											</Badge>
 										{/if}
 									</td>
 									<td

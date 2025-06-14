@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Pill from "$components/Pill.svelte";
+	import InteractivePill from "$components/InteractivePill.svelte";
 	import type { PermissionInfo } from "./+page";
 
 	let {
@@ -122,37 +122,37 @@
 					</h4>
 					<div class="flex gap-2">
 						<!-- None option -->
-						<Pill
+						<InteractivePill
 							selected={getCurrentSelection(group.resource) === "none"}
 							onclick={() => selectOption(group.resource, "none")}
 							variant="orange"
 							data-testid={`permission-${group.resource}-none`}
 						>
 							{getActionLabel("none")}
-						</Pill>
+						</InteractivePill>
 
 						<!-- View option (if available) -->
 						{#if group.permissions.some((p) => p.action === "view")}
-							<Pill
+							<InteractivePill
 								selected={getCurrentSelection(group.resource) === "view"}
 								onclick={() => selectOption(group.resource, "view")}
 								variant="orange"
 								data-testid={`permission-${group.resource}-view`}
 							>
 								{getActionLabel("view")}
-							</Pill>
+							</InteractivePill>
 						{/if}
 
 						<!-- Edit option (if available) -->
 						{#if group.permissions.some((p) => p.action === "edit")}
-							<Pill
+							<InteractivePill
 								selected={getCurrentSelection(group.resource) === "edit"}
 								onclick={() => selectOption(group.resource, "edit")}
 								variant="orange"
 								data-testid={`permission-${group.resource}-edit`}
 							>
 								{getActionLabel("edit")}
-							</Pill>
+							</InteractivePill>
 						{/if}
 					</div>
 				</div>
