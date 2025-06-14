@@ -3,7 +3,7 @@
 	generics="PromisesMap extends Record<string, Promise<any>> = Record<string, Promise<any>>"
 >
 	import { page } from "$app/state";
-	import EmptyAvatar from "$components/EmptyAvatar.svelte";
+	import { EmptyAvatar } from "@dislyze/zoroark";
 	import { errorStore } from "$lib/errors";
 	import { slide, fade } from "svelte/transition";
 	import type { Snippet } from "svelte";
