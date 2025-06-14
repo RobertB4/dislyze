@@ -61,7 +61,7 @@
 		searchTimeout = window.setTimeout(() => {
 			updateURL(1, pageData.currentLimit, inputValue); // Reset to page 1 when searching
 			isSearching = false;
-		}, 300);
+		}, 700);
 	}
 
 	function goToPage(page: number) {
