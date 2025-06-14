@@ -6,10 +6,18 @@ package queries
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
+	CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error)
+	GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUID) (*RefreshToken, error)
+	GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error)
 	GetTenants(ctx context.Context) ([]*Tenant, error)
+	GetUserByEmail(ctx context.Context, email string) (*User, error)
+	GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error)
+	UpdateRefreshTokenUsed(ctx context.Context, jti pgtype.UUID) error
 }
 
 var _ Querier = (*Queries)(nil)

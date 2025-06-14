@@ -1,103 +1,63 @@
 package logger
 
 import (
+	"encoding/json"
 	"log"
 	"time"
 )
 
 type AuthEvent struct {
-	EventType  string
-	UserID     string
-	IPAddress  string
-	UserAgent  string
-	DeviceInfo string
-	Timestamp  time.Time
-	Success    bool
-	Error      string
-	TokenType  string // "access" or "refresh"
-	TokenID    string
+	EventType  string    `json:"event_type"`
+	Service    string    `json:"service"`
+	UserID     string    `json:"user_id"`
+	IPAddress  string    `json:"ip_address"`
+	UserAgent  string    `json:"user_agent"`
+	DeviceInfo string    `json:"device_info"`
+	Timestamp  time.Time `json:"timestamp"`
+	Success    bool      `json:"success"`
+	Error      string    `json:"error,omitempty"`
+	TokenType  string    `json:"token_type,omitempty"`
+	TokenID    string    `json:"token_id,omitempty"`
 }
 
 func LogAuthEvent(event AuthEvent) {
-	status := "success"
-	if !event.Success {
-		status = "failure"
+	jsonData, err := json.Marshal(event)
+	if err != nil {
+		log.Printf("[AUTH] Failed to marshal auth event: %v", err)
+		return
 	}
-
-	log.Printf("[AUTH] %s | %s | user=%s | ip=%s | device=%s | status=%s | error=%s | token_type=%s | token_id=%s",
-		event.EventType,
-		event.Timestamp.Format(time.RFC3339),
-		event.UserID,
-		event.IPAddress,
-		event.DeviceInfo,
-		status,
-		event.Error,
-		event.TokenType,
-		event.TokenID,
-	)
+	log.Printf("[AUTH] %s", string(jsonData))
 }
 
 func LogTokenRefresh(event AuthEvent) {
-	status := "success"
-	if !event.Success {
-		status = "failure"
+	jsonData, err := json.Marshal(event)
+	if err != nil {
+		log.Printf("[TOKEN_REFRESH] Failed to marshal token refresh event: %v", err)
+		return
 	}
-
-	log.Printf("[TOKEN_REFRESH] %s | user=%s | ip=%s | device=%s | status=%s | error=%s | old_token=%s | new_token=%s",
-		event.Timestamp.Format(time.RFC3339),
-		event.UserID,
-		event.IPAddress,
-		event.DeviceInfo,
-		status,
-		event.Error,
-		event.TokenID,
-		event.TokenType,
-	)
+	log.Printf("[TOKEN_REFRESH] %s", string(jsonData))
 }
 
 type AccessEvent struct {
-	EventType  string // "permission" or "feature"
-	UserID     string
-	TenantID   string
-	IPAddress  string
-	UserAgent  string
-	Timestamp  time.Time
-	Success    bool
-	Error      string
-	Resource   string // for permission events
-	Action     string // for permission events
-	Feature    string // for feature events
+	EventType string    `json:"event_type"` // "permission" or "feature"
+	Service   string    `json:"service"`
+	UserID    string    `json:"user_id"`
+	TenantID  string    `json:"tenant_id"`
+	IPAddress string    `json:"ip_address"`
+	UserAgent string    `json:"user_agent"`
+	Timestamp time.Time `json:"timestamp"`
+	Success   bool      `json:"success"`
+	Error     string    `json:"error,omitempty"`
+	Resource  string    `json:"resource,omitempty"` // for permission events
+	Action    string    `json:"action,omitempty"`   // for permission events
+	Feature   string    `json:"feature,omitempty"`  // for feature events
 }
 
 func LogAccessEvent(event AccessEvent) {
-	status := "success"
-	if !event.Success {
-		status = "failure"
+	jsonData, err := json.Marshal(event)
+	if err != nil {
+		log.Printf("[ACCESS] Failed to marshal access event: %v", err)
+		return
 	}
-
-	switch event.EventType {
-	case "permission":
-		log.Printf("[ACCESS] %s | %s | user=%s | tenant=%s | ip=%s | resource=%s | action=%s | status=%s | error=%s",
-			event.EventType,
-			event.Timestamp.Format(time.RFC3339),
-			event.UserID,
-			event.TenantID,
-			event.IPAddress,
-			event.Resource,
-			event.Action,
-			status,
-			event.Error,
-		)
-	case "feature":
-		log.Printf("[ACCESS] %s | %s | user=%s | tenant=%s | ip=%s | feature=%s | status=%s | error=%s",
-			event.EventType,
-			event.Timestamp.Format(time.RFC3339),
-			event.UserID,
-			event.TenantID,
-			event.IPAddress,
-			event.Feature,
-			status,
-			event.Error,
-		)
-	}
+	log.Printf("[ACCESS] %s", string(jsonData))
 }

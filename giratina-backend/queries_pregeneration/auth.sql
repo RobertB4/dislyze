@@ -1,0 +1,27 @@
+-- name: GetUserByEmail :one
+SELECT * FROM users
+WHERE email = $1;
+
+-- name: GetTenantByID :one
+SELECT * FROM tenants
+WHERE id = $1;
+
+-- name: GetRefreshTokenByUserID :one
+SELECT * FROM refresh_tokens 
+WHERE user_id = $1 
+AND revoked_at IS NULL 
+AND expires_at > CURRENT_TIMESTAMP;
+
+-- name: CreateRefreshToken :one
+INSERT INTO refresh_tokens (
+    user_id,
+    jti,
+    device_info,
+    ip_address,
+    expires_at
+) VALUES ($1, $2, $3, $4, $5) RETURNING *;
+
+-- name: UpdateRefreshTokenUsed :exec
+UPDATE refresh_tokens 
+SET used_at = CURRENT_TIMESTAMP 
+WHERE jti = $1;

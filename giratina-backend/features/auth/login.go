@@ -15,7 +15,7 @@ import (
 	"dislyze/jirachi/jwt"
 	"dislyze/jirachi/logger"
 	"dislyze/jirachi/responder"
-	"lugia/queries"
+	"giratina/queries"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -63,7 +63,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.LogAuthEvent(logger.AuthEvent{
 			EventType: "login",
-			Service:   "lugia",
+			Service:   "giratina",
 			UserID:    userID,
 			IPAddress: r.RemoteAddr,
 			UserAgent: r.UserAgent(),
@@ -98,7 +98,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	logger.LogAuthEvent(logger.AuthEvent{
 		EventType: "login",
-		Service:   "lugia",
+		Service:   "giratina",
 		UserID:    userID,
 		IPAddress: r.RemoteAddr,
 		UserAgent: r.UserAgent(),
@@ -118,26 +118,32 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequestBody, r *http.
 		return nil, "", fmt.Errorf("failed to get user: %w", err)
 	}
 
+	userID := user.ID.String()
+
+	if !user.IsInternalAdmin {
+		return nil, userID, fmt.Errorf("メールアドレスまたはパスワードが正しくありません")
+	}
+
 	if user.Status == "pending_verification" {
-		return nil, user.ID.String(), fmt.Errorf("アカウントが有効化されていません。招待メールを確認し、登録を完了してください。")
+		return nil, userID, fmt.Errorf("アカウントが有効化されていません。招待メールを確認し、登録を完了してください。")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		return nil, user.ID.String(), fmt.Errorf("メールアドレスまたはパスワードが正しくありません")
+		return nil, userID, fmt.Errorf("メールアドレスまたはパスワードが正しくありません")
 	}
 
 	if user.Status == "suspended" {
-		return nil, user.ID.String(), fmt.Errorf("アカウントが停止されています。サポートにお問い合わせください。")
+		return nil, userID, fmt.Errorf("アカウントが停止されています。サポートにお問い合わせください。")
 	}
 
 	tenant, err := h.queries.GetTenantByID(ctx, user.TenantID)
 	if err != nil {
-		return nil, user.ID.String(), fmt.Errorf("failed to get tenant: %w", err)
+		return nil, userID, fmt.Errorf("failed to get tenant: %w", err)
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		return nil, user.ID.String(), fmt.Errorf("failed to start transaction: %w", err)
+		return nil, userID, fmt.Errorf("failed to start transaction: %w", err)
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -149,19 +155,19 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequestBody, r *http.
 
 	existingToken, err := qtx.GetRefreshTokenByUserID(ctx, user.ID)
 	if err != nil && !errlib.Is(err, pgx.ErrNoRows) {
-		return nil, user.ID.String(), fmt.Errorf("failed to check existing refresh token: %w", err)
+		return nil, userID, fmt.Errorf("failed to check existing refresh token: %w", err)
 	}
 
 	if !errlib.Is(err, pgx.ErrNoRows) {
 		err = qtx.UpdateRefreshTokenUsed(ctx, existingToken.Jti)
 		if err != nil {
-			return nil, user.ID.String(), fmt.Errorf("failed to update refresh token last used: %w", err)
+			return nil, userID, fmt.Errorf("failed to update refresh token last used: %w", err)
 		}
 	}
 
 	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, []byte(h.env.JWTSecret))
 	if err != nil {
-		return nil, user.ID.String(), fmt.Errorf("failed to generate token pair: %w", err)
+		return nil, userID, fmt.Errorf("failed to generate token pair: %w", err)
 	}
 
 	_, err = qtx.CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
@@ -172,11 +178,11 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequestBody, r *http.
 		ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
 	})
 	if err != nil {
-		return nil, user.ID.String(), fmt.Errorf("failed to store refresh token: %w", err)
+		return nil, userID, fmt.Errorf("failed to store refresh token: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return nil, user.ID.String(), fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, userID, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	return tokenPair, user.ID.String(), nil
+	return tokenPair, userID, nil
 }

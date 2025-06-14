@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"giratina/features/auth"
 	"giratina/lib/config"
 	"giratina/lib/db"
 	"giratina/queries"
@@ -32,12 +33,17 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 
 	authConfig := config.NewGiratinaAuthConfig(env)
 	jirachiAuthMiddleware := jirachi_auth.NewAuthMiddleware(authConfig, dbConn, authRateLimiter)
+	authHandler := auth.NewAuthHandler(dbConn, env, authRateLimiter, queries)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write([]byte("OK")); err != nil {
 			log.Printf("Error writing health check response: %v", err)
 		}
+	})
+
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/login", authHandler.Login)
 	})
 
 	r.Route("/api", func(r chi.Router) {
