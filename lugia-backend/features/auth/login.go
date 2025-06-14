@@ -11,9 +11,9 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"lugia/lib/errlib"
-	"lugia/lib/jwt"
-	"lugia/lib/responder"
+	"dislyze/jirachi/errlib"
+	"dislyze/jirachi/jwt"
+	"dislyze/jirachi/responder"
 	"lugia/queries"
 
 	"github.com/jackc/pgx/v5"

@@ -16,10 +16,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sendgrid/sendgrid-go"
 
-	libctx "lugia/lib/ctx"
-	"lugia/lib/errlib"
-	"lugia/lib/responder"
-	"lugia/lib/sendgridlib"
+	libctx "dislyze/jirachi/ctx"
+	"dislyze/jirachi/errlib"
+	"dislyze/jirachi/responder"
+	"dislyze/jirachi/sendgridlib"
 	"lugia/queries"
 )
 

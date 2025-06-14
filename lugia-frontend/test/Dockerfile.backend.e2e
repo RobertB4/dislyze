@@ -9,6 +9,9 @@ RUN apk add --no-cache postgresql-client
 COPY lugia-backend/go.mod ./
 COPY lugia-backend/go.sum ./
 
+# Copy shared library
+COPY jirachi /jirachi
+
 RUN go mod download
 
 # Context is project root, so copy lugia-backend/ subdirectory into /app

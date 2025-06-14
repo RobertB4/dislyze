@@ -26,7 +26,6 @@ type Querier interface {
 	CreateTenant(ctx context.Context, name string) (*Tenant, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
 	DeleteEmailChangeTokensByUserID(ctx context.Context, userID pgtype.UUID) error
-	DeleteExpiredRefreshTokens(ctx context.Context) error
 	DeleteInvitationTokensByUserIDAndTenantID(ctx context.Context, arg *DeleteInvitationTokensByUserIDAndTenantIDParams) error
 	DeletePasswordResetTokenByUserID(ctx context.Context, userID pgtype.UUID) error
 	DeleteRefreshTokensByUserID(ctx context.Context, userID pgtype.UUID) error
@@ -38,7 +37,6 @@ type Querier interface {
 	GetEmailChangeTokenByHash(ctx context.Context, tokenHash string) (*EmailChangeToken, error)
 	GetInvitationByTokenHash(ctx context.Context, tokenHash string) (*InvitationToken, error)
 	GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error)
-	GetRefreshTokenByJTI(ctx context.Context, jti pgtype.UUID) (*RefreshToken, error)
 	GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUID) (*RefreshToken, error)
 	GetRoleByID(ctx context.Context, arg *GetRoleByIDParams) (*Role, error)
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error)

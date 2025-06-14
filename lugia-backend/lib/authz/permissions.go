@@ -3,8 +3,8 @@ package authz
 import (
 	"context"
 
-	libctx "lugia/lib/ctx"
-	"lugia/lib/errlib"
+	libctx "dislyze/jirachi/ctx"
+	"dislyze/jirachi/errlib"
 	"lugia/queries"
 )
 

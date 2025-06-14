@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"lugia/lib/errlib"
-	"lugia/lib/responder"
-	"lugia/lib/sendgridlib"
-	"lugia/lib/utils"
+	"dislyze/jirachi/errlib"
+	"dislyze/jirachi/responder"
+	"dislyze/jirachi/sendgridlib"
+	"dislyze/jirachi/utils"
 	"lugia/queries"
 
 	"github.com/jackc/pgx/v5"

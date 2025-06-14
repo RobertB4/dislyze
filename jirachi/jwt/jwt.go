@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"lugia/lib/utils"
+	"dislyze/jirachi/utils"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5/pgtype"

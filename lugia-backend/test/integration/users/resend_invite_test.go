@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io"
 	"lugia/features/auth"
-	"lugia/lib/sendgridlib"
+	"dislyze/jirachi/sendgridlib"
 	"lugia/test/integration/setup"
 	"net/http"
 	"regexp"

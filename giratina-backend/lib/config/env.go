@@ -7,6 +7,23 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// GiratinaAuthConfig implements jirachi's AuthConfig interface
+type GiratinaAuthConfig struct {
+	env *Env
+}
+
+func NewGiratinaAuthConfig(env *Env) *GiratinaAuthConfig {
+	return &GiratinaAuthConfig{env: env}
+}
+
+func (c *GiratinaAuthConfig) GetJWTSecret() string {
+	return c.env.JWTSecret
+}
+
+func (c *GiratinaAuthConfig) IsCookieSecure() bool {
+	return c.env.IsCookieSecure()
+}
+
 type Env struct {
 	AppEnv      string
 	Port        string

@@ -7,6 +7,23 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// LugiaAuthConfig implements jirachi's AuthConfig interface
+type LugiaAuthConfig struct {
+	env *Env
+}
+
+func NewLugiaAuthConfig(env *Env) *LugiaAuthConfig {
+	return &LugiaAuthConfig{env: env}
+}
+
+func (c *LugiaAuthConfig) GetJWTSecret() string {
+	return c.env.JWTSecret
+}
+
+func (c *LugiaAuthConfig) IsCookieSecure() bool {
+	return c.env.IsCookieSecure()
+}
+
 type Env struct {
 	AppEnv         string
 	Port           string

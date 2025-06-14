@@ -29,12 +29,6 @@ SELECT EXISTS (
     SELECT 1 FROM users WHERE email = $1
 );
 
--- name: GetRefreshTokenByJTI :one
-SELECT * FROM refresh_tokens 
-WHERE jti = $1 
-AND revoked_at IS NULL 
-AND expires_at > CURRENT_TIMESTAMP;
-
 -- name: GetRefreshTokenByUserID :one
 SELECT * FROM refresh_tokens 
 WHERE user_id = $1 
@@ -54,11 +48,6 @@ INSERT INTO refresh_tokens (
 UPDATE refresh_tokens 
 SET revoked_at = CURRENT_TIMESTAMP 
 WHERE jti = $1;
-
--- name: DeleteExpiredRefreshTokens :exec
-DELETE FROM refresh_tokens 
-WHERE expires_at < CURRENT_TIMESTAMP 
-   OR revoked_at IS NOT NULL;
 
 -- name: UpdateRefreshTokenUsed :exec
 UPDATE refresh_tokens 

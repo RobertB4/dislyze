@@ -1,11 +1,14 @@
 dev:
-	make -j3 dev-backend dev-frontend dev-sendgrid-mock
+	make -j4 dev-lugia-backend dev-lugia-frontend dev-giratina-backend dev-sendgrid-mock
 
-dev-backend:
+dev-lugia-backend:
 	cd lugia-backend && make dev
 
-dev-frontend:
+dev-lugia-frontend:
 	cd lugia-frontend && npm run dev
+
+dev-giratina-backend:
+	cd giratina-backend && make dev
 
 dev-sendgrid-mock:
 	cd sendgrid-mock && SENDGRID_API_KEY=sendgrid npm run start

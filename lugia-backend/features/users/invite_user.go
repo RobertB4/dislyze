@@ -18,10 +18,10 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 	"golang.org/x/crypto/bcrypt"
 
-	libctx "lugia/lib/ctx"
-	"lugia/lib/errlib"
-	"lugia/lib/responder"
-	"lugia/lib/sendgridlib"
+	libctx "dislyze/jirachi/ctx"
+	"dislyze/jirachi/errlib"
+	"dislyze/jirachi/responder"
+	"dislyze/jirachi/sendgridlib"
 	"lugia/queries"
 )
 

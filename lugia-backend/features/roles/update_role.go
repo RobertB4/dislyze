@@ -11,9 +11,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	libctx "lugia/lib/ctx"
-	"lugia/lib/errlib"
-	"lugia/lib/responder"
+	libctx "dislyze/jirachi/ctx"
+	"dislyze/jirachi/errlib"
+	"dislyze/jirachi/responder"
 	"lugia/queries"
 )
 

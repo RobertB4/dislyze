@@ -8,10 +8,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	libctx "lugia/lib/ctx"
-	"lugia/lib/errlib"
+	libctx "dislyze/jirachi/ctx"
+	"dislyze/jirachi/errlib"
 	"lugia/lib/pagination"
-	"lugia/lib/responder"
+	"dislyze/jirachi/responder"
 	"lugia/lib/search"
 	"lugia/queries"
 )

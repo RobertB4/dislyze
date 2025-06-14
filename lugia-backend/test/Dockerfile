@@ -8,6 +8,9 @@ RUN apk add --no-cache wget
 # Copy go mod and sum files from the lugia-backend directory within the context
 COPY lugia-backend/go.mod lugia-backend/go.sum ./
 
+# Copy shared library
+COPY jirachi /jirachi
+
 # Download dependencies
 RUN go mod download
 
