@@ -11,37 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const CreatePasswordResetToken = `-- name: CreatePasswordResetToken :one
-INSERT INTO password_reset_tokens (
-    user_id,
-    token_hash,
-    expires_at
-) VALUES (
-    $1, $2, $3
-)
-RETURNING id, user_id, token_hash, expires_at, created_at, used_at
-`
-
-type CreatePasswordResetTokenParams struct {
-	UserID    pgtype.UUID        `json:"user_id"`
-	TokenHash string             `json:"token_hash"`
-	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
-}
-
-func (q *Queries) CreatePasswordResetToken(ctx context.Context, arg *CreatePasswordResetTokenParams) (*PasswordResetToken, error) {
-	row := q.db.QueryRow(ctx, CreatePasswordResetToken, arg.UserID, arg.TokenHash, arg.ExpiresAt)
-	var i PasswordResetToken
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.TokenHash,
-		&i.ExpiresAt,
-		&i.CreatedAt,
-		&i.UsedAt,
-	)
-	return &i, err
-}
-
 const CreateRefreshToken = `-- name: CreateRefreshToken :one
 INSERT INTO refresh_tokens (
     user_id,
@@ -147,27 +116,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User,
 	return &i, err
 }
 
-const DeleteExpiredRefreshTokens = `-- name: DeleteExpiredRefreshTokens :exec
-DELETE FROM refresh_tokens 
-WHERE expires_at < CURRENT_TIMESTAMP 
-   OR revoked_at IS NOT NULL
-`
-
-func (q *Queries) DeleteExpiredRefreshTokens(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, DeleteExpiredRefreshTokens)
-	return err
-}
-
-const DeletePasswordResetTokenByUserID = `-- name: DeletePasswordResetTokenByUserID :exec
-DELETE FROM password_reset_tokens
-WHERE user_id = $1
-`
-
-func (q *Queries) DeletePasswordResetTokenByUserID(ctx context.Context, userID pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, DeletePasswordResetTokenByUserID, userID)
-	return err
-}
-
 const ExistsUserWithEmail = `-- name: ExistsUserWithEmail :one
 SELECT EXISTS (
     SELECT 1 FROM users WHERE email = $1
@@ -181,25 +129,6 @@ func (q *Queries) ExistsUserWithEmail(ctx context.Context, email string) (bool, 
 	return exists, err
 }
 
-const GetPasswordResetTokenByHash = `-- name: GetPasswordResetTokenByHash :one
-SELECT id, user_id, token_hash, expires_at, created_at, used_at FROM password_reset_tokens
-WHERE token_hash = $1
-`
-
-func (q *Queries) GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error) {
-	row := q.db.QueryRow(ctx, GetPasswordResetTokenByHash, tokenHash)
-	var i PasswordResetToken
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.TokenHash,
-		&i.ExpiresAt,
-		&i.CreatedAt,
-		&i.UsedAt,
-	)
-	return &i, err
-}
-
 const GetRefreshTokenByJTI = `-- name: GetRefreshTokenByJTI :one
 SELECT id, user_id, jti, device_info, ip_address, expires_at, created_at, used_at, revoked_at FROM refresh_tokens 
 WHERE jti = $1 
@@ -209,30 +138,6 @@ AND expires_at > CURRENT_TIMESTAMP
 
 func (q *Queries) GetRefreshTokenByJTI(ctx context.Context, jti pgtype.UUID) (*RefreshToken, error) {
 	row := q.db.QueryRow(ctx, GetRefreshTokenByJTI, jti)
-	var i RefreshToken
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Jti,
-		&i.DeviceInfo,
-		&i.IpAddress,
-		&i.ExpiresAt,
-		&i.CreatedAt,
-		&i.UsedAt,
-		&i.RevokedAt,
-	)
-	return &i, err
-}
-
-const GetRefreshTokenByUserID = `-- name: GetRefreshTokenByUserID :one
-SELECT id, user_id, jti, device_info, ip_address, expires_at, created_at, used_at, revoked_at FROM refresh_tokens 
-WHERE user_id = $1 
-AND revoked_at IS NULL 
-AND expires_at > CURRENT_TIMESTAMP
-`
-
-func (q *Queries) GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUID) (*RefreshToken, error) {
-	row := q.db.QueryRow(ctx, GetRefreshTokenByUserID, userID)
 	var i RefreshToken
 	err := row.Scan(
 		&i.ID,
@@ -267,27 +172,6 @@ func (q *Queries) GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, e
 	return &i, err
 }
 
-const GetUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, tenant_id, email, password_hash, name, created_at, updated_at, status FROM users
-WHERE email = $1
-`
-
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, error) {
-	row := q.db.QueryRow(ctx, GetUserByEmail, email)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.TenantID,
-		&i.Email,
-		&i.PasswordHash,
-		&i.Name,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.Status,
-	)
-	return &i, err
-}
-
 const GetUserByID = `-- name: GetUserByID :one
 SELECT id, tenant_id, email, password_hash, name, created_at, updated_at, status FROM users
 WHERE id = $1
@@ -309,28 +193,6 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error
 	return &i, err
 }
 
-const MarkPasswordResetTokenAsUsed = `-- name: MarkPasswordResetTokenAsUsed :exec
-UPDATE password_reset_tokens
-SET used_at = NOW()
-WHERE id = $1
-`
-
-func (q *Queries) MarkPasswordResetTokenAsUsed(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, MarkPasswordResetTokenAsUsed, id)
-	return err
-}
-
-const RevokeRefreshToken = `-- name: RevokeRefreshToken :exec
-UPDATE refresh_tokens 
-SET revoked_at = CURRENT_TIMESTAMP 
-WHERE jti = $1
-`
-
-func (q *Queries) RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, RevokeRefreshToken, jti)
-	return err
-}
-
 const UpdateRefreshTokenUsed = `-- name: UpdateRefreshTokenUsed :exec
 UPDATE refresh_tokens 
 SET used_at = CURRENT_TIMESTAMP 
@@ -339,21 +201,5 @@ WHERE jti = $1
 
 func (q *Queries) UpdateRefreshTokenUsed(ctx context.Context, jti pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, UpdateRefreshTokenUsed, jti)
-	return err
-}
-
-const UpdateTenantName = `-- name: UpdateTenantName :exec
-UPDATE tenants
-SET name = $1, updated_at = CURRENT_TIMESTAMP
-WHERE id = $2
-`
-
-type UpdateTenantNameParams struct {
-	Name string      `json:"name"`
-	ID   pgtype.UUID `json:"id"`
-}
-
-func (q *Queries) UpdateTenantName(ctx context.Context, arg *UpdateTenantNameParams) error {
-	_, err := q.db.Exec(ctx, UpdateTenantName, arg.Name, arg.ID)
 	return err
 }

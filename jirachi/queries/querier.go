@@ -11,23 +11,14 @@ import (
 )
 
 type Querier interface {
-	CreatePasswordResetToken(ctx context.Context, arg *CreatePasswordResetTokenParams) (*PasswordResetToken, error)
 	CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error)
 	CreateTenant(ctx context.Context, name string) (*Tenant, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
-	DeleteExpiredRefreshTokens(ctx context.Context) error
-	DeletePasswordResetTokenByUserID(ctx context.Context, userID pgtype.UUID) error
 	ExistsUserWithEmail(ctx context.Context, email string) (bool, error)
-	GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error)
 	GetRefreshTokenByJTI(ctx context.Context, jti pgtype.UUID) (*RefreshToken, error)
-	GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUID) (*RefreshToken, error)
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error)
-	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error)
-	MarkPasswordResetTokenAsUsed(ctx context.Context, id pgtype.UUID) error
-	RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error
 	UpdateRefreshTokenUsed(ctx context.Context, jti pgtype.UUID) error
-	UpdateTenantName(ctx context.Context, arg *UpdateTenantNameParams) error
 }
 
 var _ Querier = (*Queries)(nil)
