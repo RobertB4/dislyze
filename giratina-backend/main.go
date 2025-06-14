@@ -30,7 +30,6 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 
 	authRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, 10)
 
-	// Create auth config and middleware using jirachi
 	authConfig := config.NewGiratinaAuthConfig(env)
 	jirachiAuthMiddleware := jirachi_auth.NewAuthMiddleware(authConfig, dbConn, authRateLimiter)
 
@@ -42,7 +41,6 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	})
 
 	r.Route("/api", func(r chi.Router) {
-		// Protected admin routes
 		r.Group(func(r chi.Router) {
 			r.Use(jirachiAuthMiddleware.Authenticate)
 
