@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'lugia-frontend/**'
+      - 'zoroark/**'
       - '.github/workflows/lugia-frontend-ci.yml'
 
 jobs:
