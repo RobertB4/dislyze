@@ -1,22 +1,15 @@
 <script lang="ts">
-	import Button from "$components/Button.svelte";
+	import { Button, Slideover, Input, toast, Badge, Alert, Spinner, Tooltip } from "@dislyze/zoroark";
 	import Layout from "$components/Layout.svelte";
 	import SettingsTabs from "../SettingsTabs.svelte";
-	import Slideover from "$components/Slideover.svelte";
 	import type { PageData } from "./$types";
 	import { createForm } from "felte";
-	import Input from "$components/Input.svelte";
-	import { toast } from "$components/Toast/toast";
 	import { invalidate } from "$app/navigation";
-	import Badge from "$components/Badge.svelte";
-	import Alert from "$components/Alert.svelte";
 	import { mutationFetch } from "$lib/fetch";
 	import Skeleton from "./Skeleton.svelte";
 	import type { User } from "./+page";
 	import { hasPermission } from "$lib/meCache";
 	import { goto } from "$app/navigation";
-	import Spinner from "$components/Spinner.svelte";
-	import Tooltip from "$components/Tooltip.svelte";
 	import RoleCard from "./RoleCard.svelte";
 
 	let { data: pageData }: { data: PageData } = $props();

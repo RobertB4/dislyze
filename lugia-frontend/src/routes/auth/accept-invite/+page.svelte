@@ -1,11 +1,9 @@
 <script lang="ts">
-	import Button from "$components/Button.svelte";
+	import { Button, toast, Input } from "@dislyze/zoroark";
 	import { createForm } from "felte";
 	import type { PageData } from "./$types";
-	import { toast } from "$components/Toast/toast";
 	import { safeGoto } from "$lib/routing";
 	import { mutationFetch } from "$lib/fetch";
-	import Input from "$components/Input.svelte";
 
 	let { data: pageData }: { data: PageData } = $props();
 

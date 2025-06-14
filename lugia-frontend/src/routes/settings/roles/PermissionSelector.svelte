@@ -1,5 +1,5 @@
 <script lang="ts">
-	import InteractivePill from "$components/InteractivePill.svelte";
+	import { InteractivePill } from "@dislyze/zoroark";
 	import type { PermissionInfo } from "./+page";
 
 	let {

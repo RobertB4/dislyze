@@ -1,11 +1,9 @@
 <script lang="ts">
 	import Layout from "$components/Layout.svelte";
-	import Button from "$components/Button.svelte";
-	import Input from "$components/Input.svelte";
+	import { Button, Input, toast } from "@dislyze/zoroark";
 	import SettingsTabs from "../SettingsTabs.svelte";
 	import type { PageData } from "./$types";
 	import { createForm } from "felte";
-	import { toast } from "$components/Toast/toast";
 	import { mutationFetch } from "$lib/fetch";
 	import { forceUpdateMeCache, hasPermission } from "$lib/meCache";
 	import { invalidate } from "$app/navigation";

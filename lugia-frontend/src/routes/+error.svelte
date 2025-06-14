@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/state";
 	import { safeGoto } from "$lib/routing";
-	import Button from "$components/Button.svelte";
+	import { Button } from "@dislyze/zoroark";
 
 	async function handleReturnToLogin() {
 		try {

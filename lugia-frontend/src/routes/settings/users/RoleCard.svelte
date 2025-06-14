@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Tooltip from "$components/Tooltip.svelte";
+	import { Tooltip } from "@dislyze/zoroark";
 	import type { RoleInfo } from "./+page";
 
 	let {

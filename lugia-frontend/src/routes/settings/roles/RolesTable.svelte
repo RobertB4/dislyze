@@ -1,16 +1,10 @@
 <script lang="ts">
-	import Button from "$components/Button.svelte";
+	import { Button, Tooltip, Slideover, Input, Alert, Badge, toast } from "@dislyze/zoroark";
 	import SettingsTabs from "../SettingsTabs.svelte";
-	import Tooltip from "$components/Tooltip.svelte";
-	import Slideover from "$components/Slideover.svelte";
-	import Input from "$components/Input.svelte";
-	import Alert from "$components/Alert.svelte";
 	import PermissionSelector from "./PermissionSelector.svelte";
-	import Badge from "$components/Badge.svelte";
 	import type { PermissionInfo, RoleInfo } from "./+page";
 	import { hasPermission, type Me } from "$lib/meCache";
 	import { createForm } from "felte";
-	import { toast } from "$components/Toast/toast";
 	import { invalidate } from "$app/navigation";
 	import { mutationFetch } from "$lib/fetch";
 

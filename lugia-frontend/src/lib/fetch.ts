@@ -1,6 +1,6 @@
 import { redirect, error as svelteKitError } from "@sveltejs/kit";
 import { KnownError } from "./errors";
-import { toast } from "$components/Toast/toast";
+import { toast } from "@dislyze/zoroark";
 
 /**
  * For use in the `load` function to fetch data for the page.

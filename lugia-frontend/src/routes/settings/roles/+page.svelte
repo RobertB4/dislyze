@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Button from "$components/Button.svelte";
+	import { Button } from "@dislyze/zoroark";
 	import Layout from "$components/Layout.svelte";
 	import Skeleton from "./Skeleton.svelte";
 	import RolesTable from "./RolesTable.svelte";
