@@ -1,0 +1,41 @@
+name: Giratina Frontend CI
+
+on:
+  push:
+    paths:
+      - 'giratina-frontend/**'
+      - '.github/workflows/giratina-frontend-ci.yml'
+
+jobs:
+  build-lint-check:
+    name: Build, Lint, & Check giratina-frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./giratina-frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: giratina-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run TypeScript type checking (svelte-check)
+        run: npm run check
+
+      - name: Run Prettier and ESLint checks
+        run: npm run lint
+
+      - name: Check for vulnerable dependencies
+        run: npm audit --audit-level=high
