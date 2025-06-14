@@ -1,11 +1,12 @@
-name: Backend CI
+name: Lugia Backend CI
 
 on:
   push:
     paths:
       - 'lugia-backend/**'
       - 'database/**'
-      - '.github/workflows/backend-ci.yml'
+      - 'jirachi/**'
+      - '.github/workflows/lugia-backend-ci.yml'
 
 jobs:
   build-lint-test:
@@ -37,7 +38,7 @@ jobs:
       - name: Install gotestfmt
         run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
 
-      # All subsequent Go-related commands are run from the backend directory
+      # All subsequent Go-related commands are run from the lugia-backend directory
       - name: Change to lugia-backend directory
         run: cd lugia-backend
         working-directory: .

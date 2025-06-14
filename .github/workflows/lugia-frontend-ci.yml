@@ -1,10 +1,10 @@
-name: Frontend CI
+name: Lugia Frontend CI
 
 on:
   push:
     paths:
       - 'lugia-frontend/**'
-      - '.github/workflows/frontend-ci.yml'
+      - '.github/workflows/lugia-frontend-ci.yml'
 
 jobs:
   build-lint-check:

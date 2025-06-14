@@ -1,15 +1,15 @@
-name: Backend Integration Tests
+name: Lugia Backend Integration Tests
 
 on:
   push:
     paths:
       - 'lugia-backend/**'
       - 'database/**'
-      - '.github/workflows/backend-integration-tests.yml'
+      - '.github/workflows/lugia-backend-integration-tests.yml'
 
 jobs:
   integration-test:
-    name: Run Backend Integration Tests
+    name: Run Lugia Backend Integration Tests
     runs-on: ubuntu-latest
 
     steps:
