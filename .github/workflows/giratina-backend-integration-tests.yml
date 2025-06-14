@@ -1,0 +1,21 @@
+name: Giratina Backend Integration Tests
+
+on:
+  push:
+    paths:
+      - 'giratina-backend/**'
+      - 'database/**'
+      - '.github/workflows/giratina-backend-integration-tests.yml'
+
+jobs:
+  integration-test:
+    name: Run Giratina Backend Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run integration tests
+        working-directory: ./giratina-backend
+        run: make test-integration
