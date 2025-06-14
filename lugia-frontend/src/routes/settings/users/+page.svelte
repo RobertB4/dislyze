@@ -1,5 +1,14 @@
 <script lang="ts">
-	import { Button, Slideover, Input, toast, Badge, Alert, Spinner, Tooltip } from "@dislyze/zoroark";
+	import {
+		Button,
+		Slideover,
+		Input,
+		toast,
+		Badge,
+		Alert,
+		Spinner,
+		Tooltip
+	} from "@dislyze/zoroark";
 	import Layout from "$components/Layout.svelte";
 	import SettingsTabs from "../SettingsTabs.svelte";
 	import type { PageData } from "./$types";

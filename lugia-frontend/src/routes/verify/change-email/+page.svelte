@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button, Alert } from "@dislyze/zoroark";
-		import type { PageData } from "./$types";
+	import type { PageData } from "./$types";
 	import { goto } from "$app/navigation";
 
 	let { data }: { data: PageData } = $props();
