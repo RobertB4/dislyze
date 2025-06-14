@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: test-postgres-giratina
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: test_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d test_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "15433:5432"
+  mock-sendgrid:
+    image: yudppp/simple-sendgrid-mock-server
+    container_name: mock-sendgrid-giratina
+    ports:
+      - "17001:17001"
+    environment:
+      - SENDGRID_API_KEY=sendgrid
+      - PORT=17001
+  giratina-backend:
+    container_name: giratina-backend-integration
+    build:
+      context: ../..
+      dockerfile: giratina-backend/test/Dockerfile
+    environment:
+      - APP_ENV=test
+      - PORT=14001
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=test_user
+      - DB_PASSWORD=test_password
+      - DB_NAME=test_db
+      - DB_SSL_MODE=disable
+      - JWT_SECRET=test_giratina_jwt_secret_key_for_testing_only
+      - AUTH_RATE_LIMIT=1000
+      - FRONTEND_URL=http://localhost:14000
+      - SENDGRID_API_KEY=sendgrid
+      - SENDGRID_API_URL=http://mock-sendgrid:17001
+      - INITIAL_PW=password
+    ports:
+      - "14001:14001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mock-sendgrid:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:14001/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: ["./main"]

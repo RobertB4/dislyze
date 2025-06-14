@@ -42,19 +42,21 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		}
 	})
 
-	r.Route("/auth", func(r chi.Router) {
-		r.Post("/login", authHandler.Login)
-	})
-
 	r.Route("/api", func(r chi.Router) {
-		r.Group(func(r chi.Router) {
-			r.Use(jirachiAuthMiddleware.Authenticate)
+		r.Route("/auth", func(r chi.Router) {
+			r.Post("/login", authHandler.Login)
+		})
 
-			r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-				if _, err := w.Write([]byte(`{"message": "protected users endpoint"}`)); err != nil {
-					log.Printf("Error writing users response: %v", err)
-				}
+		r.Route("/api", func(r chi.Router) {
+			r.Group(func(r chi.Router) {
+				r.Use(jirachiAuthMiddleware.Authenticate)
+
+				r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusOK)
+					if _, err := w.Write([]byte(`{"message": "protected users endpoint"}`)); err != nil {
+						log.Printf("Error writing users response: %v", err)
+					}
+				})
 			})
 		})
 	})
@@ -73,6 +75,10 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer db.CloseDB(pool)
+
+	if err := db.RunMigrations(pool); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
+	}
 
 	q := queries.New(pool)
 
