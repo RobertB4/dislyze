@@ -18,7 +18,6 @@ export default ts.config(
 			'svelte.config.js',
 			'tailwind.config.js',
 			'playwright.config.js',
-			'vitest-setup-client.ts',
 			'*.config.js',
 			'*.config.ts'
 		],
