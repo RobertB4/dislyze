@@ -94,9 +94,9 @@ func TestGenerateTenantInvitationToken_Integration(t *testing.T) {
 			expectErrorResponse: true,
 		},
 		{
-			name:         "missing email field returns 400",
-			loginUserKey: "internal_1",
-			requestBody:  map[string]any{}, // Empty object
+			name:                "missing email field returns 400",
+			loginUserKey:        "internal_1",
+			requestBody:         map[string]any{}, // Empty object
 			expectedStatus:      http.StatusBadRequest,
 			expectErrorResponse: true,
 		},
@@ -118,7 +118,7 @@ func TestGenerateTenantInvitationToken_Integration(t *testing.T) {
 			name:         "email already exists returns 400",
 			loginUserKey: "internal_1",
 			requestBody: tenants.GenerateTenantInvitationTokenRequest{
-				Email: "internal-admin-1@example.com", // This email exists in seed data
+				Email: "enterprise1@localhost.com",
 			},
 			expectedStatus:      http.StatusBadRequest,
 			expectErrorResponse: true,
