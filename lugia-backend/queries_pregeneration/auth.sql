@@ -19,9 +19,10 @@ INSERT INTO users (
     email,
     password_hash,
     name,
-    status
+    status,
+    is_internal_user
 ) VALUES (
-    $1, $2, $3, $4, $5
+    $1, $2, $3, $4, $5, $6
 ) RETURNING *;
 
 -- name: ExistsUserWithEmail :one

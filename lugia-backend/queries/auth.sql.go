@@ -111,18 +111,20 @@ INSERT INTO users (
     email,
     password_hash,
     name,
-    status
+    status,
+    is_internal_user
 ) VALUES (
-    $1, $2, $3, $4, $5
-) RETURNING id, tenant_id, email, password_hash, name, is_internal_admin, created_at, updated_at, status
+    $1, $2, $3, $4, $5, $6
+) RETURNING id, tenant_id, email, password_hash, name, is_internal_admin, is_internal_user, created_at, updated_at, status
 `
 
 type CreateUserParams struct {
-	TenantID     pgtype.UUID `json:"tenant_id"`
-	Email        string      `json:"email"`
-	PasswordHash string      `json:"password_hash"`
-	Name         string      `json:"name"`
-	Status       string      `json:"status"`
+	TenantID       pgtype.UUID `json:"tenant_id"`
+	Email          string      `json:"email"`
+	PasswordHash   string      `json:"password_hash"`
+	Name           string      `json:"name"`
+	Status         string      `json:"status"`
+	IsInternalUser bool        `json:"is_internal_user"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error) {
@@ -132,6 +134,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User,
 		arg.PasswordHash,
 		arg.Name,
 		arg.Status,
+		arg.IsInternalUser,
 	)
 	var i User
 	err := row.Scan(
@@ -141,6 +144,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User,
 		&i.PasswordHash,
 		&i.Name,
 		&i.IsInternalAdmin,
+		&i.IsInternalUser,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,
@@ -234,7 +238,7 @@ func (q *Queries) GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, e
 }
 
 const GetUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, tenant_id, email, password_hash, name, is_internal_admin, created_at, updated_at, status FROM users
+SELECT id, tenant_id, email, password_hash, name, is_internal_admin, is_internal_user, created_at, updated_at, status FROM users
 WHERE email = $1
 `
 
@@ -248,6 +252,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 		&i.PasswordHash,
 		&i.Name,
 		&i.IsInternalAdmin,
+		&i.IsInternalUser,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,
@@ -256,7 +261,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 }
 
 const GetUserByID = `-- name: GetUserByID :one
-SELECT id, tenant_id, email, password_hash, name, is_internal_admin, created_at, updated_at, status FROM users
+SELECT id, tenant_id, email, password_hash, name, is_internal_admin, is_internal_user, created_at, updated_at, status FROM users
 WHERE id = $1
 `
 
@@ -270,6 +275,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error
 		&i.PasswordHash,
 		&i.Name,
 		&i.IsInternalAdmin,
+		&i.IsInternalUser,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,

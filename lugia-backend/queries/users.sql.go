@@ -53,6 +53,7 @@ const CountUsersByTenantID = `-- name: CountUsersByTenantID :one
 SELECT COUNT(*)
 FROM users
 WHERE tenant_id = $1 
+AND is_internal_user = false
 AND (
     $2 = '' OR 
     name ILIKE '%' || $2 || '%' OR 
@@ -327,6 +328,7 @@ WITH paginated_users AS (
     SELECT users.id
     FROM users
     WHERE users.tenant_id = $1
+    AND users.is_internal_user = false
     AND (
         $2 = '' OR 
         users.name ILIKE '%' || $2 || '%' OR 

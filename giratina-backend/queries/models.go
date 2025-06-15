@@ -91,6 +91,7 @@ type User struct {
 	PasswordHash    string             `json:"password_hash"`
 	Name            string             `json:"name"`
 	IsInternalAdmin bool               `json:"is_internal_admin"`
+	IsInternalUser  bool               `json:"is_internal_user"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 	Status          string             `json:"status"`

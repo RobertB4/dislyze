@@ -38,6 +38,7 @@ type Env struct {
 	CreateTenantJwtSecret string
 	FrontendURL           string
 	InitialPW             string
+	InternalUserPW        string
 	SendgridAPIKey        string
 	SendgridAPIUrl        string
 }
@@ -66,6 +67,7 @@ func LoadEnv() (*Env, error) {
 		"CREATE_TENANT_JWT_SECRET": &env.CreateTenantJwtSecret,
 		"FRONTEND_URL":             &env.FrontendURL,
 		"INITIAL_PW":               &env.InitialPW,
+		"INTERNAL_USER_PW":         &env.InternalUserPW,
 		"SENDGRID_API_KEY":         &env.SendgridAPIKey,
 		"SENDGRID_API_URL":         &env.SendgridAPIUrl,
 	}

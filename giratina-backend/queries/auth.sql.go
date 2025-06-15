@@ -77,7 +77,7 @@ func (q *Queries) GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUI
 }
 
 const GetUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, tenant_id, email, password_hash, name, is_internal_admin, created_at, updated_at, status FROM users
+SELECT id, tenant_id, email, password_hash, name, is_internal_admin, is_internal_user, created_at, updated_at, status FROM users
 WHERE email = $1
 `
 
@@ -91,6 +91,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 		&i.PasswordHash,
 		&i.Name,
 		&i.IsInternalAdmin,
+		&i.IsInternalUser,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,
@@ -99,7 +100,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 }
 
 const GetUserByID = `-- name: GetUserByID :one
-SELECT id, tenant_id, email, password_hash, name, is_internal_admin, created_at, updated_at, status FROM users
+SELECT id, tenant_id, email, password_hash, name, is_internal_admin, is_internal_user, created_at, updated_at, status FROM users
 WHERE id = $1
 `
 
@@ -113,6 +114,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error
 		&i.PasswordHash,
 		&i.Name,
 		&i.IsInternalAdmin,
+		&i.IsInternalUser,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,

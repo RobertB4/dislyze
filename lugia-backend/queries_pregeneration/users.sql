@@ -2,6 +2,7 @@
 SELECT COUNT(*)
 FROM users
 WHERE tenant_id = $1 
+AND is_internal_user = false
 AND (
     $2 = '' OR 
     name ILIKE '%' || $2 || '%' OR 
@@ -123,6 +124,7 @@ WITH paginated_users AS (
     SELECT users.id
     FROM users
     WHERE users.tenant_id = @tenant_id
+    AND users.is_internal_user = false
     AND (
         @search_term = '' OR 
         users.name ILIKE '%' || @search_term || '%' OR 

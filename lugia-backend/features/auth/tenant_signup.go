@@ -164,6 +164,11 @@ func (h *AuthHandler) tenantSignup(ctx context.Context, req *TenantSignupRequest
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
+	internalUserHashedPassword, err := bcrypt.GenerateFromPassword([]byte(h.env.InternalUserPW), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start transaction: %w", err)
@@ -182,14 +187,27 @@ func (h *AuthHandler) tenantSignup(ctx context.Context, req *TenantSignupRequest
 	}
 
 	user, err := qtx.CreateUser(ctx, &queries.CreateUserParams{
-		TenantID:     tenant.ID,
-		Email:        claims.Email,
-		PasswordHash: string(hashedPassword),
-		Name:         req.UserName,
-		Status:       "active",
+		TenantID:       tenant.ID,
+		Email:          claims.Email,
+		PasswordHash:   string(hashedPassword),
+		Name:           req.UserName,
+		Status:         "active",
+		IsInternalUser: false,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	_, err = qtx.CreateUser(ctx, &queries.CreateUserParams{
+		TenantID:       tenant.ID,
+		Email:          fmt.Sprintf("%s@internal.com", tenant.ID),
+		PasswordHash:   string(internalUserHashedPassword),
+		Name:           "内部ユーザー",
+		Status:         "active",
+		IsInternalUser: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create internal user %w", err)
 	}
 
 	err = h.setupDefaultRoles(ctx, qtx, tenant.ID, user.ID)
