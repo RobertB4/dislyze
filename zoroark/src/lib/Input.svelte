@@ -31,7 +31,7 @@
 		default:
 			"appearance-none rounded-md relative block w-full px-3 py-2 border text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm",
 		underlined:
-			"appearance-none bg-transparent block w-full px-1 py-2 border-0 border-b-2 text-gray-900 focus:outline-none focus:ring-0 sm:text-sm" // Base for underlined
+			"appearance-none bg-transparent block w-full px-1 py-2 border-x-0 border-t-0 border-b-2 text-gray-900 focus:outline-none focus:ring-0 sm:text-sm"
 	};
 
 	const stateStyles = {

@@ -1,12 +1,86 @@
 <script lang="ts">
 	import Layout from "$components/Layout.svelte";
-	import { Badge, Tooltip } from "@dislyze/zoroark";
+	import { Badge, Tooltip, Slideover, Input, InteractivePill, toast } from "@dislyze/zoroark";
 	import type { PageData } from "./$types";
+	import { createForm } from "felte";
+	import { invalidate } from "$app/navigation";
+	import { mutationFetch } from "$lib/fetch";
+	import type { Tenant } from "./+page";
+	import { Button, type EnterpriseFeatures } from "@dislyze/zoroark";
 
 	let { data: pageData }: { data: PageData } = $props();
 
 	const featureKeyToLabelMap: Record<string, string> = {
 		rbac: "権限設定"
+	};
+
+	interface UpdateTenantRequestBody {
+		name: string;
+		enterprise_features: EnterpriseFeatures;
+	}
+
+	let editingTenant = $state<Tenant | null>(null);
+
+	const {
+		form: editForm,
+		data: editData,
+		errors: editErrors,
+		isSubmitting: editIsSubmitting,
+		reset: editReset,
+		setInitialValues: setEditFormInitialValues
+	} = createForm({
+		initialValues: {
+			name: "",
+			rbac_enabled: false
+		},
+		validate: (values) => {
+			const errs: Record<string, string> = {};
+			values.name = values.name.trim();
+
+			if (!values.name) {
+				errs.name = "テナント名は必須です";
+			}
+
+			return errs;
+		},
+		onSubmit: async (values) => {
+			if (!editingTenant) return;
+
+			const requestBody: UpdateTenantRequestBody = {
+				name: values.name,
+				enterprise_features: {
+					rbac: { enabled: values.rbac_enabled }
+				}
+			};
+
+			const { success } = await mutationFetch(`/api/tenants/${editingTenant.id}/update`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify(requestBody)
+			});
+
+			if (success) {
+				await invalidate((u) => u.pathname === "/api/tenants");
+				editReset();
+				toast.show("テナントを更新しました。", "success");
+				editingTenant = null;
+			}
+		}
+	});
+
+	const handleEditTenant = (tenant: Tenant) => {
+		setEditFormInitialValues({
+			name: tenant.name,
+			rbac_enabled: tenant.enterprise_features.rbac.enabled
+		});
+		editingTenant = tenant;
+	};
+
+	const handleEditClose = () => {
+		editingTenant = null;
+		editReset();
 	};
 </script>
 
@@ -46,6 +120,61 @@
 	{#snippet children({ tenantsResponse })}
 		{@const { tenants } = tenantsResponse}
 
+		{#if editingTenant}
+			<form use:editForm class="space-y-6 p-1 flex flex-col h-full" data-testid="edit-tenant-form">
+				<Slideover
+					title="テナントを編集"
+					primaryButtonText="更新"
+					primaryButtonTypeSubmit={true}
+					onClose={handleEditClose}
+					loading={$editIsSubmitting}
+					data-testid="edit-tenant-slideover"
+				>
+					<div class="flex-grow space-y-6">
+						<Input
+							id="edit-tenant-name"
+							name="name"
+							type="text"
+							label="テナント名"
+							bind:value={$editData.name}
+							error={$editErrors.name?.[0]}
+							required
+							placeholder="テナント名を入力"
+							variant="underlined"
+						/>
+
+						<div class="space-y-4">
+							<h3 class="text-sm font-medium text-gray-700">エンタープライズ機能</h3>
+
+							<div class="border border-gray-200 rounded-lg p-4">
+								<div class="flex items-center justify-between">
+									<h4 class="text-sm font-medium text-gray-900">権限設定 (RBAC)</h4>
+									<div class="flex gap-2">
+										<InteractivePill
+											selected={!$editData.rbac_enabled}
+											onclick={() => ($editData.rbac_enabled = false)}
+											variant="orange"
+											data-testid="rbac-disabled"
+										>
+											無効
+										</InteractivePill>
+										<InteractivePill
+											selected={$editData.rbac_enabled}
+											onclick={() => ($editData.rbac_enabled = true)}
+											variant="orange"
+											data-testid="rbac-enabled"
+										>
+											有効
+										</InteractivePill>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</Slideover>
+			</form>
+		{/if}
+
 		<div class="mt-8 flow-root">
 			{#if tenants.length === 0}
 				<div class="text-center py-12" data-testid="no-tenants-message">
@@ -78,6 +207,13 @@
 											class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
 											data-testid="tenant-table-header-features">エンタープライズ機能</th
 										>
+										<th
+											scope="col"
+											class="relative py-3.5 pl-3 pr-4 sm:pr-6"
+											data-testid="tenant-table-header-actions"
+										>
+											<span class="sr-only">操作</span>
+										</th>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-gray-200 bg-white" data-testid="tenants-table-body">
@@ -150,6 +286,19 @@
 														{/if}
 													</div>
 												{/if}
+											</td>
+											<td
+												class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6"
+												data-testid={`tenant-actions-${tenant.id}`}
+											>
+												<Button
+													type="button"
+													variant="link"
+													onclick={() => handleEditTenant(tenant)}
+													data-testid={`edit-tenant-button-${tenant.id}`}
+												>
+													編集
+												</Button>
 											</td>
 										</tr>
 									{/each}

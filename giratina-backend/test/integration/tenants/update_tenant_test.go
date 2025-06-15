@@ -36,7 +36,6 @@ func TestUpdateTenant_Integration(t *testing.T) {
 		requestBody         any // Can be UpdateTenantRequestBody or raw string/nil
 		expectedStatus      int
 		expectErrorResponse bool
-		validateResponse    func(t *testing.T, body []byte)
 	}{
 		// Security - Authentication & Authorization
 		{
@@ -54,12 +53,6 @@ func TestUpdateTenant_Integration(t *testing.T) {
 			tenantID:       validTenantID,
 			requestBody:    validUpdateRequest,
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, body []byte) {
-				var response tenants.UpdateTenantResponse
-				err := json.Unmarshal(body, &response)
-				assert.NoError(t, err)
-				assert.Equal(t, "Tenant updated successfully", response.Message)
-			},
 		},
 		{
 			name:           "internal admin 2 succeeds",
@@ -67,12 +60,6 @@ func TestUpdateTenant_Integration(t *testing.T) {
 			tenantID:       validTenantID,
 			requestBody:    validUpdateRequest,
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, body []byte) {
-				var response tenants.UpdateTenantResponse
-				err := json.Unmarshal(body, &response)
-				assert.NoError(t, err)
-				assert.Equal(t, "Tenant updated successfully", response.Message)
-			},
 		},
 
 		// Security - Data Access Control
@@ -82,12 +69,6 @@ func TestUpdateTenant_Integration(t *testing.T) {
 			tenantID:     "99999999-9999-9999-9999-999999999999",
 			requestBody:  validUpdateRequest,
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, body []byte) {
-				var response tenants.UpdateTenantResponse
-				err := json.Unmarshal(body, &response)
-				assert.NoError(t, err)
-				assert.Equal(t, "Tenant updated successfully", response.Message)
-			},
 		},
 
 		// Edge Cases - Request Format
@@ -155,12 +136,6 @@ func TestUpdateTenant_Integration(t *testing.T) {
 				"name": "テストテナント",
 			},
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, body []byte) {
-				var response tenants.UpdateTenantResponse
-				err := json.Unmarshal(body, &response)
-				assert.NoError(t, err)
-				assert.Equal(t, "Tenant updated successfully", response.Message)
-			},
 		},
 
 		// Edge Cases - Enterprise Features Validation
@@ -187,12 +162,6 @@ func TestUpdateTenant_Integration(t *testing.T) {
 				},
 			},
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, body []byte) {
-				var response tenants.UpdateTenantResponse
-				err := json.Unmarshal(body, &response)
-				assert.NoError(t, err)
-				assert.Equal(t, "Tenant updated successfully", response.Message)
-			},
 		},
 		{
 			name:         "invalid rbac structure succeeds (missing fields ignored)",
@@ -205,12 +174,6 @@ func TestUpdateTenant_Integration(t *testing.T) {
 				},
 			},
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, body []byte) {
-				var response tenants.UpdateTenantResponse
-				err := json.Unmarshal(body, &response)
-				assert.NoError(t, err)
-				assert.Equal(t, "Tenant updated successfully", response.Message)
-			},
 		},
 		{
 			name:         "invalid rbac.enabled type (non-boolean) returns 400",
@@ -239,12 +202,6 @@ func TestUpdateTenant_Integration(t *testing.T) {
 				},
 			},
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, body []byte) {
-				var response tenants.UpdateTenantResponse
-				err := json.Unmarshal(body, &response)
-				assert.NoError(t, err)
-				assert.Equal(t, "Tenant updated successfully", response.Message)
-			},
 		},
 
 		// Edge Cases - URL Parameters
@@ -277,12 +234,6 @@ func TestUpdateTenant_Integration(t *testing.T) {
 				},
 			},
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, body []byte) {
-				var response tenants.UpdateTenantResponse
-				err := json.Unmarshal(body, &response)
-				assert.NoError(t, err)
-				assert.Equal(t, "Tenant updated successfully", response.Message)
-			},
 		},
 		{
 			name:         "valid update with rbac disabled",
@@ -295,12 +246,6 @@ func TestUpdateTenant_Integration(t *testing.T) {
 				},
 			},
 			expectedStatus: http.StatusOK,
-			validateResponse: func(t *testing.T, body []byte) {
-				var response tenants.UpdateTenantResponse
-				err := json.Unmarshal(body, &response)
-				assert.NoError(t, err)
-				assert.Equal(t, "Tenant updated successfully", response.Message)
-			},
 		},
 	}
 
@@ -358,12 +303,10 @@ func TestUpdateTenant_Integration(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
-			bodyBytes, err := io.ReadAll(resp.Body)
-			assert.NoError(t, err)
-
-			if tt.validateResponse != nil {
-				tt.validateResponse(t, bodyBytes)
-			} else if tt.expectErrorResponse {
+			// For error responses, log the response body for debugging
+			if tt.expectErrorResponse {
+				bodyBytes, err := io.ReadAll(resp.Body)
+				assert.NoError(t, err)
 				t.Logf("Received error response body for %s: %s", tt.name, string(bodyBytes))
 			}
 		})
@@ -498,12 +441,4 @@ func TestUpdateTenant_ExistingTenantFromSeedData(t *testing.T) {
 	}()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	assert.NoError(t, err)
-
-	var response tenants.UpdateTenantResponse
-	err = json.Unmarshal(bodyBytes, &response)
-	assert.NoError(t, err)
-	assert.Equal(t, "Tenant updated successfully", response.Message)
 }

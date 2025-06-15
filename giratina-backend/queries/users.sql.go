@@ -12,7 +12,7 @@ import (
 )
 
 const GetTenants = `-- name: GetTenants :many
-select id, name, enterprise_features, stripe_customer_id, created_at, updated_at from tenants
+SELECT id, name, enterprise_features, stripe_customer_id, created_at, updated_at FROM tenants ORDER BY created_at ASC
 `
 
 func (q *Queries) GetTenants(ctx context.Context) ([]*Tenant, error) {

@@ -1,5 +1,5 @@
 -- name: GetTenants :many
-select * from tenants;
+SELECT * FROM tenants ORDER BY created_at ASC;
 
 -- name: GetUserPermissions :many
 SELECT permissions.resource, permissions.action

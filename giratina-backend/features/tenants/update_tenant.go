@@ -65,11 +65,7 @@ func (h *TenantsHandler) UpdateTenant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := UpdateTenantResponse{
-		Message: "Tenant updated successfully",
-	}
-
-	responder.RespondWithJSON(w, http.StatusOK, response)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *TenantsHandler) updateTenant(ctx context.Context, tenantID *pgtype.UUID, requestBody *UpdateTenantRequestBody) error {
