@@ -172,6 +172,7 @@ INSERT INTO users (id, tenant_id, email, password_hash, name, status, is_interna
 -- Assign user roles
 INSERT INTO user_roles (user_id, role_id, tenant_id) VALUES
 -- Enterprise tenant role assignments
+('a0000000-0000-0000-0000-000000000000', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111'), --  内部ユーザー: 管理者
 ('a0000000-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111'), -- user 1: 管理者
 ('a0000000-0000-0000-0000-000000000002', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '11111111-1111-1111-1111-111111111111'), -- user 2: 編集者
 ('a0000000-0000-0000-0000-000000000003', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '11111111-1111-1111-1111-111111111111'), -- user 3: 編集者
@@ -275,6 +276,7 @@ INSERT INTO user_roles (user_id, role_id, tenant_id) VALUES
 ('a0000000-0000-0000-0000-000000000101', 'cccccccc-cccc-cccc-cccc-cccccccccccc', '11111111-1111-1111-1111-111111111111'), -- user 101: 閲覧者
 
 -- SMB tenant role assignments
+('b0000000-0000-0000-0000-000000000000', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '22222222-2222-2222-2222-222222222222'), -- 内部ユーザー: 管理者
 ('b0000000-0000-0000-0000-000000000001', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '22222222-2222-2222-2222-222222222222'), -- user 1: 管理者
 ('b0000000-0000-0000-0000-000000000002', 'ffffffff-ffff-ffff-ffff-ffffffffffff', '22222222-2222-2222-2222-222222222222'), -- user 2: 編集者
 ('b0000000-0000-0000-0000-000000000003', 'ffffffff-ffff-ffff-ffff-ffffffffffff', '22222222-2222-2222-2222-222222222222'), -- user 3: 編集者
@@ -287,6 +289,7 @@ INSERT INTO user_roles (user_id, role_id, tenant_id) VALUES
 ('b0000000-0000-0000-0000-000000000010', '11111111-2222-3333-4444-555555555555', '22222222-2222-2222-2222-222222222222'), -- user 10: 閲覧者
 
 -- Internal tenant role assignments
+('c0000000-0000-0000-0000-000000000000', '22222222-3333-4444-5555-666666666666', '33333333-3333-3333-3333-333333333333'), -- 内部ユーザー: 管理者
 ('c0000000-0000-0000-0000-000000000001', '22222222-3333-4444-5555-666666666666', '33333333-3333-3333-3333-333333333333'), -- user 1: 管理者
 ('c0000000-0000-0000-0000-000000000002', '33333333-4444-5555-6666-777777777777', '33333333-3333-3333-3333-333333333333'); -- user 2: 編集者
 

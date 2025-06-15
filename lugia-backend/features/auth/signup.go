@@ -152,7 +152,7 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequestBody, r *htt
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	err = h.setupDefaultRoles(ctx, qtx, tenant.ID, user.ID)
+	_, err = h.setupDefaultRoles(ctx, qtx, tenant.ID, user.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup default roles: %w", err)
 	}
@@ -180,10 +180,10 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequestBody, r *htt
 	return tokenPair, nil
 }
 
-func (h *AuthHandler) setupDefaultRoles(ctx context.Context, qtx *queries.Queries, tenantID pgtype.UUID, userID pgtype.UUID) error {
+func (h *AuthHandler) setupDefaultRoles(ctx context.Context, qtx *queries.Queries, tenantID pgtype.UUID, userID pgtype.UUID) (pgtype.UUID, error) {
 	permissions, err := qtx.GetAllPermissions(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get permissions: %w", err)
+		return pgtype.UUID{}, fmt.Errorf("failed to get permissions: %w", err)
 	}
 
 	adminRole, err := qtx.CreateRole(ctx, &queries.CreateRoleParams{
@@ -193,7 +193,7 @@ func (h *AuthHandler) setupDefaultRoles(ctx context.Context, qtx *queries.Querie
 		IsDefault:   true,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create admin role: %w", err)
+		return pgtype.UUID{}, fmt.Errorf("failed to create admin role: %w", err)
 	}
 
 	var permissionIDs []pgtype.UUID
@@ -209,7 +209,7 @@ func (h *AuthHandler) setupDefaultRoles(ctx context.Context, qtx *queries.Querie
 		TenantID:      tenantID,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to assign permissions to admin role: %w", err)
+		return pgtype.UUID{}, fmt.Errorf("failed to assign permissions to admin role: %w", err)
 	}
 
 	_, err = qtx.CreateRole(ctx, &queries.CreateRoleParams{
@@ -219,7 +219,7 @@ func (h *AuthHandler) setupDefaultRoles(ctx context.Context, qtx *queries.Querie
 		IsDefault:   true,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create editor role: %w", err)
+		return pgtype.UUID{}, fmt.Errorf("failed to create editor role: %w", err)
 	}
 
 	_, err = qtx.CreateRole(ctx, &queries.CreateRoleParams{
@@ -229,7 +229,7 @@ func (h *AuthHandler) setupDefaultRoles(ctx context.Context, qtx *queries.Querie
 		IsDefault:   true,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create editor role: %w", err)
+		return pgtype.UUID{}, fmt.Errorf("failed to create editor role: %w", err)
 	}
 
 	err = qtx.AssignRoleToUser(ctx, &queries.AssignRoleToUserParams{
@@ -238,8 +238,8 @@ func (h *AuthHandler) setupDefaultRoles(ctx context.Context, qtx *queries.Querie
 		TenantID: tenantID,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to assign admin role to user: %w", err)
+		return pgtype.UUID{}, fmt.Errorf("failed to assign admin role to user: %w", err)
 	}
 
-	return nil
+	return adminRole.ID, nil
 }

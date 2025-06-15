@@ -67,7 +67,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 			r.Route("/tenants", func(r chi.Router) {
 				r.Get("/", tenantsHandler.GetTenants)
 				r.Post("/{id}/update", tenantsHandler.UpdateTenant)
-				r.Post("/{tenantID}/login", tenantsHandler.LogInToTenant)
+				r.Get("/{tenantID}/login", tenantsHandler.LogInToTenant)
 				r.Post("/generate-token", tenantsHandler.GenerateTenantInvitationToken)
 			})
 

@@ -32,6 +32,7 @@
 
 	let isInviteSlideoverOpen = $state(false);
 	let generatedInviteUrl = $state<string | null>(null);
+	let loginTenant = $state<Tenant | null>(null);
 
 	const {
 		form: editForm,
@@ -164,6 +165,44 @@
 				toast.show("コピーに失敗しました。", "error");
 			}
 		}
+	};
+
+	const {
+		form: loginForm,
+		data: loginData,
+		errors: loginErrors,
+		isSubmitting: loginIsSubmitting,
+		reset: loginReset
+	} = createForm({
+		initialValues: {
+			tenant_name: ""
+		},
+		validate: (values) => {
+			const errs: Record<string, string> = {};
+			values.tenant_name = values.tenant_name.trim();
+
+			if (values.tenant_name !== loginTenant?.name) {
+				errs.tenant_name = "正しいテナント名を入力してください";
+			}
+
+			return errs;
+		},
+		onSubmit: () => {
+			if (!loginTenant) return;
+
+			// Navigate directly to the endpoint - server will set cookies and redirect
+			window.location.href = `/api/tenants/${loginTenant.id}/login`;
+		}
+	});
+
+	const handleLoginOpen = (tenant: Tenant) => {
+		loginTenant = tenant;
+		loginReset();
+	};
+
+	const handleLoginClose = () => {
+		loginTenant = null;
+		loginReset();
 	};
 </script>
 
@@ -358,6 +397,55 @@
 			</form>
 		{/if}
 
+		{#if loginTenant}
+			<form
+				use:loginForm
+				class="space-y-6 p-1 flex flex-col h-full"
+				data-testid="login-tenant-form"
+			>
+				<Slideover
+					title={`${loginTenant.name}にログイン`}
+					primaryButtonText="ログイン"
+					primaryButtonTypeSubmit={true}
+					onClose={handleLoginClose}
+					loading={$loginIsSubmitting}
+					data-testid="login-tenant-slideover"
+				>
+					<div class="flex-grow space-y-6">
+						<Alert type="warning" title="注意" data-testid="login-security-alert">
+							<p>この操作により、お客様のテナントにログインします。</p>
+						</Alert>
+
+						<div class="space-y-2">
+							<p class="text-sm text-gray-600">
+								<strong>ログイン先テナント:</strong>
+								{loginTenant.name}
+							</p>
+							<p class="text-sm text-gray-500 font-mono">
+								ID: {loginTenant.id}
+							</p>
+						</div>
+
+						<div class="p-3 bg-blue-50 border border-blue-200 rounded-md">
+							<p class="text-sm text-blue-800">上記のテナント名を正確に入力してください。</p>
+						</div>
+
+						<Input
+							id="login-tenant-name"
+							name="tenant_name"
+							type="text"
+							label="確認のためテナント名を入力してください"
+							bind:value={$loginData.tenant_name}
+							error={$loginErrors.tenant_name?.[0]}
+							required
+							placeholder={loginTenant.name}
+							variant="underlined"
+						/>
+					</div>
+				</Slideover>
+			</form>
+		{/if}
+
 		<div class="mt-8 flow-root">
 			{#if tenants.length === 0}
 				<div class="text-center py-12" data-testid="no-tenants-message">
@@ -474,14 +562,24 @@
 												class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6"
 												data-testid={`tenant-actions-${tenant.id}`}
 											>
-												<Button
-													type="button"
-													variant="link"
-													onclick={() => handleEditTenant(tenant)}
-													data-testid={`edit-tenant-button-${tenant.id}`}
-												>
-													編集
-												</Button>
+												<div class="flex items-center justify-end space-x-2">
+													<Button
+														type="button"
+														variant="link"
+														onclick={() => handleEditTenant(tenant)}
+														data-testid={`edit-tenant-button-${tenant.id}`}
+													>
+														編集
+													</Button>
+													<Button
+														type="button"
+														variant="link"
+														onclick={() => handleLoginOpen(tenant)}
+														data-testid={`login-tenant-button-${tenant.id}`}
+													>
+														ログイン
+													</Button>
+												</div>
 											</td>
 										</tr>
 									{/each}

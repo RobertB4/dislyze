@@ -15,7 +15,11 @@ func TestLogInToTenant_Integration(t *testing.T) {
 	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
-	client := &http.Client{}
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse // Don't follow redirects automatically
+		},
+	}
 
 	tests := []struct {
 		name           string
@@ -29,14 +33,14 @@ func TestLogInToTenant_Integration(t *testing.T) {
 			name:           "internal_1 logs into enterprise tenant",
 			loginUserKey:   "internal_1",
 			tenantID:       "11111111-1111-1111-1111-111111111111", // Enterprise tenant
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusFound, // 302 redirect
 			expectCookies:  true,
 		},
 		{
 			name:           "internal_2 logs into SMB tenant",
 			loginUserKey:   "internal_2",
 			tenantID:       "22222222-2222-2222-2222-222222222222", // SMB tenant
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusFound, // 302 redirect
 			expectCookies:  true,
 		},
 
@@ -85,7 +89,7 @@ func TestLogInToTenant_Integration(t *testing.T) {
 			}
 
 			// Make request to tenant login endpoint
-			req, err := http.NewRequest("POST", fmt.Sprintf("%s/tenants/%s/login", setup.BaseURL, tt.tenantID), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("%s/tenants/%s/login", setup.BaseURL, tt.tenantID), nil)
 			assert.NoError(t, err)
 
 			// Add cookies if we have them
@@ -107,9 +111,6 @@ func TestLogInToTenant_Integration(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
 			if tt.expectCookies {
-				// Verify success response
-				assert.Equal(t, http.StatusOK, resp.StatusCode)
-
 				// Verify cookies are set
 				responseCookies := resp.Cookies()
 				var accessTokenFound, refreshTokenFound bool
@@ -157,7 +158,11 @@ func TestLogInToTenant_EmptyTenantID_Integration(t *testing.T) {
 	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
-	client := &http.Client{}
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse // Don't follow redirects automatically
+		},
+	}
 
 	// Login as employee
 	currentUserDetails := setup.TestUsersData["internal_1"]
@@ -168,7 +173,7 @@ func TestLogInToTenant_EmptyTenantID_Integration(t *testing.T) {
 	}
 
 	// Make request with empty tenant ID (this should hit the route parameter validation)
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/tenants//login", setup.BaseURL), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/tenants//login", setup.BaseURL), nil)
 	assert.NoError(t, err)
 
 	for _, cookie := range cookies {
@@ -192,7 +197,11 @@ func TestLogInToTenant_InvalidJWT_Integration(t *testing.T) {
 	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
 
-	client := &http.Client{}
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse // Don't follow redirects automatically
+		},
+	}
 
 	tests := []struct {
 		name        string
@@ -218,7 +227,7 @@ func TestLogInToTenant_InvalidJWT_Integration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, err := http.NewRequest("POST", fmt.Sprintf("%s/tenants/%s/login", setup.BaseURL, tt.tenantID), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("%s/tenants/%s/login", setup.BaseURL, tt.tenantID), nil)
 			assert.NoError(t, err)
 
 			if tt.accessToken != "" {

@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"dislyze/jirachi/errlib"
@@ -17,6 +19,30 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+func (h *TenantsHandler) getCookieDomain() string {
+	if h.env.LugiaFrontendUrl == "" {
+		return ""
+	}
+
+	parsedURL, err := url.Parse(h.env.LugiaFrontendUrl)
+	if err != nil {
+		return ""
+	}
+
+	host := parsedURL.Hostname()
+
+	if host == "localhost" || host == "127.0.0.1" {
+		return ""
+	}
+
+	parts := strings.Split(host, ".")
+	if len(parts) >= 2 {
+		return "." + strings.Join(parts[len(parts)-2:], ".")
+	}
+
+	return ""
+}
 
 func (h *TenantsHandler) LogInToTenant(w http.ResponseWriter, r *http.Request) {
 	tenantIDStr := chi.URLParam(r, "tenantID")
@@ -50,9 +76,12 @@ func (h *TenantsHandler) LogInToTenant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cookieDomain := h.getCookieDomain()
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "dislyze_access_token",
 		Value:    tokenPair.AccessToken,
+		Domain:   cookieDomain,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   h.env.IsCookieSecure(),
@@ -63,6 +92,7 @@ func (h *TenantsHandler) LogInToTenant(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "dislyze_refresh_token",
 		Value:    tokenPair.RefreshToken,
+		Domain:   cookieDomain,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   h.env.IsCookieSecure(),
@@ -80,7 +110,7 @@ func (h *TenantsHandler) LogInToTenant(w http.ResponseWriter, r *http.Request) {
 		Success:   true,
 	})
 
-	w.WriteHeader(http.StatusOK)
+	http.Redirect(w, r, h.env.LugiaFrontendUrl, http.StatusFound)
 }
 
 func (h *TenantsHandler) logInToTenant(ctx context.Context, tenantID pgtype.UUID, r *http.Request) (*jwt.TokenPair, string, error) {
@@ -116,7 +146,7 @@ func (h *TenantsHandler) logInToTenant(ctx context.Context, tenantID pgtype.UUID
 		}
 	}
 
-	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenantID, []byte(h.env.JWTSecret))
+	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenantID, []byte(h.env.LugiaJWTSecret))
 	if err != nil {
 		return nil, user.ID.String(), fmt.Errorf("failed to generate token pair: %w", err)
 	}

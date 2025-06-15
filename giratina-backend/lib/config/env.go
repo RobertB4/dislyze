@@ -34,6 +34,7 @@ type Env struct {
 	DBName                string
 	DBSSLMode             string
 	JWTSecret             string
+	LugiaJWTSecret        string
 	AuthRateLimit         string
 	CreateTenantJwtSecret string
 	FrontendURL           string
@@ -60,6 +61,7 @@ func LoadEnv() (*Env, error) {
 		"DB_NAME":                  &env.DBName,
 		"DB_SSL_MODE":              &env.DBSSLMode,
 		"JWT_SECRET":               &env.JWTSecret,
+		"LUGIA_JWT_SECRET":         &env.LugiaJWTSecret,
 		"AUTH_RATE_LIMIT":          &env.AuthRateLimit,
 		"CREATE_TENANT_JWT_SECRET": &env.CreateTenantJwtSecret,
 		"FRONTEND_URL":             &env.FrontendURL,

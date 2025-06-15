@@ -36,6 +36,7 @@ services:
       - DB_NAME=test_db
       - DB_SSL_MODE=disable
       - JWT_SECRET=test_giratina_jwt_secret_key_for_testing_only
+      - LUGIA_JWT_SECRET=test_lugia_jwt_secret_key_for_testing_only
       - AUTH_RATE_LIMIT=1000
       - CREATE_TENANT_JWT_SECRET=test_create_tenant_jwt_secret_for_testing_only
       - FRONTEND_URL=http://localhost:14000
