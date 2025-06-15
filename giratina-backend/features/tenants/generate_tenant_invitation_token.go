@@ -1,16 +1,33 @@
 package tenants
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
+	"dislyze/jirachi/errlib"
+	"dislyze/jirachi/responder"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5"
 )
 
 type GenerateTenantInvitationTokenRequest struct {
 	Email string `json:"email"`
+}
+
+func (r *GenerateTenantInvitationTokenRequest) Validate() error {
+	r.Email = strings.TrimSpace(r.Email)
+
+	if r.Email == "" {
+		return fmt.Errorf("email is required")
+	}
+	if !strings.Contains(r.Email, "@") {
+		return fmt.Errorf("valid email is required")
+	}
+	return nil
 }
 
 type GenerateTenantInvitationTokenResponse struct {
@@ -26,14 +43,44 @@ func (h *TenantsHandler) GenerateTenantInvitationToken(w http.ResponseWriter, r 
 	var req GenerateTenantInvitationTokenRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		appErr := errlib.New(err, http.StatusBadRequest, "Invalid request body")
+		responder.RespondWithError(w, appErr)
 		return
 	}
 
-	// Validate email is not empty
-	if req.Email == "" {
-		w.WriteHeader(http.StatusBadRequest)
+	if err := req.Validate(); err != nil {
+		appErr := errlib.New(err, http.StatusBadRequest, "")
+		responder.RespondWithError(w, appErr)
 		return
+	}
+
+	response, err := h.generateTenantInvitationToken(r.Context(), &req)
+	if err != nil {
+		appErr := errlib.New(err, http.StatusBadRequest, err.Error())
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		appErr := errlib.New(err, http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+}
+
+func (h *TenantsHandler) generateTenantInvitationToken(ctx context.Context, req *GenerateTenantInvitationTokenRequest) (*GenerateTenantInvitationTokenResponse, error) {
+	// Check if user already exists with this email
+	_, err := h.queries.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		if !errlib.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("failed to check user existence: %w", err)
+		}
+		// ErrNoRows means user doesn't exist, which is what we want - continue
+	} else {
+		// User exists with this email
+		return nil, fmt.Errorf("このメールアドレスは既に使用されています。")
 	}
 
 	// Create JWT claims with email and 48 hour expiration
@@ -50,20 +97,14 @@ func (h *TenantsHandler) GenerateTenantInvitationToken(w http.ResponseWriter, r 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(h.env.CreateTenantJwtSecret))
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, fmt.Errorf("failed to sign JWT token: %w", err)
 	}
 
 	// Create response URL
 	url := fmt.Sprintf("%s/signup?token=%s", h.env.FrontendURL, tokenString)
-	response := GenerateTenantInvitationTokenResponse{
+	response := &GenerateTenantInvitationTokenResponse{
 		URL: url,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	return response, nil
 }

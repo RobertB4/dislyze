@@ -114,6 +114,15 @@ func TestGenerateTenantInvitationToken_Integration(t *testing.T) {
 			expectedStatus:      http.StatusBadRequest,
 			expectErrorResponse: true,
 		},
+		{
+			name:         "email already exists returns 400",
+			loginUserKey: "internal_1",
+			requestBody: tenants.GenerateTenantInvitationTokenRequest{
+				Email: "internal-admin-1@example.com", // This email exists in seed data
+			},
+			expectedStatus:      http.StatusBadRequest,
+			expectErrorResponse: true,
+		},
 	}
 
 	for _, tt := range tests {

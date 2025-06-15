@@ -1,12 +1,21 @@
 <script lang="ts">
 	import Layout from "$components/Layout.svelte";
-	import { Badge, Tooltip, Slideover, Input, InteractivePill, toast } from "@dislyze/zoroark";
+	import {
+		Badge,
+		Tooltip,
+		Slideover,
+		Input,
+		InteractivePill,
+		Alert,
+		Button,
+		toast
+	} from "@dislyze/zoroark";
 	import type { PageData } from "./$types";
 	import { createForm } from "felte";
 	import { invalidate } from "$app/navigation";
 	import { mutationFetch } from "$lib/fetch";
 	import type { Tenant } from "./+page";
-	import { Button, type EnterpriseFeatures } from "@dislyze/zoroark";
+	import type { EnterpriseFeatures } from "@dislyze/zoroark";
 
 	let { data: pageData }: { data: PageData } = $props();
 
@@ -20,6 +29,9 @@
 	}
 
 	let editingTenant = $state<Tenant | null>(null);
+
+	let isInviteSlideoverOpen = $state(false);
+	let generatedInviteUrl = $state<string | null>(null);
 
 	const {
 		form: editForm,
@@ -82,6 +94,69 @@
 		editingTenant = null;
 		editReset();
 	};
+
+	const {
+		form: inviteForm,
+		data: inviteData,
+		errors: inviteErrors,
+		isSubmitting: inviteIsSubmitting,
+		reset: inviteReset
+	} = createForm({
+		initialValues: {
+			email: ""
+		},
+		validate: (values) => {
+			const errs: Record<string, string> = {};
+			values.email = values.email.trim();
+
+			if (!values.email) {
+				errs.email = "メールアドレスは必須です";
+			} else if (!values.email.includes("@")) {
+				errs.email = "有効なメールアドレスを入力してください";
+			}
+
+			return errs;
+		},
+		onSubmit: async (values) => {
+			const { response, success } = await mutationFetch("/api/tenants/generate-token", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({ email: values.email })
+			});
+
+			if (success && response) {
+				const data = await response.json();
+				generatedInviteUrl = data.url;
+				toast.show("招待URLを生成しました。", "success");
+			}
+		}
+	});
+
+	const handleInviteOpen = () => {
+		isInviteSlideoverOpen = true;
+		generatedInviteUrl = null;
+		inviteReset();
+	};
+
+	const handleInviteClose = () => {
+		isInviteSlideoverOpen = false;
+		generatedInviteUrl = null;
+		inviteReset();
+	};
+
+	const copyToClipboard = async () => {
+		if (generatedInviteUrl) {
+			try {
+				await navigator.clipboard.writeText(generatedInviteUrl);
+				toast.show("URLをクリップボードにコピーしました。", "success");
+			} catch (err) {
+				console.error("Failed to copy URL to clipboard:", err);
+				toast.show("コピーに失敗しました。", "error");
+			}
+		}
+	};
 </script>
 
 <Layout
@@ -91,6 +166,17 @@
 		tenantsResponse: pageData.tenantsPromise
 	}}
 >
+	{#snippet buttons()}
+		<Button
+			type="button"
+			variant="primary"
+			onclick={handleInviteOpen}
+			data-testid="generate-tenant-invitation-token-button"
+		>
+			テナントを招待
+		</Button>
+	{/snippet}
+
 	{#snippet skeleton()}
 		<div class="animate-pulse">
 			<div class="mt-8 flow-root">
@@ -119,6 +205,71 @@
 
 	{#snippet children({ tenantsResponse })}
 		{@const { tenants } = tenantsResponse}
+
+		{#if isInviteSlideoverOpen}
+			<form
+				use:inviteForm
+				class="space-y-6 p-1 flex flex-col h-full"
+				data-testid="invite-tenant-form"
+			>
+				<Slideover
+					title="テナントを招待"
+					onClose={handleInviteClose}
+					data-testid="invite-tenant-slideover"
+				>
+					<div class="flex-grow space-y-6">
+						<!-- 48-hour validity alert at the top -->
+						<Alert type="info" title="注意" data-testid="invite-validity-alert">
+							<p>招待リンクの有効期限は48時間です。</p>
+						</Alert>
+
+						<!-- Email input field -->
+						<Input
+							id="invite-email"
+							name="email"
+							type="email"
+							label="招待先メールアドレス"
+							bind:value={$inviteData.email}
+							error={$inviteErrors.email?.[0]}
+							required
+							placeholder="user@example.com"
+							variant="underlined"
+						/>
+
+						<!-- Generate token button (not primary button of slideover) -->
+						<Button
+							type="submit"
+							variant="primary"
+							loading={$inviteIsSubmitting}
+							disabled={$inviteIsSubmitting || !$inviteData.email.trim()}
+							data-testid="generate-token-button"
+						>
+							招待URLを生成
+						</Button>
+
+						<!-- Generated URL display area (only shown when URL exists) -->
+						{#if generatedInviteUrl}
+							<div class="space-y-3">
+								<h3 class="text-sm font-medium text-gray-700">招待URL</h3>
+								<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-md shadow-md">
+									<div class="flex-1 font-mono text-sm text-gray-800 break-all">
+										{generatedInviteUrl}
+									</div>
+									<Button
+										type="button"
+										variant="secondary"
+										onclick={copyToClipboard}
+										data-testid="copy-url-button"
+									>
+										コピー
+									</Button>
+								</div>
+							</div>
+						{/if}
+					</div>
+				</Slideover>
+			</form>
+		{/if}
 
 		{#if editingTenant}
 			<form use:editForm class="space-y-6 p-1 flex flex-col h-full" data-testid="edit-tenant-form">
