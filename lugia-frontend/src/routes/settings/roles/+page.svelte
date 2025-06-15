@@ -4,7 +4,7 @@
 	import Skeleton from "./Skeleton.svelte";
 	import RolesTable from "./RolesTable.svelte";
 	import type { PageData } from "./$types";
-	import { hasPermission } from "$lib/meCache";
+	import { hasPermission } from "$lib/authz";
 
 	let { data: pageData }: { data: PageData } = $props();
 

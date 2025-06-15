@@ -2,7 +2,7 @@
 	import { Button, toast, Input } from "@dislyze/zoroark";
 	import { createForm } from "felte";
 	import type { PageData } from "./$types";
-	import { safeGoto } from "$lib/routing";
+	import { safeGoto } from "@dislyze/zoroark";
 	import { mutationFetch } from "$lib/fetch";
 
 	let { data: pageData }: { data: PageData } = $props();

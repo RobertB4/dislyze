@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Button from "./Button.svelte";
+	import { Button } from "./index";
 	import { onDestroy, onMount, type Snippet } from "svelte";
 	import { slide } from "svelte/transition";
 

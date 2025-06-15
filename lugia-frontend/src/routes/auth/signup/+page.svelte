@@ -1,8 +1,6 @@
 <script lang="ts">
-	import { toast, Button, Input } from "@dislyze/zoroark";
+	import { toast, Button, Input, KnownError, safeGoto } from "@dislyze/zoroark";
 	import { createForm } from "felte";
-	import { KnownError } from "$lib/errors";
-	import { safeGoto } from "$lib/routing";
 
 	const { form, errors, data, isSubmitting } = createForm({
 		initialValues: {

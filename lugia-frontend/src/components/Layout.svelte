@@ -6,8 +6,8 @@
 	import { EmptyAvatar, toast, safeGoto } from "@dislyze/zoroark";
 	import { slide, fade } from "svelte/transition";
 	import type { Snippet } from "svelte";
-	import type { Me } from "$lib/meCache";
-	import { hasPermission } from "$lib/meCache";
+	import type { Me } from "@dislyze/zoroark";
+	import { hasPermission } from "$lib/authz";
 
 	let isMobileNavigationOpen = $state(false);
 

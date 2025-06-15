@@ -29,7 +29,8 @@
 		"!dist/**/*.spec.*"
 	],
 	"peerDependencies": {
-		"svelte": "^5.0.0"
+		"svelte": "^5.34.2",
+		"@sveltejs/kit": "^2.16.0"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",

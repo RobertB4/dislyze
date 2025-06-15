@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/state";
-	import type { Me } from "$lib/meCache";
-	import { hasFeature, hasPermission } from "$lib/meCache";
+	import type { Me } from "@dislyze/zoroark";
+	import { hasFeature, hasPermission } from "$lib/authz";
 
 	let { me }: { me: Me } = $props();
 

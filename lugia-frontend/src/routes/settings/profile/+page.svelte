@@ -5,7 +5,8 @@
 	import type { PageData } from "./$types";
 	import { createForm } from "felte";
 	import { mutationFetch } from "$lib/fetch";
-	import { forceUpdateMeCache, hasPermission } from "$lib/meCache";
+	import { forceUpdateMeCache } from "@dislyze/zoroark";
+	import { hasPermission } from "$lib/authz";
 	import { invalidate } from "$app/navigation";
 	import { page } from "$app/state";
 

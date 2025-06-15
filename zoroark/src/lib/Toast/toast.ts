@@ -17,15 +17,13 @@ function createToastStore() {
 		subscribe,
 		show: (textOrError: string | KnownError, mode: ToastMode = "info") => {
 			const id = nextId++;
-			const text = (textOrError as any)?.message ? (textOrError as any).message : textOrError;
+			const text = textOrError instanceof KnownError ? textOrError.message : textOrError;
 			update((toasts) => [...toasts, { id, text, mode }]);
 			return id;
 		},
 		showError: (error?: unknown) => {
 			const id = nextId++;
-			const text = (error as any)?.message
-				? (error as any).message
-				: "予期せぬエラーが発生しました";
+			const text = error instanceof KnownError ? error.message : "予期せぬエラーが発生しました";
 			update((toasts) => [...toasts, { id, text, mode: "error" }]);
 			return id;
 		},

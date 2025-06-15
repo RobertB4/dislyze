@@ -3,7 +3,8 @@
 	import SettingsTabs from "../SettingsTabs.svelte";
 	import PermissionSelector from "./PermissionSelector.svelte";
 	import type { PermissionInfo, RoleInfo } from "./+page";
-	import { hasPermission, type Me } from "$lib/meCache";
+	import { type Me } from "@dislyze/zoroark";
+	import { hasPermission } from "$lib/authz";
 	import { createForm } from "felte";
 	import { invalidate } from "$app/navigation";
 	import { mutationFetch } from "$lib/fetch";

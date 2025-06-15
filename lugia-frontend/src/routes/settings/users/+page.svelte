@@ -17,7 +17,7 @@
 	import { mutationFetch } from "$lib/fetch";
 	import Skeleton from "./Skeleton.svelte";
 	import type { User } from "./+page";
-	import { hasPermission } from "$lib/meCache";
+	import { hasPermission } from "$lib/authz";
 	import { goto } from "$app/navigation";
 	import RoleCard from "./RoleCard.svelte";
 
