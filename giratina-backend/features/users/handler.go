@@ -1,4 +1,4 @@
-package customers
+package users
 
 import (
 	"giratina/lib/config"
@@ -13,7 +13,7 @@ type UsersHandler struct {
 	queries *queries.Queries
 }
 
-func NewCustomersHandler(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries) *UsersHandler {
+func NewUsersHandler(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries) *UsersHandler {
 	return &UsersHandler{
 		dbConn:  dbConn,
 		env:     env,

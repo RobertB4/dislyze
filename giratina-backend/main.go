@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"giratina/features/users"
 	"log"
 	"net/http"
 	"os"
@@ -35,6 +36,8 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	jirachiAuthMiddleware := jirachi_auth.NewAuthMiddleware(authConfig, dbConn, authRateLimiter)
 	authHandler := auth.NewAuthHandler(dbConn, env, authRateLimiter, queries)
 
+	usersHandler := users.NewUsersHandler(dbConn, env, queries)
+
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write([]byte("OK")); err != nil {
@@ -45,20 +48,22 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/login", authHandler.Login)
+			r.Post("/logout", authHandler.Logout)
 		})
 
-		r.Route("/api", func(r chi.Router) {
-			r.Group(func(r chi.Router) {
-				r.Use(jirachiAuthMiddleware.Authenticate)
+		r.Group(func(r chi.Router) {
+			r.Use(jirachiAuthMiddleware.Authenticate)
 
-				r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusOK)
-					if _, err := w.Write([]byte(`{"message": "protected users endpoint"}`)); err != nil {
-						log.Printf("Error writing users response: %v", err)
-					}
-				})
+			r.Get("/me", usersHandler.GetMe)
+
+			r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				if _, err := w.Write([]byte(`{"message": "protected users endpoint"}`)); err != nil {
+					log.Printf("Error writing users response: %v", err)
+				}
 			})
 		})
+
 	})
 
 	return r

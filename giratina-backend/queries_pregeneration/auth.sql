@@ -2,6 +2,10 @@
 SELECT * FROM users
 WHERE email = $1;
 
+-- name: GetUserByID :one
+SELECT * FROM users
+WHERE id = $1;
+
 -- name: GetTenantByID :one
 SELECT * FROM tenants
 WHERE id = $1;
@@ -24,4 +28,9 @@ INSERT INTO refresh_tokens (
 -- name: UpdateRefreshTokenUsed :exec
 UPDATE refresh_tokens 
 SET used_at = CURRENT_TIMESTAMP 
+WHERE jti = $1;
+
+-- name: RevokeRefreshToken :exec
+UPDATE refresh_tokens 
+SET revoked_at = CURRENT_TIMESTAMP 
 WHERE jti = $1;

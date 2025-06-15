@@ -139,6 +139,17 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error
 	return &i, err
 }
 
+const RevokeRefreshToken = `-- name: RevokeRefreshToken :exec
+UPDATE refresh_tokens 
+SET revoked_at = CURRENT_TIMESTAMP 
+WHERE jti = $1
+`
+
+func (q *Queries) RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, RevokeRefreshToken, jti)
+	return err
+}
+
 const UpdateRefreshTokenUsed = `-- name: UpdateRefreshTokenUsed :exec
 UPDATE refresh_tokens 
 SET used_at = CURRENT_TIMESTAMP 

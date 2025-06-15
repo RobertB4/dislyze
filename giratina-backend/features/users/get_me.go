@@ -12,7 +12,7 @@ import (
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/responder"
-	"lugia/queries"
+	"giratina/queries"
 )
 
 type MeResponse struct {
@@ -40,7 +40,7 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 	userID := libctx.GetUserID(ctx)
 	tenantID := libctx.GetTenantID(ctx)
 
-	user, err := h.q.GetUserByID(ctx, userID)
+	user, err := h.queries.GetUserByID(ctx, userID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
 			return nil, errlib.New(fmt.Errorf("GetMe: user not found %s: %w", userID.String(), err), http.StatusUnauthorized, "")
@@ -48,7 +48,11 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 		return nil, errlib.New(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
 	}
 
-	tenant, err := h.q.GetTenantByID(ctx, tenantID)
+	if user.IsInternalAdmin == false {
+		return nil, errlib.New(fmt.Errorf("GetMe: user is not an internal admin: %s", user.ID), http.StatusUnauthorized, "")
+	}
+
+	tenant, err := h.queries.GetTenantByID(ctx, tenantID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
 			return nil, errlib.New(fmt.Errorf("GetMe: tenant not found %s for user %s: %w", tenantID.String(), userID.String(), err), http.StatusUnauthorized, "")
@@ -56,7 +60,7 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 		return nil, errlib.New(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
 	}
 
-	permissionRows, err := h.q.GetUserPermissions(ctx, &queries.GetUserPermissionsParams{
+	permissionRows, err := h.queries.GetUserPermissions(ctx, &queries.GetUserPermissionsParams{
 		UserID:   userID,
 		TenantID: tenantID,
 	})

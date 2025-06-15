@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"dislyze/jirachi/authz"
+
 	"github.com/jackc/pgx/v5"
 
 	libctx "dislyze/jirachi/ctx"
@@ -14,14 +16,6 @@ import (
 const (
 	FeatureRBAC = "rbac"
 )
-
-type EnterpriseFeatures struct {
-	RBAC RBAC `json:"rbac"`
-}
-
-type RBAC struct {
-	Enabled bool `json:"enabled"`
-}
 
 func TenantHasFeature(ctx context.Context, db *queries.Queries, feature string) bool {
 	tenantID := libctx.GetTenantID(ctx)
@@ -36,7 +30,7 @@ func TenantHasFeature(ctx context.Context, db *queries.Queries, feature string) 
 		return false
 	}
 
-	var enterpriseFeatures EnterpriseFeatures
+	var enterpriseFeatures authz.EnterpriseFeatures
 	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
 		errlib.LogError(errlib.New(err, 500, "failed to unmarshal features config"))
 		return false
