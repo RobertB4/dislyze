@@ -34,3 +34,8 @@ WHERE jti = $1;
 UPDATE refresh_tokens 
 SET revoked_at = CURRENT_TIMESTAMP 
 WHERE jti = $1;
+
+-- name: UpdateTenant :exec
+UPDATE tenants
+SET name = $1, enterprise_features = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $3;

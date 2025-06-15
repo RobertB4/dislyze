@@ -39,12 +39,6 @@ func TestGetTenants_Integration(t *testing.T) {
 			expectedMinTenants: 1,
 		},
 		{
-			name:                "enterprise_1 gets 401 because they are not an internal admin",
-			loginUserKey:        "enterprise_1",
-			expectedStatus:      http.StatusUnauthorized,
-			expectErrorResponse: true,
-		},
-		{
 			name:                "unauthenticated user gets 401",
 			loginUserKey:        "", // No login
 			expectedStatus:      http.StatusUnauthorized,

@@ -160,3 +160,20 @@ func (q *Queries) UpdateRefreshTokenUsed(ctx context.Context, jti pgtype.UUID) e
 	_, err := q.db.Exec(ctx, UpdateRefreshTokenUsed, jti)
 	return err
 }
+
+const UpdateTenant = `-- name: UpdateTenant :exec
+UPDATE tenants
+SET name = $1, enterprise_features = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $3
+`
+
+type UpdateTenantParams struct {
+	Name               string      `json:"name"`
+	EnterpriseFeatures []byte      `json:"enterprise_features"`
+	ID                 pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateTenant(ctx context.Context, arg *UpdateTenantParams) error {
+	_, err := q.db.Exec(ctx, UpdateTenant, arg.Name, arg.EnterpriseFeatures, arg.ID)
+	return err
+}

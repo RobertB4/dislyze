@@ -20,6 +20,7 @@ type Querier interface {
 	GetUserPermissions(ctx context.Context, arg *GetUserPermissionsParams) ([]*GetUserPermissionsRow, error)
 	RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error
 	UpdateRefreshTokenUsed(ctx context.Context, jti pgtype.UUID) error
+	UpdateTenant(ctx context.Context, arg *UpdateTenantParams) error
 }
 
 var _ Querier = (*Queries)(nil)

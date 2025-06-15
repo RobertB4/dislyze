@@ -42,12 +42,6 @@ func TestGetMe_Integration(t *testing.T) {
 			expectedMinPermissions: 0, // Should have exactly 0 permissions
 		},
 		{
-			name:                "enterprise_1 gets 401 because they are not an internal admin",
-			loginUserKey:        "enterprise_1",
-			expectedStatus:      http.StatusUnauthorized,
-			expectErrorResponse: true,
-		},
-		{
 			name:                "unauthenticated user gets 401",
 			loginUserKey:        "", // No login
 			expectedStatus:      http.StatusUnauthorized,

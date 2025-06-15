@@ -1,0 +1,1 @@
+Well done! Next, let's write integration tests. Can you think and come up with a list of test cases, focusing on security and edge cases?

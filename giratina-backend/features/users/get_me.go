@@ -48,10 +48,6 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 		return nil, errlib.New(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
 	}
 
-	if user.IsInternalAdmin == false {
-		return nil, errlib.New(fmt.Errorf("GetMe: user is not an internal admin: %s", user.ID), http.StatusUnauthorized, "")
-	}
-
 	tenant, err := h.queries.GetTenantByID(ctx, tenantID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {

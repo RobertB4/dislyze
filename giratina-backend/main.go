@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -31,7 +32,12 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	r.Use(chiMiddleware.Logger)
 	r.Use(chiMiddleware.Recoverer)
 
-	authRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, 10)
+	rateLimit, err := strconv.Atoi(env.AuthRateLimit)
+	if err != nil {
+		log.Fatalf("Failed to convert env.AuthRateLimit to int: %v", err)
+	}
+
+	authRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, rateLimit)
 
 	authConfig := config.NewGiratinaAuthConfig(env)
 	jirachiAuthMiddleware := jirachi_auth.NewAuthMiddleware(authConfig, dbConn, authRateLimiter)
@@ -60,6 +66,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 
 			r.Route("/tenants", func(r chi.Router) {
 				r.Get("/", tenantsHandler.GetTenants)
+				r.Post("/{id}/update", tenantsHandler.UpdateTenant)
 			})
 
 			r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
