@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"giratina/features/tenants"
 	"giratina/features/users"
 	"log"
 	"net/http"
@@ -37,6 +38,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	authHandler := auth.NewAuthHandler(dbConn, env, authRateLimiter, queries)
 
 	usersHandler := users.NewUsersHandler(dbConn, env, queries)
+	tenantsHandler := tenants.NewTenantsHandler(dbConn, env, queries)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -55,6 +57,10 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 			r.Use(jirachiAuthMiddleware.Authenticate)
 
 			r.Get("/me", usersHandler.GetMe)
+
+			r.Route("/tenants", func(r chi.Router) {
+				r.Get("/", tenantsHandler.GetTenants)
+			})
 
 			r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
