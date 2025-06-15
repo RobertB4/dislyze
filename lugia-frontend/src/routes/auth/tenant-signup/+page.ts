@@ -6,7 +6,7 @@ export const load: PageLoad = ({ url }) => {
 	let email = "";
 	let companyName = "";
 	let userName = "";
-	
+
 	if (token) {
 		try {
 			// Simple JWT decoding without verification (for display only)

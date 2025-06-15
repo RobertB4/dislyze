@@ -9,7 +9,7 @@
 
 	const showForm = pageData.token && pageData.email;
 
-	const { form, data, errors, isValid, isSubmitting } = createForm({
+	const { form, data, errors, isSubmitting } = createForm({
 		initialValues: {
 			email: pageData.email || "",
 			company_name: pageData.companyName || "",
@@ -134,14 +134,8 @@
 				</div>
 
 				<div>
-					<Button
-						type="submit"
-						disabled={!$isValid}
-						loading={$isSubmitting}
-						fullWidth
-						data-testid="signup-button"
-					>
-						サインアップ
+					<Button type="submit" loading={$isSubmitting} fullWidth data-testid="signup-button">
+						アカウントを作成
 					</Button>
 				</div>
 			</form>
