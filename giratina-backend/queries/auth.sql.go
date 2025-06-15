@@ -52,6 +52,29 @@ func (q *Queries) CreateRefreshToken(ctx context.Context, arg *CreateRefreshToke
 	return &i, err
 }
 
+const GetInternalUserByTenantID = `-- name: GetInternalUserByTenantID :one
+SELECT id, tenant_id, email, password_hash, name, is_internal_admin, is_internal_user, created_at, updated_at, status FROM users
+WHERE tenant_id = $1 AND is_internal_user = true
+`
+
+func (q *Queries) GetInternalUserByTenantID(ctx context.Context, tenantID pgtype.UUID) (*User, error) {
+	row := q.db.QueryRow(ctx, GetInternalUserByTenantID, tenantID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.Name,
+		&i.IsInternalAdmin,
+		&i.IsInternalUser,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Status,
+	)
+	return &i, err
+}
+
 const GetRefreshTokenByUserID = `-- name: GetRefreshTokenByUserID :one
 SELECT id, user_id, jti, device_info, ip_address, expires_at, created_at, used_at, revoked_at FROM refresh_tokens 
 WHERE user_id = $1 

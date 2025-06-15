@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error)
+	GetInternalUserByTenantID(ctx context.Context, tenantID pgtype.UUID) (*User, error)
 	GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUID) (*RefreshToken, error)
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error)
 	GetTenants(ctx context.Context) ([]*Tenant, error)

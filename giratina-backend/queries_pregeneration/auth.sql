@@ -31,3 +31,7 @@ UPDATE refresh_tokens
 SET revoked_at = CURRENT_TIMESTAMP 
 WHERE jti = $1;
 
+-- name: GetInternalUserByTenantID :one
+SELECT * FROM users
+WHERE tenant_id = $1 AND is_internal_user = true;
+
