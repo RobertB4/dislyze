@@ -37,6 +37,7 @@ type Env struct {
 	AuthRateLimit         string
 	CreateTenantJwtSecret string
 	FrontendURL           string
+	LugiaFrontendUrl      string
 }
 
 func LoadEnv() (*Env, error) {
@@ -62,6 +63,7 @@ func LoadEnv() (*Env, error) {
 		"AUTH_RATE_LIMIT":          &env.AuthRateLimit,
 		"CREATE_TENANT_JWT_SECRET": &env.CreateTenantJwtSecret,
 		"FRONTEND_URL":             &env.FrontendURL,
+		"LUGIA_FRONTEND_URL":       &env.LugiaFrontendUrl,
 	}
 
 	var missing []string

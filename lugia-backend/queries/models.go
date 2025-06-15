@@ -85,14 +85,15 @@ type Tenant struct {
 }
 
 type User struct {
-	ID           pgtype.UUID        `json:"id"`
-	TenantID     pgtype.UUID        `json:"tenant_id"`
-	Email        string             `json:"email"`
-	PasswordHash string             `json:"password_hash"`
-	Name         string             `json:"name"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	Status       string             `json:"status"`
+	ID              pgtype.UUID        `json:"id"`
+	TenantID        pgtype.UUID        `json:"tenant_id"`
+	Email           string             `json:"email"`
+	PasswordHash    string             `json:"password_hash"`
+	Name            string             `json:"name"`
+	IsInternalAdmin bool               `json:"is_internal_admin"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	Status          string             `json:"status"`
 }
 
 type UserRole struct {

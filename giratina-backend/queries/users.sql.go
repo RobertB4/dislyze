@@ -11,37 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const GetTenants = `-- name: GetTenants :many
-SELECT id, name, enterprise_features, stripe_customer_id, created_at, updated_at FROM tenants ORDER BY created_at ASC
-`
-
-func (q *Queries) GetTenants(ctx context.Context) ([]*Tenant, error) {
-	rows, err := q.db.Query(ctx, GetTenants)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*Tenant{}
-	for rows.Next() {
-		var i Tenant
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.EnterpriseFeatures,
-			&i.StripeCustomerID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const GetUserPermissions = `-- name: GetUserPermissions :many
 SELECT permissions.resource, permissions.action
 FROM user_roles

@@ -10,16 +10,21 @@ import (
 
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/responder"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 )
 
 type GenerateTenantInvitationTokenRequest struct {
-	Email string `json:"email"`
+	Email       string `json:"email"`
+	CompanyName string `json:"company_name"`
+	UserName    string `json:"user_name"`
 }
 
 func (r *GenerateTenantInvitationTokenRequest) Validate() error {
 	r.Email = strings.TrimSpace(r.Email)
+	r.CompanyName = strings.TrimSpace(r.CompanyName)
+	r.UserName = strings.TrimSpace(r.UserName)
 
 	if r.Email == "" {
 		return fmt.Errorf("email is required")
@@ -35,7 +40,9 @@ type GenerateTenantInvitationTokenResponse struct {
 }
 
 type TenantInvitationClaims struct {
-	Email string `json:"email"`
+	Email       string `json:"email"`
+	CompanyName string `json:"company_name"`
+	UserName    string `json:"user_name"`
 	jwt.RegisteredClaims
 }
 
@@ -43,7 +50,7 @@ func (h *TenantsHandler) GenerateTenantInvitationToken(w http.ResponseWriter, r 
 	var req GenerateTenantInvitationTokenRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "Invalid request body")
+		appErr := errlib.New(err, http.StatusBadRequest, "")
 		responder.RespondWithError(w, appErr)
 		return
 	}
@@ -71,7 +78,6 @@ func (h *TenantsHandler) GenerateTenantInvitationToken(w http.ResponseWriter, r 
 }
 
 func (h *TenantsHandler) generateTenantInvitationToken(ctx context.Context, req *GenerateTenantInvitationTokenRequest) (*GenerateTenantInvitationTokenResponse, error) {
-	// Check if user already exists with this email
 	_, err := h.queries.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errlib.Is(err, pgx.ErrNoRows) {
@@ -79,29 +85,27 @@ func (h *TenantsHandler) generateTenantInvitationToken(ctx context.Context, req 
 		}
 		// ErrNoRows means user doesn't exist, which is what we want - continue
 	} else {
-		// User exists with this email
 		return nil, fmt.Errorf("このメールアドレスは既に使用されています。")
 	}
 
-	// Create JWT claims with email and 48 hour expiration
 	now := time.Now()
 	claims := TenantInvitationClaims{
-		Email: req.Email,
+		Email:       req.Email,
+		CompanyName: req.CompanyName,
+		UserName:    req.UserName,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(48 * time.Hour)),
 		},
 	}
 
-	// Create and sign the token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(h.env.CreateTenantJwtSecret))
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign JWT token: %w", err)
 	}
 
-	// Create response URL
-	url := fmt.Sprintf("%s/signup?token=%s", h.env.FrontendURL, tokenString)
+	url := fmt.Sprintf("%s/auth/tenant-signup?token=%s", h.env.LugiaFrontendUrl, tokenString)
 	response := &GenerateTenantInvitationTokenResponse{
 		URL: url,
 	}

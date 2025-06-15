@@ -103,11 +103,15 @@
 		reset: inviteReset
 	} = createForm({
 		initialValues: {
-			email: ""
+			email: "",
+			company_name: "",
+			user_name: ""
 		},
 		validate: (values) => {
 			const errs: Record<string, string> = {};
 			values.email = values.email.trim();
+			values.company_name = values.company_name.trim();
+			values.user_name = values.user_name.trim();
 
 			if (!values.email) {
 				errs.email = "メールアドレスは必須です";
@@ -123,7 +127,11 @@
 				headers: {
 					"Content-Type": "application/json"
 				},
-				body: JSON.stringify({ email: values.email })
+				body: JSON.stringify({
+					email: values.email,
+					company_name: values.company_name,
+					user_name: values.user_name
+				})
 			});
 
 			if (success && response) {
@@ -222,6 +230,30 @@
 						<Alert type="info" title="注意" data-testid="invite-validity-alert">
 							<p>招待リンクの有効期限は48時間です。</p>
 						</Alert>
+
+						<!-- Company name input field (optional) -->
+						<Input
+							id="invite-company-name"
+							name="company_name"
+							type="text"
+							label="会社名（任意）"
+							bind:value={$inviteData.company_name}
+							error={$inviteErrors.company_name?.[0]}
+							placeholder="株式会社Example"
+							variant="underlined"
+						/>
+
+						<!-- User name input field (optional) -->
+						<Input
+							id="invite-user-name"
+							name="user_name"
+							type="text"
+							label="氏名（任意）"
+							bind:value={$inviteData.user_name}
+							error={$inviteErrors.user_name?.[0]}
+							placeholder="田中太郎"
+							variant="underlined"
+						/>
 
 						<!-- Email input field -->
 						<Input

@@ -76,25 +76,6 @@ func (q *Queries) GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUI
 	return &i, err
 }
 
-const GetTenantByID = `-- name: GetTenantByID :one
-SELECT id, name, enterprise_features, stripe_customer_id, created_at, updated_at FROM tenants
-WHERE id = $1
-`
-
-func (q *Queries) GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error) {
-	row := q.db.QueryRow(ctx, GetTenantByID, id)
-	var i Tenant
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.EnterpriseFeatures,
-		&i.StripeCustomerID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return &i, err
-}
-
 const GetUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, tenant_id, email, password_hash, name, is_internal_admin, created_at, updated_at, status FROM users
 WHERE email = $1
@@ -158,22 +139,5 @@ WHERE jti = $1
 
 func (q *Queries) UpdateRefreshTokenUsed(ctx context.Context, jti pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, UpdateRefreshTokenUsed, jti)
-	return err
-}
-
-const UpdateTenant = `-- name: UpdateTenant :exec
-UPDATE tenants
-SET name = $1, enterprise_features = $2, updated_at = CURRENT_TIMESTAMP
-WHERE id = $3
-`
-
-type UpdateTenantParams struct {
-	Name               string      `json:"name"`
-	EnterpriseFeatures []byte      `json:"enterprise_features"`
-	ID                 pgtype.UUID `json:"id"`
-}
-
-func (q *Queries) UpdateTenant(ctx context.Context, arg *UpdateTenantParams) error {
-	_, err := q.db.Exec(ctx, UpdateTenant, arg.Name, arg.EnterpriseFeatures, arg.ID)
 	return err
 }

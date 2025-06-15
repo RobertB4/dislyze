@@ -37,6 +37,7 @@ services:
       - DB_SSL_MODE=disable
       - JWT_SECRET=test_jwt_secret_key_for_testing_only
       - AUTH_RATE_LIMIT=1000
+      - CREATE_TENANT_JWT_SECRET=test_create_tenant_jwt_secret_for_testing_only
       - FRONTEND_URL=http://localhost:13000
       - SENDGRID_API_KEY=sendgrid
       - SENDGRID_API_URL=http://mock-sendgrid:17000

@@ -114,7 +114,7 @@ INSERT INTO users (
     status
 ) VALUES (
     $1, $2, $3, $4, $5
-) RETURNING id, tenant_id, email, password_hash, name, created_at, updated_at, status
+) RETURNING id, tenant_id, email, password_hash, name, is_internal_admin, created_at, updated_at, status
 `
 
 type CreateUserParams struct {
@@ -140,6 +140,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User,
 		&i.Email,
 		&i.PasswordHash,
 		&i.Name,
+		&i.IsInternalAdmin,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,
@@ -233,7 +234,7 @@ func (q *Queries) GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, e
 }
 
 const GetUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, tenant_id, email, password_hash, name, created_at, updated_at, status FROM users
+SELECT id, tenant_id, email, password_hash, name, is_internal_admin, created_at, updated_at, status FROM users
 WHERE email = $1
 `
 
@@ -246,6 +247,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 		&i.Email,
 		&i.PasswordHash,
 		&i.Name,
+		&i.IsInternalAdmin,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,
@@ -254,7 +256,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 }
 
 const GetUserByID = `-- name: GetUserByID :one
-SELECT id, tenant_id, email, password_hash, name, created_at, updated_at, status FROM users
+SELECT id, tenant_id, email, password_hash, name, is_internal_admin, created_at, updated_at, status FROM users
 WHERE id = $1
 `
 
@@ -267,6 +269,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error
 		&i.Email,
 		&i.PasswordHash,
 		&i.Name,
+		&i.IsInternalAdmin,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Status,
