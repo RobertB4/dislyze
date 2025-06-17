@@ -2,26 +2,21 @@ package users
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
 
-	"dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/responder"
-	"giratina/queries"
 )
 
 type MeResponse struct {
-	TenantName         string                   `json:"tenant_name"`
-	UserID             string                   `json:"user_id"`
-	Email              string                   `json:"email"`
-	UserName           string                   `json:"user_name"`
-	Permissions        []string                 `json:"permissions"`
-	EnterpriseFeatures authz.EnterpriseFeatures `json:"enterprise_features"`
+	TenantName string `json:"tenant_name"`
+	UserID     string `json:"user_id"`
+	Email      string `json:"email"`
+	UserName   string `json:"user_name"`
 }
 
 func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
@@ -56,31 +51,11 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 		return nil, errlib.New(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
 	}
 
-	permissionRows, err := h.queries.GetUserPermissions(ctx, &queries.GetUserPermissionsParams{
-		UserID:   userID,
-		TenantID: tenantID,
-	})
-	if err != nil {
-		return nil, errlib.New(fmt.Errorf("GetMe: failed to get user permissions for user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
-	}
-
-	permissionsRes := make([]string, len(permissionRows))
-	for i, row := range permissionRows {
-		permissionsRes[i] = fmt.Sprintf("%s.%s", row.Resource, row.Action)
-	}
-
-	var enterpriseFeatures authz.EnterpriseFeatures
-	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
-		return nil, errlib.New(fmt.Errorf("GetMe: failed to unmarshal features config for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
-	}
-
 	response := &MeResponse{
-		TenantName:         tenant.Name,
-		UserID:             user.ID.String(),
-		Email:              user.Email,
-		UserName:           user.Name,
-		Permissions:        permissionsRes,
-		EnterpriseFeatures: enterpriseFeatures,
+		TenantName: tenant.Name,
+		UserID:     user.ID.String(),
+		Email:      user.Email,
+		UserName:   user.Name,
 	}
 
 	return response, nil

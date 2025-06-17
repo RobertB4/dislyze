@@ -11,44 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const GetUserPermissions = `-- name: GetUserPermissions :many
-SELECT permissions.resource, permissions.action
-FROM user_roles
-JOIN role_permissions ON user_roles.role_id = role_permissions.role_id
-JOIN permissions ON role_permissions.permission_id = permissions.id
-WHERE user_roles.user_id = $1 AND user_roles.tenant_id = $2
-`
-
-type GetUserPermissionsParams struct {
-	UserID   pgtype.UUID `json:"user_id"`
-	TenantID pgtype.UUID `json:"tenant_id"`
-}
-
-type GetUserPermissionsRow struct {
-	Resource string `json:"resource"`
-	Action   string `json:"action"`
-}
-
-func (q *Queries) GetUserPermissions(ctx context.Context, arg *GetUserPermissionsParams) ([]*GetUserPermissionsRow, error) {
-	rows, err := q.db.Query(ctx, GetUserPermissions, arg.UserID, arg.TenantID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetUserPermissionsRow{}
-	for rows.Next() {
-		var i GetUserPermissionsRow
-		if err := rows.Scan(&i.Resource, &i.Action); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const GetUsersByTenantID = `-- name: GetUsersByTenantID :many
 SELECT id, name, email, status
 FROM users
