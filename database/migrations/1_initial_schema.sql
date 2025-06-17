@@ -25,6 +25,7 @@ CREATE TABLE roles (
     CONSTRAINT uq_roles_tenant_name UNIQUE (tenant_id, name)
 );
 CREATE INDEX idx_roles_tenant_id ON roles(tenant_id);
+CREATE INDEX idx_roles_tenant_default ON roles (tenant_id, is_default) WHERE is_default = true;
 
 CREATE TABLE permissions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

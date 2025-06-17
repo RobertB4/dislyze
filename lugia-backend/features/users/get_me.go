@@ -56,9 +56,15 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 		return nil, errlib.New(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
 	}
 
-	permissionRows, err := h.q.GetUserPermissions(ctx, &queries.GetUserPermissionsParams{
-		UserID:   userID,
-		TenantID: tenantID,
+	var enterpriseFeatures authz.EnterpriseFeatures
+	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
+		return nil, errlib.New(fmt.Errorf("GetMe: failed to unmarshal features config for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
+	}
+
+	permissionRows, err := h.q.GetUserPermissionsWithFallback(ctx, &queries.GetUserPermissionsWithFallbackParams{
+		UserID:      userID,
+		TenantID:    tenantID,
+		RbacEnabled: enterpriseFeatures.RBAC.Enabled,
 	})
 	if err != nil {
 		return nil, errlib.New(fmt.Errorf("GetMe: failed to get user permissions for user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
@@ -67,11 +73,6 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 	permissionsRes := make([]string, len(permissionRows))
 	for i, row := range permissionRows {
 		permissionsRes[i] = fmt.Sprintf("%s.%s", row.Resource, row.Action)
-	}
-
-	var enterpriseFeatures authz.EnterpriseFeatures
-	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
-		return nil, errlib.New(fmt.Errorf("GetMe: failed to unmarshal features config for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
 	}
 
 	response := &MeResponse{

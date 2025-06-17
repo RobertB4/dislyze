@@ -217,33 +217,61 @@ func (q *Queries) GetInvitationByTokenHash(ctx context.Context, tokenHash string
 	return &i, err
 }
 
-const GetUserPermissions = `-- name: GetUserPermissions :many
-SELECT permissions.resource, permissions.action
-FROM user_roles
-JOIN role_permissions ON user_roles.role_id = role_permissions.role_id
-JOIN permissions ON role_permissions.permission_id = permissions.id
-WHERE user_roles.user_id = $1 AND user_roles.tenant_id = $2
+const GetUserPermissionsWithFallback = `-- name: GetUserPermissionsWithFallback :many
+WITH user_permissions AS (
+  -- Get permissions from user's assigned roles (filtered by RBAC status)
+  SELECT DISTINCT permissions.resource, permissions.action, 1 as priority
+  FROM user_roles
+  JOIN roles ON user_roles.role_id = roles.id
+  JOIN role_permissions ON user_roles.role_id = role_permissions.role_id
+  JOIN permissions ON role_permissions.permission_id = permissions.id
+  WHERE user_roles.user_id = $1 
+    AND user_roles.tenant_id = $2
+    AND (
+      $3 = true OR  -- RBAC enabled: use all roles
+      roles.is_default = true  -- RBAC disabled: only default roles
+    )
+),
+fallback_permissions AS (
+  -- Fallback: Get 閲覧者 permissions if user has no valid roles
+  SELECT DISTINCT permissions.resource, permissions.action, 2 as priority
+  FROM roles
+  JOIN role_permissions ON roles.id = role_permissions.role_id
+  JOIN permissions ON role_permissions.permission_id = permissions.id
+  WHERE roles.tenant_id = $2
+    AND roles.name = '閲覧者'
+    AND roles.is_default = true
+    AND NOT EXISTS (SELECT 1 FROM user_permissions)
+)
+SELECT resource, action
+FROM (
+  SELECT resource, action, priority FROM user_permissions
+  UNION ALL
+  SELECT resource, action, priority FROM fallback_permissions
+) combined
+ORDER BY priority, resource, action
 `
 
-type GetUserPermissionsParams struct {
-	UserID   pgtype.UUID `json:"user_id"`
-	TenantID pgtype.UUID `json:"tenant_id"`
+type GetUserPermissionsWithFallbackParams struct {
+	UserID      pgtype.UUID `json:"user_id"`
+	TenantID    pgtype.UUID `json:"tenant_id"`
+	RbacEnabled interface{} `json:"rbac_enabled"`
 }
 
-type GetUserPermissionsRow struct {
+type GetUserPermissionsWithFallbackRow struct {
 	Resource string `json:"resource"`
 	Action   string `json:"action"`
 }
 
-func (q *Queries) GetUserPermissions(ctx context.Context, arg *GetUserPermissionsParams) ([]*GetUserPermissionsRow, error) {
-	rows, err := q.db.Query(ctx, GetUserPermissions, arg.UserID, arg.TenantID)
+func (q *Queries) GetUserPermissionsWithFallback(ctx context.Context, arg *GetUserPermissionsWithFallbackParams) ([]*GetUserPermissionsWithFallbackRow, error) {
+	rows, err := q.db.Query(ctx, GetUserPermissionsWithFallback, arg.UserID, arg.TenantID, arg.RbacEnabled)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*GetUserPermissionsRow{}
+	items := []*GetUserPermissionsWithFallbackRow{}
 	for rows.Next() {
-		var i GetUserPermissionsRow
+		var i GetUserPermissionsWithFallbackRow
 		if err := rows.Scan(&i.Resource, &i.Action); err != nil {
 			return nil, err
 		}
@@ -323,7 +351,7 @@ func (q *Queries) GetUserRolesWithDetails(ctx context.Context, arg *GetUserRoles
 	return items, nil
 }
 
-const GetUsersWithRoles = `-- name: GetUsersWithRoles :many
+const GetUsersWithRolesRespectingRBAC = `-- name: GetUsersWithRolesRespectingRBAC :many
 WITH paginated_users AS (
     SELECT users.id
     FROM users
@@ -336,25 +364,64 @@ WITH paginated_users AS (
     )
     ORDER BY users.created_at DESC
     LIMIT $4 OFFSET $3
+),
+user_roles_with_rbac AS (
+    SELECT DISTINCT 
+        users.id as user_id,
+        roles.id as role_id, 
+        roles.name as role_name, 
+        roles.description as role_description,
+        1 as priority
+    FROM users
+    JOIN paginated_users pu ON users.id = pu.id
+    JOIN user_roles ON users.id = user_roles.user_id AND users.tenant_id = user_roles.tenant_id
+    JOIN roles ON user_roles.role_id = roles.id
+    WHERE (
+        $5 = true OR  -- RBAC enabled: use all roles
+        roles.is_default = true  -- RBAC disabled: only default roles
+    )
+),
+fallback_roles AS (
+    SELECT DISTINCT 
+        users.id as user_id,
+        roles.id as role_id, 
+        roles.name as role_name, 
+        roles.description as role_description,
+        2 as priority
+    FROM users
+    JOIN paginated_users pu ON users.id = pu.id
+    JOIN roles ON roles.tenant_id = $1
+    WHERE roles.name = '閲覧者'
+    AND roles.is_default = true
+    AND NOT EXISTS (
+        SELECT 1 FROM user_roles_with_rbac urwr 
+        WHERE urwr.user_id = users.id
+    )
 )
 SELECT 
     users.id, users.email, users.name, users.status, users.created_at, users.updated_at,
-    roles.id as role_id, roles.name as role_name, roles.description as role_description
+    combined_roles.role_id, combined_roles.role_name, combined_roles.role_description
 FROM users
 JOIN paginated_users pu ON users.id = pu.id
-LEFT JOIN user_roles ON users.id = user_roles.user_id AND users.tenant_id = user_roles.tenant_id
-LEFT JOIN roles ON user_roles.role_id = roles.id
-ORDER BY users.created_at DESC, users.id, roles.name
+LEFT JOIN (
+    SELECT user_id, role_id, role_name, role_description, priority 
+    FROM user_roles_with_rbac
+    UNION ALL
+    SELECT user_id, role_id, role_name, role_description, priority 
+    FROM fallback_roles
+) combined_roles ON users.id = combined_roles.user_id
+ORDER BY users.created_at DESC, users.id, combined_roles.priority, combined_roles.role_name
 `
 
-type GetUsersWithRolesParams struct {
+type GetUsersWithRolesRespectingRBACParams struct {
 	TenantID    pgtype.UUID `json:"tenant_id"`
 	SearchTerm  interface{} `json:"search_term"`
 	OffsetCount int32       `json:"offset_count"`
 	LimitCount  int32       `json:"limit_count"`
+	RbacEnabled interface{} `json:"rbac_enabled"`
 }
 
-type GetUsersWithRolesRow struct {
+type GetUsersWithRolesRespectingRBACRow struct {
 	ID              pgtype.UUID        `json:"id"`
 	Email           string             `json:"email"`
 	Name            string             `json:"name"`
@@ -362,24 +429,25 @@ type GetUsersWithRolesRow struct {
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 	RoleID          pgtype.UUID        `json:"role_id"`
-	RoleName        pgtype.Text        `json:"role_name"`
+	RoleName        string             `json:"role_name"`
 	RoleDescription pgtype.Text        `json:"role_description"`
 }
 
-func (q *Queries) GetUsersWithRoles(ctx context.Context, arg *GetUsersWithRolesParams) ([]*GetUsersWithRolesRow, error) {
-	rows, err := q.db.Query(ctx, GetUsersWithRoles,
+func (q *Queries) GetUsersWithRolesRespectingRBAC(ctx context.Context, arg *GetUsersWithRolesRespectingRBACParams) ([]*GetUsersWithRolesRespectingRBACRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersWithRolesRespectingRBAC,
 		arg.TenantID,
 		arg.SearchTerm,
 		arg.OffsetCount,
 		arg.LimitCount,
+		arg.RbacEnabled,
 	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*GetUsersWithRolesRow{}
+	items := []*GetUsersWithRolesRespectingRBACRow{}
 	for rows.Next() {
-		var i GetUsersWithRolesRow
+		var i GetUsersWithRolesRespectingRBACRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Email,

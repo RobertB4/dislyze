@@ -2,16 +2,18 @@ package users
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"lugia/lib/pagination"
 	"dislyze/jirachi/responder"
+	"lugia/lib/pagination"
 	"lugia/lib/search"
 	"lugia/queries"
 )
@@ -54,6 +56,19 @@ func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, paginationParams pagination.QueryParams, searchTerm string) (*GetUsersResponse, error) {
+	tenant, err := h.q.GetTenantByID(ctx, tenantID)
+	if err != nil {
+		if errlib.Is(err, pgx.ErrNoRows) {
+			return nil, errlib.New(fmt.Errorf("GetUsers: tenant not found %s: %w", tenantID.String(), err), http.StatusUnauthorized, "")
+		}
+		return nil, errlib.New(fmt.Errorf("GetUsers: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
+	}
+
+	var enterpriseFeatures authz.EnterpriseFeatures
+	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
+		return nil, errlib.New(fmt.Errorf("GetUsers: failed to unmarshal features config for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
+	}
+
 	totalCount, err := h.q.CountUsersByTenantID(ctx, &queries.CountUsersByTenantIDParams{
 		TenantID: tenantID,
 		Column2:  searchTerm,
@@ -62,11 +77,12 @@ func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, pagin
 		return nil, errlib.New(fmt.Errorf("GetUsers: failed to count users: %w", err), http.StatusInternalServerError, "")
 	}
 
-	usersWithRoles, err := h.q.GetUsersWithRoles(ctx, &queries.GetUsersWithRolesParams{
+	usersWithRoles, err := h.q.GetUsersWithRolesRespectingRBAC(ctx, &queries.GetUsersWithRolesRespectingRBACParams{
 		TenantID:    tenantID,
 		SearchTerm:  searchTerm,
 		LimitCount:  paginationParams.Limit,
 		OffsetCount: paginationParams.Offset,
+		RbacEnabled: enterpriseFeatures.RBAC.Enabled,
 	})
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
@@ -100,7 +116,7 @@ func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, pagin
 
 		role := UserRole{
 			ID:          row.RoleID.String(),
-			Name:        row.RoleName.String,
+			Name:        row.RoleName,
 			Description: row.RoleDescription.String,
 		}
 		userMap[userID].Roles = append(userMap[userID].Roles, role)

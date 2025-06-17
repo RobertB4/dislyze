@@ -43,10 +43,10 @@ type Querier interface {
 	GetTenantRolesWithPermissions(ctx context.Context, tenantID pgtype.UUID) ([]*GetTenantRolesWithPermissionsRow, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error)
-	GetUserPermissions(ctx context.Context, arg *GetUserPermissionsParams) ([]*GetUserPermissionsRow, error)
+	GetUserPermissionsWithFallback(ctx context.Context, arg *GetUserPermissionsWithFallbackParams) ([]*GetUserPermissionsWithFallbackRow, error)
 	GetUserRoleIDs(ctx context.Context, arg *GetUserRoleIDsParams) ([]pgtype.UUID, error)
 	GetUserRolesWithDetails(ctx context.Context, arg *GetUserRolesWithDetailsParams) ([]*GetUserRolesWithDetailsRow, error)
-	GetUsersWithRoles(ctx context.Context, arg *GetUsersWithRolesParams) ([]*GetUsersWithRolesRow, error)
+	GetUsersWithRolesRespectingRBAC(ctx context.Context, arg *GetUsersWithRolesRespectingRBACParams) ([]*GetUsersWithRolesRespectingRBACRow, error)
 	InviteUserToTenant(ctx context.Context, arg *InviteUserToTenantParams) (pgtype.UUID, error)
 	MarkEmailChangeTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	MarkInvitationTokenAsUsed(ctx context.Context, id pgtype.UUID) error
