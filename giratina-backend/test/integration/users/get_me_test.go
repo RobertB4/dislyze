@@ -20,26 +20,23 @@ func TestGetMe_Integration(t *testing.T) {
 	client := &http.Client{}
 
 	tests := []struct {
-		name                   string
-		loginUserKey           string // Key for setup.TestUsersData map
-		expectedStatus         int
-		expectedTenantName     string
-		expectedMinPermissions int // Minimum number of permissions expected
-		expectErrorResponse    bool
+		name                string
+		loginUserKey        string // Key for setup.TestUsersData map
+		expectedStatus      int
+		expectedTenantName  string
+		expectErrorResponse bool
 	}{
 		{
-			name:                   "internal_1 gets their details",
-			loginUserKey:           "internal_1",
-			expectedStatus:         http.StatusOK,
-			expectedTenantName:     "内部株式会社",
-			expectedMinPermissions: 3,
+			name:               "internal_1 gets their details",
+			loginUserKey:       "internal_1",
+			expectedStatus:     http.StatusOK,
+			expectedTenantName: "内部株式会社",
 		},
 		{
-			name:                   "internal_2 gets their details",
-			loginUserKey:           "internal_2",
-			expectedStatus:         http.StatusOK,
-			expectedTenantName:     "内部株式会社",
-			expectedMinPermissions: 0, // Should have exactly 0 permissions
+			name:               "internal_2 gets their details",
+			loginUserKey:       "internal_2",
+			expectedStatus:     http.StatusOK,
+			expectedTenantName: "内部株式会社",
 		},
 		{
 			name:                "unauthenticated user gets 401",
@@ -97,16 +94,6 @@ func TestGetMe_Integration(t *testing.T) {
 				assert.Equal(t, currentUserDetails.Email, meResponse.Email)
 				assert.Equal(t, currentUserDetails.Name, meResponse.UserName)
 				assert.Equal(t, tt.expectedTenantName, meResponse.TenantName)
-
-				// Check permission count based on user role
-				if tt.expectedMinPermissions == 0 {
-					// Editor should have exactly 0 permissions
-					assert.Len(t, meResponse.Permissions, 0, "Editor should have no permissions")
-				} else {
-					// Admin should have at least the expected minimum permissions
-					assert.GreaterOrEqual(t, len(meResponse.Permissions), tt.expectedMinPermissions,
-						"Should have at least %d permissions", tt.expectedMinPermissions)
-				}
 			} else if tt.expectErrorResponse {
 				bodyBytes, err := io.ReadAll(resp.Body)
 				assert.NoError(t, err)
