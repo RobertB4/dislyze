@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	stdErrors "errors"
 	"dislyze/jirachi/errlib"
+	stdErrors "errors"
 )
 
 func RespondWithError(w http.ResponseWriter, err error) {
@@ -29,10 +29,10 @@ func RespondWithError(w http.ResponseWriter, err error) {
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(responseStatusCode)
 
 	if responseUserMessage != "" {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		if err := json.NewEncoder(w).Encode(map[string]string{"error": responseUserMessage}); err != nil {
 			errlib.LogError(errlib.New(err, http.StatusInternalServerError, "failed to encode error response"))
 		}

@@ -53,6 +53,8 @@
 
 			if (!values.name) {
 				errs.name = "ロール名は必須です";
+			} else if (roles.some(role => role.name === values.name)) {
+				errs.name = "このロール名は既に使用されています";
 			}
 
 			if (values.permission_ids.length === 0) {
