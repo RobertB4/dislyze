@@ -494,9 +494,17 @@
 											.map(([feature]) => feature)}
 										<tr data-testid={`tenant-row-${tenant.id}`}>
 											<td
-												class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6"
-												data-testid={`tenant-name-${tenant.id}`}>{tenant.name}</td
+												class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium sm:pl-6"
+												data-testid={`tenant-name-${tenant.id}`}
 											>
+												<a
+													href={`/tenants/${tenant.id}/users`}
+													class="text-indigo-600 hover:text-indigo-900 font-medium"
+													data-testid={`tenant-users-link-${tenant.id}`}
+												>
+													{tenant.name}
+												</a>
+											</td>
 											<td
 												class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 font-mono"
 												data-testid={`tenant-id-${tenant.id}`}

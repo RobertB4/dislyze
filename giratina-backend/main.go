@@ -69,6 +69,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 				r.Post("/{id}/update", tenantsHandler.UpdateTenant)
 				r.Get("/{tenantID}/login", tenantsHandler.LogInToTenant)
 				r.Post("/generate-token", tenantsHandler.GenerateTenantInvitationToken)
+				r.Get("/{tenantID}/users", tenantsHandler.GetUsersByTenant)
 			})
 
 			r.Get("/users", func(w http.ResponseWriter, r *http.Request) {

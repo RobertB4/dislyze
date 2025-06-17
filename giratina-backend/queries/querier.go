@@ -19,6 +19,7 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error)
 	GetUserPermissions(ctx context.Context, arg *GetUserPermissionsParams) ([]*GetUserPermissionsRow, error)
+	GetUsersByTenantID(ctx context.Context, tenantID pgtype.UUID) ([]*GetUsersByTenantIDRow, error)
 	RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error
 	UpdateRefreshTokenUsed(ctx context.Context, jti pgtype.UUID) error
 	UpdateTenant(ctx context.Context, arg *UpdateTenantParams) error

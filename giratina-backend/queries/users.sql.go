@@ -48,3 +48,43 @@ func (q *Queries) GetUserPermissions(ctx context.Context, arg *GetUserPermission
 	}
 	return items, nil
 }
+
+const GetUsersByTenantID = `-- name: GetUsersByTenantID :many
+SELECT id, name, email, status
+FROM users
+WHERE tenant_id = $1
+AND users.is_internal_user = false
+ORDER BY created_at DESC
+`
+
+type GetUsersByTenantIDRow struct {
+	ID     pgtype.UUID `json:"id"`
+	Name   string      `json:"name"`
+	Email  string      `json:"email"`
+	Status string      `json:"status"`
+}
+
+func (q *Queries) GetUsersByTenantID(ctx context.Context, tenantID pgtype.UUID) ([]*GetUsersByTenantIDRow, error) {
+	rows, err := q.db.Query(ctx, GetUsersByTenantID, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUsersByTenantIDRow{}
+	for rows.Next() {
+		var i GetUsersByTenantIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Email,
+			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
