@@ -163,7 +163,3 @@ func main() {
 	}
 	log.Printf("main: Shutdown complete")
 }
-
-func Testo() {
-	// todo
-}

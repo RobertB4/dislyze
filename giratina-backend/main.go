@@ -142,3 +142,7 @@ func main() {
 	}
 	log.Printf("main: Shutdown complete")
 }
+
+func AAA() {
+	// todo
+}
