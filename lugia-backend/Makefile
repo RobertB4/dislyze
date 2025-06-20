@@ -28,3 +28,6 @@ build:
 
 sqlc:
 	sqlc generate
+
+deadcode:
+	deadcode `go list ./... | grep -v test`
