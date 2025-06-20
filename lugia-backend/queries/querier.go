@@ -46,6 +46,7 @@ type Querier interface {
 	GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error)
 	GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUID) (*RefreshToken, error)
 	GetRoleByID(ctx context.Context, arg *GetRoleByIDParams) (*Role, error)
+	GetTenantAndUserContext(ctx context.Context, arg *GetTenantAndUserContextParams) (*GetTenantAndUserContextRow, error)
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error)
 	GetTenantIPWhitelist(ctx context.Context, tenantID pgtype.UUID) ([]*TenantIpWhitelist, error)
 	GetTenantIPWhitelistCIDRs(ctx context.Context, tenantID pgtype.UUID) ([]string, error)

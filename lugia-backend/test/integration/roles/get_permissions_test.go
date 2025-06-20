@@ -207,7 +207,7 @@ func TestGetPermissions_ResponseFormat(t *testing.T) {
 	assert.GreaterOrEqual(t, len(response.Permissions), 6, "Should have at least 6 permissions")
 
 	// Validate each permission structure and content
-	expectedResources := map[string]bool{"users": false, "roles": false, "tenant": false}
+	expectedResources := map[string]bool{"users": false, "roles": false, "tenant": false, "ip_whitelist": false}
 	expectedActions := map[string]bool{"view": false, "edit": false}
 
 	for _, permission := range response.Permissions {

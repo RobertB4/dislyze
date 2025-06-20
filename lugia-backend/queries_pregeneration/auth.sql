@@ -86,3 +86,11 @@ WHERE id = $1;
 UPDATE tenants
 SET name = $1, updated_at = CURRENT_TIMESTAMP
 WHERE id = $2;
+
+-- name: GetTenantAndUserContext :one
+SELECT 
+    tenants.enterprise_features,
+    users.is_internal_user
+FROM tenants
+JOIN users ON users.tenant_id = tenants.id
+WHERE tenants.id = @tenant_id AND users.id = @user_id;

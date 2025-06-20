@@ -218,6 +218,32 @@ func (q *Queries) GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUI
 	return &i, err
 }
 
+const GetTenantAndUserContext = `-- name: GetTenantAndUserContext :one
+SELECT 
+    tenants.enterprise_features,
+    users.is_internal_user
+FROM tenants
+JOIN users ON users.tenant_id = tenants.id
+WHERE tenants.id = $1 AND users.id = $2
+`
+
+type GetTenantAndUserContextParams struct {
+	TenantID pgtype.UUID `json:"tenant_id"`
+	UserID   pgtype.UUID `json:"user_id"`
+}
+
+type GetTenantAndUserContextRow struct {
+	EnterpriseFeatures []byte `json:"enterprise_features"`
+	IsInternalUser     bool   `json:"is_internal_user"`
+}
+
+func (q *Queries) GetTenantAndUserContext(ctx context.Context, arg *GetTenantAndUserContextParams) (*GetTenantAndUserContextRow, error) {
+	row := q.db.QueryRow(ctx, GetTenantAndUserContext, arg.TenantID, arg.UserID)
+	var i GetTenantAndUserContextRow
+	err := row.Scan(&i.EnterpriseFeatures, &i.IsInternalUser)
+	return &i, err
+}
+
 const GetTenantByID = `-- name: GetTenantByID :one
 SELECT id, name, enterprise_features, stripe_customer_id, created_at, updated_at FROM tenants
 WHERE id = $1

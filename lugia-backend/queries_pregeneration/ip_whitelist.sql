@@ -55,24 +55,24 @@ WHERE id = $1;
 
 -- name: GetUsersByIPWhitelistEditPermission :many
 WITH users_with_permission AS (
-    SELECT DISTINCT ur.user_id
-    FROM user_roles ur
-    JOIN roles r ON ur.role_id = r.id
-    JOIN role_permissions rp ON r.id = rp.role_id
-    JOIN permissions p ON rp.permission_id = p.id
-    WHERE ur.tenant_id = @tenant_id
-    AND p.resource = 'ip_whitelist'
-    AND p.action = 'edit'
+    SELECT DISTINCT user_roles.user_id
+    FROM user_roles
+    JOIN roles ON user_roles.role_id = roles.id
+    JOIN role_permissions ON roles.id = role_permissions.role_id
+    JOIN permissions ON role_permissions.permission_id = permissions.id
+    WHERE user_roles.tenant_id = @tenant_id
+    AND permissions.resource = 'ip_whitelist'
+    AND permissions.action = 'edit'
     AND (
         @rbac_enabled = true OR  -- RBAC enabled: use all roles
-        r.is_default = true      -- RBAC disabled: only default roles
+        roles.is_default = true      -- RBAC disabled: only default roles
     )
 )
-SELECT u.id, u.email, u.name
-FROM users u
-JOIN users_with_permission uwp ON u.id = uwp.user_id
-WHERE u.tenant_id = @tenant_id
-AND u.status = 'active';
+SELECT users.id, users.email, users.name
+FROM users
+JOIN users_with_permission ON users.id = users_with_permission.user_id
+WHERE users.tenant_id = @tenant_id
+AND users.status = 'active';
 
 -- Helper query to get current IP whitelist configuration for snapshots
 -- name: GetTenantIPWhitelistSnapshot :many
@@ -92,14 +92,15 @@ VALUES ($1, $2, $3, $4, $5);
 -- name: GetIPWhitelistForMiddleware :many
 WITH tenant_features AS (
     SELECT 
-        t.id,
-        (t.enterprise_features->>'ip_whitelist'->>'enabled')::boolean as ip_whitelist_enabled,
-        (t.enterprise_features->>'ip_whitelist'->>'allow_internal_admin_bypass')::boolean as allow_internal_bypass
-    FROM tenants t WHERE t.id = $1
+        tenants.id,
+        (tenants.enterprise_features->'ip_whitelist'->>'enabled')::boolean as ip_whitelist_enabled,
+        (tenants.enterprise_features->'ip_whitelist'->>'allow_internal_admin_bypass')::boolean as allow_internal_bypass
+    FROM tenants WHERE tenants.id = $1
 )
 SELECT 
-    tf.ip_whitelist_enabled,
-    tf.allow_internal_bypass,
-    tiw.ip_address::text as ip_address
-FROM tenant_features tf
-LEFT JOIN tenant_ip_whitelist tiw ON tf.id = tiw.tenant_id AND tf.ip_whitelist_enabled = true;
+    tenant_features.ip_whitelist_enabled,
+    tenant_features.allow_internal_bypass,
+    tenant_ip_whitelist.ip_address::text as ip_address
+FROM tenant_features
+JOIN tenant_ip_whitelist ON tenant_features.id = tenant_ip_whitelist.tenant_id
+WHERE tenant_features.ip_whitelist_enabled = true;

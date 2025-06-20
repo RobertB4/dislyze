@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS ip_whitelist_revert_tokens;
+DROP TABLE IF EXISTS tenant_ip_whitelist;
 DROP TABLE IF EXISTS goose_db_version;
 DROP TABLE IF EXISTS email_change_tokens;
 DROP TABLE IF EXISTS invitation_tokens;

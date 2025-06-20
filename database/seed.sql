@@ -32,6 +32,7 @@ INSERT INTO role_permissions (role_id, permission_id, tenant_id) VALUES
 ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '6e95ed87-f380-41fe-bc5b-f8af002345a4', '11111111-1111-1111-1111-111111111111'), -- tenant edit
 ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'db994eda-6ff7-4ae5-a675-3abe735ce9cc', '11111111-1111-1111-1111-111111111111'), -- users edit
 ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'cccf277b-5fd5-4f1d-b763-ebf69973e5b7', '11111111-1111-1111-1111-111111111111'), -- roles edit
+('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4', '11111111-1111-1111-1111-111111111111'), -- ip_whitelist edit
 -- Assign permissions to ユーザー管理者 role (users view and edit only)
 ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'db994eda-6ff7-4ae5-a675-3abe735ce9cc', '11111111-1111-1111-1111-111111111111'), -- users edit
 
@@ -39,11 +40,13 @@ INSERT INTO role_permissions (role_id, permission_id, tenant_id) VALUES
 ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '6e95ed87-f380-41fe-bc5b-f8af002345a4', '22222222-2222-2222-2222-222222222222'), -- tenant edit
 ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'db994eda-6ff7-4ae5-a675-3abe735ce9cc', '22222222-2222-2222-2222-222222222222'), -- users edit
 ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'cccf277b-5fd5-4f1d-b763-ebf69973e5b7', '22222222-2222-2222-2222-222222222222'), -- roles edit
+('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4', '22222222-2222-2222-2222-222222222222'), -- ip_whitelist edit
 
 -- Internal tenant admin role permissions
 ('22222222-3333-4444-5555-666666666666', '6e95ed87-f380-41fe-bc5b-f8af002345a4', '33333333-3333-3333-3333-333333333333'), -- tenant edit
 ('22222222-3333-4444-5555-666666666666', 'db994eda-6ff7-4ae5-a675-3abe735ce9cc', '33333333-3333-3333-3333-333333333333'), -- users edit
-('22222222-3333-4444-5555-666666666666', 'cccf277b-5fd5-4f1d-b763-ebf69973e5b7', '33333333-3333-3333-3333-333333333333'); -- roles edit
+('22222222-3333-4444-5555-666666666666', 'cccf277b-5fd5-4f1d-b763-ebf69973e5b7', '33333333-3333-3333-3333-333333333333'), -- roles edit
+('22222222-3333-4444-5555-666666666666', 'a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4', '33333333-3333-3333-3333-333333333333'); -- ip_whitelist edit
 
 -- Insert Users
 INSERT INTO users (id, tenant_id, email, password_hash, name, status, is_internal_admin, is_internal_user) VALUES

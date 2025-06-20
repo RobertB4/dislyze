@@ -71,7 +71,8 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 
 		r.Group(func(r chi.Router) {
 			r.Use(jirachiAuthMiddleware.Authenticate)
-			r.Use(middleware.LoadEnterpriseFeatures(queries))
+			r.Use(middleware.LoadTenantAndUserContext(queries))
+			r.Use(middleware.IPWhitelistMiddleware(queries))
 
 			r.Get("/me", usersHandler.GetMe)
 			r.Post("/me/change-name", usersHandler.UpdateMe)

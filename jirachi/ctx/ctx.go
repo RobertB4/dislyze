@@ -14,6 +14,7 @@ const (
 	TenantIDKey           contextKey = "tenant_id"
 	UserIDKey             contextKey = "user_id"
 	EnterpriseFeaturesKey contextKey = "enterprise_features"
+	IsInternalUserKey     contextKey = "is_internal_user"
 )
 
 func GetTenantID(ctx context.Context) pgtype.UUID {
@@ -51,4 +52,13 @@ func GetEnterpriseFeatureEnabled(ctx context.Context, featureName string) bool {
 func GetIPWhitelistConfig(ctx context.Context) *authz.IPWhitelist {
 	features := GetEnterpriseFeatures(ctx)
 	return &features.IPWhitelist
+}
+
+func WithIsInternalUser(ctx context.Context, isInternalUser bool) context.Context {
+	return context.WithValue(ctx, IsInternalUserKey, isInternalUser)
+}
+
+func GetIsInternalUser(ctx context.Context) bool {
+	isInternalUser := ctx.Value(IsInternalUserKey).(bool)
+	return isInternalUser
 }
