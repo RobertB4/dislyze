@@ -23,11 +23,14 @@ func UserHasPermission(ctx context.Context, db *queries.Queries, resource, actio
 	userID := libctx.GetUserID(ctx)
 	tenantID := libctx.GetTenantID(ctx)
 
+	rbacEnabled := libctx.GetEnterpriseFeatureEnabled(ctx, "rbac")
+
 	hasPermission, err := db.UserHasPermission(ctx, &queries.UserHasPermissionParams{
-		UserID:   userID,
-		TenantID: tenantID,
-		Resource: resource,
-		Action:   action,
+		UserID:      userID,
+		TenantID:    tenantID,
+		Resource:    resource,
+		Action:      action,
+		RbacEnabled: rbacEnabled,
 	})
 	if err != nil {
 		errlib.LogError(errlib.New(err, 500, "failed to check user permission"))

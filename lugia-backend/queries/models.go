@@ -5,6 +5,8 @@
 package queries
 
 import (
+	"net/netip"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -26,6 +28,17 @@ type InvitationToken struct {
 	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UsedAt    pgtype.Timestamptz `json:"used_at"`
+}
+
+type IpWhitelistRevertToken struct {
+	ID             pgtype.UUID        `json:"id"`
+	TenantID       pgtype.UUID        `json:"tenant_id"`
+	TokenHash      string             `json:"token_hash"`
+	ConfigSnapshot []byte             `json:"config_snapshot"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	ExpiresAt      pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UsedAt         pgtype.Timestamptz `json:"used_at"`
 }
 
 type PasswordResetToken struct {
@@ -82,6 +95,15 @@ type Tenant struct {
 	StripeCustomerID   pgtype.Text        `json:"stripe_customer_id"`
 	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
+}
+
+type TenantIpWhitelist struct {
+	ID        pgtype.UUID        `json:"id"`
+	TenantID  pgtype.UUID        `json:"tenant_id"`
+	IpAddress netip.Addr         `json:"ip_address"`
+	Label     pgtype.Text        `json:"label"`
+	CreatedBy pgtype.UUID        `json:"created_by"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 type User struct {

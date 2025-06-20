@@ -2,43 +2,23 @@ package authz
 
 import (
 	"context"
-	"encoding/json"
-
-	"dislyze/jirachi/authz"
-
-	"github.com/jackc/pgx/v5"
 
 	libctx "dislyze/jirachi/ctx"
-	"dislyze/jirachi/errlib"
-	"lugia/queries"
 )
+
+type EnterpriseFeature string
 
 const (
-	FeatureRBAC = "rbac"
+	FeatureRBAC        EnterpriseFeature = "rbac"
+	FeatureIPWhitelist EnterpriseFeature = "ip_whitelist"
 )
 
-func TenantHasFeature(ctx context.Context, db *queries.Queries, feature string) bool {
-	tenantID := libctx.GetTenantID(ctx)
-
-	tenant, err := db.GetTenantByID(ctx, tenantID)
-	if err != nil {
-		if errlib.Is(err, pgx.ErrNoRows) {
-			errlib.LogError(errlib.New(err, 500, "tenant not found when checking feature"))
-		} else {
-			errlib.LogError(errlib.New(err, 500, "failed to get tenant when checking feature"))
-		}
-		return false
-	}
-
-	var enterpriseFeatures authz.EnterpriseFeatures
-	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
-		errlib.LogError(errlib.New(err, 500, "failed to unmarshal features config"))
-		return false
-	}
-
+func TenantHasFeature(ctx context.Context, feature EnterpriseFeature) bool {
 	switch feature {
 	case FeatureRBAC:
-		return enterpriseFeatures.RBAC.Enabled
+		return libctx.GetEnterpriseFeatureEnabled(ctx, "rbac")
+	case FeatureIPWhitelist:
+		return libctx.GetEnterpriseFeatureEnabled(ctx, "ip_whitelist")
 	default:
 		return false
 	}

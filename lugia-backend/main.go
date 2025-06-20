@@ -71,6 +71,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 
 		r.Group(func(r chi.Router) {
 			r.Use(jirachiAuthMiddleware.Authenticate)
+			r.Use(middleware.LoadEnterpriseFeatures(queries))
 
 			r.Get("/me", usersHandler.GetMe)
 			r.Post("/me/change-name", usersHandler.UpdateMe)
@@ -88,7 +89,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 			})
 
 			r.Route("/roles", func(r chi.Router) {
-				r.Use(middleware.RequireRBAC(queries))
+				r.Use(middleware.RequireRBAC())
 
 				r.With(middleware.RequireRolesView(queries)).Get("/", rolesHandler.GetRoles)
 				r.With(middleware.RequireRolesView(queries)).Get("/permissions", rolesHandler.GetPermissions)

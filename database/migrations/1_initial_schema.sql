@@ -45,7 +45,9 @@ INSERT INTO permissions (id, resource, action, description) VALUES
 ('3a52c807-ddcb-4044-8682-658e04800a8e', 'users', 'view', 'ユーザー一覧の閲覧'),
 ('db994eda-6ff7-4ae5-a675-3abe735ce9cc', 'users', 'edit', 'ユーザーの編集'),
 ('44b8962d-5dc5-490e-8469-03078668dd52', 'roles', 'view', 'ロール一覧の閲覧'),
-('cccf277b-5fd5-4f1d-b763-ebf69973e5b7', 'roles', 'edit', 'ロールの編集');
+('cccf277b-5fd5-4f1d-b763-ebf69973e5b7', 'roles', 'edit', 'ロールの編集'),
+('f1a8b2c3-d4e5-f6a7-b8c9-d0e1f2a3b4c5', 'ip_whitelist', 'view', 'IP制限画面の閲覧'),
+('a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4', 'ip_whitelist', 'edit', 'IP制限画面の編集');
 
 CREATE TABLE role_permissions (
     role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
@@ -141,6 +143,31 @@ CREATE INDEX idx_email_change_tokens_user_id ON email_change_tokens(user_id);
 CREATE INDEX idx_email_change_tokens_token_hash ON email_change_tokens(token_hash);
 CREATE INDEX idx_email_change_tokens_expires_at ON email_change_tokens(expires_at);
 
+CREATE TABLE tenant_ip_whitelist (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    ip_address INET NOT NULL,
+    label TEXT,
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_tenant_ip_whitelist_tenant_id ON tenant_ip_whitelist(tenant_id);
+CREATE INDEX idx_tenant_ip_whitelist_ip_address ON tenant_ip_whitelist(ip_address);
+
+CREATE TABLE ip_whitelist_revert_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    config_snapshot JSONB NOT NULL,
+    created_by UUID NOT NULL REFERENCES users(id),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    used_at TIMESTAMP WITH TIME ZONE
+);
+CREATE INDEX idx_ip_whitelist_revert_tokens_tenant_id ON ip_whitelist_revert_tokens(tenant_id);
+CREATE INDEX idx_ip_whitelist_revert_tokens_token_hash ON ip_whitelist_revert_tokens(token_hash);
+CREATE INDEX idx_ip_whitelist_revert_tokens_expires_at ON ip_whitelist_revert_tokens(expires_at);
+
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -175,6 +202,11 @@ CREATE TRIGGER update_users_updated_at
 -- +goose StatementBegin
 
 -- Drop indexes
+DROP INDEX IF EXISTS idx_ip_whitelist_revert_tokens_expires_at;
+DROP INDEX IF EXISTS idx_ip_whitelist_revert_tokens_token_hash;
+DROP INDEX IF EXISTS idx_ip_whitelist_revert_tokens_tenant_id;
+DROP INDEX IF EXISTS idx_tenant_ip_whitelist_ip_address;
+DROP INDEX IF EXISTS idx_tenant_ip_whitelist_tenant_id;
 DROP INDEX IF EXISTS idx_email_change_tokens_expires_at;
 DROP INDEX IF EXISTS idx_email_change_tokens_token_hash;
 DROP INDEX IF EXISTS idx_email_change_tokens_user_id;
@@ -198,6 +230,8 @@ DROP INDEX IF EXISTS idx_password_reset_tokens_token_hash;
 DROP INDEX IF EXISTS idx_password_reset_tokens_expires_at;
 
 -- Drop tables
+DROP TABLE IF EXISTS ip_whitelist_revert_tokens;
+DROP TABLE IF EXISTS tenant_ip_whitelist;
 DROP TABLE IF EXISTS email_change_tokens;
 DROP TABLE IF EXISTS invitation_tokens;
 DROP TABLE IF EXISTS password_reset_tokens;
