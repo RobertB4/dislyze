@@ -16,7 +16,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
 	const { tenantId } = params;
 
 	const usersPromise = loadFunctionFetch(fetch, `/api/tenants/${tenantId}/users`)
-		.then(response => response.json())
+		.then((response) => response.json())
 		.then((data: GetUsersByTenantResponse) => data);
 
 	return {
