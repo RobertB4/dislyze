@@ -30,4 +30,11 @@ sqlc:
 	sqlc generate
 
 deadcode:
-	deadcode `go list ./... | grep -v test`
+	@output=$$(deadcode `go list ./... | grep -v test`); \
+	if [ -n "$$output" ]; then \
+		echo "Dead code found:"; \
+		echo "$$output"; \
+		exit 1; \
+	else \
+		echo "No dead code found"; \
+	fi
