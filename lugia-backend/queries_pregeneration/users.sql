@@ -82,16 +82,47 @@ SET email = $1, updated_at = CURRENT_TIMESTAMP
 WHERE id = $2;
 
 -- name: UserHasPermission :one
-SELECT EXISTS(
-    SELECT 1 FROM user_roles
-    JOIN role_permissions ON user_roles.role_id = role_permissions.role_id
-    JOIN permissions ON role_permissions.permission_id = permissions.id
-    WHERE user_roles.user_id = $1 AND user_roles.tenant_id = $2 
-    AND permissions.resource = $3 
+WITH user_permissions AS (
+  -- Get permissions from user's assigned roles (filtered by RBAC status)
+  SELECT 1 as found
+  FROM user_roles
+  JOIN roles ON user_roles.role_id = roles.id
+  JOIN role_permissions ON user_roles.role_id = role_permissions.role_id
+  JOIN permissions ON role_permissions.permission_id = permissions.id
+  WHERE user_roles.user_id = @user_id 
+    AND user_roles.tenant_id = @tenant_id
+    AND permissions.resource = @resource
     AND (
-        permissions.action = $4 OR 
-        ($4 = 'view' AND permissions.action = 'edit')
+        permissions.action = @action OR 
+        (@action = 'view' AND permissions.action = 'edit')
     )
+    AND (
+      @rbac_enabled = true OR  -- RBAC enabled: use all roles
+      roles.is_default = true  -- RBAC disabled: only default roles
+    )
+  LIMIT 1
+),
+fallback_permissions AS (
+  -- Fallback: Check 閲覧者 permissions if user has no valid roles
+  SELECT 1 as found
+  FROM roles
+  JOIN role_permissions ON roles.id = role_permissions.role_id
+  JOIN permissions ON role_permissions.permission_id = permissions.id
+  WHERE roles.tenant_id = @tenant_id
+    AND roles.name = '閲覧者'
+    AND roles.is_default = true
+    AND permissions.resource = @resource
+    AND (
+        permissions.action = @action OR 
+        (@action = 'view' AND permissions.action = 'edit')
+    )
+    AND NOT EXISTS (SELECT 1 FROM user_permissions)
+  LIMIT 1
+)
+SELECT EXISTS(
+    SELECT 1 FROM user_permissions
+    UNION ALL
+    SELECT 1 FROM fallback_permissions
 );
 
 -- name: GetUserRoleIDs :many
