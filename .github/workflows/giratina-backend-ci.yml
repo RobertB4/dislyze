@@ -70,7 +70,7 @@ jobs:
         run: gosec -exclude-dir=queries ./...
 
       - name: Check for dead code
-        working-directory: ./lugia-backend
+        working-directory: ./giratina-backend
         run: make deadcode
 
       - name: Lint Go code (golangci-lint)
