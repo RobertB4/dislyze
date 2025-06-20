@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	ResourceTenant = "tenant"
-	ResourceUsers  = "users"
-	ResourceRoles  = "roles"
+	ResourceTenant     = "tenant"
+	ResourceUsers      = "users"
+	ResourceRoles      = "roles"
+	ResourceIPWhitelist = "ip_whitelist"
 )
 
 const (

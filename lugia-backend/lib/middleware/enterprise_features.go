@@ -41,3 +41,7 @@ func RequireFeature(feature authz.EnterpriseFeature) func(http.Handler) http.Han
 func RequireRBAC() func(http.Handler) http.Handler {
 	return RequireFeature(authz.FeatureRBAC)
 }
+
+func RequireIPWhitelist() func(http.Handler) http.Handler {
+	return RequireFeature(authz.FeatureIPWhitelist)
+}

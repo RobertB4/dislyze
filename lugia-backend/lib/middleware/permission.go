@@ -59,3 +59,11 @@ func RequireRolesView(db *queries.Queries) func(http.Handler) http.Handler {
 func RequireRolesEdit(db *queries.Queries) func(http.Handler) http.Handler {
 	return RequirePermission(db, authz.ResourceRoles, authz.ActionEdit)
 }
+
+func RequireIPWhitelistView(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, authz.ResourceIPWhitelist, authz.ActionView)
+}
+
+func RequireIPWhitelistEdit(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, authz.ResourceIPWhitelist, authz.ActionEdit)
+}

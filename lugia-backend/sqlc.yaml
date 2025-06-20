@@ -20,3 +20,7 @@ sql:
               type: "UserRole"
               import: "lugia/queries_pregeneration"
             column: "users.role"
+          - go_type:
+              type: "Prefix"
+              import: "net/netip"
+            column: "tenant_ip_whitelist.ip_address"

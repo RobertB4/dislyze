@@ -19,10 +19,10 @@ RETURNING id, tenant_id, ip_address, label, created_by, created_at
 `
 
 type AddIPToWhitelistParams struct {
-	TenantID  pgtype.UUID `json:"tenant_id"`
-	IpAddress netip.Addr  `json:"ip_address"`
-	Label     pgtype.Text `json:"label"`
-	CreatedBy pgtype.UUID `json:"created_by"`
+	TenantID  pgtype.UUID  `json:"tenant_id"`
+	IpAddress netip.Prefix `json:"ip_address"`
+	Label     pgtype.Text  `json:"label"`
+	CreatedBy pgtype.UUID  `json:"created_by"`
 }
 
 func (q *Queries) AddIPToWhitelist(ctx context.Context, arg *AddIPToWhitelistParams) (*TenantIpWhitelist, error) {
@@ -358,7 +358,7 @@ func (q *Queries) RemoveIPFromWhitelist(ctx context.Context, arg *RemoveIPFromWh
 
 type RestoreIPWhitelistFromSnapshotParams struct {
 	TenantID  pgtype.UUID        `json:"tenant_id"`
-	IpAddress netip.Addr         `json:"ip_address"`
+	IpAddress netip.Prefix       `json:"ip_address"`
 	Label     pgtype.Text        `json:"label"`
 	CreatedBy pgtype.UUID        `json:"created_by"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`

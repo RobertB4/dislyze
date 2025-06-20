@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"lugia/features/auth"
+	"lugia/features/ip_whitelist"
 	"lugia/features/roles"
 	"lugia/features/users"
 	"lugia/lib/config"
@@ -49,6 +50,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	authHandler := auth.NewAuthHandler(dbConn, env, authRateLimiter, queries)
 	usersHandler := users.NewUsersHandler(dbConn, queries, env, resendInviteRateLimiter, deleteUserRateLimiter, changeEmailRateLimiter)
 	rolesHandler := roles.NewRolesHandler(dbConn, queries, env)
+	ipWhitelistHandler := ip_whitelist.NewIPWhitelistHandler(dbConn, queries, env)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -101,6 +103,13 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 
 			r.Route("/tenant", func(r chi.Router) {
 				r.With(middleware.RequireTenantEdit(queries)).Post("/change-name", usersHandler.ChangeTenantName)
+			})
+
+			r.Route("/ip-whitelist", func(r chi.Router) {
+				r.Use(middleware.RequireIPWhitelist())
+
+				r.With(middleware.RequireIPWhitelistView(queries)).Get("/", ipWhitelistHandler.GetIPWhitelist)
+				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/", ipWhitelistHandler.AddIPToWhitelist)
 			})
 		})
 	})

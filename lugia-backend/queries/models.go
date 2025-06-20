@@ -100,7 +100,7 @@ type Tenant struct {
 type TenantIpWhitelist struct {
 	ID        pgtype.UUID        `json:"id"`
 	TenantID  pgtype.UUID        `json:"tenant_id"`
-	IpAddress netip.Addr         `json:"ip_address"`
+	IpAddress netip.Prefix       `json:"ip_address"`
 	Label     pgtype.Text        `json:"label"`
 	CreatedBy pgtype.UUID        `json:"created_by"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
