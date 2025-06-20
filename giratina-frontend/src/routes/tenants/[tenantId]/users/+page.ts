@@ -12,7 +12,7 @@ export interface GetUsersByTenantResponse {
 	users: User[];
 }
 
-export const load: PageLoad = async ({ fetch, params }) => {
+export const load: PageLoad = ({ fetch, params }) => {
 	const { tenantId } = params;
 
 	const usersPromise = loadFunctionFetch(fetch, `/api/tenants/${tenantId}/users`)
