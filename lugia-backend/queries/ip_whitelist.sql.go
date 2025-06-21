@@ -192,6 +192,31 @@ func (q *Queries) GetIPWhitelistRevertTokenByHash(ctx context.Context, tokenHash
 	return &i, err
 }
 
+const GetIPWhitelistRuleByID = `-- name: GetIPWhitelistRuleByID :one
+SELECT id, tenant_id, ip_address, label, created_by, created_at
+FROM tenant_ip_whitelist
+WHERE id = $1 AND tenant_id = $2
+`
+
+type GetIPWhitelistRuleByIDParams struct {
+	ID       pgtype.UUID `json:"id"`
+	TenantID pgtype.UUID `json:"tenant_id"`
+}
+
+func (q *Queries) GetIPWhitelistRuleByID(ctx context.Context, arg *GetIPWhitelistRuleByIDParams) (*TenantIpWhitelist, error) {
+	row := q.db.QueryRow(ctx, GetIPWhitelistRuleByID, arg.ID, arg.TenantID)
+	var i TenantIpWhitelist
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.IpAddress,
+		&i.Label,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return &i, err
+}
+
 const GetTenantIPWhitelist = `-- name: GetTenantIPWhitelist :many
 SELECT id, tenant_id, ip_address, label, created_by, created_at
 FROM tenant_ip_whitelist

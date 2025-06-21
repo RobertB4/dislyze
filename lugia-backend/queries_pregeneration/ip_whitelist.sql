@@ -13,6 +13,11 @@ RETURNING id, tenant_id, ip_address, label, created_by, created_at;
 DELETE FROM tenant_ip_whitelist
 WHERE id = $1 AND tenant_id = $2;
 
+-- name: GetIPWhitelistRuleByID :one
+SELECT id, tenant_id, ip_address, label, created_by, created_at
+FROM tenant_ip_whitelist
+WHERE id = $1 AND tenant_id = $2;
+
 -- name: UpdateIPWhitelistLabel :exec
 UPDATE tenant_ip_whitelist
 SET label = $1

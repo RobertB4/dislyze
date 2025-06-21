@@ -86,18 +86,6 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-	// Permission IDs from migrations
-	const (
-		ipWhitelistViewPermissionID = "f1a8b2c3-d4e5-f6a7-b8c9-d0e1f2a3b4c5"
-		ipWhitelistEditPermissionID = "a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4"
-	)
-
-	// Tenant IDs from seed data
-	const (
-		enterpriseTenantID = "11111111-1111-1111-1111-111111111111"
-		smbTenantID        = "22222222-2222-2222-2222-222222222222"
-		internalTenantID   = "33333333-3333-3333-3333-333333333333"
-	)
 
 	tests := []struct {
 		name           string
@@ -124,13 +112,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_ip_whitelist_view_permission_succeeds",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for enterprise_2
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=false
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -153,13 +141,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_ip_whitelist_edit_permission_succeeds",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.edit permission for enterprise_3
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistEditPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_edit"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=false
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -183,13 +171,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_feature_disabled_returns_403",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for enterprise_2
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=false (feature disabled)
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -208,13 +196,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_feature_enabled_but_inactive_succeeds",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for enterprise_2
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=false (middleware skips enforcement)
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -237,13 +225,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_feature_active_empty_whitelist_blocks_all",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for enterprise_2
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=true (middleware enforces IP restrictions)
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -264,13 +252,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_active_feature_blocks_non_whitelisted_ipv4",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for enterprise_2
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=true
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -282,7 +270,7 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 				})
 
 				// Add IP rule for 10.0.0.0/8 range
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "10.0.0.0/8", "Internal Network", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "10.0.0.0/8", "Internal Network", setup.TestUsersData["enterprise_1"].UserID)
 
 				// Client IP 192.168.1.100 is NOT in 10.0.0.0/8 range - should be blocked
 				return "enterprise_2", "192.168.1.100"
@@ -293,13 +281,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_active_feature_allows_whitelisted_ipv4",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for enterprise_2
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=true
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -311,8 +299,8 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 				})
 
 				// Add multiple IP rules including one that matches client IP
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "192.168.1.0/24", "Office Network", setup.TestUsersData["enterprise_1"].UserID)
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "10.0.0.100/32", "VPN Gateway", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "192.168.1.0/24", "Office Network", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "10.0.0.100/32", "VPN Gateway", setup.TestUsersData["enterprise_1"].UserID)
 
 				// Client IP 192.168.1.50 is in 192.168.1.0/24 range - should be allowed
 				return "enterprise_2", "192.168.1.50"
@@ -344,13 +332,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_ipv4_exact_match_allows_access",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for enterprise_2
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=true
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -362,7 +350,7 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 				})
 
 				// Add exact IP match rule
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "10.0.0.100/32", "Exact IP", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "10.0.0.100/32", "Exact IP", setup.TestUsersData["enterprise_1"].UserID)
 
 				// Client IP 10.0.0.100 exactly matches the rule - should be allowed
 				return "enterprise_2", "10.0.0.100"
@@ -378,13 +366,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_ipv4_cidr_range_allows_access",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for enterprise_2
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=true
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -396,7 +384,7 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 				})
 
 				// Add CIDR range rule
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "172.16.0.0/12", "Private Network", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "172.16.0.0/12", "Private Network", setup.TestUsersData["enterprise_1"].UserID)
 
 				// Client IP 172.20.5.10 is within 172.16.0.0/12 range - should be allowed
 				return "enterprise_2", "172.20.5.10"
@@ -412,13 +400,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_multiple_ipv4_rules_any_match_allows_access",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for enterprise_2
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=true
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -430,9 +418,9 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 				})
 
 				// Add multiple IP rules - client should match the third one
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "10.0.0.0/8", "Internal Network", setup.TestUsersData["enterprise_1"].UserID)
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "192.168.1.0/24", "Office Network", setup.TestUsersData["enterprise_1"].UserID)
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "172.16.0.100/32", "Specific Server", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "10.0.0.0/8", "Internal Network", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "192.168.1.0/24", "Office Network", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "172.16.0.100/32", "Specific Server", setup.TestUsersData["enterprise_1"].UserID)
 
 				// Client IP 172.16.0.100 matches the third rule exactly - should be allowed
 				return "enterprise_2", "172.16.0.100"
@@ -456,13 +444,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_ipv6_exact_match_allows_access",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for enterprise_2
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=true
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -474,7 +462,7 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 				})
 
 				// Add IPv6 exact match rule
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "2001:db8::1/128", "IPv6 Server", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "2001:db8::1/128", "IPv6 Server", setup.TestUsersData["enterprise_1"].UserID)
 
 				// Client IP 2001:db8::1 exactly matches the rule - should be allowed
 				return "enterprise_2", "2001:db8::1"
@@ -490,13 +478,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_ipv6_cidr_range_allows_access",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for enterprise_2
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=true
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -508,7 +496,7 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 				})
 
 				// Add IPv6 CIDR range rule
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "2001:db8::/64", "IPv6 Network", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "2001:db8::/64", "IPv6 Network", setup.TestUsersData["enterprise_1"].UserID)
 
 				// Client IP 2001:db8::50 is within 2001:db8::/64 range - should be allowed
 				return "enterprise_2", "2001:db8::50"
@@ -524,13 +512,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_ipv6_blocks_non_whitelisted",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for enterprise_2
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=true
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -542,7 +530,7 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 				})
 
 				// Add IPv6 CIDR range rule
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "2001:db8::/64", "IPv6 Network", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "2001:db8::/64", "IPv6 Network", setup.TestUsersData["enterprise_1"].UserID)
 
 				// Client IP 2001:db9::1 is NOT in 2001:db8::/64 range - should be blocked
 				return "enterprise_2", "2001:db9::1"
@@ -553,13 +541,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_internal_user_bypass_enabled_allows_access",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for internal_user_enterprise
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["internal_user_enterprise"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["internal_user_enterprise"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=true, bypass=true
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -571,7 +559,7 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 				})
 
 				// Add IP rule for 10.0.0.0/8 range
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "10.0.0.0/8", "Internal Network", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "10.0.0.0/8", "Internal Network", setup.TestUsersData["enterprise_1"].UserID)
 
 				// Client IP 192.168.1.100 is NOT whitelisted, but internal user should bypass
 				return "internal_user_enterprise", "192.168.1.100"
@@ -587,13 +575,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_internal_user_bypass_disabled_blocks_access",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for internal_user_enterprise
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["internal_user_enterprise"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["internal_user_enterprise"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=true, bypass=false
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -605,7 +593,7 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 				})
 
 				// Add IP rule for 10.0.0.0/8 range
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "10.0.0.0/8", "Internal Network", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "10.0.0.0/8", "Internal Network", setup.TestUsersData["enterprise_1"].UserID)
 
 				// Client IP 192.168.1.100 is NOT whitelisted, and bypass disabled - should be blocked
 				return "internal_user_enterprise", "192.168.1.100"
@@ -616,17 +604,17 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_tenant_isolation_smb_cannot_see_enterprise_rules",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// First, add IP rules to Enterprise tenant
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "10.0.0.0/8", "Enterprise Network", setup.TestUsersData["enterprise_1"].UserID)
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "192.168.1.0/24", "Enterprise Office", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "10.0.0.0/8", "Enterprise Network", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "192.168.1.0/24", "Enterprise Office", setup.TestUsersData["enterprise_1"].UserID)
 
 				// Create role with ip_whitelist.view permission for SMB user
-				roleID := createIPWhitelistRole(t, pool, smbTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["smb"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["smb_1"].UserID, roleID, smbTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["smb_1"].UserID, roleID, setup.TestTenantsData["smb"].ID)
 
 				// Set enterprise features for SMB tenant
-				updateTenantEnterpriseFeatures(t, pool, smbTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["smb"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -649,17 +637,17 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_tenant_isolation_enterprise_cannot_see_smb_rules",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// First, add IP rules to SMB tenant
-				insertIPWhitelistRule(t, pool, smbTenantID, "172.16.0.0/12", "SMB Network", setup.TestUsersData["smb_1"].UserID)
-				insertIPWhitelistRule(t, pool, smbTenantID, "203.0.113.0/24", "SMB External", setup.TestUsersData["smb_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["smb"].ID, "172.16.0.0/12", "SMB Network", setup.TestUsersData["smb_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["smb"].ID, "203.0.113.0/24", "SMB External", setup.TestUsersData["smb_1"].UserID)
 
 				// Create role with ip_whitelist.view permission for Enterprise user
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features for Enterprise tenant
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -682,13 +670,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_x_forwarded_for_header_extraction",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for enterprise_2
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=true
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -700,7 +688,7 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 				})
 
 				// Add IP rule for 172.16.0.0/12 range
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "172.16.0.0/12", "Internal Network", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "172.16.0.0/12", "Internal Network", setup.TestUsersData["enterprise_1"].UserID)
 
 				// Return special marker for X-Forwarded-For test - rightmost IP should be extracted (GCP Load Balancer behavior)
 				return "enterprise_2", "203.0.113.50, 192.168.1.1, 172.16.0.1"
@@ -716,13 +704,13 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 			name: "test_x_real_ip_header_extraction",
 			setupFunc: func(t *testing.T, pool *pgxpool.Pool) (string, string) {
 				// Create role with ip_whitelist.view permission for enterprise_2
-				roleID := createIPWhitelistRole(t, pool, enterpriseTenantID, []string{
-					ipWhitelistViewPermissionID,
+				roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
+					setup.TestPermissionsData["ip_whitelist_view"].ID,
 				})
-				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, enterpriseTenantID)
+				assignRoleToUser(t, pool, setup.TestUsersData["enterprise_2"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
 
 				// Set enterprise features: enabled=true, active=true
-				updateTenantEnterpriseFeatures(t, pool, enterpriseTenantID, map[string]interface{}{
+				updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 					"rbac": map[string]interface{}{
 						"enabled": true,
 					},
@@ -734,7 +722,7 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 				})
 
 				// Add IP rule for 192.168.1.0/24 range
-				insertIPWhitelistRule(t, pool, enterpriseTenantID, "192.168.1.0/24", "Office Network", setup.TestUsersData["enterprise_1"].UserID)
+				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "192.168.1.0/24", "Office Network", setup.TestUsersData["enterprise_1"].UserID)
 
 				// Return special marker for X-Real-IP test
 				return "enterprise_2", "X-Real-IP:192.168.1.75"

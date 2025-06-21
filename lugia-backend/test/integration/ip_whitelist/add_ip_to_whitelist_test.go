@@ -97,14 +97,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise_3
-		roleID := createIPWhitelistRole(t, pool, "11111111-1111-1111-1111-111111111111", []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, "11111111-1111-1111-1111-111111111111")
-
 		// Set enterprise features: enabled=true
-		updateTenantEnterpriseFeatures(t, pool, "11111111-1111-1111-1111-111111111111", map[string]interface{}{
+		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 			"rbac": map[string]interface{}{
 				"enabled": true,
 			},
@@ -115,8 +109,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			},
 		})
 
-		// Get user credentials
-		email, password := findUserCredentials("enterprise_3")
+		// Use enterprise_1 who already has IP whitelist permissions
+		email, password := findUserCredentials("enterprise_1")
 
 		// Create request body
 		requestBody := map[string]interface{}{
@@ -217,12 +211,6 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise_3
-		roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
-
 		// Set enterprise features: enabled=true
 		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 			"rbac": map[string]interface{}{
@@ -235,8 +223,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			},
 		})
 
-		// Get user credentials
-		email, password := findUserCredentials("enterprise_3")
+		// Use enterprise_1 who already has IP whitelist permissions
+		email, password := findUserCredentials("enterprise_1")
 
 		// Create malformed JSON body
 		malformedJSON := `{"ip_address": "192.168.1.100", "label": "Test IP"`  // Missing closing brace
@@ -272,12 +260,6 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise_3
-		roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
-
 		// Set enterprise features: enabled=true
 		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 			"rbac": map[string]interface{}{
@@ -290,8 +272,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			},
 		})
 
-		// Get user credentials
-		email, password := findUserCredentials("enterprise_3")
+		// Use enterprise_1 who already has IP whitelist permissions
+		email, password := findUserCredentials("enterprise_1")
 
 		// Create request with empty body
 		reqURL := fmt.Sprintf("%s/ip-whitelist/create", setup.BaseURL)
@@ -324,12 +306,6 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise_3
-		roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
-
 		// Set enterprise features: enabled=true
 		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 			"rbac": map[string]interface{}{
@@ -342,8 +318,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			},
 		})
 
-		// Get user credentials
-		email, password := findUserCredentials("enterprise_3")
+		// Use enterprise_1 who already has IP whitelist permissions
+		email, password := findUserCredentials("enterprise_1")
 
 		// Create request body without ip_address field
 		requestBody := map[string]interface{}{
@@ -383,12 +359,6 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise_3
-		roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
-
 		// Set enterprise features: enabled=true
 		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 			"rbac": map[string]interface{}{
@@ -401,8 +371,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			},
 		})
 
-		// Get user credentials
-		email, password := findUserCredentials("enterprise_3")
+		// Use enterprise_1 who already has IP whitelist permissions
+		email, password := findUserCredentials("enterprise_1")
 
 		// Create request body with empty ip_address
 		requestBody := map[string]interface{}{
@@ -443,12 +413,6 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise_3
-		roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
-
 		// Set enterprise features: enabled=true
 		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 			"rbac": map[string]interface{}{
@@ -461,8 +425,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			},
 		})
 
-		// Get user credentials
-		email, password := findUserCredentials("enterprise_3")
+		// Use enterprise_1 who already has IP whitelist permissions
+		email, password := findUserCredentials("enterprise_1")
 
 		// Create request body with invalid IP address
 		requestBody := map[string]interface{}{
@@ -503,12 +467,6 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise_3
-		roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
-
 		// Set enterprise features: enabled=true
 		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 			"rbac": map[string]interface{}{
@@ -521,8 +479,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			},
 		})
 
-		// Get user credentials
-		email, password := findUserCredentials("enterprise_3")
+		// Use enterprise_1 who already has IP whitelist permissions
+		email, password := findUserCredentials("enterprise_1")
 
 		// Create request body with invalid CIDR notation
 		requestBody := map[string]interface{}{
@@ -563,12 +521,6 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise_3
-		roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
-
 		// Set enterprise features: enabled=true
 		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 			"rbac": map[string]interface{}{
@@ -581,8 +533,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			},
 		})
 
-		// Get user credentials
-		email, password := findUserCredentials("enterprise_3")
+		// Use enterprise_1 who already has IP whitelist permissions
+		email, password := findUserCredentials("enterprise_1")
 
 		// Create request body with IPv4 single IP (will be auto-converted to /32)
 		requestBody := map[string]interface{}{
@@ -623,12 +575,6 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise_3
-		roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
-
 		// Set enterprise features: enabled=true
 		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 			"rbac": map[string]interface{}{
@@ -641,8 +587,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			},
 		})
 
-		// Get user credentials
-		email, password := findUserCredentials("enterprise_3")
+		// Use enterprise_1 who already has IP whitelist permissions
+		email, password := findUserCredentials("enterprise_1")
 
 		// Create request body with IPv4 CIDR range
 		requestBody := map[string]interface{}{
@@ -683,12 +629,6 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise_3
-		roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
-
 		// Set enterprise features: enabled=true
 		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 			"rbac": map[string]interface{}{
@@ -701,8 +641,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			},
 		})
 
-		// Get user credentials
-		email, password := findUserCredentials("enterprise_3")
+		// Use enterprise_1 who already has IP whitelist permissions
+		email, password := findUserCredentials("enterprise_1")
 
 		// First add an IP
 		requestBody := map[string]interface{}{
@@ -767,12 +707,6 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise_3
-		roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
-
 		// Set enterprise features: enabled=true
 		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 			"rbac": map[string]interface{}{
@@ -785,8 +719,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			},
 		})
 
-		// Get user credentials
-		email, password := findUserCredentials("enterprise_3")
+		// Use enterprise_1 who already has IP whitelist permissions
+		email, password := findUserCredentials("enterprise_1")
 
 		// Create request body with IPv6 single IP (will be auto-converted to /128)
 		requestBody := map[string]interface{}{
@@ -827,12 +761,6 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise_3
-		roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
-
 		// Set enterprise features: enabled=true
 		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 			"rbac": map[string]interface{}{
@@ -845,8 +773,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			},
 		})
 
-		// Get user credentials
-		email, password := findUserCredentials("enterprise_3")
+		// Use enterprise_1 who already has IP whitelist permissions
+		email, password := findUserCredentials("enterprise_1")
 
 		// Create request body with IPv6 CIDR range
 		requestBody := map[string]interface{}{
@@ -887,12 +815,6 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise_3
-		roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
-
 		// Set enterprise features: enabled=true
 		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 			"rbac": map[string]interface{}{
@@ -905,8 +827,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			},
 		})
 
-		// Get user credentials
-		email, password := findUserCredentials("enterprise_3")
+		// Use enterprise_1 who already has IP whitelist permissions
+		email, password := findUserCredentials("enterprise_1")
 
 		// Create request body with label
 		requestBody := map[string]interface{}{
@@ -947,12 +869,6 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise_3
-		roleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, roleID, setup.TestTenantsData["enterprise"].ID)
-
 		// Set enterprise features: enabled=true
 		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
 			"rbac": map[string]interface{}{
@@ -965,8 +881,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			},
 		})
 
-		// Get user credentials
-		email, password := findUserCredentials("enterprise_3")
+		// Use enterprise_1 who already has IP whitelist permissions
+		email, password := findUserCredentials("enterprise_1")
 
 		// Create request body without label (omit field entirely)
 		requestBody := map[string]interface{}{
@@ -1066,17 +982,6 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
-		// Create role with ip_whitelist.edit permission for enterprise tenant
-		enterpriseRoleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["enterprise"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["enterprise_3"].UserID, enterpriseRoleID, setup.TestTenantsData["enterprise"].ID)
-
-		// Create role with ip_whitelist.edit permission for SMB tenant
-		smbRoleID := createIPWhitelistRole(t, pool, setup.TestTenantsData["smb"].ID, []string{
-			"a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4", // ip_whitelist.edit permission
-		})
-		assignRoleToUser(t, pool, setup.TestUsersData["smb_1"].UserID, smbRoleID, setup.TestTenantsData["smb"].ID)
 
 		// Set enterprise features for both tenants
 		updateTenantEnterpriseFeatures(t, pool, setup.TestTenantsData["enterprise"].ID, map[string]interface{}{
@@ -1101,7 +1006,7 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		})
 
 		// First, add IP to enterprise tenant
-		enterpriseEmail, enterprisePassword := findUserCredentials("enterprise_3")
+		enterpriseEmail, enterprisePassword := findUserCredentials("enterprise_1")
 		requestBody := map[string]interface{}{
 			"ip_address": "192.168.1.100",
 			"label":      "Enterprise IP",

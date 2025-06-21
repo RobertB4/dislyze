@@ -113,6 +113,18 @@ var TestPermissionsData = map[string]PermissionTestData{
 		Action:      "edit",
 		Description: "ロールの編集",
 	},
+	"ip_whitelist_view": {
+		ID:          "f1a8b2c3-d4e5-f6a7-b8c9-d0e1f2a3b4c5",
+		Resource:    "ip_whitelist",
+		Action:      "view",
+		Description: "IP制限画面の閲覧",
+	},
+	"ip_whitelist_edit": {
+		ID:          "a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4",
+		Resource:    "ip_whitelist",
+		Action:      "edit",
+		Description: "IP制限画面の編集",
+	},
 }
 
 // TestRolesData provides easy access to role data

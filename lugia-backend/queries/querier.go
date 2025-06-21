@@ -43,6 +43,7 @@ type Querier interface {
 	GetEmailChangeTokenByHash(ctx context.Context, tokenHash string) (*EmailChangeToken, error)
 	GetIPWhitelistForMiddleware(ctx context.Context, id pgtype.UUID) ([]*GetIPWhitelistForMiddlewareRow, error)
 	GetIPWhitelistRevertTokenByHash(ctx context.Context, tokenHash string) (*IpWhitelistRevertToken, error)
+	GetIPWhitelistRuleByID(ctx context.Context, arg *GetIPWhitelistRuleByIDParams) (*TenantIpWhitelist, error)
 	GetInvitationByTokenHash(ctx context.Context, tokenHash string) (*InvitationToken, error)
 	GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error)
 	GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUID) (*RefreshToken, error)
