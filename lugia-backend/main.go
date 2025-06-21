@@ -109,7 +109,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 				r.Use(middleware.RequireIPWhitelist())
 
 				r.With(middleware.RequireIPWhitelistView(queries)).Get("/", ipWhitelistHandler.GetIPWhitelist)
-				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/", ipWhitelistHandler.AddIPToWhitelist)
+				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/create", ipWhitelistHandler.AddIPToWhitelist)
 			})
 		})
 	})

@@ -28,6 +28,13 @@ func IPWhitelistMiddleware(db *queries.Queries) func(http.Handler) http.Handler 
 				return
 			}
 
+			active := authz.GetIPWhitelistActive(ctx)
+			if !active {
+				// IP whitelist not active, continue normally
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			clientIP := iputils.ExtractClientIP(r)
 
 			ipConfig, err := db.GetIPWhitelistForMiddleware(ctx, tenantID)

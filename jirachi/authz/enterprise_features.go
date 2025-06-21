@@ -10,6 +10,7 @@ type RBAC struct {
 }
 
 type IPWhitelist struct {
-	Enabled                   bool `json:"enabled"`
+	Enabled                  bool `json:"enabled"` // Internal: Feature available to tenant
+	Active                   bool `json:"active"`  // User-controlled: Whether whitelist actively enforces
 	AllowInternalAdminBypass bool `json:"allow_internal_admin_bypass,omitempty"`
 }
