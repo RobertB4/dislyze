@@ -33,6 +33,13 @@ SELECT COUNT(*)
 FROM tenant_ip_whitelist
 WHERE tenant_id = $1;
 
+-- name: CheckIPExists :one
+SELECT EXISTS(
+    SELECT 1 
+    FROM tenant_ip_whitelist 
+    WHERE tenant_id = $1 AND ip_address = $2
+) AS exists;
+
 -- IP Whitelist Revert Token Operations
 
 -- name: CreateIPWhitelistRevertToken :one

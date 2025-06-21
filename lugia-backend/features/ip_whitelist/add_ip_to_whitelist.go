@@ -19,7 +19,6 @@ type AddIPToWhitelistRequest struct {
 	Label     *string `json:"label"`
 }
 
-
 func (r *AddIPToWhitelistRequest) Validate() error {
 	if r.IPAddress == "" {
 		return errlib.New(nil, http.StatusBadRequest, "")
@@ -60,6 +59,21 @@ func (h *IPWhitelistHandler) AddIPToWhitelist(w http.ResponseWriter, r *http.Req
 	prefix, err := netip.ParsePrefix(normalizedCIDR)
 	if err != nil {
 		appErr := errlib.New(err, http.StatusBadRequest, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	exists, err := h.q.CheckIPExists(ctx, &queries.CheckIPExistsParams{
+		TenantID:  tenantID,
+		IpAddress: prefix,
+	})
+	if err != nil {
+		appErr := errlib.New(err, http.StatusInternalServerError, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+	if exists {
+		appErr := errlib.New(nil, http.StatusBadRequest, "")
 		responder.RespondWithError(w, appErr)
 		return
 	}

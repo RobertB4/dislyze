@@ -15,6 +15,7 @@ type Querier interface {
 	AddIPToWhitelist(ctx context.Context, arg *AddIPToWhitelistParams) (*TenantIpWhitelist, error)
 	AddRolesToUser(ctx context.Context, arg []*AddRolesToUserParams) (int64, error)
 	AssignRoleToUser(ctx context.Context, arg *AssignRoleToUserParams) error
+	CheckIPExists(ctx context.Context, arg *CheckIPExistsParams) (bool, error)
 	CheckRoleInUse(ctx context.Context, arg *CheckRoleInUseParams) (bool, error)
 	CheckRoleNameExists(ctx context.Context, arg *CheckRoleNameExistsParams) (bool, error)
 	ClearTenantIPWhitelist(ctx context.Context, tenantID pgtype.UUID) error

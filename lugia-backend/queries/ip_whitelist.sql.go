@@ -44,6 +44,26 @@ func (q *Queries) AddIPToWhitelist(ctx context.Context, arg *AddIPToWhitelistPar
 	return &i, err
 }
 
+const CheckIPExists = `-- name: CheckIPExists :one
+SELECT EXISTS(
+    SELECT 1 
+    FROM tenant_ip_whitelist 
+    WHERE tenant_id = $1 AND ip_address = $2
+) AS exists
+`
+
+type CheckIPExistsParams struct {
+	TenantID  pgtype.UUID  `json:"tenant_id"`
+	IpAddress netip.Prefix `json:"ip_address"`
+}
+
+func (q *Queries) CheckIPExists(ctx context.Context, arg *CheckIPExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, CheckIPExists, arg.TenantID, arg.IpAddress)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const ClearTenantIPWhitelist = `-- name: ClearTenantIPWhitelist :exec
 DELETE FROM tenant_ip_whitelist
 WHERE tenant_id = $1
