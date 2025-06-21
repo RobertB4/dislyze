@@ -191,6 +191,16 @@ var TestRolesData = map[string]RoleTestData{
 
 // TestUsersData provides easy access to details of users seeded by seed.sql
 var TestUsersData = map[string]UserTestData{
+	// Internal User (is_internal_user = true, employee user)
+	"internal_user_enterprise": {
+		Email:             "11111111-1111-1111-1111-111111111111@internal.com",
+		PlainTextPassword: "password123",
+		UserID:            "a0000000-0000-0000-0000-000000000000",
+		TenantID:          "11111111-1111-1111-1111-111111111111",
+		Name:              "内部ユーザー",
+		Status:            "active",
+	},
+
 	// Enterprise Users (first 20 only)
 	"enterprise_1": {
 		Email:             "enterprise1@localhost.com",

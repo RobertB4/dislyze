@@ -18,7 +18,7 @@ test-integration-single:
 	cd test && docker compose -f docker-compose.integration.yml down
 	cd test && docker compose -f docker-compose.integration.yml build lugia-backend
 	cd test && docker compose -f docker-compose.integration.yml up -d
-	cd test && docker compose -f docker-compose.integration.yml exec lugia-backend go test ./test/integration/... -run "$(TEST)" -json -v -p 1 -parallel 1 2>&1 | gotestfmt -hide=empty-packages,successful-tests
+	cd test && docker compose -f docker-compose.integration.yml exec lugia-backend go test ./test/integration/... -run "$(TEST)" -json -v -p 1 -parallel 1 2>&1 | gotestfmt -hide=empty-packages
 
 lint:
 	golangci-lint run --timeout 5m
