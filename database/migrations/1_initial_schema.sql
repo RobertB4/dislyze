@@ -196,9 +196,7 @@ CREATE TRIGGER update_users_updated_at
 -- +goose StatementBegin
 
 -- Drop indexes
-DROP INDEX IF EXISTS idx_ip_whitelist_revert_tokens_expires_at;
-DROP INDEX IF EXISTS idx_ip_whitelist_revert_tokens_token_hash;
-DROP INDEX IF EXISTS idx_ip_whitelist_revert_tokens_tenant_id;
+
 DROP INDEX IF EXISTS idx_tenant_ip_whitelist_ip_address;
 DROP INDEX IF EXISTS idx_tenant_ip_whitelist_tenant_id;
 DROP INDEX IF EXISTS idx_email_change_tokens_expires_at;
@@ -224,7 +222,7 @@ DROP INDEX IF EXISTS idx_password_reset_tokens_token_hash;
 DROP INDEX IF EXISTS idx_password_reset_tokens_expires_at;
 
 -- Drop tables
-DROP TABLE IF EXISTS ip_whitelist_revert_tokens;
+DROP TABLE IF EXISTS ip_whitelist_emergency_tokens;
 DROP TABLE IF EXISTS tenant_ip_whitelist;
 DROP TABLE IF EXISTS email_change_tokens;
 DROP TABLE IF EXISTS invitation_tokens;

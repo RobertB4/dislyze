@@ -1,4 +1,4 @@
-DELETE FROM ip_whitelist_revert_tokens;
+DELETE FROM ip_whitelist_emergency_tokens;
 DELETE FROM tenant_ip_whitelist;
 DELETE FROM email_change_tokens;
 DELETE FROM invitation_tokens;
