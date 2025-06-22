@@ -43,7 +43,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	resendInviteRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, 1)
 	deleteUserRateLimiter := ratelimit.NewRateLimiter(1*time.Minute, 10)
 	changeEmailRateLimiter := ratelimit.NewRateLimiter(30*time.Minute, 1)
-	ipWhitelistRateLimiter := ratelimit.NewRateLimiter(10*time.Minute, 10)
+	ipWhitelistRateLimiter := ratelimit.NewRateLimiter(10*time.Minute, 30)
 
 	authConfig := config.NewLugiaAuthConfig(env)
 	jirachiAuthMiddleware := jirachi_auth.NewAuthMiddleware(authConfig, dbConn, authRateLimiter)
