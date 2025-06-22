@@ -77,28 +77,6 @@ responder.RespondWithError(w, appErr)
 - String-based feature flags instead of typed constants
 - Direct database calls in business logic for repeated security checks
 
-## IP Utilities Library
-
-### Usage Patterns
-Use the `lib/iputils` library for all IP-related operations:
-
-```go
-// Client IP extraction (handles proxy headers)
-clientIP := iputils.ExtractClientIP(r)
-
-// CIDR validation and normalization
-normalizedCIDR, err := iputils.ValidateCIDR("192.168.1.0/24")
-
-// IP matching against CIDR list
-allowed, err := iputils.IsIPInCIDRList(clientIP, allowedCIDRs)
-
-// IP normalization for storage
-normalizedIP, err := iputils.NormalizeIPForStorage(ipStr)
-
-// Batch rule validation
-validRules, errors := iputils.ValidateIPWhitelistRules(rules)
-```
-
 ### IPv4/IPv6 Support
 - All utilities handle both IPv4 and IPv6 automatically
 - Single IPs are auto-converted to appropriate CIDR notation (/32 for IPv4, /128 for IPv6)

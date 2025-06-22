@@ -92,37 +92,3 @@ func ExtractClientIP(r *http.Request) string {
 
 	return ip
 }
-
-// NormalizeIPForStorage normalizes an IP for consistent storage
-// Ensures IPv4 addresses are not stored as IPv4-mapped IPv6
-func NormalizeIPForStorage(ipStr string) (string, error) {
-	ip := net.ParseIP(ipStr)
-	if ip == nil {
-		return "", fmt.Errorf("invalid IP address: %s", ipStr)
-	}
-
-	// Convert IPv4-mapped IPv6 addresses back to IPv4
-	if ipv4 := ip.To4(); ipv4 != nil {
-		return ipv4.String(), nil
-	}
-
-	// Return IPv6 address as-is
-	return ip.String(), nil
-}
-
-// ValidateIPWhitelistRules validates a list of IP/CIDR rules
-// Returns normalized rules and any validation errors
-func ValidateIPWhitelistRules(rules []string) ([]string, []string) {
-	var normalized []string
-	var errors []string
-
-	for _, rule := range rules {
-		if normalizedRule, err := ValidateCIDR(rule); err != nil {
-			errors = append(errors, fmt.Sprintf("Rule '%s': %s", rule, err.Error()))
-		} else {
-			normalized = append(normalized, normalizedRule)
-		}
-	}
-
-	return normalized, errors
-}
