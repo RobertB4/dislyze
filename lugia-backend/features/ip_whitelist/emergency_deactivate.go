@@ -20,6 +20,12 @@ import (
 func (h *IPWhitelistHandler) EmergencyDeactivate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	if !h.rateLimiter.Allow(libctx.GetUserID(ctx).String()) {
+		appErr := errlib.New(fmt.Errorf("EmergencyDeactivate: rate limit exceeded"), http.StatusTooManyRequests, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
 	token := r.URL.Query().Get("token")
 	if token == "" {
 		appErr := errlib.New(fmt.Errorf("EmergencyDeactivate: token query parameter is required"), http.StatusBadRequest, "")

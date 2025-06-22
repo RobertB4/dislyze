@@ -32,6 +32,12 @@ type ActivateWhitelistResponse struct {
 func (h *IPWhitelistHandler) ActivateWhitelist(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	if !h.rateLimiter.Allow(libctx.GetUserID(ctx).String()) {
+		appErr := errlib.New(fmt.Errorf("ActivateWhitelist: rate limit exceeded"), http.StatusTooManyRequests, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
 	var req ActivateWhitelistRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		appErr := errlib.New(fmt.Errorf("ActivateWhitelist: failed to decode request: %w", err), http.StatusBadRequest, "")

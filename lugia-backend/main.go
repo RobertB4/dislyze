@@ -43,6 +43,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	resendInviteRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, 1)
 	deleteUserRateLimiter := ratelimit.NewRateLimiter(1*time.Minute, 10)
 	changeEmailRateLimiter := ratelimit.NewRateLimiter(30*time.Minute, 1)
+	ipWhitelistRateLimiter := ratelimit.NewRateLimiter(10*time.Minute, 10)
 
 	authConfig := config.NewLugiaAuthConfig(env)
 	jirachiAuthMiddleware := jirachi_auth.NewAuthMiddleware(authConfig, dbConn, authRateLimiter)
@@ -50,7 +51,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	authHandler := auth.NewAuthHandler(dbConn, env, authRateLimiter, queries)
 	usersHandler := users.NewUsersHandler(dbConn, queries, env, resendInviteRateLimiter, deleteUserRateLimiter, changeEmailRateLimiter)
 	rolesHandler := roles.NewRolesHandler(dbConn, queries, env)
-	ipWhitelistHandler := ip_whitelist.NewIPWhitelistHandler(dbConn, queries, env)
+	ipWhitelistHandler := ip_whitelist.NewIPWhitelistHandler(dbConn, queries, env, ipWhitelistRateLimiter)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -113,6 +114,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/{id}/label/update", ipWhitelistHandler.UpdateIPLabel)
 				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/{id}/delete", ipWhitelistHandler.DeleteIP)
 				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/activate", ipWhitelistHandler.ActivateWhitelist)
+				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/deactivate", ipWhitelistHandler.DeactivateWhitelist)
 				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/emergency-deactivate", ipWhitelistHandler.EmergencyDeactivate)
 			})
 		})
