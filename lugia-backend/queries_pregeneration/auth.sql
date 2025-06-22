@@ -87,6 +87,11 @@ UPDATE tenants
 SET name = $1, updated_at = CURRENT_TIMESTAMP
 WHERE id = $2;
 
+-- name: UpdateTenantEnterpriseFeatures :exec
+UPDATE tenants
+SET enterprise_features = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2;
+
 -- name: GetTenantAndUserContext :one
 SELECT 
     tenants.enterprise_features,

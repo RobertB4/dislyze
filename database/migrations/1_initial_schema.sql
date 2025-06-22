@@ -154,19 +154,13 @@ CREATE TABLE tenant_ip_whitelist (
 CREATE INDEX idx_tenant_ip_whitelist_tenant_id ON tenant_ip_whitelist(tenant_id);
 CREATE INDEX idx_tenant_ip_whitelist_ip_address ON tenant_ip_whitelist(ip_address);
 
-CREATE TABLE ip_whitelist_revert_tokens (
+CREATE TABLE ip_whitelist_emergency_tokens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    token_hash VARCHAR(255) NOT NULL UNIQUE,
-    config_snapshot JSONB NOT NULL,
-    created_by UUID NOT NULL REFERENCES users(id),
-    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    used_at TIMESTAMP WITH TIME ZONE
+    jti UUID NOT NULL UNIQUE,
+    used_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX idx_ip_whitelist_revert_tokens_tenant_id ON ip_whitelist_revert_tokens(tenant_id);
-CREATE INDEX idx_ip_whitelist_revert_tokens_token_hash ON ip_whitelist_revert_tokens(token_hash);
-CREATE INDEX idx_ip_whitelist_revert_tokens_expires_at ON ip_whitelist_revert_tokens(expires_at);
+CREATE INDEX idx_ip_whitelist_emergency_tokens_jti ON ip_whitelist_emergency_tokens(jti);
 
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$

@@ -42,39 +42,3 @@ func (r iteratorForAddRolesToUser) Err() error {
 func (q *Queries) AddRolesToUser(ctx context.Context, arg []*AddRolesToUserParams) (int64, error) {
 	return q.db.CopyFrom(ctx, []string{"user_roles"}, []string{"user_id", "role_id", "tenant_id"}, &iteratorForAddRolesToUser{rows: arg})
 }
-
-// iteratorForRestoreIPWhitelistFromSnapshot implements pgx.CopyFromSource.
-type iteratorForRestoreIPWhitelistFromSnapshot struct {
-	rows                 []*RestoreIPWhitelistFromSnapshotParams
-	skippedFirstNextCall bool
-}
-
-func (r *iteratorForRestoreIPWhitelistFromSnapshot) Next() bool {
-	if len(r.rows) == 0 {
-		return false
-	}
-	if !r.skippedFirstNextCall {
-		r.skippedFirstNextCall = true
-		return true
-	}
-	r.rows = r.rows[1:]
-	return len(r.rows) > 0
-}
-
-func (r iteratorForRestoreIPWhitelistFromSnapshot) Values() ([]interface{}, error) {
-	return []interface{}{
-		r.rows[0].TenantID,
-		r.rows[0].IpAddress,
-		r.rows[0].Label,
-		r.rows[0].CreatedBy,
-		r.rows[0].CreatedAt,
-	}, nil
-}
-
-func (r iteratorForRestoreIPWhitelistFromSnapshot) Err() error {
-	return nil
-}
-
-func (q *Queries) RestoreIPWhitelistFromSnapshot(ctx context.Context, arg []*RestoreIPWhitelistFromSnapshotParams) (int64, error) {
-	return q.db.CopyFrom(ctx, []string{"tenant_ip_whitelist"}, []string{"tenant_id", "ip_address", "label", "created_by", "created_at"}, &iteratorForRestoreIPWhitelistFromSnapshot{rows: arg})
-}

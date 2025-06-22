@@ -43,6 +43,7 @@ services:
       - INITIAL_PW=e2e_initial_password
       - INTERNAL_USER_PW=password123
       - CREATE_TENANT_JWT_SECRET=test_create_tenant_jwt_secret_for_testing_only
+      - IP_WHITELIST_EMERGENCY_JWT_SECRET=test_ip_whitelist_emergency_jwt_secret
       - TRUSTED_PROXIES=172.18.0.4,lugia-frontend,127.0.0.1,localhost
     depends_on:
       postgres:

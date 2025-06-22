@@ -112,6 +112,8 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/create", ipWhitelistHandler.AddIPToWhitelist)
 				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/{id}/label/update", ipWhitelistHandler.UpdateIPLabel)
 				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/{id}/delete", ipWhitelistHandler.DeleteIP)
+				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/activate", ipWhitelistHandler.ActivateWhitelist)
+				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/emergency-deactivate", ipWhitelistHandler.EmergencyDeactivate)
 			})
 		})
 	})

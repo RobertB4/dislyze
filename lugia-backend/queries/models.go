@@ -30,15 +30,11 @@ type InvitationToken struct {
 	UsedAt    pgtype.Timestamptz `json:"used_at"`
 }
 
-type IpWhitelistRevertToken struct {
-	ID             pgtype.UUID        `json:"id"`
-	TenantID       pgtype.UUID        `json:"tenant_id"`
-	TokenHash      string             `json:"token_hash"`
-	ConfigSnapshot []byte             `json:"config_snapshot"`
-	CreatedBy      pgtype.UUID        `json:"created_by"`
-	ExpiresAt      pgtype.Timestamptz `json:"expires_at"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	UsedAt         pgtype.Timestamptz `json:"used_at"`
+type IpWhitelistEmergencyToken struct {
+	ID        pgtype.UUID        `json:"id"`
+	Jti       pgtype.UUID        `json:"jti"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 type PasswordResetToken struct {

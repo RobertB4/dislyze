@@ -18,6 +18,12 @@ import (
 func IPWhitelistMiddleware(db *queries.Queries) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Skip IP whitelist check for emergency endpoint
+			if r.URL.Path == "/api/ip-whitelist/emergency-deactivate" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			ctx := r.Context()
 			tenantID := libctx.GetTenantID(ctx)
 			userID := libctx.GetUserID(ctx)

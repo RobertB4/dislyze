@@ -22,8 +22,8 @@ type Querier interface {
 	CountTenantIPWhitelistRules(ctx context.Context, tenantID pgtype.UUID) (int64, error)
 	CountUsersByTenantID(ctx context.Context, arg *CountUsersByTenantIDParams) (int64, error)
 	CreateEmailChangeToken(ctx context.Context, arg *CreateEmailChangeTokenParams) error
-	// IP Whitelist Revert Token Operations
-	CreateIPWhitelistRevertToken(ctx context.Context, arg *CreateIPWhitelistRevertTokenParams) (*IpWhitelistRevertToken, error)
+	// IP Whitelist Emergency Token Operations
+	CreateIPWhitelistEmergencyToken(ctx context.Context, jti pgtype.UUID) (*IpWhitelistEmergencyToken, error)
 	CreateInvitationToken(ctx context.Context, arg *CreateInvitationTokenParams) (*InvitationToken, error)
 	CreatePasswordResetToken(ctx context.Context, arg *CreatePasswordResetTokenParams) (*PasswordResetToken, error)
 	CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error)
@@ -41,8 +41,8 @@ type Querier interface {
 	ExistsUserWithEmail(ctx context.Context, email string) (bool, error)
 	GetAllPermissions(ctx context.Context) ([]*GetAllPermissionsRow, error)
 	GetEmailChangeTokenByHash(ctx context.Context, tokenHash string) (*EmailChangeToken, error)
+	GetIPWhitelistEmergencyTokenByJTI(ctx context.Context, jti pgtype.UUID) (*IpWhitelistEmergencyToken, error)
 	GetIPWhitelistForMiddleware(ctx context.Context, id pgtype.UUID) ([]*GetIPWhitelistForMiddlewareRow, error)
-	GetIPWhitelistRevertTokenByHash(ctx context.Context, tokenHash string) (*IpWhitelistRevertToken, error)
 	GetIPWhitelistRuleByID(ctx context.Context, arg *GetIPWhitelistRuleByIDParams) (*TenantIpWhitelist, error)
 	GetInvitationByTokenHash(ctx context.Context, tokenHash string) (*InvitationToken, error)
 	GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error)
@@ -52,28 +52,25 @@ type Querier interface {
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error)
 	GetTenantIPWhitelist(ctx context.Context, tenantID pgtype.UUID) ([]*TenantIpWhitelist, error)
 	GetTenantIPWhitelistCIDRs(ctx context.Context, tenantID pgtype.UUID) ([]string, error)
-	// Helper query to get current IP whitelist configuration for snapshots
-	GetTenantIPWhitelistSnapshot(ctx context.Context, tenantID pgtype.UUID) ([]*GetTenantIPWhitelistSnapshotRow, error)
 	GetTenantRolesWithPermissions(ctx context.Context, tenantID pgtype.UUID) ([]*GetTenantRolesWithPermissionsRow, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error)
 	GetUserPermissionsWithFallback(ctx context.Context, arg *GetUserPermissionsWithFallbackParams) ([]*GetUserPermissionsWithFallbackRow, error)
 	GetUserRoleIDs(ctx context.Context, arg *GetUserRoleIDsParams) ([]pgtype.UUID, error)
 	GetUserRolesWithDetails(ctx context.Context, arg *GetUserRolesWithDetailsParams) ([]*GetUserRolesWithDetailsRow, error)
-	GetUsersByIPWhitelistEditPermission(ctx context.Context, arg *GetUsersByIPWhitelistEditPermissionParams) ([]*GetUsersByIPWhitelistEditPermissionRow, error)
 	GetUsersWithRolesRespectingRBAC(ctx context.Context, arg *GetUsersWithRolesRespectingRBACParams) ([]*GetUsersWithRolesRespectingRBACRow, error)
 	InviteUserToTenant(ctx context.Context, arg *InviteUserToTenantParams) (pgtype.UUID, error)
 	MarkEmailChangeTokenAsUsed(ctx context.Context, id pgtype.UUID) error
-	MarkIPWhitelistRevertTokenAsUsed(ctx context.Context, id pgtype.UUID) error
+	MarkIPWhitelistEmergencyTokenAsUsed(ctx context.Context, jti pgtype.UUID) error
 	MarkInvitationTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	MarkPasswordResetTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	RemoveIPFromWhitelist(ctx context.Context, arg *RemoveIPFromWhitelistParams) error
 	RemoveRolesFromUser(ctx context.Context, arg *RemoveRolesFromUserParams) error
-	RestoreIPWhitelistFromSnapshot(ctx context.Context, arg []*RestoreIPWhitelistFromSnapshotParams) (int64, error)
 	RevokeRefreshToken(ctx context.Context, jti pgtype.UUID) error
 	UpdateIPWhitelistLabel(ctx context.Context, arg *UpdateIPWhitelistLabelParams) error
 	UpdateRefreshTokenUsed(ctx context.Context, jti pgtype.UUID) error
 	UpdateRole(ctx context.Context, arg *UpdateRoleParams) error
+	UpdateTenantEnterpriseFeatures(ctx context.Context, arg *UpdateTenantEnterpriseFeaturesParams) error
 	UpdateTenantName(ctx context.Context, arg *UpdateTenantNameParams) error
 	UpdateUserEmail(ctx context.Context, arg *UpdateUserEmailParams) error
 	UpdateUserName(ctx context.Context, arg *UpdateUserNameParams) error

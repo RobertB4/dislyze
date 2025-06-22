@@ -342,6 +342,22 @@ func (q *Queries) UpdateRefreshTokenUsed(ctx context.Context, jti pgtype.UUID) e
 	return err
 }
 
+const UpdateTenantEnterpriseFeatures = `-- name: UpdateTenantEnterpriseFeatures :exec
+UPDATE tenants
+SET enterprise_features = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2
+`
+
+type UpdateTenantEnterpriseFeaturesParams struct {
+	EnterpriseFeatures []byte      `json:"enterprise_features"`
+	ID                 pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateTenantEnterpriseFeatures(ctx context.Context, arg *UpdateTenantEnterpriseFeaturesParams) error {
+	_, err := q.db.Exec(ctx, UpdateTenantEnterpriseFeatures, arg.EnterpriseFeatures, arg.ID)
+	return err
+}
+
 const UpdateTenantName = `-- name: UpdateTenantName :exec
 UPDATE tenants
 SET name = $1, updated_at = CURRENT_TIMESTAMP

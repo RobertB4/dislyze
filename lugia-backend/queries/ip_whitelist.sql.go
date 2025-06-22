@@ -87,40 +87,40 @@ func (q *Queries) CountTenantIPWhitelistRules(ctx context.Context, tenantID pgty
 	return count, err
 }
 
-const CreateIPWhitelistRevertToken = `-- name: CreateIPWhitelistRevertToken :one
+const CreateIPWhitelistEmergencyToken = `-- name: CreateIPWhitelistEmergencyToken :one
 
-INSERT INTO ip_whitelist_revert_tokens (tenant_id, token_hash, config_snapshot, created_by, expires_at)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, tenant_id, token_hash, config_snapshot, created_by, expires_at, created_at, used_at
+INSERT INTO ip_whitelist_emergency_tokens (jti)
+VALUES ($1)
+RETURNING id, jti, used_at, created_at
 `
 
-type CreateIPWhitelistRevertTokenParams struct {
-	TenantID       pgtype.UUID        `json:"tenant_id"`
-	TokenHash      string             `json:"token_hash"`
-	ConfigSnapshot []byte             `json:"config_snapshot"`
-	CreatedBy      pgtype.UUID        `json:"created_by"`
-	ExpiresAt      pgtype.Timestamptz `json:"expires_at"`
-}
-
-// IP Whitelist Revert Token Operations
-func (q *Queries) CreateIPWhitelistRevertToken(ctx context.Context, arg *CreateIPWhitelistRevertTokenParams) (*IpWhitelistRevertToken, error) {
-	row := q.db.QueryRow(ctx, CreateIPWhitelistRevertToken,
-		arg.TenantID,
-		arg.TokenHash,
-		arg.ConfigSnapshot,
-		arg.CreatedBy,
-		arg.ExpiresAt,
-	)
-	var i IpWhitelistRevertToken
+// IP Whitelist Emergency Token Operations
+func (q *Queries) CreateIPWhitelistEmergencyToken(ctx context.Context, jti pgtype.UUID) (*IpWhitelistEmergencyToken, error) {
+	row := q.db.QueryRow(ctx, CreateIPWhitelistEmergencyToken, jti)
+	var i IpWhitelistEmergencyToken
 	err := row.Scan(
 		&i.ID,
-		&i.TenantID,
-		&i.TokenHash,
-		&i.ConfigSnapshot,
-		&i.CreatedBy,
-		&i.ExpiresAt,
-		&i.CreatedAt,
+		&i.Jti,
 		&i.UsedAt,
+		&i.CreatedAt,
+	)
+	return &i, err
+}
+
+const GetIPWhitelistEmergencyTokenByJTI = `-- name: GetIPWhitelistEmergencyTokenByJTI :one
+SELECT id, jti, used_at, created_at
+FROM ip_whitelist_emergency_tokens
+WHERE jti = $1
+`
+
+func (q *Queries) GetIPWhitelistEmergencyTokenByJTI(ctx context.Context, jti pgtype.UUID) (*IpWhitelistEmergencyToken, error) {
+	row := q.db.QueryRow(ctx, GetIPWhitelistEmergencyTokenByJTI, jti)
+	var i IpWhitelistEmergencyToken
+	err := row.Scan(
+		&i.ID,
+		&i.Jti,
+		&i.UsedAt,
+		&i.CreatedAt,
 	)
 	return &i, err
 }
@@ -166,30 +166,6 @@ func (q *Queries) GetIPWhitelistForMiddleware(ctx context.Context, id pgtype.UUI
 		return nil, err
 	}
 	return items, nil
-}
-
-const GetIPWhitelistRevertTokenByHash = `-- name: GetIPWhitelistRevertTokenByHash :one
-SELECT id, tenant_id, token_hash, config_snapshot, created_by, expires_at, created_at, used_at
-FROM ip_whitelist_revert_tokens
-WHERE token_hash = $1 
-AND expires_at > CURRENT_TIMESTAMP 
-AND used_at IS NULL
-`
-
-func (q *Queries) GetIPWhitelistRevertTokenByHash(ctx context.Context, tokenHash string) (*IpWhitelistRevertToken, error) {
-	row := q.db.QueryRow(ctx, GetIPWhitelistRevertTokenByHash, tokenHash)
-	var i IpWhitelistRevertToken
-	err := row.Scan(
-		&i.ID,
-		&i.TenantID,
-		&i.TokenHash,
-		&i.ConfigSnapshot,
-		&i.CreatedBy,
-		&i.ExpiresAt,
-		&i.CreatedAt,
-		&i.UsedAt,
-	)
-	return &i, err
 }
 
 const GetIPWhitelistRuleByID = `-- name: GetIPWhitelistRuleByID :one
@@ -278,111 +254,14 @@ func (q *Queries) GetTenantIPWhitelistCIDRs(ctx context.Context, tenantID pgtype
 	return items, nil
 }
 
-const GetTenantIPWhitelistSnapshot = `-- name: GetTenantIPWhitelistSnapshot :many
-SELECT 
-    ip_address::text as ip_address,
-    label,
-    created_by,
-    created_at
-FROM tenant_ip_whitelist
-WHERE tenant_id = $1
-ORDER BY created_at ASC
-`
-
-type GetTenantIPWhitelistSnapshotRow struct {
-	IpAddress string             `json:"ip_address"`
-	Label     pgtype.Text        `json:"label"`
-	CreatedBy pgtype.UUID        `json:"created_by"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-}
-
-// Helper query to get current IP whitelist configuration for snapshots
-func (q *Queries) GetTenantIPWhitelistSnapshot(ctx context.Context, tenantID pgtype.UUID) ([]*GetTenantIPWhitelistSnapshotRow, error) {
-	rows, err := q.db.Query(ctx, GetTenantIPWhitelistSnapshot, tenantID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetTenantIPWhitelistSnapshotRow{}
-	for rows.Next() {
-		var i GetTenantIPWhitelistSnapshotRow
-		if err := rows.Scan(
-			&i.IpAddress,
-			&i.Label,
-			&i.CreatedBy,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const GetUsersByIPWhitelistEditPermission = `-- name: GetUsersByIPWhitelistEditPermission :many
-WITH users_with_permission AS (
-    SELECT DISTINCT user_roles.user_id
-    FROM user_roles
-    JOIN roles ON user_roles.role_id = roles.id
-    JOIN role_permissions ON roles.id = role_permissions.role_id
-    JOIN permissions ON role_permissions.permission_id = permissions.id
-    WHERE user_roles.tenant_id = $1
-    AND permissions.resource = 'ip_whitelist'
-    AND permissions.action = 'edit'
-    AND (
-        $2 = true OR  -- RBAC enabled: use all roles
-        roles.is_default = true      -- RBAC disabled: only default roles
-    )
-)
-SELECT users.id, users.email, users.name
-FROM users
-JOIN users_with_permission ON users.id = users_with_permission.user_id
-WHERE users.tenant_id = $1
-AND users.status = 'active'
-`
-
-type GetUsersByIPWhitelistEditPermissionParams struct {
-	TenantID    pgtype.UUID `json:"tenant_id"`
-	RbacEnabled interface{} `json:"rbac_enabled"`
-}
-
-type GetUsersByIPWhitelistEditPermissionRow struct {
-	ID    pgtype.UUID `json:"id"`
-	Email string      `json:"email"`
-	Name  string      `json:"name"`
-}
-
-func (q *Queries) GetUsersByIPWhitelistEditPermission(ctx context.Context, arg *GetUsersByIPWhitelistEditPermissionParams) ([]*GetUsersByIPWhitelistEditPermissionRow, error) {
-	rows, err := q.db.Query(ctx, GetUsersByIPWhitelistEditPermission, arg.TenantID, arg.RbacEnabled)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*GetUsersByIPWhitelistEditPermissionRow{}
-	for rows.Next() {
-		var i GetUsersByIPWhitelistEditPermissionRow
-		if err := rows.Scan(&i.ID, &i.Email, &i.Name); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const MarkIPWhitelistRevertTokenAsUsed = `-- name: MarkIPWhitelistRevertTokenAsUsed :exec
-UPDATE ip_whitelist_revert_tokens
+const MarkIPWhitelistEmergencyTokenAsUsed = `-- name: MarkIPWhitelistEmergencyTokenAsUsed :exec
+UPDATE ip_whitelist_emergency_tokens
 SET used_at = CURRENT_TIMESTAMP
-WHERE id = $1
+WHERE jti = $1
 `
 
-func (q *Queries) MarkIPWhitelistRevertTokenAsUsed(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, MarkIPWhitelistRevertTokenAsUsed, id)
+func (q *Queries) MarkIPWhitelistEmergencyTokenAsUsed(ctx context.Context, jti pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, MarkIPWhitelistEmergencyTokenAsUsed, jti)
 	return err
 }
 
@@ -399,14 +278,6 @@ type RemoveIPFromWhitelistParams struct {
 func (q *Queries) RemoveIPFromWhitelist(ctx context.Context, arg *RemoveIPFromWhitelistParams) error {
 	_, err := q.db.Exec(ctx, RemoveIPFromWhitelist, arg.ID, arg.TenantID)
 	return err
-}
-
-type RestoreIPWhitelistFromSnapshotParams struct {
-	TenantID  pgtype.UUID        `json:"tenant_id"`
-	IpAddress netip.Prefix       `json:"ip_address"`
-	Label     pgtype.Text        `json:"label"`
-	CreatedBy pgtype.UUID        `json:"created_by"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 const UpdateIPWhitelistLabel = `-- name: UpdateIPWhitelistLabel :exec

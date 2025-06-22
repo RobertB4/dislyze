@@ -29,37 +29,47 @@ func SetIPWhitelistActive(ctx context.Context, queries *queries.Queries, tenantI
 
 ---
 
-## Phase 2: Basic CRUD Operations ✏️
+## Phase 2: Basic CRUD Operations ✅ COMPLETED
 
-### SQL Queries (if missing)
-```sql
--- Check if UpdateIPWhitelistLabel exists, add if needed
--- name: UpdateIPWhitelistLabel :exec
-UPDATE tenant_ip_whitelist 
-SET label = $2 
-WHERE id = $1 AND tenant_id = $3;
-```
-
-### Request/Response Structures
-```go
-// features/ip_whitelist/types.go
-type UpdateLabelRequest struct {
-    Label string `json:"label" validate:"required,max=100"`
-}
-
-type DeleteIPRequest struct {
-    // Empty - ID comes from URL path
-}
-
-type DeleteIPResponse struct {
-    Success bool   `json:"success"`
-    Message string `json:"message,omitempty"`
-}
-```
-
-### New Endpoints
-- `POST /api/ip-whitelist/{id}/label` - Update IP rule label
+### ✅ Implemented Endpoints
+- `POST /api/ip-whitelist/{id}/label/update` - Update IP rule label
 - `POST /api/ip-whitelist/{id}/delete` - Delete single IP rule
+
+### ✅ Handler Implementation
+```go
+// features/ip_whitelist/update_ip_label.go
+type UpdateLabelRequest struct {
+    Label string `json:"label"` // Optional, max 100 chars, empty string clears label
+}
+func (h *IPWhitelistHandler) UpdateIPLabel(w http.ResponseWriter, r *http.Request)
+
+// features/ip_whitelist/delete_ip.go  
+func (h *IPWhitelistHandler) DeleteIP(w http.ResponseWriter, r *http.Request)
+```
+
+### ✅ Key Features Implemented
+- **Existence validation**: Both endpoints check if IP rule exists before operation (404 if not found)
+- **Tenant isolation**: Cannot update/delete IPs from other tenants (enforced via SQL WHERE clause)
+- **Optional labels**: Update endpoint accepts empty labels (stored as NULL)
+- **Proper error handling**: Distinguishes between `pgx.ErrNoRows` (404) and other DB errors (500)
+- **REST semantics**: Returns 200 on success, no response body for mutations
+
+### ✅ SQL Queries Added
+```sql
+-- name: GetIPWhitelistRuleByID :one
+SELECT id, tenant_id, ip_address, label, created_by, created_at
+FROM tenant_ip_whitelist
+WHERE id = $1 AND tenant_id = $2;
+
+-- name: UpdateIPWhitelistLabel :exec  
+UPDATE tenant_ip_whitelist
+SET label = $1
+WHERE id = $2 AND tenant_id = $3;
+
+-- name: RemoveIPFromWhitelist :exec
+DELETE FROM tenant_ip_whitelist
+WHERE id = $1 AND tenant_id = $2;
+```
 
 ---
 
@@ -67,7 +77,6 @@ type DeleteIPResponse struct {
 
 ### Request/Response Structures
 ```go
-// features/ip_whitelist/types.go
 type ActivateRequest struct {
     Force bool `json:"force,omitempty"`
 }
@@ -117,7 +126,6 @@ WHERE token_hash = $1 AND expires_at > NOW() AND used_at IS NULL;
 
 ### Request/Response Structures
 ```go
-// features/ip_whitelist/types.go
 type CreateRevertTokenResponse struct {
     Success   bool   `json:"success"`
     TokenSent bool   `json:"tokenSent"`
@@ -157,8 +165,8 @@ r.Route("/ip-whitelist", func(r chi.Router) {
     r.With(middleware.RequireIPWhitelistView(queries)).Get("/", ipWhitelistHandler.GetIPWhitelist)
     r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/create", ipWhitelistHandler.AddIPToWhitelist)
     
-    // Phase 2 - CRUD
-    r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/{id}/label", ipWhitelistHandler.UpdateIPLabel)
+    // Phase 2 - CRUD ✅ IMPLEMENTED
+    r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/{id}/label/update", ipWhitelistHandler.UpdateIPLabel)
     r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/{id}/delete", ipWhitelistHandler.DeleteIP)
     
     // Phase 3 - Activation
@@ -182,16 +190,38 @@ r.Post("/api/ip-whitelist/revert/{token}", ipWhitelistHandler.ExecuteEmergencyRe
 ## Current Implementation Status
 
 **✅ Already Implemented:**
-- IP Whitelist Middleware with CIDR matching
-- Database schema (`tenant_ip_whitelist`, `ip_whitelist_revert_tokens`)
-- Basic endpoints: `GET /api/ip-whitelist/` and `POST /api/ip-whitelist/create`
-- Comprehensive IP utilities and validation
-- RBAC integration with view/edit permissions
-- Emergency revert token database structure
+- **Phase 1 Foundation**: IP Whitelist Middleware with CIDR matching
+- **Database Schema**: `tenant_ip_whitelist`, `ip_whitelist_revert_tokens` tables
+- **Phase 2 CRUD**: All basic CRUD operations completed
+  - `GET /api/ip-whitelist/` - List IP rules
+  - `POST /api/ip-whitelist/create` - Add new IP rule  
+  - `POST /api/ip-whitelist/{id}/label/update` - Update IP rule label
+  - `POST /api/ip-whitelist/{id}/delete` - Delete IP rule
+- **Enterprise Features**: JSON structure for `ip_whitelist.enabled` and `ip_whitelist.active`
+- **RBAC Integration**: `ip_whitelist.view` and `ip_whitelist.edit` permissions
+- **IP Utilities**: Comprehensive CIDR validation, IPv4/IPv6 support, client IP extraction
+- **Test Coverage**: 39 comprehensive integration tests covering all CRUD operations
 
 **🔄 To Be Implemented:**
-- Active flag control system
-- Additional CRUD operations (update label, delete)
-- Safe activation/deactivation with lockout prevention
-- Emergency email system integration
-- Complete emergency recovery workflow
+- **Phase 3**: Safe activation/deactivation with lockout prevention
+- **Phase 4**: Emergency email system integration and recovery workflow
+
+## Phase 2 Testing Status ✅
+
+### ✅ Comprehensive Test Coverage (39 Tests Total)
+- **Add IP Tests**: 19 test cases (security, validation, IPv4/IPv6, success scenarios)
+- **Update Label Tests**: 12 test cases (auth, validation, label handling, tenant isolation)  
+- **Delete IP Tests**: 8 test cases (auth, validation, existence checks, tenant isolation)
+- **Get IP Tests**: 20+ test cases (middleware behavior, IP filtering, tenant isolation)
+
+### ✅ Test Infrastructure Improvements
+- **Simplified test setup**: Removed redundant role creation, uses existing seed users
+- **Consistent patterns**: All tests follow established codebase conventions
+- **Proper tenant isolation**: Verifies 404 responses for cross-tenant access attempts
+- **Updated seed data**: Added IP whitelist permissions to `setup.TestPermissionsData`
+
+### ✅ Key Testing Patterns Established
+- Use `enterprise_1` (has IP whitelist permissions) for success cases
+- Use `enterprise_2` (lacks IP whitelist permissions) for 403 tests  
+- Use `smb_1` for tenant isolation testing
+- Table-driven tests where appropriate for cleaner organization
