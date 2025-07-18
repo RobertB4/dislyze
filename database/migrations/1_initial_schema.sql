@@ -148,7 +148,7 @@ CREATE TABLE tenant_ip_whitelist (
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     ip_address INET NOT NULL,
     label TEXT,
-    created_by UUID REFERENCES users(id),
+    created_by UUID NOT NULL REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_tenant_ip_whitelist_tenant_id ON tenant_ip_whitelist(tenant_id);
