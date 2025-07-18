@@ -2,7 +2,7 @@ import type { Me, EnterpriseFeatures } from "@dislyze/zoroark";
 
 export function hasPermission(
 	me: Me,
-	permission: `${"tenant" | "users" | "roles"}.${"view" | "edit"}`
+	permission: `${"tenant" | "users" | "roles" | "ip_whitelist"}.${"view" | "edit"}`
 ): boolean {
 	if (me.permissions.includes(permission)) {
 		return true;

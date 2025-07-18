@@ -180,7 +180,7 @@ func TestUpdateIPLabelIntegration(t *testing.T) {
 		email, password := findUserCredentials("enterprise_1")
 
 		// Create malformed JSON body
-		malformedJSON := `{"label": "Updated Label"`  // Missing closing brace
+		malformedJSON := `{"label": "Updated Label"` // Missing closing brace
 
 		// Create request (using dummy ID)
 		reqURL := fmt.Sprintf("%s/ip-whitelist/11111111-1111-1111-1111-111111111111/label/update", setup.BaseURL)
@@ -282,7 +282,7 @@ func TestUpdateIPLabelIntegration(t *testing.T) {
 		email, password := findUserCredentials("enterprise_1")
 
 		// Create request body with label longer than 100 characters
-		longLabel := strings.Repeat("a", 101)
+		longLabel := strings.Repeat("a", 256)
 		requestBody := map[string]interface{}{
 			"label": longLabel,
 		}

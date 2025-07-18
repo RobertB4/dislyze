@@ -3,9 +3,9 @@
 
 -- Insert Tenants
 INSERT INTO tenants (id, name, enterprise_features) VALUES
-('11111111-1111-1111-1111-111111111111', 'エンタープライズ株式会社', '{"rbac": {"enabled": true}}'),
-('22222222-2222-2222-2222-222222222222', 'SMB株式会社', '{"rbac": {"enabled": false}}'),
-('33333333-3333-3333-3333-333333333333', '内部株式会社', '{"rbac": {"enabled": true}}');
+('11111111-1111-1111-1111-111111111111', 'エンタープライズ株式会社', '{ "rbac": {"enabled": true}, "ip_whitelist": {"enabled": true, "active": false, "allow_internal_admin_bypass": true} }'),
+('22222222-2222-2222-2222-222222222222', 'SMB株式会社', '{ "rbac": {"enabled": false}, "ip_whitelist": {"enabled": false} }'),
+('33333333-3333-3333-3333-333333333333', '内部株式会社', '{ "rbac": {"enabled": true}, "ip_whitelist": {"enabled": true, "active": false, "allow_internal_admin_bypass": true} }');
 
 -- Insert default roles for all tenants (管理者, 編集者, 閲覧者)
 -- Enterprise tenant default roles

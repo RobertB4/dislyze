@@ -16,14 +16,17 @@ import (
 )
 
 type UpdateLabelRequest struct {
-	Label string `json:"label"`
+	Label *string `json:"label"`
 }
 
 func (r *UpdateLabelRequest) Validate() error {
-	r.Label = strings.TrimSpace(r.Label)
-
-	if len(r.Label) > 100 {
-		return errlib.New(nil, http.StatusBadRequest, "")
+	if r.Label != nil {
+		trimmed := strings.TrimSpace(*r.Label)
+		r.Label = &trimmed
+		
+		if len(*r.Label) > 255 {
+			return errlib.New(nil, http.StatusBadRequest, "")
+		}
 	}
 
 	return nil
@@ -75,8 +78,8 @@ func (h *IPWhitelistHandler) UpdateIPLabel(w http.ResponseWriter, r *http.Reques
 	}
 
 	var label pgtype.Text
-	if req.Label != "" {
-		label = pgtype.Text{String: req.Label, Valid: true}
+	if req.Label != nil && *req.Label != "" {
+		label = pgtype.Text{String: *req.Label, Valid: true}
 	}
 
 	err = h.q.UpdateIPWhitelistLabel(ctx, &queries.UpdateIPWhitelistLabelParams{

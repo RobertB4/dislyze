@@ -28,6 +28,15 @@
 						id: "roles"
 					}
 				]
+			: []),
+		...(hasPermission(me, "ip_whitelist.view") && hasFeature(me, "ip_whitelist")
+			? [
+					{
+						name: "IPアクセス制御",
+						href: "/settings/ip-whitelist",
+						id: "ip-whitelist"
+					}
+				]
 			: [])
 	];
 

@@ -11,7 +11,8 @@
 		class: customClass = "",
 		value = $bindable("" as string | number),
 		variant = "default" as "default" | "underlined",
-		oninput
+		oninput,
+		"data-testid": dataTestid
 	}: {
 		type?: "text" | "email" | "password" | "number" | "tel" | "url";
 		id: string;
@@ -25,6 +26,7 @@
 		value?: string | number;
 		variant?: "default" | "underlined";
 		oninput?: (event: Event) => void;
+		"data-testid"?: string;
 	} = $props();
 
 	const variantStyles = {
@@ -65,6 +67,7 @@
 		{value}
 		{oninput}
 		class={inputClass}
+		data-testid={dataTestid}
 	/>
 	{#if error}
 		<p data-testid={`${id}-error`} class="mt-1 text-sm text-red-600">{error}</p>

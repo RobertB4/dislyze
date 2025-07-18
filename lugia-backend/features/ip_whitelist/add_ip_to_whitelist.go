@@ -29,6 +29,10 @@ func (r *AddIPToWhitelistRequest) Validate() error {
 		return errlib.New(err, http.StatusBadRequest, "")
 	}
 
+	if r.Label != nil && len(*r.Label) > 255 {
+		return errlib.New(nil, http.StatusBadRequest, "")
+	}
+
 	return nil
 }
 

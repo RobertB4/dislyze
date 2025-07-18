@@ -4,6 +4,7 @@
 			<div class="h-6 bg-gray-300 rounded w-20"></div>
 			<div class="h-6 bg-gray-300 rounded w-24"></div>
 			<div class="h-6 bg-gray-300 rounded w-20"></div>
+			<div class="h-6 bg-gray-300 rounded w-20"></div>
 		</nav>
 	</div>
 
