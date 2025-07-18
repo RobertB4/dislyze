@@ -181,7 +181,7 @@ func (h *IPWhitelistHandler) createEmergencyTokenAndSendEmail(ctx context.Contex
 func (h *IPWhitelistHandler) sendEmergencyEmail(email, name, token string) error {
 	subject := "【緊急】IPアクセス制限の解除用リンク"
 
-	emergencyLink := fmt.Sprintf("%s/ip-whitelist/emergency-deactivate?token=%s", h.env.FrontendURL, token)
+	emergencyLink := fmt.Sprintf("%s/settings/ip-whitelist/emergency-deactivate?token=%s", h.env.FrontendURL, token)
 
 	plainTextContent := fmt.Sprintf("%s様。\n\nIPアクセス制限が有効化されました。万が一アクセスできなくなってしまった場合は、下記のリンクからアクセス制限を解除することができます。\n\n解除用リンク（30分間有効）：\n%s\n\n※このメールは自動送信されています。ご不明な点がございましたら、サポートチームまでご連絡ください。",
 		name, emergencyLink)

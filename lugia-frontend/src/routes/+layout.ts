@@ -20,6 +20,13 @@ function isRedirect(error: unknown): error is import("@sveltejs/kit").Redirect {
 }
 
 export const load: LayoutLoad = async ({ fetch, url }) => {
+	// This page only gets opened when the user is locked out due to their ip not being in the whitelist.
+	// If we call /api/me down below, it will return 403 because of this.
+	// Therefore, we need to skip the /api/me call for this page.
+	if (url.pathname.startsWith("/settings/ip-whitelist/emergency-deactivate")) {
+		return { me: null };
+	}
+
 	if (!get(forceUpdateMeCache)) {
 		if (typeof window !== "undefined") {
 			if (get(meCache)) {
