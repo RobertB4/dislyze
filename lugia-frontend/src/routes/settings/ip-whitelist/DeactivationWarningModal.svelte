@@ -21,7 +21,7 @@
 
 		if (success) {
 			forceUpdateMeCache.set(true);
-			await invalidate((u) => u.pathname.includes("/api/ip-whitelist"));
+			await invalidate((u) => u.pathname.includes("/api/me"));
 			toast.show("IPアクセス制御を無効にしました", "success");
 			onClose();
 		}

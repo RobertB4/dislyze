@@ -24,7 +24,7 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 	// If we call /api/me down below, it will return 403 because of this.
 	// Therefore, we need to skip the /api/me call for this page.
 	if (url.pathname.startsWith("/settings/ip-whitelist/emergency-deactivate")) {
-		return { me: null };
+		return { me: null as any };
 	}
 
 	if (!get(forceUpdateMeCache)) {

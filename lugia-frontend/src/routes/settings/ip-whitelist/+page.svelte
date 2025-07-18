@@ -34,15 +34,20 @@
 		});
 
 		if (success) {
-			const responseData = await response.json();
+			const contentType = response.headers.get("content-type");
+			if (contentType && contentType.includes("application/json")) {
+				const responseData = await response.json();
 
-			if (responseData.user_ip) {
+				if (!responseData.user_ip) {
+					throw new Error(`Expected responseData.user_ip to be defined`);
+				}
+
 				warningUserIP = responseData.user_ip;
 				isActivationModalOpen = true;
 			} else {
-				// User IP is in whitelist, proceed directly
+				// Empty response - activation successful without warning
 				forceUpdateMeCache.set(true);
-				await invalidate((u) => u.pathname.includes("/api/ip-whitelist"));
+				await invalidate((u) => u.pathname.includes("/api/me"));
 				toast.show("IPアクセス制御を有効にしました", "success");
 			}
 		}
@@ -116,11 +121,6 @@
 					IPアクセス制御が無効です。すべてのIPアドレスからアクセスが許可されます。
 				{/if}
 			</p>
-			{#if isActive}
-				<p class="mt-1 text-sm text-gray-500">
-					アクセスできなくなった場合、緊急無効化の手順を記載したメールが送信されます。
-				</p>
-			{/if}
 		</div>
 
 		<!-- IP Whitelist Table -->
