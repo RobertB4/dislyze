@@ -27,6 +27,11 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 		return { me: null as any };
 	}
 
+	// user needs to be able to display /error when they are locked out
+	if (url.pathname === "/error") {
+		return { me: null as any };
+	}
+
 	if (!get(forceUpdateMeCache)) {
 		if (typeof window !== "undefined") {
 			if (get(meCache)) {
@@ -114,9 +119,38 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 
 			me = await response.json();
 		} catch (err: unknown) {
-			// This re-throws redirects (like 401 to /auth/login from loadFunctionFetch) & SvelteKit errors.
-			console.error("+layout.ts: Protected path, error/redirect during /users/me fetch:", err);
-			throw err;
+			let status = 500;
+			let message = "処理中に予期せぬエラーが発生しました。";
+
+			const errorObj = err as {
+				status?: number;
+				message?: string;
+				body?: { message?: string };
+				location?: string;
+			};
+
+			// Handle redirects (like 401 to /auth/login
+			if (errorObj.location) {
+				throw redirect(307, errorObj.location);
+			}
+
+			if (errorObj.status) {
+				status = errorObj.status;
+			}
+
+			if (errorObj.message) {
+				message = errorObj.message;
+			}
+
+			if (errorObj.body?.message) {
+				message = errorObj.body.message;
+			}
+
+			if (err instanceof Error) {
+				message = err.message;
+			}
+
+			throw redirect(307, `/error?status=${status}&message=${encodeURIComponent(message)}`);
 		}
 	}
 	return { me };
