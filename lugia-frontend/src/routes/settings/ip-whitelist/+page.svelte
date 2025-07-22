@@ -129,13 +129,6 @@
 				<div class="text-center py-12" data-testid="no-ip-rules-message">
 					<div class="text-gray-500 text-lg">IPアドレスが登録されていません</div>
 					<p class="text-gray-400 text-sm mt-2">「IPアドレスを追加」ボタンから設定できます</p>
-					{#if isActive}
-						<div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg inline-block">
-							<p class="text-yellow-800 text-sm">
-								⚠️ IPアクセス制御が有効ですが、IPアドレスが登録されていません
-							</p>
-						</div>
-					{/if}
 				</div>
 			{:else}
 				<div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">

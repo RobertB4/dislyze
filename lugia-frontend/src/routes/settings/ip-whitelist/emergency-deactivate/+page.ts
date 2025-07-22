@@ -1,12 +1,24 @@
-import { error } from "@sveltejs/kit";
+import { redirect } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 
+function isRedirect(error: unknown): error is import("@sveltejs/kit").Redirect {
+	if (typeof error !== "object" || error === null) return false;
+	const errObj = error as Record<string, unknown>;
+	return (
+		typeof errObj.status === "number" &&
+		errObj.status >= 300 &&
+		errObj.status < 400 &&
+		typeof errObj.location === "string"
+	);
+}
+
 export const load: PageLoad = async ({ url, fetch }) => {
-	// TODO: check if this works as intended. probablly not.
 	const token = url.searchParams.get("token");
 
 	if (!token) {
-		throw error(400, "この緊急解除リンクは無効です。新しい緊急解除リンクを取得してください。");
+		return {
+			error: "緊急解除リンクが無効です。サポートにお問い合わせください。"
+		};
 	}
 
 	try {
@@ -18,49 +30,18 @@ export const load: PageLoad = async ({ url, fetch }) => {
 		);
 
 		if (!response.ok) {
-			if (response.status === 400) {
-				throw error(
-					400,
-					"この緊急解除リンクは無効か期限切れです。新しい緊急解除リンクを取得してください。"
-				);
-			} else if (response.status === 404) {
-				throw error(404, "IP制限が見つかりません。既に解除されている可能性があります。");
-			} else {
-				throw error(
-					response.status,
-					"サーバーとの通信中に問題が発生しました。お手数ですが、時間をおいて再度お試しください。"
-				);
-			}
+			return {
+				error: "緊急解除リンクが無効または期限切れです。サポートにお問い合わせください。"
+			};
 		}
 
-		return {
-			success: true,
-			message: "IP制限が正常に解除されました。"
-		};
+		throw redirect(302, "/settings/ip-whitelist");
 	} catch (e) {
-		// checking if error is a SvelteKit error
-		if (
-			e &&
-			typeof e === "object" &&
-			"status" in e &&
-			typeof e.status === "number" &&
-			"body" in e
-		) {
-			const body = e.body as { message?: string };
-			if (!body.message) {
-				throw error(
-					503,
-					"サーバーとの通信中に問題が発生しました。お手数ですが、時間をおいて再度お試しください。"
-				);
-			}
+		if (isRedirect(e)) throw e;
 
-			// Re-throw SvelteKit errors explicitly
-			throw error(e.status, body.message);
-		}
 		console.error("Error in emergency deactivate load function:", e);
-		throw error(
-			503,
-			"サーバーとの通信中に問題が発生しました。お手数ですが、時間をおいて再度お試しください。"
-		);
+		return {
+			error: "予期せぬエラーが発生しました。"
+		};
 	}
 };
