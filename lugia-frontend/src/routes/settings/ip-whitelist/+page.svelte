@@ -48,7 +48,7 @@
 				// Empty response - activation successful without warning
 				forceUpdateMeCache.set(true);
 				await invalidate((u) => u.pathname.includes("/api/me"));
-				toast.show("IPアクセス制御を有効にしました", "success");
+				toast.show("IPアドレス制限を有効にしました", "success");
 			}
 		}
 	};
@@ -60,7 +60,7 @@
 
 <Layout
 	me={pageData.me}
-	pageTitle="IPアクセス制御"
+	pageTitle="IPアドレス制限"
 	promises={{
 		ipWhitelistResponse: pageData.ipWhitelistPromise
 	}}
@@ -92,7 +92,7 @@
 		<div class="mb-6 p-4 bg-gray-50 rounded-lg" data-testid="status-section">
 			<div class="flex items-center justify-between">
 				<div class="flex items-center space-x-3">
-					<h3 class="text-lg font-medium text-gray-900">IPアクセス制御の状態</h3>
+					<h3 class="text-lg font-medium text-gray-900">IPアドレス制限の状態</h3>
 					<Badge color={isActive ? "green" : "yellow"} data-testid="status-badge">
 						{isActive ? "有効" : "無効"}
 					</Badge>
@@ -116,9 +116,9 @@
 			</div>
 			<p class="mt-2 text-sm text-gray-600">
 				{#if isActive}
-					IPアクセス制御が有効です。下記のIPアドレスからのみアクセスが許可されます。
+					IPアドレス制限が有効です。下記のIPアドレスからのみアクセスが許可されます。
 				{:else}
-					IPアクセス制御が無効です。すべてのIPアドレスからアクセスが許可されます。
+					IPアドレス制限が無効です。すべてのIPアドレスからアクセスが許可されます。
 				{/if}
 			</p>
 		</div>

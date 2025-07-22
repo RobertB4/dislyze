@@ -19,7 +19,7 @@
 		},
 		validate: (values) => {
 			const errs: Record<string, string> = {};
-			
+
 			values.confirmIpAddress = values.confirmIpAddress.trim();
 
 			if (!values.confirmIpAddress) {
@@ -60,19 +60,16 @@
 		data-testid="delete-ip-slideover"
 	>
 		<div class="flex-grow space-y-6">
-			<Alert
-				type="danger"
-				title="この操作は元に戻せません"
-				data-testid="delete-ip-warning"
-			>
+			<Alert type="danger" title="この操作は元に戻せません" data-testid="delete-ip-warning">
 				<p class="mb-3">
-					IPアドレス <code class="bg-red-100 px-2 py-1 rounded text-red-800">{rule.ip_address}</code> を削除します。
+					IPアドレス <code class="bg-red-100 px-2 py-1 rounded text-red-800">{rule.ip_address}</code
+					> を削除します。
 				</p>
 				<p>
-					このIPアドレスからアクセスしているユーザーは、IPアクセス制御が有効な場合、アプリケーションにアクセスできなくなります。
+					このIPアドレスからアクセスしているユーザーは、IPアドレス制限が有効な場合、アプリケーションにアクセスできなくなります。
 				</p>
 			</Alert>
-			
+
 			<Input
 				id="confirmIpAddress"
 				name="confirmIpAddress"

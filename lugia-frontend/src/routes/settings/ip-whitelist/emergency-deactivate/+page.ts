@@ -17,7 +17,7 @@ export const load: PageLoad = async ({ url, fetch }) => {
 
 	if (!token) {
 		return {
-			error: "緊急解除リンクが無効です。サポートにお問い合わせください。"
+			error: "緊急解除リンクが無効または期限切れです。サポートにお問い合わせください。"
 		};
 	}
 

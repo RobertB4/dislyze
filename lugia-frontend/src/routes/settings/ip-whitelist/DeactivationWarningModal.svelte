@@ -22,7 +22,7 @@
 		if (success) {
 			forceUpdateMeCache.set(true);
 			await invalidate((u) => u.pathname.includes("/api/me"));
-			toast.show("IPアクセス制御を無効にしました", "success");
+			toast.show("IPアドレス制限を無効にしました", "success");
 			onClose();
 		}
 
@@ -35,7 +35,7 @@
 </script>
 
 <Slideover
-	title="IPアクセス制御を無効にする"
+	title="IPアドレス制限を無効にする"
 	subtitle="確認してください"
 	primaryButtonText="無効にする"
 	onClose={handleClose}
@@ -51,7 +51,7 @@
 		>
 			<div class="space-y-3">
 				<p>
-					IPアクセス制御を無効にすると、<strong>すべてのIPアドレス</strong
+					IPアドレス制限を無効にすると、<strong>すべてのIPアドレス</strong
 					>からアプリケーションにアクセスできるようになります。
 				</p>
 				<p class="font-medium">本当に無効にしますか？</p>
@@ -61,7 +61,7 @@
 		<div class="p-4 bg-gray-50 border border-gray-200 rounded-lg">
 			<h4 class="font-medium text-gray-900 mb-2">注意事項</h4>
 			<p class="text-sm text-gray-700">
-				IPアクセス制御を無効にした後でも、ホワイトリストに登録されているIPアドレスは保持されます。いつでも再度有効にすることができます。
+				IPアドレス制限を無効にした後でも、登録されているIPアドレスは保持されます。いつでも再度有効にすることができます。
 			</p>
 		</div>
 	</div>

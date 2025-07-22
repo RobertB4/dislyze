@@ -32,7 +32,7 @@
 		...(hasPermission(me, "ip_whitelist.view") && hasFeature(me, "ip_whitelist")
 			? [
 					{
-						name: "IPアクセス制御",
+						name: "IPアドレス制限",
 						href: "/settings/ip-whitelist",
 						id: "ip-whitelist"
 					}

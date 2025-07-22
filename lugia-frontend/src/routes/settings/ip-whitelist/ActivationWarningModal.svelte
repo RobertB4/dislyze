@@ -28,7 +28,7 @@
 		if (success) {
 			forceUpdateMeCache.set(true);
 			await invalidate((u) => u.pathname.includes("/api/ip-whitelist"));
-			toast.show("IPアクセス制御を有効にしました", "success");
+			toast.show("IPアドレス制限を有効にしました", "success");
 			onClose();
 		}
 
@@ -41,7 +41,7 @@
 </script>
 
 <Slideover
-	title="IPアクセス制御を有効にする"
+	title="IPアドレス制限を有効にする"
 	primaryButtonText="有効にする"
 	onClose={handleClose}
 	onPrimaryClick={handleActivate}
@@ -55,7 +55,7 @@
 					現在のIPアドレス: <code class="bg-red-100 px-2 py-1 rounded text-red-800">{userIP}</code>
 				</p>
 				<p>
-					このIPアドレスはIP制限の対象外です。IPアクセス制御を有効にすると、このIPアドレスからアプリケーションにアクセスできなくなります。
+					このIPアドレスはIP制限の対象外です。IPアドレス制限を有効にすると、このIPアドレスからアプリケーションにアクセスできなくなります。
 				</p>
 				<p class="font-medium">本当に続行しますか？</p>
 			</div>
@@ -64,7 +64,7 @@
 		<div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
 			<h4 class="font-medium text-blue-900 mb-2">緊急時の対応</h4>
 			<p class="text-sm text-blue-800">
-				アクセスできなくなった場合は、緊急無効化用のメールが送信されます。
+				アクセスできなくなった場合は、緊急解除用のメールをお送りします。
 			</p>
 		</div>
 	</div>
