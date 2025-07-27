@@ -66,12 +66,12 @@ echo "Exported DYNAMIC_FRONTEND_URL=${DYNAMIC_FRONTEND_URL}"
 
 # Step 4: Build and start other E2E services.
 # The DYNAMIC_FRONTEND_URL will be available to the docker-compose command for the backend.
-echo "Building all remaining services..."
-docker compose -f "$COMPOSE_FILE" build lugia-backend postgres mock-sendgrid playwright
+echo "Building lugia-backend in isolation first..."
+docker compose -f "$COMPOSE_FILE" build lugia-backend
 
-echo "Starting other E2E services (lugia-backend, postgres, mock-sendgrid, playwright)..."
+echo "Building and starting other E2E services (lugia-backend, postgres, mock-sendgrid, playwright)..."
 # We use --no-deps to avoid restarting the lugia-frontend if it's already up.
-docker compose -f "$COMPOSE_FILE" up -d --remove-orphans --no-deps lugia-backend postgres mock-sendgrid playwright
+docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans --no-deps lugia-backend postgres mock-sendgrid playwright
 
 # Health checks
 echo "Waiting for services to be healthy..."
