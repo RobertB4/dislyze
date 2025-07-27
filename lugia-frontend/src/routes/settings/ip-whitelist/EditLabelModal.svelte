@@ -23,7 +23,7 @@
 			values.label = values.label.trim();
 
 			if (values.label && values.label.length > 255) {
-				errs.label = "ラベルは255文字以内で入力してください";
+				errs.label = "説明は255文字以内で入力してください";
 			}
 
 			return errs;
@@ -42,7 +42,7 @@
 			});
 
 			if (success) {
-				toast.show("ラベルを更新しました", "success");
+				toast.show("説明を更新しました", "success");
 				handleClose();
 				await invalidate((u) => u.pathname.includes("/api/ip-whitelist"));
 			}
@@ -57,8 +57,8 @@
 
 <form use:form class="space-y-6 p-1 flex flex-col h-full" data-testid="edit-label-form">
 	<Slideover
-		title="ラベルを編集"
-		subtitle={`${rule.ip_address} のラベルを編集`}
+		title="説明を編集"
+		subtitle={`${rule.ip_address} の説明を編集`}
 		primaryButtonText="更新"
 		primaryButtonTypeSubmit={true}
 		onClose={handleClose}
@@ -75,15 +75,13 @@
 				id="label"
 				name="label"
 				type="text"
-				label="ラベル"
+				label="説明"
 				bind:value={$data.label}
 				error={$errors.label?.[0]}
 				placeholder="例: オフィスネットワーク（空欄にすると削除されます）"
 				variant="underlined"
 				data-testid="edit-label-input"
 			/>
-
-			<div class="text-sm text-gray-500">ラベルを空欄にすると削除されます。</div>
 		</div>
 	</Slideover>
 </form>

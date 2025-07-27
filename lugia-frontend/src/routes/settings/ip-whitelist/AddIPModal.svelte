@@ -23,8 +23,11 @@
 		const cidrPart = parts[1];
 
 		// Basic IPv4 validation
-		const isIPv4 = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ipPart);
-		
+		const isIPv4 =
+			/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(
+				ipPart
+			);
+
 		// Simple IPv6 validation - just check for basic format with colons
 		const isIPv6 = /^[0-9a-fA-F:]+$/.test(ipPart) && ipPart.includes(":") && ipPart.length >= 2;
 
@@ -38,7 +41,7 @@
 			if (isNaN(cidr)) {
 				return "CIDR形式が正しくありません";
 			}
-			
+
 			// Validate CIDR range
 			if (isIPv4 && (cidr < 0 || cidr > 32)) {
 				return "IPv4のCIDR範囲は0-32です";
@@ -79,7 +82,7 @@
 			}
 
 			if (values.label && values.label.length > 255) {
-				errs.label = "ラベルは255文字以内で入力してください";
+				errs.label = "説明は255文字以内で入力してください";
 			}
 
 			return errs;
@@ -139,7 +142,7 @@
 				id="label"
 				name="label"
 				type="text"
-				label="ラベル（任意）"
+				label="説明（任意）"
 				bind:value={$data.label}
 				error={$errors.label?.[0]}
 				placeholder="例: オフィスネットワーク"

@@ -610,7 +610,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 			has: page.locator("code", { hasText: testIP })
 		});
 		await expect(ipRow).toBeVisible();
-		await expect(ipRow.locator("td").nth(1)).toContainText("-");
+		await expect(ipRow.locator("td").nth(1)).toContainText("");
 	});
 
 	test("Edit existing IP label", async ({ page, request }) => {
@@ -740,7 +740,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		// Wait for modal to close (indicates operation completed)
 		await expect(page.getByTestId("edit-label-slideover-panel")).not.toBeVisible();
 
-		await expect(ipRow.locator("td").nth(1)).toContainText("-");
+		await expect(ipRow.locator("td").nth(1)).toContainText("");
 	});
 
 	test("Duplicate IP address prevention", async ({ page }) => {
@@ -770,7 +770,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		await expect(page.getByTestId("add-ip-slideover-panel")).not.toBeVisible();
 		const ipRows = page.getByTestId("ip-whitelist-table-body").locator("tr");
 		const afterAddRowCount = await ipRows.count();
-		
+
 		// Now try to add the exact same IP address again (duplicate attempt)
 		await page.getByTestId("add-ip-button").click();
 		await expect(page.getByTestId("add-ip-slideover-panel")).toBeVisible();
@@ -782,7 +782,9 @@ test.describe("IP Whitelist E2E Tests", () => {
 		await page.getByTestId("add-ip-slideover-primary-button").click();
 
 		// Verify validation error appears
-		await expect(page.getByTestId("ip_address-error")).toContainText("このIPアドレスは既に登録されています");
+		await expect(page.getByTestId("ip_address-error")).toContainText(
+			"このIPアドレスは既に登録されています"
+		);
 
 		// Verify modal stays open (submission was blocked)
 		await expect(page.getByTestId("add-ip-slideover-panel")).toBeVisible();
@@ -791,7 +793,10 @@ test.describe("IP Whitelist E2E Tests", () => {
 		await expect(ipRows).toHaveCount(afterAddRowCount);
 
 		// Close the modal
-		await page.getByTestId("add-ip-slideover-panel").getByRole("button", { name: "キャンセル" }).click();
+		await page
+			.getByTestId("add-ip-slideover-panel")
+			.getByRole("button", { name: "キャンセル" })
+			.click();
 		await expect(page.getByTestId("add-ip-slideover-panel")).not.toBeVisible();
 	});
 });

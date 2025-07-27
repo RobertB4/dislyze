@@ -149,14 +149,7 @@
 											class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
 											data-testid="ip-table-header-label"
 										>
-											ラベル
-										</th>
-										<th
-											scope="col"
-											class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-											data-testid="ip-table-header-created-by"
-										>
-											作成者
+											説明
 										</th>
 										<th
 											scope="col"
@@ -190,17 +183,7 @@
 												class="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
 												data-testid={`ip-label-${rule.id}`}
 											>
-												{#if rule.label}
-													{rule.label}
-												{:else}
-													<span class="text-gray-400">-</span>
-												{/if}
-											</td>
-											<td
-												class="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
-												data-testid={`ip-created-by-${rule.id}`}
-											>
-												{rule.created_by}
+												{rule.label}
 											</td>
 											<td
 												class="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
@@ -223,7 +206,7 @@
 														onclick={() => (selectedWhitelistRule = rule)}
 														data-testid={`edit-label-button-${rule.id}`}
 													>
-														ラベル編集
+														編集
 													</Button>
 													<Button
 														variant="link"
