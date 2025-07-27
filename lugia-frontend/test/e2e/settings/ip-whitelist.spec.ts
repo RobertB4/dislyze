@@ -744,22 +744,38 @@ test.describe("IP Whitelist E2E Tests", () => {
 	});
 
 	test("Duplicate IP address prevention", async ({ page }) => {
-		const duplicateIP = "172.16.0.1/32"; // This IP was already added in "Add IP with custom label" test
+		const testIP = "192.168.100.50/32";
 
 		// Login as enterprise admin
 		await logInAs(page, TestUsersData.enterprise_1);
 		await page.goto(IP_WHITELIST_URL);
 
-		// Verify there are existing IPs in the table from previous tests
-		const ipRows = page.getByTestId("ip-whitelist-table-body").locator("tr");
-		const initialRowCount = await ipRows.count();
-		expect(initialRowCount).toBeGreaterThan(0); // Should have IPs from previous tests
-
-		// Try to add an IP that already exists (172.16.0.1 from "Add IP with custom label" test)
+		// First, add an IP address that we'll then attempt to duplicate
 		await page.getByTestId("add-ip-button").click();
 		await expect(page.getByTestId("add-ip-slideover-panel")).toBeVisible();
 
-		await page.getByTestId("ip-address-input").fill(duplicateIP);
+		await page.getByTestId("ip-address-input").fill(testIP);
+		await page.getByTestId("label-input").fill("Original IP");
+
+		// Wait for create API calls
+		const createResponsePromise = page.waitForResponse("/api/ip-whitelist/create");
+		const refreshResponsePromise = page.waitForResponse("/api/ip-whitelist");
+
+		await page.getByTestId("add-ip-slideover-primary-button").click();
+
+		await createResponsePromise;
+		await refreshResponsePromise;
+
+		// Verify first IP was added successfully
+		await expect(page.getByTestId("add-ip-slideover-panel")).not.toBeVisible();
+		const ipRows = page.getByTestId("ip-whitelist-table-body").locator("tr");
+		const afterAddRowCount = await ipRows.count();
+		
+		// Now try to add the exact same IP address again (duplicate attempt)
+		await page.getByTestId("add-ip-button").click();
+		await expect(page.getByTestId("add-ip-slideover-panel")).toBeVisible();
+
+		await page.getByTestId("ip-address-input").fill(testIP);
 		await page.getByTestId("label-input").fill("Duplicate IP Attempt");
 
 		// Try to submit - should fail client-side validation
@@ -772,7 +788,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		await expect(page.getByTestId("add-ip-slideover-panel")).toBeVisible();
 
 		// Verify no duplicate IP was added to table (row count unchanged)
-		await expect(ipRows).toHaveCount(initialRowCount);
+		await expect(ipRows).toHaveCount(afterAddRowCount);
 
 		// Close the modal
 		await page.getByTestId("add-ip-slideover-panel").getByRole("button", { name: "キャンセル" }).click();
