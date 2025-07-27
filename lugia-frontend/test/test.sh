@@ -46,6 +46,16 @@ trap cleanup EXIT SIGINT SIGTERM
 echo "Performing initial cleanup..."
 docker compose -f "$COMPOSE_FILE" down -v --remove-orphans || true
 
+# Debug: Test backend build before anything else
+echo "Debug: Testing lugia-backend build in isolation..."
+docker compose -f "$COMPOSE_FILE" build lugia-backend
+BACKEND_BUILD_EXIT_CODE=$?
+echo "Debug: Backend build exit code: $BACKEND_BUILD_EXIT_CODE"
+if [ $BACKEND_BUILD_EXIT_CODE -ne 0 ]; then
+  echo "Debug: Backend build failed, exiting early"
+  exit $BACKEND_BUILD_EXIT_CODE
+fi
+
 # Step 1: Start lugia-frontend service first to get its IP
 echo "Starting lugia-frontend service to determine its IP..."
 docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans lugia-frontend
