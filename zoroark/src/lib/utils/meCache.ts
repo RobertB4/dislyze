@@ -5,7 +5,7 @@ export type Me = {
 	email: string;
 	user_name: string;
 	tenant_name: string;
-	permissions: `${"tenant" | "users" | "roles"}.${"view" | "edit"}`[]; // array of {resource}.{action}, e.g. users.view
+	permissions: `${"tenant" | "users" | "roles" | "ip_whitelist"}.${"view" | "edit"}`[]; // array of {resource}.{action}, e.g. users.view
 	enterprise_features: EnterpriseFeatures;
 };
 

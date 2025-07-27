@@ -62,6 +62,7 @@
 			const requestBody: UpdateTenantRequestBody = {
 				name: values.name,
 				enterprise_features: {
+					...pageData.me.enterprise_features,
 					rbac: { enabled: values.rbac_enabled }
 				}
 			};
