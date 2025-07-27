@@ -23,7 +23,8 @@
 		const resourceLabels: Record<string, string> = {
 			users: "ユーザー管理",
 			roles: "ロール管理",
-			tenant: "テナント設定"
+			tenant: "テナント設定",
+			ip_whitelist: "IPアクセス制限機能"
 		};
 		return resourceLabels[resource] || resource;
 	}

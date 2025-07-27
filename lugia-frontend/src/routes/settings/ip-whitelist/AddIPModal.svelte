@@ -17,28 +17,38 @@
 		const trimmed = value.trim();
 		if (!trimmed) return null;
 
-		// Check if it's a single IP address
-		if (!trimmed.includes("/")) {
-			// Validate IPv4
-			const ipv4Regex =
-				/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-			// Validate IPv6 (simplified)
-			const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$/;
+		// Split IP and CIDR if present
+		const parts = trimmed.split("/");
+		const ipPart = parts[0];
+		const cidrPart = parts[1];
 
-			if (ipv4Regex.test(trimmed) || ipv6Regex.test(trimmed)) {
-				return null;
-			}
+		// Basic IPv4 validation
+		const isIPv4 = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ipPart);
+		
+		// Simple IPv6 validation - just check for basic format with colons
+		const isIPv6 = /^[0-9a-fA-F:]+$/.test(ipPart) && ipPart.includes(":") && ipPart.length >= 2;
+
+		if (!isIPv4 && !isIPv6) {
 			return "IPアドレスの形式が正しくありません";
 		}
 
-		// Check if it's a valid CIDR
-		const cidrRegex =
-			/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(?:[0-9]|[1-2][0-9]|3[0-2])$|^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\/(?:[0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8])$/;
-
-		if (cidrRegex.test(trimmed)) {
-			return null;
+		// If CIDR is present, validate it
+		if (cidrPart !== undefined) {
+			const cidr = parseInt(cidrPart, 10);
+			if (isNaN(cidr)) {
+				return "CIDR形式が正しくありません";
+			}
+			
+			// Validate CIDR range
+			if (isIPv4 && (cidr < 0 || cidr > 32)) {
+				return "IPv4のCIDR範囲は0-32です";
+			}
+			if (isIPv6 && (cidr < 0 || cidr > 128)) {
+				return "IPv6のCIDR範囲は0-128です";
+			}
 		}
-		return "CIDR形式が正しくありません";
+
+		return null;
 	}
 
 	function isDuplicateIP(value: string): boolean {

@@ -65,9 +65,6 @@
 					IPアドレス <code class="bg-red-100 px-2 py-1 rounded text-red-800">{rule.ip_address}</code
 					> を削除します。
 				</p>
-				<p>
-					このIPアドレスからアクセスしているユーザーは、IPアドレス制限が有効な場合、アプリケーションにアクセスできなくなります。
-				</p>
 			</Alert>
 
 			<Input
