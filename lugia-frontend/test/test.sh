@@ -68,7 +68,16 @@ echo "Exported DYNAMIC_FRONTEND_URL=${DYNAMIC_FRONTEND_URL}"
 # The DYNAMIC_FRONTEND_URL will be available to the docker-compose command for the backend.
 # We use --no-deps to avoid restarting the lugia-frontend if it's already up.
 echo "Building and starting other E2E services (lugia-backend, postgres, mock-sendgrid, playwright)..."
-docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans lugia-backend postgres mock-sendgrid playwright
+echo "Debug: Available images before build:"
+docker images | grep -E "(lugia|test-)" || echo "No lugia/test images found"
+echo "Debug: Running docker compose with build logs..."
+DOCKER_BUILDKIT=0 docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans --no-deps lugia-backend postgres mock-sendgrid playwright
+echo "Debug: Exit code from docker compose: $?"
+echo "Debug: Available images after build attempt:"
+docker images | grep -E "(lugia|test-)" || echo "No lugia/test images found"
+echo "Debug: Testing individual service builds..."
+echo "Debug: Building lugia-backend only with verbose output:"
+DOCKER_BUILDKIT=0 docker compose -f "$COMPOSE_FILE" build lugia-backend
 
 # Health checks
 echo "Waiting for services to be healthy..."
