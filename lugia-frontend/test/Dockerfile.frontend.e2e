@@ -17,6 +17,7 @@ COPY lugia-frontend/.env.e2e ./.env
 COPY zoroark /zoroark
 WORKDIR /zoroark
 RUN npm install --no-frozen-lockfile
+RUN npm run package
 RUN npm run build
 
 # Copy the rest of the lugia-frontend application source code
