@@ -46,6 +46,10 @@ trap cleanup EXIT SIGINT SIGTERM
 echo "Performing initial cleanup..."
 docker compose -f "$COMPOSE_FILE" down -v --remove-orphans || true
 
+# Pre-build lugia-backend to avoid multi-service build issues in CI
+echo "Pre-building lugia-backend service..."
+docker compose -f "$COMPOSE_FILE" build lugia-backend
+
 # Step 1: Start lugia-frontend service first to get its IP
 echo "Starting lugia-frontend service to determine its IP..."
 docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans lugia-frontend
@@ -66,9 +70,6 @@ echo "Exported DYNAMIC_FRONTEND_URL=${DYNAMIC_FRONTEND_URL}"
 
 # Step 4: Build and start other E2E services.
 # The DYNAMIC_FRONTEND_URL will be available to the docker-compose command for the backend.
-echo "Building lugia-backend in isolation first..."
-docker compose -f "$COMPOSE_FILE" build lugia-backend
-
 echo "Building and starting other E2E services (lugia-backend, postgres, mock-sendgrid, playwright)..."
 # We use --no-deps to avoid restarting the lugia-frontend if it's already up.
 docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans --no-deps lugia-backend postgres mock-sendgrid playwright
