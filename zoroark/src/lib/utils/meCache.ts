@@ -11,6 +11,7 @@ export type Me = {
 
 export type EnterpriseFeatures = {
 	rbac: { enabled: boolean };
+	ip_whitelist: { enabled: boolean; active: boolean; allow_internal_admin_bypass: boolean };
 };
 
 /**
