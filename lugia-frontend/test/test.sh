@@ -46,16 +46,6 @@ trap cleanup EXIT SIGINT SIGTERM
 echo "Performing initial cleanup..."
 docker compose -f "$COMPOSE_FILE" down -v --remove-orphans || true
 
-# Debug: Test backend build before anything else
-echo "Debug: Testing lugia-backend build in isolation..."
-docker compose -f "$COMPOSE_FILE" build lugia-backend
-BACKEND_BUILD_EXIT_CODE=$?
-echo "Debug: Backend build exit code: $BACKEND_BUILD_EXIT_CODE"
-if [ $BACKEND_BUILD_EXIT_CODE -ne 0 ]; then
-  echo "Debug: Backend build failed, exiting early"
-  exit $BACKEND_BUILD_EXIT_CODE
-fi
-
 # Step 1: Start lugia-frontend service first to get its IP
 echo "Starting lugia-frontend service to determine its IP..."
 docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans lugia-frontend
@@ -76,18 +66,12 @@ echo "Exported DYNAMIC_FRONTEND_URL=${DYNAMIC_FRONTEND_URL}"
 
 # Step 4: Build and start other E2E services.
 # The DYNAMIC_FRONTEND_URL will be available to the docker-compose command for the backend.
+echo "Building all remaining services..."
+docker compose -f "$COMPOSE_FILE" build lugia-backend postgres mock-sendgrid playwright
+
+echo "Starting other E2E services (lugia-backend, postgres, mock-sendgrid, playwright)..."
 # We use --no-deps to avoid restarting the lugia-frontend if it's already up.
-echo "Building and starting other E2E services (lugia-backend, postgres, mock-sendgrid, playwright)..."
-echo "Debug: Available images before build:"
-docker images | grep -E "(lugia|test-)" || echo "No lugia/test images found"
-echo "Debug: Running docker compose with build logs..."
-DOCKER_BUILDKIT=0 docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans --no-deps lugia-backend postgres mock-sendgrid playwright
-echo "Debug: Exit code from docker compose: $?"
-echo "Debug: Available images after build attempt:"
-docker images | grep -E "(lugia|test-)" || echo "No lugia/test images found"
-echo "Debug: Testing individual service builds..."
-echo "Debug: Building lugia-backend only with verbose output:"
-DOCKER_BUILDKIT=0 docker compose -f "$COMPOSE_FILE" build lugia-backend
+docker compose -f "$COMPOSE_FILE" up -d --remove-orphans --no-deps lugia-backend postgres mock-sendgrid playwright
 
 # Health checks
 echo "Waiting for services to be healthy..."
