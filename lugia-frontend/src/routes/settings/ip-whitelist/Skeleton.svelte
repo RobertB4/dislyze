@@ -48,7 +48,7 @@
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-gray-200 bg-white">
-							{#each Array(5) as _, i}
+							{#each Array(5)}
 								<tr>
 									<td
 										class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6"
