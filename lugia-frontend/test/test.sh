@@ -44,11 +44,16 @@ cleanup() {
 trap cleanup EXIT SIGINT SIGTERM
 
 echo "Performing initial cleanup..."
+echo "Docker info before cleanup:"
+docker system df
+echo "Current Docker images:"
+docker images | head -10
 docker compose -f "$COMPOSE_FILE" down -v --remove-orphans || true
 
 # Step 1: Start lugia-frontend service first to get its IP
 echo "Starting lugia-frontend service to determine its IP..."
-docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans lugia-frontend
+echo "Building lugia-frontend with verbose output..."
+docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans lugia-frontend --verbose
 
 # Step 2: Determine lugia-frontend IP dynamically
 FRONTEND_CONTAINER_NAME="lugia-frontend-e2e"
@@ -68,7 +73,10 @@ echo "Exported DYNAMIC_FRONTEND_URL=${DYNAMIC_FRONTEND_URL}"
 # The DYNAMIC_FRONTEND_URL will be available to the docker-compose command for the backend.
 # We use --no-deps to avoid restarting the lugia-frontend if it's already up.
 echo "Building and starting other E2E services (lugia-backend, postgres, mock-sendgrid, playwright)..."
-docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans --no-deps lugia-backend postgres mock-sendgrid playwright
+echo "Available Docker images before build:"
+docker images | grep -E "(lugia|test-lugia)" || echo "No lugia images found"
+echo "Running docker compose up with verbose output..."
+docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans --no-deps lugia-backend postgres mock-sendgrid playwright --verbose
 
 # Health checks
 echo "Waiting for services to be healthy..."
