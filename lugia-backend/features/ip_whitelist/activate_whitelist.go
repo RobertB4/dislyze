@@ -6,15 +6,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	jirachiAuthz "dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/responder"
 	"dislyze/jirachi/sendgridlib"
+	"dislyze/jirachi/utils"
 	"lugia/lib/iputils"
-	"lugia/lib/jwt"
 	"lugia/queries"
+
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -156,7 +159,7 @@ func (h *IPWhitelistHandler) validateActivationSafety(ctx context.Context, tenan
 }
 
 func (h *IPWhitelistHandler) createEmergencyTokenAndSendEmail(ctx context.Context, qtx *queries.Queries, tenantID, userID pgtype.UUID) error {
-	emergencyToken, jti, err := jwt.GenerateEmergencyToken(userID, tenantID, []byte(h.env.IPWhitelistEmergencyJWTSecret))
+	emergencyToken, jti, err := GenerateEmergencyToken(userID, tenantID, []byte(h.env.IPWhitelistEmergencyJWTSecret))
 	if err != nil {
 		return fmt.Errorf("failed to generate emergency token: %w", err)
 	}
@@ -218,4 +221,44 @@ func (h *IPWhitelistHandler) sendEmergencyEmail(email, name, token string) error
 	}
 
 	return nil
+}
+
+type EmergencyClaims struct {
+	UserID   pgtype.UUID `json:"user_id"`
+	TenantID pgtype.UUID `json:"tenant_id"`
+	Action   string      `json:"action"`
+	JTI      pgtype.UUID `json:"jti"`
+	jwt.RegisteredClaims
+}
+
+func GenerateEmergencyToken(userID, tenantID pgtype.UUID, secret []byte) (string, pgtype.UUID, error) {
+	if len(secret) == 0 {
+		return "", pgtype.UUID{}, fmt.Errorf("secret cannot be empty")
+	}
+
+	jti, err := utils.NewUUID()
+	if err != nil {
+		return "", pgtype.UUID{}, fmt.Errorf("failed to generate jti for emergency token: %w", err)
+	}
+
+	now := time.Now()
+	claims := EmergencyClaims{
+		UserID:   userID,
+		TenantID: tenantID,
+		Action:   "ip_whitelist.emergency_deactivate",
+		JTI:      jti,
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(30 * time.Minute)),
+			NotBefore: jwt.NewNumericDate(now),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(secret)
+	if err != nil {
+		return "", pgtype.UUID{}, fmt.Errorf("failed to sign emergency token: %w", err)
+	}
+
+	return tokenString, jti, nil
 }

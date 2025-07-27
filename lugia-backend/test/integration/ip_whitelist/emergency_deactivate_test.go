@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	jwtlib "lugia/lib/jwt"
+	"lugia/features/ip_whitelist"
 	"lugia/test/integration/setup"
 
 	"dislyze/jirachi/utils"
@@ -32,7 +32,7 @@ func generateValidEmergencyTokenWithDB(t *testing.T, pool *pgxpool.Pool, userID,
 	err = tenantUUID.Scan(tenantID)
 	require.NoError(t, err)
 
-	tokenString, jti, err := jwtlib.GenerateEmergencyToken(userUUID, tenantUUID, []byte(testEmergencyJWTSecret))
+	tokenString, jti, err := ip_whitelist.GenerateEmergencyToken(userUUID, tenantUUID, []byte(testEmergencyJWTSecret))
 	require.NoError(t, err)
 
 	// Insert JTI into database
@@ -58,7 +58,7 @@ func generateExpiredEmergencyToken(t *testing.T, userID, tenantID string) string
 
 	// Create token that expired 1 hour ago
 	pastTime := time.Now().Add(-1 * time.Hour)
-	claims := jwtlib.EmergencyClaims{
+	claims := ip_whitelist.EmergencyClaims{
 		UserID:   userUUID,
 		TenantID: tenantUUID,
 		Action:   "ip_whitelist.emergency_deactivate",
@@ -91,7 +91,7 @@ func generateWrongActionToken(t *testing.T, userID, tenantID string) string {
 	require.NoError(t, err)
 
 	now := time.Now()
-	claims := jwtlib.EmergencyClaims{
+	claims := ip_whitelist.EmergencyClaims{
 		UserID:   userUUID,
 		TenantID: tenantUUID,
 		Action:   "wrong_action", // Wrong action
@@ -124,7 +124,7 @@ func generateWrongKeyToken(t *testing.T, userID, tenantID string) string {
 	require.NoError(t, err)
 
 	now := time.Now()
-	claims := jwtlib.EmergencyClaims{
+	claims := ip_whitelist.EmergencyClaims{
 		UserID:   userUUID,
 		TenantID: tenantUUID,
 		Action:   "ip_whitelist.emergency_deactivate",
@@ -337,11 +337,11 @@ func TestEmergencyDeactivateIntegration(t *testing.T) {
 
 				// Mark token as used
 				// Extract JTI from token to mark as used
-				parsedToken, err := jwt.ParseWithClaims(token, &jwtlib.EmergencyClaims{}, func(token *jwt.Token) (interface{}, error) {
+				parsedToken, err := jwt.ParseWithClaims(token, &ip_whitelist.EmergencyClaims{}, func(token *jwt.Token) (interface{}, error) {
 					return []byte(testEmergencyJWTSecret), nil
 				})
 				require.NoError(t, err)
-				claims := parsedToken.Claims.(*jwtlib.EmergencyClaims)
+				claims := parsedToken.Claims.(*ip_whitelist.EmergencyClaims)
 				markEmergencyTokenAsUsed(t, pool, claims.JTI.String())
 
 				return "enterprise_1", token, true

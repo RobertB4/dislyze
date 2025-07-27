@@ -6,13 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	jirachiAuthz "dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/responder"
-	"lugia/lib/jwt"
 	"lugia/queries"
+
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -43,7 +45,7 @@ func (h *IPWhitelistHandler) EmergencyDeactivate(w http.ResponseWriter, r *http.
 }
 
 func (h *IPWhitelistHandler) emergencyDeactivate(ctx context.Context, token string) error {
-	claims, err := jwt.ValidateEmergencyToken(token, []byte(h.env.IPWhitelistEmergencyJWTSecret))
+	claims, err := ValidateEmergencyToken(token, []byte(h.env.IPWhitelistEmergencyJWTSecret))
 	if err != nil {
 		return errlib.New(fmt.Errorf("EmergencyDeactivate: invalid emergency token: %w", err), http.StatusUnauthorized, "")
 	}
@@ -115,4 +117,40 @@ func (h *IPWhitelistHandler) emergencyDeactivate(ctx context.Context, token stri
 	}
 
 	return nil
+}
+
+func ValidateEmergencyToken(tokenString string, secret []byte) (*EmergencyClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &EmergencyClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return secret, nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid emergency token: %w", err)
+	}
+
+	if !token.Valid {
+		return nil, fmt.Errorf("emergency token signature is invalid")
+	}
+
+	claims, ok := token.Claims.(*EmergencyClaims)
+	if !ok {
+		return nil, fmt.Errorf("emergency token claims are invalid")
+	}
+
+	if claims.Action != "ip_whitelist.emergency_deactivate" {
+		return nil, fmt.Errorf("emergency token has invalid action: %s", claims.Action)
+	}
+
+	if claims.ExpiresAt == nil {
+		return nil, fmt.Errorf("emergency token has no ExpiresAt set")
+	}
+
+	if claims.ExpiresAt.Time.Before(time.Now()) {
+		return nil, fmt.Errorf("emergency token has expired")
+	}
+
+	return claims, nil
 }
