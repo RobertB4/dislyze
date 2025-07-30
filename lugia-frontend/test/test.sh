@@ -34,25 +34,25 @@ if [ "$UI_MODE" = true ]; then
   echo "Playwright UI mode requested. Attempting to listen on all interfaces."
 fi
 
-cleanup() {
-  echo "Cleaning up E2E environment..."
-  docker compose -f "$COMPOSE_FILE" down -v --remove-orphans
-  echo "Pruning dangling Docker images..."
-  docker image prune -f --filter "dangling=true" || true
-}
+# cleanup() {
+#   echo "Cleaning up E2E environment..."
+#   docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" down -v --remove-orphans
+#   echo "Pruning dangling Docker images..."
+#   docker image prune -f --filter "dangling=true" || true
+# }
 
-trap cleanup EXIT SIGINT SIGTERM
+# trap cleanup EXIT SIGINT SIGTERM
 
-echo "Performing initial cleanup..."
-docker compose -f "$COMPOSE_FILE" down -v --remove-orphans || true
+# echo "Performing initial cleanup..."
+# docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" down -v --remove-orphans || true
 
 # Pre-build lugia-backend to avoid multi-service build issues in CI
 echo "Pre-building lugia-backend service..."
-docker compose -f "$COMPOSE_FILE" build lugia-backend
+docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" build lugia-backend
 
 # Step 1: Start lugia-frontend service first to get its IP
 echo "Starting lugia-frontend service to determine its IP..."
-docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans lugia-frontend
+docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans lugia-frontend
 
 # Step 2: Determine lugia-frontend IP dynamically
 FRONTEND_CONTAINER_NAME="lugia-frontend-e2e"
@@ -72,7 +72,7 @@ echo "Exported DYNAMIC_FRONTEND_URL=${DYNAMIC_FRONTEND_URL}"
 # The DYNAMIC_FRONTEND_URL will be available to the docker-compose command for the backend.
 echo "Building and starting other E2E services (lugia-backend, postgres, mock-sendgrid, playwright)..."
 # We use --no-deps to avoid restarting the lugia-frontend if it's already up.
-docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans --no-deps lugia-backend postgres mock-sendgrid playwright
+docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans --no-deps lugia-backend postgres mock-sendgrid playwright
 
 # Health checks
 echo "Waiting for services to be healthy..."
@@ -82,7 +82,7 @@ RETRY_INTERVAL=5
 # Health check for Postgres
 echo "Checking Postgres (postgres:5432)..."
 for i in $(seq 1 $MAX_RETRIES); do
-  if docker compose -f "$COMPOSE_FILE" exec -T postgres pg_isready -U testuser_e2e -d testdb_e2e -q; then
+  if docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" exec -T postgres pg_isready -U testuser_e2e -d testdb_e2e -q; then
     echo "Postgres is ready."
     break
   fi
@@ -97,7 +97,7 @@ done
 # Health check for Mock Sendgrid (mock-sendgrid:27000)
 echo "Checking Mock Sendgrid (http://mock-sendgrid:27000/)..."
 for i in $(seq 1 $MAX_RETRIES); do
-  if docker compose -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null http://mock-sendgrid:27000/; then
+  if docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null http://mock-sendgrid:27000/; then
     echo "Mock Sendgrid is ready."
     break
   fi
@@ -112,7 +112,7 @@ done
 # Health check for Backend (lugia-backend:23001)
 echo "Checking lugia-backend (http://lugia-backend:23001/health)..."
 for i in $(seq 1 $MAX_RETRIES); do
-  if docker compose -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null http://lugia-backend:23001/health; then
+  if docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null http://lugia-backend:23001/health; then
     echo "lugia-backend is ready."
     break
   fi
@@ -127,7 +127,7 @@ done
 # Health check for lugia-frontend (using the dynamically obtained IP)
 echo "Checking lugia-frontend (${DYNAMIC_FRONTEND_URL})..."
 for i in $(seq 1 $MAX_RETRIES); do
-  if docker compose -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null "${DYNAMIC_FRONTEND_URL}"; then
+  if docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null "${DYNAMIC_FRONTEND_URL}"; then
     echo "lugia-frontend is ready."
     break
   fi
@@ -142,7 +142,7 @@ done
 echo "All services are healthy."
 
 echo "Changing ownership of /app in Playwright container to pwuser..."
-docker compose -f "$COMPOSE_FILE" exec -T -u root playwright chown -R pwuser:pwuser /app
+docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" exec -T -u root playwright chown -R pwuser:pwuser /app
 CHOWN_EXIT_CODE=$?
 if [ $CHOWN_EXIT_CODE -ne 0 ]; then
   echo "Error: chown in Playwright container failed with exit code $CHOWN_EXIT_CODE."
@@ -152,7 +152,7 @@ echo "/app ownership changed successfully."
 
 echo "Installing project Playwright dependencies in Playwright container..."
 # Make npm ci verbose and capture its exit code
-docker compose -f "$COMPOSE_FILE" exec -T playwright npm ci --no-audit --no-fund
+docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" exec -T playwright npm ci --no-audit --no-fund
 NPM_CI_EXIT_CODE=$?
 
 if [ $NPM_CI_EXIT_CODE -ne 0 ]; then
@@ -181,7 +181,7 @@ fi
 
 COMMAND_TO_RUN="${COMMAND_PREFIX}${PLAYWRIGHT_COMMAND_BASE} ${PLAYWRIGHT_COMMAND_ARGS}"
 
-docker compose -f "$COMPOSE_FILE" exec -T \
+docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" exec -T \
   $(printf " %s" "${DOCKER_EXEC_ENV_VARS[@]}") \
   playwright sh -c "$COMMAND_TO_RUN"
 
