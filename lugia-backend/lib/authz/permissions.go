@@ -8,11 +8,20 @@ import (
 	"lugia/queries"
 )
 
+type Resource string
+
+func (r *Resource) String() string {
+	if r == nil {
+		return ""
+	}
+	return string(*r)
+}
+
 const (
-	ResourceTenant     = "tenant"
-	ResourceUsers      = "users"
-	ResourceRoles      = "roles"
-	ResourceIPWhitelist = "ip_whitelist"
+	ResourceTenant      Resource = "tenant"
+	ResourceUsers       Resource = "users"
+	ResourceRoles       Resource = "roles"
+	ResourceIPWhitelist Resource = "ip_whitelist"
 )
 
 const (
@@ -20,7 +29,7 @@ const (
 	ActionEdit = "edit"
 )
 
-func UserHasPermission(ctx context.Context, db *queries.Queries, resource, action string) bool {
+func UserHasPermission(ctx context.Context, db *queries.Queries, resource Resource, action string) bool {
 	userID := libctx.GetUserID(ctx)
 	tenantID := libctx.GetTenantID(ctx)
 
@@ -29,7 +38,7 @@ func UserHasPermission(ctx context.Context, db *queries.Queries, resource, actio
 	hasPermission, err := db.UserHasPermission(ctx, &queries.UserHasPermissionParams{
 		UserID:      userID,
 		TenantID:    tenantID,
-		Resource:    resource,
+		Resource:    resource.String(),
 		Action:      action,
 		RbacEnabled: rbacEnabled,
 	})

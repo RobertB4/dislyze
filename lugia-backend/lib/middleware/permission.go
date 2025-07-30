@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"time"
 
-	"lugia/lib/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/logger"
+	"lugia/lib/authz"
 	"lugia/queries"
 )
 
-func RequirePermission(db *queries.Queries, resource, action string) func(http.Handler) http.Handler {
+func RequirePermission(db *queries.Queries, resource authz.Resource, action string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !authz.UserHasPermission(r.Context(), db, resource, action) {
@@ -27,7 +27,7 @@ func RequirePermission(db *queries.Queries, resource, action string) func(http.H
 					Timestamp: time.Now(),
 					Success:   false,
 					Error:     fmt.Sprintf("Permission required. resource: %s, action: %s", resource, action),
-					Resource:  resource,
+					Resource:  resource.String(),
 					Action:    action,
 				})
 
