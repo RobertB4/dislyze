@@ -12,6 +12,10 @@ test.describe("Settings - Users Page", () => {
 
 	// Authentication and access control tests
 	test.describe("Authentication and Access Control", () => {
+		test.beforeAll(async () => {
+			await resetAndSeedDatabase();
+		});
+
 		test("should redirect to login page when not authenticated", async ({ page }) => {
 			await page.goto(usersPageURL);
 			await expect(page).toHaveURL(/.*\/auth\/login.*/);
@@ -38,6 +42,10 @@ test.describe("Settings - Users Page", () => {
 	});
 	// User viewing and search tests
 	test.describe("Viewing Users and Search", () => {
+		test.beforeAll(async () => {
+			await resetAndSeedDatabase();
+		});
+
 		test.beforeEach(async ({ page }) => {
 			// Login as admin for all tests in this describe block using the helper function
 			await logInAs(page, TestUsersData.enterprise_1);
@@ -190,6 +198,10 @@ test.describe("Settings - Users Page", () => {
 	});
 	// Pagination tests
 	test.describe("Pagination", () => {
+		test.beforeAll(async () => {
+			await resetAndSeedDatabase();
+		});
+
 		test.beforeEach(async ({ page }) => {
 			// Login as admin for all tests in this describe block
 			await logInAs(page, TestUsersData.enterprise_1);
@@ -418,6 +430,10 @@ test.describe("Settings - Users Page", () => {
 	});
 	// User Invitation Tests
 	test.describe("User Invitation", () => {
+		test.beforeAll(async () => {
+			await resetAndSeedDatabase();
+		});
+
 		test.beforeEach(async ({ page }) => {
 			// Login as admin for all tests in this describe block
 			await logInAs(page, TestUsersData.enterprise_1);
@@ -587,6 +603,10 @@ test.describe("Settings - Users Page", () => {
 	});
 	// Resending Invitation Tests
 	test.describe("Resending Invitation", () => {
+		test.beforeAll(async () => {
+			await resetAndSeedDatabase();
+		});
+
 		test.beforeEach(async ({ page }) => {
 			// Login as admin for all tests in this describe block
 			await logInAs(page, TestUsersData.enterprise_1);
@@ -650,6 +670,10 @@ test.describe("Settings - Users Page", () => {
 	});
 	// Role Editing tests
 	test.describe("Role Editing", () => {
+		test.beforeAll(async () => {
+			await resetAndSeedDatabase();
+		});
+
 		test.beforeEach(async ({ page }) => {
 			// Login as admin for all tests in this describe block
 			await logInAs(page, TestUsersData.enterprise_1);
@@ -866,6 +890,10 @@ test.describe("Settings - Users Page", () => {
 	// Multiple Role Selection Tests
 	test.describe("Multiple Role Selection", () => {
 		test.beforeAll(async () => {
+			await resetAndSeedDatabase();
+		});
+
+		test.beforeAll(async () => {
 			// Reset database to clean seed state before multiple role tests
 			await resetAndSeedDatabase();
 		});
@@ -1066,6 +1094,10 @@ test.describe("Settings - Users Page", () => {
 
 	// User Deletion Tests
 	test.describe("User Deletion", () => {
+		test.beforeAll(async () => {
+			await resetAndSeedDatabase();
+		});
+
 		test.beforeEach(async ({ page }) => {
 			// Login as admin for all tests in this describe block
 			await logInAs(page, TestUsersData.enterprise_1);
