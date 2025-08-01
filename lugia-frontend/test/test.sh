@@ -34,17 +34,17 @@ if [ "$UI_MODE" = true ]; then
   echo "Playwright UI mode requested. Attempting to listen on all interfaces."
 fi
 
-# cleanup() {
-#   echo "Cleaning up E2E environment..."
-#   docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" down -v --remove-orphans
-#   echo "Pruning dangling Docker images..."
-#   docker image prune -f --filter "dangling=true" || true
-# }
+cleanup() {
+  echo "Cleaning up E2E environment..."
+  docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" down -v --remove-orphans
+  echo "Pruning dangling Docker images..."
+  docker image prune -f --filter "dangling=true" || true
+}
 
-# trap cleanup EXIT SIGINT SIGTERM
+trap cleanup EXIT SIGINT SIGTERM
 
-# echo "Performing initial cleanup..."
-# docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" down -v --remove-orphans || true
+echo "Performing initial cleanup..."
+docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" down -v --remove-orphans || true
 
 # Pre-build lugia-backend to avoid multi-service build issues in CI
 echo "Pre-building lugia-backend service..."

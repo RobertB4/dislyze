@@ -5,15 +5,14 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# # Cleanup function
-# cleanup() {
-#     echo "🧹 Cleaning up..."
-#     # Stop and remove containers
-#     docker compose -p giratina-backend-integration -f docker-compose.integration.yml down --volumes
-# }
+cleanup() {
+    echo "🧹 Cleaning up..."
+    # Stop and remove containers
+    docker compose -p giratina-backend-integration -f docker-compose.integration.yml down --volumes
+}
 
-# # Set trap to run cleanup on exit (success, failure, or interruption)
-# trap cleanup EXIT
+# Set trap to run cleanup on exit (success, failure, or interruption)
+trap cleanup EXIT
 
 echo "🚀 Starting giratina-backend test environment..."
 
