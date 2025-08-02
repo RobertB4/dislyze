@@ -213,18 +213,16 @@ const cloudSqlClientBinding = new gcp.projects.IAMMember(
   { dependsOn: [cloudRunServiceAccount] }
 );
 
-// Get the latest image tag from Artifact Registry
-const getLatestImageCommand = new command.local.Command(
-  "get-latest-lugia-tag",
+// Get image tag from config, or fall back to currently deployed image
+const getCurrentImageCommand = new command.local.Command(
+  "get-current-lugia-image",
   {
-    create: pulumi.interpolate`gcloud artifacts docker images list ${region}-docker.pkg.dev/${projectId}/dislyze/lugia --format="value(tag)" --sort-by="~CREATE_TIME" --limit=1`,
-    triggers: [Date.now()], // Force refresh each deployment
+    create: pulumi.interpolate`gcloud run services describe lugia --region=${region} --project=${projectId} --format="value(spec.template.spec.containers.image)" 2>/dev/null | head -1 | grep -o '[^:]*$' || echo "latest"`,
+    triggers: [Date.now()], // Ensure fresh lookup each time
   }
 );
 
-const lugiaImageTag =
-  config.get("lugia-image-tag") ||
-  getLatestImageCommand.stdout.apply((tag) => tag.trim() || "latest");
+const lugiaImageTag = getCurrentImageCommand.stdout.apply((tag) => tag.trim());
 const lugiaService = new gcp.cloudrun.Service(
   "lugia",
   {
@@ -243,7 +241,9 @@ const lugiaService = new gcp.cloudrun.Service(
         timeoutSeconds: 60,
         containers: [
           {
-            image: pulumi.interpolate`${region}-docker.pkg.dev/${projectId}/dislyze/lugia:${lugiaImageTag}`,
+            image: pulumi.interpolate`${region}-docker.pkg.dev/${projectId}/dislyze/lugia:${
+              config.get("lugia-image-tag") || lugiaImageTag
+            }`,
             resources: {
               limits: {
                 cpu: cloudRunCpu,

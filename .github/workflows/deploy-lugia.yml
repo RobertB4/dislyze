@@ -91,6 +91,6 @@ jobs:
           pulumi stack select $STACK_NAME
           
           pulumi config set lugia-image-tag ${{ github.sha }}
-          pulumi up --target="lugia" --yes
+          pulumi up --target="urn:pulumi:$STACK_NAME::dislyze-infrastructure::gcp:cloudrun/service:Service::lugia" --yes
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
