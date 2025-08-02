@@ -145,7 +145,9 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 
 			// If file exists, serve it
 			if file, err := frontendFS.Open(path); err == nil {
-				file.Close()
+				if closeErr := file.Close(); closeErr != nil {
+					log.Printf("Error closing file when trying to serve static file: %v", closeErr)
+				}
 				http.FileServer(http.FS(frontendFS)).ServeHTTP(w, r)
 				return
 			}
