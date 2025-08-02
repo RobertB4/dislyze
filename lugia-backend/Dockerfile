@@ -34,13 +34,13 @@ RUN apk --no-cache add ca-certificates
 RUN addgroup -g 1001 -S appgroup && \
     adduser -u 1001 -S appuser -G appgroup
 
-WORKDIR /app
+WORKDIR /app/lugia-backend
 
 # Copy the binary from builder stage
 COPY --from=builder /app/lugia-backend/main .
 
 # Copy database migrations
-COPY --from=builder /app/database ./database
+COPY --from=builder /app/database ../database
 
 # Change ownership to non-root user
 RUN chown -R appuser:appgroup /app
