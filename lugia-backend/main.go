@@ -34,7 +34,7 @@ import (
 // not used on localhost.
 // for deployments, frontend gets embedded and built into the backend image
 //
-//go:embed frontend/build
+//go:embed frontend_embed
 var frontendFiles embed.FS
 
 func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries) http.Handler {
@@ -130,14 +130,14 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	})
 
 	// Conditionally serve frontend static files - not used on localhost
-	frontendFS, err := fs.Sub(frontendFiles, "frontend/build")
+	frontendFS, err := fs.Sub(frontendFiles, "frontend_embed")
 	if err != nil {
 		log.Printf("Failed to create frontend filesystem: %v", err)
 		frontendFS = frontendFiles
 	}
 
-	// Check if frontend files exist by trying to read app.html
-	if _, err := frontendFS.Open(".gitkeep"); err == nil {
+	// Check if frontend files exist
+	if _, err := frontendFS.Open("app.html"); err == nil {
 		log.Println("Frontend files found, enabling frontend routes")
 
 		// Handle all non-API routes with frontend

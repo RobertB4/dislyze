@@ -46,7 +46,7 @@ COPY lugia-backend/ ./lugia-backend/
 COPY database/ ./database/
 
 # Copy built frontend files for embedding
-COPY --from=frontend-builder /app/lugia-frontend/build ./lugia-backend/frontend/build
+COPY --from=frontend-builder /app/lugia-frontend/build ./lugia-backend/frontend_embed
 
 # Build the application
 WORKDIR /app/lugia-backend
