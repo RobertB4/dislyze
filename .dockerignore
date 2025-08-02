@@ -27,6 +27,7 @@ lugia-frontend/.env
 *.dll
 *.so
 *.dylib
+go.work*
 
 # Frontend specific (if applicable)
 .svelte-kit/
