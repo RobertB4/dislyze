@@ -817,6 +817,7 @@ new gcp.compute.GlobalForwardingRule(
     portRange: "443",
     ipProtocol: "TCP",
     ipAddress: staticIp.address,
+    loadBalancingScheme: "EXTERNAL_MANAGED",
   },
   { dependsOn: [httpsProxy, staticIp] }
 );
@@ -841,9 +842,10 @@ new gcp.compute.GlobalForwardingRule(
   "http-forwarding-rule",
   {
     target: httpProxy.id,
-    portRange: "80",
+    portRange: "80", 
     ipProtocol: "TCP",
     ipAddress: staticIp.address,
+    loadBalancingScheme: "EXTERNAL_MANAGED",
   },
   { dependsOn: [httpProxy, staticIp] }
 );

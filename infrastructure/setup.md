@@ -127,6 +127,10 @@ gcloud projects add-iam-policy-binding dislyze-staging2 \
 
 gcloud projects add-iam-policy-binding dislyze-staging2 \
   --member="serviceAccount:github-actions@dislyze-staging2.iam.gserviceaccount.com" \
+  --role="roles/compute.loadBalancerAdmin"
+
+gcloud projects add-iam-policy-binding dislyze-staging2 \
+  --member="serviceAccount:github-actions@dislyze-staging2.iam.gserviceaccount.com" \
   --role="roles/certificatemanager.editor"
 
 # Get your project number
