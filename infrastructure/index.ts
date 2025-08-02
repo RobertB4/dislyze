@@ -1,5 +1,6 @@
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
+import * as command from "@pulumi/command";
 
 const config = new pulumi.Config();
 const gcpConfig = new pulumi.Config("gcp");
@@ -212,8 +213,18 @@ const cloudSqlClientBinding = new gcp.projects.IAMMember(
   { dependsOn: [cloudRunServiceAccount] }
 );
 
-// Cloud Run Service for lugia
-const lugiaImageTag = config.get("lugia-image-tag") || "latest";
+// Get the latest image tag from Artifact Registry
+const getLatestImageCommand = new command.local.Command(
+  "get-latest-lugia-tag",
+  {
+    create: pulumi.interpolate`gcloud artifacts docker images list ${region}-docker.pkg.dev/${projectId}/dislyze/lugia --format="value(tag)" --sort-by="~CREATE_TIME" --limit=1`,
+    triggers: [Date.now()], // Force refresh each deployment
+  }
+);
+
+const lugiaImageTag = getLatestImageCommand.stdout.apply(
+  (tag) => tag.trim() || "latest"
+);
 const lugiaService = new gcp.cloudrun.Service(
   "lugia",
   {
