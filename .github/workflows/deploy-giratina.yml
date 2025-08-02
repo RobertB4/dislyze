@@ -1,4 +1,4 @@
-name: Deploy Giratina Backend
+name: Deploy Giratina
 
 on:
   push:
