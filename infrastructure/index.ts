@@ -17,10 +17,8 @@ const enableApis = [
   "run.googleapis.com",
   "sql-component.googleapis.com",
   "sqladmin.googleapis.com",
-  "compute.googleapis.com",
   "secretmanager.googleapis.com",
   "artifactregistry.googleapis.com",
-  "iam.googleapis.com",
 ];
 
 const apis = enableApis.map(

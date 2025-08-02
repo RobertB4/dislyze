@@ -22,9 +22,12 @@ gcloud auth login
 gcloud services enable \
   run.googleapis.com \
   sql-component.googleapis.com \
-  secretmanager.googleapis.com \
+  sqladmin.googleapis.com \
+  compute.googleapis.com \
+  secretmanager.googleapis.com \ 
   artifactregistry.googleapis.com \
-  iam.googleapis.com
+  iam.googleapis.com \
+  cloudresourcemanager.googleapis.com
 ```
 
 ## Step 2: Create Secret Manager Secrets
