@@ -255,10 +255,6 @@ const lugiaService = new gcp.cloudrun.Service(
                 value: pulumi.interpolate`/cloudsql/${projectId}:${region}:${dbInstance.name}`,
               },
               {
-                name: "DB_PORT",
-                value: "5432",
-              },
-              {
                 name: "DB_USER",
                 value: dbUser.name,
               },

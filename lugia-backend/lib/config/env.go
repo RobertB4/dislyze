@@ -28,7 +28,6 @@ type Env struct {
 	AppEnv                        string
 	Port                          string
 	DBHost                        string
-	DBPort                        string
 	DBUser                        string
 	DBPassword                    string
 	DBName                        string
@@ -58,7 +57,6 @@ func LoadEnv() (*Env, error) {
 		"APP_ENV":                           &env.AppEnv,
 		"PORT":                              &env.Port,
 		"DB_HOST":                           &env.DBHost,
-		"DB_PORT":                           &env.DBPort,
 		"DB_USER":                           &env.DBUser,
 		"DB_PASSWORD":                       &env.DBPassword,
 		"DB_NAME":                           &env.DBName,
