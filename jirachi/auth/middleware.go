@@ -44,7 +44,7 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 		// 1. Try to get and validate existing access token from cookie
 		accessCookie, err := r.Cookie("dislyze_access_token")
 		if err == nil { // Access token cookie exists
-			claims, validationErr := jwt.ValidateToken(accessCookie.Value, []byte(m.config.GetJWTSecret()))
+			claims, validationErr := jwt.ValidateToken(accessCookie.Value, []byte(m.config.GetAuthJWTSecret()))
 			if validationErr == nil { // Token is valid
 				finalClaims = claims
 			} else {
@@ -104,7 +104,7 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 		return nil, errors.New("too many refresh attempts")
 	}
 
-	claimsFromCookie, err := jwt.ValidateToken(refreshCookie.Value, []byte(m.config.GetJWTSecret()))
+	claimsFromCookie, err := jwt.ValidateToken(refreshCookie.Value, []byte(m.config.GetAuthJWTSecret()))
 	if err != nil {
 		return nil, fmt.Errorf("refresh token validation failed: %w", err)
 	}
@@ -167,12 +167,12 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 		return nil, fmt.Errorf("failed to get tenant: %w", err)
 	}
 
-	newAccessTokenString, newExpiresIn, newAccessTokenClaims, err := jwt.GenerateAccessToken(user.ID, tenant.ID, []byte(m.config.GetJWTSecret()))
+	newAccessTokenString, newExpiresIn, newAccessTokenClaims, err := jwt.GenerateAccessToken(user.ID, tenant.ID, []byte(m.config.GetAuthJWTSecret()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate new access token: %w", err)
 	}
 
-	newRefreshTokenString, newJTI, err := jwt.GenerateRefreshToken(user.ID, []byte(m.config.GetJWTSecret()))
+	newRefreshTokenString, newJTI, err := jwt.GenerateRefreshToken(user.ID, []byte(m.config.GetAuthJWTSecret()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate new refresh token: %w", err)
 	}

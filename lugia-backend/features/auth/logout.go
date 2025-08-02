@@ -42,7 +42,7 @@ func (h *AuthHandler) revokeRefreshToken(ctx context.Context, r *http.Request) {
 		return
 	}
 
-	claims, err := jwt.ValidateToken(refreshCookie.Value, []byte(h.env.JWTSecret))
+	claims, err := jwt.ValidateToken(refreshCookie.Value, []byte(h.env.AuthJWTSecret))
 	if err != nil {
 		// Token is invalid or expired, log but don't fail logout
 		logger.LogAuthEvent(logger.AuthEvent{
