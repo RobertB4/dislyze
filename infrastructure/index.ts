@@ -1,6 +1,5 @@
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
-import * as command from "@pulumi/command";
 
 const config = new pulumi.Config();
 const gcpConfig = new pulumi.Config("gcp");
@@ -215,15 +214,26 @@ const cloudSqlClientBinding = new gcp.projects.IAMMember(
 );
 
 // Get image tag from config, or fall back to currently deployed image
-const getCurrentImageCommand = new command.local.Command(
-  "get-current-lugia-image",
-  {
-    create: pulumi.interpolate`gcloud run services describe lugia --region=${region} --project=${projectId} --format="value(spec.template.spec.containers.image)" 2>/dev/null | head -1 | grep -o '[^:]*$' || echo "latest"`,
-    triggers: [Date.now()], // Ensure fresh lookup each time
-  }
-);
+const getCurrentImage = pulumi
+  .all([region, projectId])
+  .apply(async ([r, p]) => {
+    try {
+      const result = await gcp.cloudrun.getService({
+        name: "lugia",
+        location: r,
+        project: p,
+      });
+      const image = result.templates?.[0]?.specs?.[0]?.containers?.[0]?.image;
+      if (!image || !image.includes(":")) {
+        return "latest";
+      }
+      return image.split(":")[1];
+    } catch {
+      return "latest";
+    }
+  });
 
-const lugiaImageTag = getCurrentImageCommand.stdout.apply((tag) => tag.trim());
+const lugiaImageTag = getCurrentImage;
 const lugiaService = new gcp.cloudrun.Service(
   "lugia",
   {
