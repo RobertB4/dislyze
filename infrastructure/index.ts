@@ -23,8 +23,8 @@ const enableApis = [
 
 const apis = enableApis.map(
   (api) =>
+    // Pulumi resource names cannot contain dots
     new gcp.projects.Service(`enable-${api.replace(/\./g, "-")}`, {
-      // Pulumi resource names cannot contain dots
       service: api,
       project: projectId,
       disableDependentServices: true,
@@ -249,10 +249,6 @@ const lugiaService = new gcp.cloudrun.Service(
               {
                 name: "APP_ENV",
                 value: environment,
-              },
-              {
-                name: "PORT",
-                value: "8080",
               },
 
               {
