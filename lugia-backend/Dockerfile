@@ -3,12 +3,20 @@ FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app
 
-# Copy zoroark library first (shared dependency)
-COPY zoroark/ ./zoroark/
+# Build zoroark library first
+COPY zoroark/ /zoroark/
+WORKDIR /zoroark
+RUN npm install --no-frozen-lockfile
+RUN npm run build
 
 # Copy frontend package files
+WORKDIR /app
 COPY lugia-frontend/package*.json ./lugia-frontend/
 WORKDIR /app/lugia-frontend
+
+# Create symlink to built zoroark library
+RUN ln -sf /zoroark ../zoroark
+
 RUN npm ci
 
 # Copy frontend source and build
