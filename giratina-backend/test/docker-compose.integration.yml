@@ -30,7 +30,6 @@ services:
       - APP_ENV=test
       - PORT=14001
       - DB_HOST=postgres
-      - DB_PORT=5432
       - DB_USER=test_user
       - DB_PASSWORD=test_password
       - DB_NAME=test_db

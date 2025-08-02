@@ -8,6 +8,7 @@ const cloudRunCpu = config.require("cloudrun-cpu");
 const cloudRunMemory = config.require("cloudrun-memory");
 const cloudRunMaxInstances = config.require("cloudrun-max-instances");
 const lugiaFrontendUrl = config.require("lugia-frontend-url");
+const giratinaFrontendUrl = config.require("giratina-frontend-url");
 
 export const projectId = gcpConfig.require("project");
 export const region = gcpConfig.require("region");
@@ -55,10 +56,21 @@ const dbPasswordSecret = new gcp.secretmanager.Secret(
   { dependsOn: apis }
 );
 
-const authJwtSecretSecret = new gcp.secretmanager.Secret(
+const lugiaAuthJwtSecretSecret = new gcp.secretmanager.Secret(
   "auth-jwt-secret",
   {
-    secretId: "auth-jwt-secret",
+    secretId: "lugia-auth-jwt-secret",
+    replication: {
+      auto: {},
+    },
+  },
+  { dependsOn: apis }
+);
+
+const giratinaAuthJwtSecretSecret = new gcp.secretmanager.Secret(
+  "auth-jwt-secret",
+  {
+    secretId: "giratina-auth-jwt-secret",
     replication: {
       auto: {},
     },
@@ -303,7 +315,7 @@ const lugiaService = new gcp.cloudrun.Service(
                 name: "AUTH_JWT_SECRET",
                 valueFrom: {
                   secretKeyRef: {
-                    name: authJwtSecretSecret.secretId,
+                    name: lugiaAuthJwtSecretSecret.secretId,
                     key: "latest",
                   },
                 },
@@ -412,10 +424,198 @@ new gcp.cloudrun.IamPolicy(
   { dependsOn: [lugiaService] }
 );
 
+const giratinaImageTag = pulumi
+  .all([region, projectId])
+  .apply(async ([r, p]) => {
+    if (config.get("giratina-image-tag")) {
+      return config.get("giratina-image-tag");
+    }
+
+    try {
+      const result = await gcp.cloudrun.getService({
+        name: "giratina",
+        location: r,
+        project: p,
+      });
+      const image = result.templates?.[0]?.specs?.[0]?.containers?.[0]?.image;
+      if (!image || !image.includes(":")) {
+        return "latest";
+      }
+      return image.split(":")[1];
+    } catch {
+      return "latest";
+    }
+  });
+
+const giratinaService = new gcp.cloudrun.Service(
+  "giratina",
+  {
+    name: "giratina",
+    location: region,
+    template: {
+      metadata: {
+        annotations: {
+          "autoscaling.knative.dev/maxScale": cloudRunMaxInstances,
+          "run.googleapis.com/cloudsql-instances": pulumi.interpolate`${projectId}:${region}:${dbInstance.name}`,
+          "run.googleapis.com/client-name": "pulumi",
+        },
+      },
+      spec: {
+        serviceAccountName: cloudRunServiceAccount.email,
+        timeoutSeconds: 60,
+        containers: [
+          {
+            image: pulumi.interpolate`${region}-docker.pkg.dev/${projectId}/dislyze/giratina:${
+              config.get("giratina-image-tag") || giratinaImageTag
+            }`,
+            resources: {
+              limits: {
+                cpu: cloudRunCpu,
+                memory: cloudRunMemory,
+              },
+            },
+            ports: [
+              {
+                containerPort: 8080,
+              },
+            ],
+            envs: [
+              {
+                name: "APP_ENV",
+                value: environment,
+              },
+
+              {
+                name: "DB_HOST",
+                value: pulumi.interpolate`/cloudsql/${projectId}:${region}:${dbInstance.name}`,
+              },
+              {
+                name: "DB_USER",
+                value: dbUser.name,
+              },
+              {
+                name: "DB_PASSWORD",
+                valueFrom: {
+                  secretKeyRef: {
+                    name: dbPasswordSecret.secretId,
+                    key: "latest",
+                  },
+                },
+              },
+              {
+                name: "DB_NAME",
+                value: database.name,
+              },
+              {
+                name: "DB_SSL_MODE",
+                value: "require",
+              },
+
+              {
+                name: "AUTH_JWT_SECRET",
+                valueFrom: {
+                  secretKeyRef: {
+                    name: giratinaAuthJwtSecretSecret.secretId,
+                    key: "latest",
+                  },
+                },
+              },
+              {
+                name: "AUTH_RATE_LIMIT",
+                value: "5",
+              },
+              {
+                name: "LUGIA_AUTH_JWT_SECRET",
+                valueFrom: {
+                  secretKeyRef: {
+                    name: lugiaAuthJwtSecretSecret.secretId,
+                    key: "latest",
+                  },
+                },
+              },
+              {
+                name: "CREATE_TENANT_JWT_SECRET",
+                valueFrom: {
+                  secretKeyRef: {
+                    name: createTenantJwtSecretSecret.secretId,
+                    key: "latest",
+                  },
+                },
+              },
+
+              {
+                name: "SENDGRID_API_KEY",
+                valueFrom: {
+                  secretKeyRef: {
+                    name: sendgridApiKeySecret.secretId,
+                    key: "latest",
+                  },
+                },
+              },
+              {
+                name: "SENDGRID_API_URL",
+                value: "https://api.sendgrid.com/v3",
+              },
+
+              {
+                name: "FRONTEND_URL",
+                value: giratinaFrontendUrl,
+              },
+              {
+                name: "LUGIA_FRONTEND_URL",
+                value: lugiaFrontendUrl,
+              },
+            ],
+          },
+        ],
+      },
+    },
+    traffics: [
+      {
+        percent: 100,
+        latestRevision: true,
+      },
+    ],
+  },
+  {
+    dependsOn: [
+      artifactRegistry,
+      cloudRunServiceAccount,
+      secretAccessorBinding,
+      cloudSqlClientBinding,
+      dbInstance,
+      database,
+      dbUser,
+    ],
+  }
+);
+
+// IAM policy to allow unauthenticated invocations (public access)
+new gcp.cloudrun.IamPolicy(
+  "giratina-iam",
+  {
+    project: projectId,
+    location: region,
+    service: giratinaService.name,
+    policyData: JSON.stringify({
+      bindings: [
+        {
+          role: "roles/run.invoker",
+          members: ["allUsers"],
+        },
+      ],
+    }),
+  },
+  { dependsOn: [giratinaService] }
+);
+
 export const artifactRegistryUrl = pulumi.interpolate`${region}-docker.pkg.dev/${projectId}/dislyze`;
 export const databaseInstanceName = dbInstance.name;
 export const databaseConnectionName = pulumi.interpolate`${projectId}:${region}:${dbInstance.name}`;
 export const lugiaServiceUrl = lugiaService.statuses[0].url;
 export const lugiaServiceName = lugiaService.name;
 export const lugiaServiceResourceName = "lugia"; // For targeting in workflows
+export const giratinaServiceUrl = giratinaService.statuses[0].url;
+export const giratinaServiceName = giratinaService.name;
+export const giratinaServiceResourceName = "giratina"; // For targeting in workflows
 export const cloudRunServiceAccountEmail = cloudRunServiceAccount.email;

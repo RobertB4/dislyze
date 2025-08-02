@@ -7,3 +7,4 @@ config:
   dislyze-infrastructure:cloudrun-memory: 256Mi
   dislyze-infrastructure:cloudrun-max-instances: "1"
   dislyze-infrastructure:lugia-frontend-url: https://staging-app.flownavi.com
+  dislyze-infrastructure:giratina-frontend-url: https://staging-internal.flownavi.com

@@ -28,7 +28,6 @@ services:
       - APP_ENV=e2e
       - PORT=23001
       - DB_HOST=postgres
-      - DB_PORT=5432
       - DB_USER=testuser_e2e
       - DB_PASSWORD=testpassword_e2e
       - DB_NAME=testdb_e2e

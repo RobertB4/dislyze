@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"giratina/features/tenants"
 	"giratina/features/users"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -25,6 +28,12 @@ import (
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// not used on localhost.
+// for deployments, frontend gets embedded and built into the backend image
+//
+//go:embed frontend_embed/*
+var frontendFiles embed.FS
 
 func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries) http.Handler {
 	r := chi.NewRouter()
@@ -81,6 +90,43 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		})
 
 	})
+
+	// Conditionally serve frontend static files - not used on localhost
+	frontendFS, err := fs.Sub(frontendFiles, "frontend_embed")
+	if err != nil {
+		log.Printf("Failed to create frontend filesystem: %v", err)
+		frontendFS = frontendFiles
+	}
+
+	// Check if frontend files exist (do not exist on localhost)
+	if _, err := frontendFS.Open("app.html"); err == nil {
+		log.Println("Frontend files found, serving frontend as SPA")
+
+		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+			path := strings.TrimPrefix(r.URL.Path, "/")
+
+			// If file exists, serve it
+			if file, err := frontendFS.Open(path); err == nil {
+				if closeErr := file.Close(); closeErr != nil {
+					log.Printf("Error closing file when trying to serve static file: %v", closeErr)
+				}
+				http.FileServer(http.FS(frontendFS)).ServeHTTP(w, r)
+				return
+			}
+
+			// if file doesn't exist, return 404 for assets (e.g. .js, .css)
+			if strings.Contains(path, ".") {
+				http.Error(w, "File not found", http.StatusNotFound)
+				return
+			}
+
+			// Fallback to app.html
+			r.URL.Path = "/app.html"
+			http.FileServer(http.FS(frontendFS)).ServeHTTP(w, r)
+		})
+	} else {
+		log.Println("No frontend files found, not serving frontend as SPA")
+	}
 
 	return r
 }
