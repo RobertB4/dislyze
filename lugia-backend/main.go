@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -27,6 +30,12 @@ import (
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// not used on localhost.
+// for deployments, frontend gets embedded and built into the backend image
+//
+//go:embed frontend/build
+var frontendFiles embed.FS
 
 func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries) http.Handler {
 	r := chi.NewRouter()
@@ -119,6 +128,50 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 			})
 		})
 	})
+
+	// Conditionally serve frontend static files - not used on localhost
+	frontendFS, err := fs.Sub(frontendFiles, "frontend/build")
+	if err != nil {
+		log.Printf("Failed to create frontend filesystem: %v", err)
+		frontendFS = frontendFiles
+	}
+
+	// Check if frontend files exist by trying to read app.html
+	if _, err := frontendFS.Open(".gitkeep"); err == nil {
+		log.Println("Frontend files found, enabling frontend routes")
+
+		// Handle all non-API routes with frontend
+		r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+			path := strings.TrimPrefix(r.URL.Path, "/")
+			if path == "" {
+				path = "app.html"
+			}
+
+			// Try to serve the requested file
+			if file, err := frontendFS.Open(path); err == nil {
+				defer file.Close()
+				if stat, err := file.Stat(); err == nil && !stat.IsDir() {
+					// File exists, serve it
+					http.ServeFileFS(w, r, frontendFS, path)
+					return
+				}
+			}
+
+			// If file doesn't exist, serve app.html for SPA routing
+			if indexFile, err := frontendFS.Open("app.html"); err == nil {
+				defer indexFile.Close()
+				if stat, err := indexFile.Stat(); err == nil && !stat.IsDir() {
+					http.ServeFileFS(w, r, frontendFS, "app.html")
+					return
+				}
+			}
+
+			// Fallback if no frontend files
+			w.WriteHeader(http.StatusNotFound)
+		})
+	} else {
+		log.Println("No frontend files found, not serving frontend routes")
+	}
 
 	return r
 }

@@ -1,0 +1,1 @@
+lugia-backend/frontend/build is used during deployment to embed the frontend into the backend

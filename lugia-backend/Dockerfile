@@ -1,5 +1,22 @@
-# Build stage
-FROM golang:1.24-alpine AS builder
+# Stage 1: Build frontend
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app
+
+# Copy zoroark library first (shared dependency)
+COPY zoroark/ ./zoroark/
+
+# Copy frontend package files
+COPY lugia-frontend/package*.json ./lugia-frontend/
+WORKDIR /app/lugia-frontend
+RUN npm ci
+
+# Copy frontend source and build
+COPY lugia-frontend/ ./
+RUN npm run build
+
+# Stage 2: Build Go backend with embedded frontend
+FROM golang:1.24-alpine AS backend-builder
 
 # Set working directory
 WORKDIR /app
@@ -20,6 +37,9 @@ COPY lugia-backend/ ./lugia-backend/
 # Copy database migrations
 COPY database/ ./database/
 
+# Copy built frontend files for embedding
+COPY --from=frontend-builder /app/lugia-frontend/build ./lugia-backend/frontend/build
+
 # Build the application
 WORKDIR /app/lugia-backend
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
@@ -36,10 +56,10 @@ RUN addgroup -g 1001 -S appgroup && \
 WORKDIR /app/lugia-backend
 
 # Copy the binary from builder stage
-COPY --from=builder /app/lugia-backend/main .
+COPY --from=backend-builder /app/lugia-backend/main .
 
 # Copy database migrations
-COPY --from=builder /app/database ../database
+COPY --from=backend-builder /app/database ../database
 
 # Change ownership to non-root user
 RUN chown -R appuser:appgroup /app
