@@ -75,6 +75,8 @@ jobs:
           
           # Preview and validate - will fail if there are errors
           pulumi preview --non-interactive
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
       - name: Deploy infrastructure
         run: |
