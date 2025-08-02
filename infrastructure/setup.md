@@ -86,7 +86,7 @@ gcloud projects add-iam-policy-binding dislyze-staging2 \
 
 gcloud projects add-iam-policy-binding dislyze-staging2 \
   --member="serviceAccount:github-actions@dislyze-staging2.iam.gserviceaccount.com" \
-  --role="roles/cloudsql.editor"
+  --role="roles/cloudsql.admin"
 
 gcloud projects add-iam-policy-binding dislyze-staging2 \
   --member="serviceAccount:github-actions@dislyze-staging2.iam.gserviceaccount.com" \
@@ -98,7 +98,15 @@ gcloud projects add-iam-policy-binding dislyze-staging2 \
 
 gcloud projects add-iam-policy-binding dislyze-staging2 \
   --member="serviceAccount:github-actions@dislyze-staging2.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountAdmin"
+
+gcloud projects add-iam-policy-binding dislyze-staging2 \
+  --member="serviceAccount:github-actions@dislyze-staging2.iam.gserviceaccount.com" \
   --role="roles/iam.serviceAccountUser"
+
+gcloud projects add-iam-policy-binding dislyze-staging2 \
+  --member="serviceAccount:github-actions@dislyze-staging2.iam.gserviceaccount.com" \
+  --role="roles/compute.viewer"
 
 gcloud projects add-iam-policy-binding dislyze-staging2 \
   --member="serviceAccount:github-actions@dislyze-staging2.iam.gserviceaccount.com" \
