@@ -229,7 +229,6 @@ const lugiaService = new gcp.cloudrun.Service(
       },
       spec: {
         serviceAccountName: cloudRunServiceAccount.email,
-        containerConcurrency: 20,
         timeoutSeconds: 60,
         containers: [
           {

@@ -65,7 +65,7 @@ jobs:
         with:
           pulumi-version: 'latest'
 
-      - name: Deploy infrastructure
+      - name: Validate infrastructure changes
         run: |
           cd infrastructure
           
@@ -73,7 +73,14 @@ jobs:
           
           pulumi stack select $STACK_NAME --create
           
+          # Preview and validate - will fail if there are errors
+          pulumi preview --non-interactive
 
+      - name: Deploy infrastructure
+        run: |
+          cd infrastructure
+          
+          # Deploy only if preview succeeded
           pulumi up --yes
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
