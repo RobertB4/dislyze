@@ -222,9 +222,9 @@ const getLatestImageCommand = new command.local.Command(
   }
 );
 
-const lugiaImageTag = getLatestImageCommand.stdout.apply(
-  (tag) => tag.trim() || "latest"
-);
+const lugiaImageTag =
+  config.get("lugia-image-tag") ||
+  getLatestImageCommand.stdout.apply((tag) => tag.trim() || "latest");
 const lugiaService = new gcp.cloudrun.Service(
   "lugia",
   {
