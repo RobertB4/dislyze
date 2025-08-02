@@ -4,9 +4,6 @@ FROM golang:1.24-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Copy go.work files (for workspace support)
-COPY go.work go.work.sum ./
-
 # Copy all module files for dependency resolution
 COPY jirachi/go.mod jirachi/go.sum ./jirachi/
 COPY lugia-backend/go.mod lugia-backend/go.sum ./lugia-backend/
