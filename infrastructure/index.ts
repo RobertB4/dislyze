@@ -214,26 +214,27 @@ const cloudSqlClientBinding = new gcp.projects.IAMMember(
 );
 
 // Get image tag from config, or fall back to currently deployed image
-const getCurrentImage = pulumi
-  .all([region, projectId])
-  .apply(async ([r, p]) => {
-    try {
-      const result = await gcp.cloudrun.getService({
-        name: "lugia",
-        location: r,
-        project: p,
-      });
-      const image = result.templates?.[0]?.specs?.[0]?.containers?.[0]?.image;
-      if (!image || !image.includes(":")) {
-        return "latest";
-      }
-      return image.split(":")[1];
-    } catch {
+const lugiaImageTag = pulumi.all([region, projectId]).apply(async ([r, p]) => {
+  if (config.get("lugia-image-tag")) {
+    return config.get("lugia-image-tag");
+  }
+
+  try {
+    const result = await gcp.cloudrun.getService({
+      name: "lugia",
+      location: r,
+      project: p,
+    });
+    const image = result.templates?.[0]?.specs?.[0]?.containers?.[0]?.image;
+    if (!image || !image.includes(":")) {
       return "latest";
     }
-  });
+    return image.split(":")[1];
+  } catch {
+    return "latest";
+  }
+});
 
-const lugiaImageTag = getCurrentImage;
 const lugiaService = new gcp.cloudrun.Service(
   "lugia",
   {
