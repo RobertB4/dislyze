@@ -112,6 +112,10 @@ gcloud projects add-iam-policy-binding dislyze-staging2 \
   --member="serviceAccount:github-actions@dislyze-staging2.iam.gserviceaccount.com" \
   --role="roles/serviceusage.serviceUsageAdmin"
 
+gcloud projects add-iam-policy-binding dislyze-staging2 \
+  --member="serviceAccount:github-actions@dislyze-staging2.iam.gserviceaccount.com" \
+  --role="roles/resourcemanager.projectIamAdmin"
+
 # Get your project number
 gcloud projects describe dislyze-staging2 --format="value(projectNumber)"
 

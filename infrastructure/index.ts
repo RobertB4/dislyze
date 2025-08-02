@@ -130,6 +130,7 @@ const dbInstance = new gcp.sql.DatabaseInstance(
     deletionProtection: true,
     settings: {
       tier: dbTier,
+      edition: "ENTERPRISE",
       availabilityType: "ZONAL", // Use REGIONAL for production
       backupConfiguration: {
         enabled: true,
