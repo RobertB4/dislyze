@@ -34,7 +34,7 @@ import (
 // not used on localhost.
 // for deployments, frontend gets embedded and built into the backend image
 //
-//go:embed frontend_embed
+//go:embed frontend_embed/*
 var frontendFiles embed.FS
 
 func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries) http.Handler {
@@ -136,41 +136,32 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		frontendFS = frontendFiles
 	}
 
-	// Check if frontend files exist
+	// Check if frontend files exist (do not exist on localhost)
 	if _, err := frontendFS.Open("app.html"); err == nil {
-		log.Println("Frontend files found, enabling frontend routes")
+		log.Println("Frontend files found, serving frontend as SPA")
 
-		// Handle all non-API routes with frontend
-		r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 			path := strings.TrimPrefix(r.URL.Path, "/")
-			if path == "" {
-				path = "app.html"
-			}
 
-			// Try to serve the requested file
+			// If file exists, serve it
 			if file, err := frontendFS.Open(path); err == nil {
-				defer file.Close()
-				if stat, err := file.Stat(); err == nil && !stat.IsDir() {
-					// File exists, serve it
-					http.ServeFileFS(w, r, frontendFS, path)
-					return
-				}
+				file.Close()
+				http.FileServer(http.FS(frontendFS)).ServeHTTP(w, r)
+				return
 			}
 
-			// If file doesn't exist, serve app.html for SPA routing
-			if indexFile, err := frontendFS.Open("app.html"); err == nil {
-				defer indexFile.Close()
-				if stat, err := indexFile.Stat(); err == nil && !stat.IsDir() {
-					http.ServeFileFS(w, r, frontendFS, "app.html")
-					return
-				}
+			// if file doesn't exist, return 404 for assets (e.g. .js, .css)
+			if strings.Contains(path, ".") {
+				http.Error(w, "File not found", http.StatusNotFound)
+				return
 			}
 
-			// Fallback if no frontend files
-			w.WriteHeader(http.StatusNotFound)
+			// Fallback to app.html
+			r.URL.Path = "/app.html"
+			http.FileServer(http.FS(frontendFS)).ServeHTTP(w, r)
 		})
 	} else {
-		log.Println("No frontend files found, not serving frontend routes")
+		log.Println("No frontend files found, not serving frontend as SPA")
 	}
 
 	return r
