@@ -1,0 +1,21 @@
+{
+  "name": "dislyze-infrastructure",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Infrastructure as Code for Dislyze using Pulumi",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "pulumi up --stack staging",
+    "preview": "pulumi preview --stack staging",
+    "destroy": "pulumi destroy --stack staging"
+  },
+  "dependencies": {
+    "@pulumi/gcp": "^8.0.0",
+    "@pulumi/pulumi": "^3.100.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

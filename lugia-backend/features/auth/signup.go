@@ -10,10 +10,10 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"lugia/lib/authz"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/jwt"
 	"dislyze/jirachi/responder"
+	"lugia/lib/authz"
 	"lugia/queries"
 
 	"github.com/jackc/pgx/v5"
@@ -157,7 +157,7 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequestBody, r *htt
 		return nil, fmt.Errorf("failed to setup default roles: %w", err)
 	}
 
-	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, []byte(h.env.JWTSecret))
+	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, []byte(h.env.AuthJWTSecret))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token pair: %w", err)
 	}

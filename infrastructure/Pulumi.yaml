@@ -1,0 +1,11 @@
+name: dislyze-infrastructure
+runtime: nodejs
+description: Infrastructure as Code for dislyze
+
+template:
+  config:
+    gcp:project:
+      description: The Google Cloud project to deploy into
+    gcp:region:
+      description: The Google Cloud region to deploy into
+      default: asia-northeast1

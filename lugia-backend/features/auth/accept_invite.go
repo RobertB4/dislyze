@@ -131,7 +131,7 @@ func (h *AuthHandler) acceptInvite(ctx context.Context, req AcceptInviteRequestB
 		return errlib.New(fmt.Errorf("AcceptInvite: failed to mark invitation token as used ID %s: %w", invitationTokenRecord.ID.String(), err), http.StatusInternalServerError, "")
 	}
 
-	tokenPair, err := jwt.GenerateTokenPair(dbUser.ID, invitationTokenRecord.TenantID, []byte(h.env.JWTSecret))
+	tokenPair, err := jwt.GenerateTokenPair(dbUser.ID, invitationTokenRecord.TenantID, []byte(h.env.AuthJWTSecret))
 	if err != nil {
 		return errlib.New(fmt.Errorf("AcceptInvite: failed to generate token pair: %w", err), http.StatusInternalServerError, "")
 	}

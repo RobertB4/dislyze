@@ -16,8 +16,8 @@ func NewLugiaAuthConfig(env *Env) *LugiaAuthConfig {
 	return &LugiaAuthConfig{env: env}
 }
 
-func (c *LugiaAuthConfig) GetJWTSecret() string {
-	return c.env.JWTSecret
+func (c *LugiaAuthConfig) GetAuthJWTSecret() string {
+	return c.env.AuthJWTSecret
 }
 
 func (c *LugiaAuthConfig) IsCookieSecure() bool {
@@ -25,23 +25,23 @@ func (c *LugiaAuthConfig) IsCookieSecure() bool {
 }
 
 type Env struct {
-	AppEnv                       string
-	Port                         string
-	DBHost                       string
-	DBPort                       string
-	DBUser                       string
-	DBPassword                   string
-	DBName                       string
-	DBSSLMode                    string
-	JWTSecret                    string
-	AuthRateLimit                string
-	CreateTenantJwtSecret        string
+	AppEnv                        string
+	Port                          string
+	DBHost                        string
+	DBPort                        string
+	DBUser                        string
+	DBPassword                    string
+	DBName                        string
+	DBSSLMode                     string
+	AuthJWTSecret                 string
+	AuthRateLimit                 string
+	CreateTenantJwtSecret         string
 	IPWhitelistEmergencyJWTSecret string
-	FrontendURL                  string
-	InitialPW                    string
-	InternalUserPW               string
-	SendgridAPIKey               string
-	SendgridAPIUrl               string
+	FrontendURL                   string
+	InitialPW                     string
+	InternalUserPW                string
+	SendgridAPIKey                string
+	SendgridAPIUrl                string
 }
 
 func LoadEnv() (*Env, error) {
@@ -63,7 +63,7 @@ func LoadEnv() (*Env, error) {
 		"DB_PASSWORD":                       &env.DBPassword,
 		"DB_NAME":                           &env.DBName,
 		"DB_SSL_MODE":                       &env.DBSSLMode,
-		"JWT_SECRET":                        &env.JWTSecret,
+		"AUTH_JWT_SECRET":                   &env.AuthJWTSecret,
 		"AUTH_RATE_LIMIT":                   &env.AuthRateLimit,
 		"CREATE_TENANT_JWT_SECRET":          &env.CreateTenantJwtSecret,
 		"IP_WHITELIST_EMERGENCY_JWT_SECRET": &env.IPWhitelistEmergencyJWTSecret,

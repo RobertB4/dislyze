@@ -146,7 +146,7 @@ func (h *TenantsHandler) logInToTenant(ctx context.Context, tenantID pgtype.UUID
 		}
 	}
 
-	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenantID, []byte(h.env.LugiaJWTSecret))
+	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenantID, []byte(h.env.LugiaAuthJWTSecret))
 	if err != nil {
 		return nil, user.ID.String(), fmt.Errorf("failed to generate token pair: %w", err)
 	}

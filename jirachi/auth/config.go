@@ -1,6 +1,6 @@
 package auth
 
 type AuthConfig interface {
-	GetJWTSecret() string
+	GetAuthJWTSecret() string
 	IsCookieSecure() bool
 }

@@ -165,7 +165,7 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequestBody, r *http.
 		}
 	}
 
-	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, []byte(h.env.JWTSecret))
+	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, []byte(h.env.AuthJWTSecret))
 	if err != nil {
 		return nil, userID, fmt.Errorf("failed to generate token pair: %w", err)
 	}

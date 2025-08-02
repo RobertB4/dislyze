@@ -224,7 +224,7 @@ func (h *AuthHandler) tenantSignup(ctx context.Context, req *TenantSignupRequest
 		return nil, fmt.Errorf("failed to assign admin role to internal user: %w", err)
 	}
 
-	tokenPair, err := jirachijwt.GenerateTokenPair(user.ID, tenant.ID, []byte(h.env.JWTSecret))
+	tokenPair, err := jirachijwt.GenerateTokenPair(user.ID, tenant.ID, []byte(h.env.AuthJWTSecret))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token pair: %w", err)
 	}

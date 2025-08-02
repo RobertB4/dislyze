@@ -33,7 +33,7 @@ services:
       - DB_PASSWORD=testpassword_e2e
       - DB_NAME=testdb_e2e
       - DB_SSL_MODE=disable
-      - JWT_SECRET=e2e_super_secret_jwt_key_placeholder
+      - AUTH_JWT_SECRET=e2e_super_secret_jwt_key_placeholder
       - AUTH_RATE_LIMIT=1000 # Higher limit for E2E tests
       - SENDGRID_API_KEY=e2e_fake_sendgrid_key
       - SENDGRID_API_URL=http://mock-sendgrid:27000

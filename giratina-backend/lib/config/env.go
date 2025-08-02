@@ -16,8 +16,8 @@ func NewGiratinaAuthConfig(env *Env) *GiratinaAuthConfig {
 	return &GiratinaAuthConfig{env: env}
 }
 
-func (c *GiratinaAuthConfig) GetJWTSecret() string {
-	return c.env.JWTSecret
+func (c *GiratinaAuthConfig) GetAuthJWTSecret() string {
+	return c.env.AuthJWTSecret
 }
 
 func (c *GiratinaAuthConfig) IsCookieSecure() bool {
@@ -33,8 +33,8 @@ type Env struct {
 	DBPassword            string
 	DBName                string
 	DBSSLMode             string
-	JWTSecret             string
-	LugiaJWTSecret        string
+	AuthJWTSecret         string
+	LugiaAuthJWTSecret    string
 	AuthRateLimit         string
 	CreateTenantJwtSecret string
 	FrontendURL           string
@@ -60,8 +60,8 @@ func LoadEnv() (*Env, error) {
 		"DB_PASSWORD":              &env.DBPassword,
 		"DB_NAME":                  &env.DBName,
 		"DB_SSL_MODE":              &env.DBSSLMode,
-		"JWT_SECRET":               &env.JWTSecret,
-		"LUGIA_JWT_SECRET":         &env.LugiaJWTSecret,
+		"AUTH_JWT_SECRET":          &env.AuthJWTSecret,
+		"LUGIA_AUTH_JWT_SECRET":    &env.LugiaAuthJWTSecret,
 		"AUTH_RATE_LIMIT":          &env.AuthRateLimit,
 		"CREATE_TENANT_JWT_SECRET": &env.CreateTenantJwtSecret,
 		"FRONTEND_URL":             &env.FrontendURL,
