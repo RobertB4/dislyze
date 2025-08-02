@@ -57,7 +57,7 @@ const dbPasswordSecret = new gcp.secretmanager.Secret(
 );
 
 const lugiaAuthJwtSecretSecret = new gcp.secretmanager.Secret(
-  "auth-jwt-secret",
+  "lugia-auth-jwt-secret",
   {
     secretId: "lugia-auth-jwt-secret",
     replication: {
@@ -68,7 +68,7 @@ const lugiaAuthJwtSecretSecret = new gcp.secretmanager.Secret(
 );
 
 const giratinaAuthJwtSecretSecret = new gcp.secretmanager.Secret(
-  "auth-jwt-secret",
+  "giratina-auth-jwt-secret",
   {
     secretId: "giratina-auth-jwt-secret",
     replication: {
