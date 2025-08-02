@@ -20,6 +20,7 @@ const enableApis = [
   "sqladmin.googleapis.com",
   "secretmanager.googleapis.com",
   "artifactregistry.googleapis.com",
+  "compute.googleapis.com",
 ];
 
 const apis = enableApis.map(
