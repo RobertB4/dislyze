@@ -1,0 +1,12 @@
+config:
+  gcp:project: dislyze-production
+  gcp:region: asia-northeast1
+  dislyze-infrastructure:environment: production
+  dislyze-infrastructure:db-tier: db-f1-micro
+  dislyze-infrastructure:cloudrun-cpu: "0.5"
+  dislyze-infrastructure:cloudrun-memory: 256Mi
+  dislyze-infrastructure:cloudrun-max-instances: "1"
+  dislyze-infrastructure:lugia-frontend-url: https://app.flownavi.com
+  dislyze-infrastructure:giratina-frontend-url: https://internal.flownavi.com
+  dislyze-infrastructure:lugia-domain: app.flownavi.com
+  dislyze-infrastructure:giratina-domain: internal.flownavi.com

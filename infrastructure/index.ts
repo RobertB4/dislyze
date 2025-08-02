@@ -9,6 +9,8 @@ const cloudRunMemory = config.require("cloudrun-memory");
 const cloudRunMaxInstances = config.require("cloudrun-max-instances");
 const lugiaFrontendUrl = config.require("lugia-frontend-url");
 const giratinaFrontendUrl = config.require("giratina-frontend-url");
+const lugiaDomain = config.require("lugia-domain");
+const giratinaDomain = config.require("giratina-domain");
 
 export const projectId = gcpConfig.require("project");
 export const region = gcpConfig.require("region");
@@ -21,6 +23,7 @@ const enableApis = [
   "secretmanager.googleapis.com",
   "artifactregistry.googleapis.com",
   "compute.googleapis.com",
+  "certificatemanager.googleapis.com",
 ];
 
 const apis = enableApis.map(
@@ -609,6 +612,242 @@ new gcp.cloudrun.IamPolicy(
   { dependsOn: [giratinaService] }
 );
 
+// Global Application Load Balancer Setup
+
+// Reserve static IP address
+const staticIp = new gcp.compute.GlobalAddress(
+  "dislyze-lb-ip",
+  {
+    name: "dislyze-lb-ip",
+  },
+  { dependsOn: apis }
+);
+
+// SSL Policy for modern TLS security
+const sslPolicy = new gcp.compute.SSLPolicy(
+  "ssl-policy",
+  {
+    name: "ssl-policy",
+    profile: "MODERN",
+    minTlsVersion: "TLS_1_2",
+  },
+  { dependsOn: apis }
+);
+
+// SSL Certificates for domains
+const lugiaCert = new gcp.compute.ManagedSslCertificate(
+  "lugia-cert",
+  {
+    managed: {
+      domains: [lugiaDomain],
+    },
+  },
+  { dependsOn: apis }
+);
+
+const giratinaCert = new gcp.compute.ManagedSslCertificate(
+  "giratina-cert",
+  {
+    managed: {
+      domains: [giratinaDomain],
+    },
+  },
+  { dependsOn: apis }
+);
+
+// Serverless Network Endpoint Groups for Cloud Run services
+const lugiaServerlessNeg = new gcp.compute.RegionNetworkEndpointGroup(
+  "lugia-serverless-neg",
+  {
+    region: region,
+    networkEndpointType: "SERVERLESS",
+    cloudRun: {
+      service: lugiaService.name,
+    },
+  },
+  { dependsOn: [lugiaService] }
+);
+
+const giratinaServerlessNeg = new gcp.compute.RegionNetworkEndpointGroup(
+  "giratina-serverless-neg",
+  {
+    region: region,
+    networkEndpointType: "SERVERLESS",
+    cloudRun: {
+      service: giratinaService.name,
+    },
+  },
+  { dependsOn: [giratinaService] }
+);
+
+// Backend Services
+const lugiaBackendService = new gcp.compute.BackendService(
+  "lugia-backend-service",
+  {
+    loadBalancingScheme: "EXTERNAL_MANAGED",
+    protocol: "HTTP",
+    timeoutSec: 30,
+    backends: [
+      {
+        group: lugiaServerlessNeg.id,
+      },
+    ],
+  },
+  { dependsOn: [lugiaServerlessNeg] }
+);
+
+const giratinaBackendService = new gcp.compute.BackendService(
+  "giratina-backend-service",
+  {
+    loadBalancingScheme: "EXTERNAL_MANAGED",
+    protocol: "HTTP",
+    timeoutSec: 30,
+    backends: [
+      {
+        group: giratinaServerlessNeg.id,
+      },
+    ],
+  },
+  { dependsOn: [giratinaServerlessNeg] }
+);
+
+// URL Map for domain-based routing with security headers
+const urlMap = new gcp.compute.URLMap(
+  "url-map",
+  {
+    defaultService: lugiaBackendService.id,
+    hostRules: [
+      {
+        hosts: [lugiaDomain],
+        pathMatcher: "lugia",
+      },
+      {
+        hosts: [giratinaDomain],
+        pathMatcher: "giratina",
+      },
+    ],
+    pathMatchers: [
+      {
+        name: "lugia",
+        defaultService: lugiaBackendService.id,
+        headerAction: {
+          responseHeadersToAdds: [
+            {
+              headerName: "Strict-Transport-Security",
+              headerValue: "max-age=31536000; includeSubDomains",
+              replace: false,
+            },
+            {
+              headerName: "X-Frame-Options",
+              headerValue: "DENY",
+              replace: false,
+            },
+            {
+              headerName: "X-Content-Type-Options",
+              headerValue: "nosniff",
+              replace: false,
+            },
+            {
+              headerName: "Content-Security-Policy",
+              headerValue: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+              replace: false,
+            },
+            {
+              headerName: "X-XSS-Protection",
+              headerValue: "1; mode=block",
+              replace: false,
+            },
+          ],
+        },
+      },
+      {
+        name: "giratina",
+        defaultService: giratinaBackendService.id,
+        headerAction: {
+          responseHeadersToAdds: [
+            {
+              headerName: "Strict-Transport-Security",
+              headerValue: "max-age=31536000; includeSubDomains",
+              replace: false,
+            },
+            {
+              headerName: "X-Frame-Options",
+              headerValue: "DENY",
+              replace: false,
+            },
+            {
+              headerName: "X-Content-Type-Options",
+              headerValue: "nosniff",
+              replace: false,
+            },
+            {
+              headerName: "Content-Security-Policy",
+              headerValue: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+              replace: false,
+            },
+            {
+              headerName: "X-XSS-Protection",
+              headerValue: "1; mode=block",
+              replace: false,
+            },
+          ],
+        },
+      },
+    ],
+  },
+  { dependsOn: [lugiaBackendService, giratinaBackendService] }
+);
+
+// HTTPS Target Proxy with SSL Policy
+const httpsProxy = new gcp.compute.TargetHttpsProxy(
+  "https-proxy",
+  {
+    urlMap: urlMap.id,
+    sslCertificates: [lugiaCert.id, giratinaCert.id],
+    sslPolicy: sslPolicy.id,
+  },
+  { dependsOn: [urlMap, lugiaCert, giratinaCert, sslPolicy] }
+);
+
+// HTTPS Forwarding Rule (Load Balancer Entry Point)
+new gcp.compute.GlobalForwardingRule(
+  "https-forwarding-rule",
+  {
+    target: httpsProxy.id,
+    portRange: "443",
+    ipProtocol: "TCP",
+    ipAddress: staticIp.address,
+  },
+  { dependsOn: [httpsProxy, staticIp] }
+);
+
+// HTTP to HTTPS Redirect Setup
+const redirectUrlMap = new gcp.compute.URLMap("redirect-url-map", {
+  defaultUrlRedirect: {
+    httpsRedirect: true,
+    stripQuery: false,
+  },
+});
+
+const httpProxy = new gcp.compute.TargetHttpProxy(
+  "http-proxy",
+  {
+    urlMap: redirectUrlMap.id,
+  },
+  { dependsOn: [redirectUrlMap] }
+);
+
+new gcp.compute.GlobalForwardingRule(
+  "http-forwarding-rule",
+  {
+    target: httpProxy.id,
+    portRange: "80",
+    ipProtocol: "TCP",
+    ipAddress: staticIp.address,
+  },
+  { dependsOn: [httpProxy, staticIp] }
+);
+
 export const artifactRegistryUrl = pulumi.interpolate`${region}-docker.pkg.dev/${projectId}/dislyze`;
 export const databaseInstanceName = dbInstance.name;
 export const databaseConnectionName = pulumi.interpolate`${projectId}:${region}:${dbInstance.name}`;
@@ -619,3 +858,10 @@ export const giratinaServiceUrl = giratinaService.statuses[0].url;
 export const giratinaServiceName = giratinaService.name;
 export const giratinaServiceResourceName = "giratina"; // For targeting in workflows
 export const cloudRunServiceAccountEmail = cloudRunServiceAccount.email;
+
+// Load Balancer static IP address for DNS configuration
+export const loadBalancerIp = staticIp.address;
+
+// Domain URLs for this environment
+export const lugiaUrl = `https://${lugiaDomain}`;
+export const giratinaUrl = `https://${giratinaDomain}`;
