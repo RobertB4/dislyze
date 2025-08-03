@@ -380,6 +380,15 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
                   value: "5",
                 },
                 {
+                  name: "LUGIA_AUTH_JWT_SECRET",
+                  valueFrom: {
+                    secretKeyRef: {
+                      name: lugiaAuthJwtSecret.secretId,
+                      key: "latest",
+                    },
+                  },
+                },
+                {
                   name: "CREATE_TENANT_JWT_SECRET",
                   valueFrom: {
                     secretKeyRef: {
@@ -413,6 +422,10 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
                 {
                   name: "FRONTEND_URL",
                   value: giratinaFrontendUrl,
+                },
+                {
+                  name: "LUGIA_FRONTEND_URL",
+                  value: lugiaFrontendUrl,
                 },
 
                 {
