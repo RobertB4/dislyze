@@ -182,6 +182,10 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
                   },
                 },
                 {
+                  name: "AUTH_RATE_LIMIT",
+                  value: "5",
+                },
+                {
                   name: "CREATE_TENANT_JWT_SECRET",
                   valueFrom: {
                     secretKeyRef: {
@@ -216,6 +220,7 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
                   name: "FRONTEND_URL",
                   value: lugiaFrontendUrl,
                 },
+
                 {
                   name: "INITIAL_PW",
                   valueFrom: {
@@ -371,6 +376,10 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
                   },
                 },
                 {
+                  name: "AUTH_RATE_LIMIT",
+                  value: "5",
+                },
+                {
                   name: "CREATE_TENANT_JWT_SECRET",
                   valueFrom: {
                     secretKeyRef: {
@@ -405,6 +414,7 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
                   name: "FRONTEND_URL",
                   value: giratinaFrontendUrl,
                 },
+
                 {
                   name: "INITIAL_PW",
                   valueFrom: {
