@@ -10,3 +10,4 @@ config:
   dislyze-infrastructure:giratina-frontend-url: https://internal.flownavi.com
   dislyze-infrastructure:lugia-domain: app.flownavi.com
   dislyze-infrastructure:giratina-domain: internal.flownavi.com
+  dislyze-infrastructure:alert-email: kudo.robert42@gmail.com

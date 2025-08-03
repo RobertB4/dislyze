@@ -4,6 +4,7 @@ import { createSecrets } from "./modules/secrets";
 import { createNetworking } from "./modules/networking";
 import { createDatabase } from "./modules/database";
 import { createServices } from "./modules/services";
+import { createMonitoring } from "./modules/monitoring";
 
 const config = new pulumi.Config();
 const gcpConfig = new pulumi.Config("gcp");
@@ -15,6 +16,7 @@ const lugiaFrontendUrl = config.require("lugia-frontend-url");
 const giratinaFrontendUrl = config.require("giratina-frontend-url");
 const lugiaDomain = config.require("lugia-domain");
 const giratinaDomain = config.require("giratina-domain");
+const alertEmail = config.get("alert-email") || "";
 
 export const projectId = gcpConfig.require("project");
 export const region = gcpConfig.require("region");
@@ -68,6 +70,19 @@ const networking = createNetworking({
   apis: foundation.apis,
 });
 
+const monitoring = createMonitoring({
+  projectId,
+  region,
+  environment,
+  alertEmail,
+  lugiaDomain,
+  giratinaDomain,
+  lugiaService: services.lugiaService,
+  giratinaService: services.giratinaService,
+  dbInstance: db.dbInstance,
+  apis: foundation.apis,
+});
+
 export const artifactRegistry = foundation.artifactRegistry;
 export const artifactRegistryUrl = pulumi.interpolate`${region}-docker.pkg.dev/${projectId}/dislyze`;
 export const databaseInstanceName = db.databaseInstanceName;
@@ -81,6 +96,10 @@ export const giratinaServiceResourceName = "giratina"; // For targeting in workf
 export const cloudRunServiceAccountEmail = services.cloudRunServiceAccountEmail;
 
 export const loadBalancerIp = networking.loadBalancerIp;
+
+// Monitoring exports (only populated in production)
+export const monitoringEnabled = environment === "production";
+export const alertPoliciesCount = monitoring.alertPolicies?.length || 0;
 
 export const lugiaUrl = `https://${lugiaDomain}`;
 export const giratinaUrl = `https://${giratinaDomain}`;
