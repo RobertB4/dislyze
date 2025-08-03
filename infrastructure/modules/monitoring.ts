@@ -321,12 +321,54 @@ export function createMonitoring(inputs: MonitoringInputs): MonitoringOutputs {
     { dependsOn: [notificationChannel, dbInstance] }
   );
 
+  const cloudRunErrorRateAlert = new gcp.monitoring.AlertPolicy(
+    "cloudrun-error-rate-alert",
+    {
+      displayName: "Cloud Run High Error Rate",
+      combiner: "OR",
+      conditions: [
+        {
+          displayName: "Error rate > 5%",
+          conditionThreshold: {
+            filter: `resource.type="cloud_run_revision" AND metric.type="run.googleapis.com/request_count" AND metric.labels.response_code_class!="2xx"`,
+            comparison: "COMPARISON_GT",
+            thresholdValue: 0.05,
+            duration: "300s", // Sustained for 5 minutes
+            aggregations: [
+              {
+                alignmentPeriod: "60s",
+                perSeriesAligner: "ALIGN_RATE",
+                crossSeriesReducer: "REDUCE_SUM",
+                groupByFields: ["resource.label.service_name"],
+              },
+            ],
+            denominatorFilter: `resource.type="cloud_run_revision" AND metric.type="run.googleapis.com/request_count"`,
+            denominatorAggregations: [
+              {
+                alignmentPeriod: "60s",
+                perSeriesAligner: "ALIGN_RATE",
+                crossSeriesReducer: "REDUCE_SUM",
+                groupByFields: ["resource.label.service_name"],
+              },
+            ],
+          },
+        },
+      ],
+      notificationChannels: [notificationChannel.name],
+      alertStrategy: {
+        autoClose: "1800s",
+      },
+    },
+    { dependsOn: [notificationChannel, lugiaService, giratinaService] }
+  );
+
   const uptimeChecks = [lugiaUptimeCheck, giratinaUptimeCheck];
   const alertPolicies = [
     uptimeAlertPolicy,
     cloudRunCpuAlert,
     cloudRunMemoryAlert,
     cloudRunLatencyAlert,
+    cloudRunErrorRateAlert,
     cloudSqlCpuAlert,
     cloudSqlMemoryAlert,
     cloudSqlDiskAlert,
