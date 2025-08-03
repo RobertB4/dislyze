@@ -107,8 +107,8 @@ export function createMonitoring(inputs: MonitoringInputs): MonitoringOutputs {
           displayName: "Uptime check failed",
           conditionThreshold: {
             filter: `resource.type="uptime_url" AND metric.type="monitoring.googleapis.com/uptime_check/check_passed"`,
-            comparison: "COMPARISON_EQ",
-            thresholdValue: 0,
+            comparison: "COMPARISON_LT",
+            thresholdValue: 1,
             duration: "120s", // Alert after 2 minutes of downtime
             aggregations: [
               {
@@ -145,7 +145,7 @@ export function createMonitoring(inputs: MonitoringInputs): MonitoringOutputs {
             aggregations: [
               {
                 alignmentPeriod: "60s",
-                perSeriesAligner: "ALIGN_MEAN",
+                perSeriesAligner: "ALIGN_PERCENTILE_95",
                 crossSeriesReducer: "REDUCE_MEAN",
                 groupByFields: ["resource.label.service_name"],
               },
@@ -177,7 +177,7 @@ export function createMonitoring(inputs: MonitoringInputs): MonitoringOutputs {
             aggregations: [
               {
                 alignmentPeriod: "60s",
-                perSeriesAligner: "ALIGN_MEAN",
+                perSeriesAligner: "ALIGN_PERCENTILE_95",
                 crossSeriesReducer: "REDUCE_MEAN",
                 groupByFields: ["resource.label.service_name"],
               },

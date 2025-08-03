@@ -133,6 +133,11 @@ gcloud projects add-iam-policy-binding dislyze-staging2 \
   --member="serviceAccount:github-actions@dislyze-staging2.iam.gserviceaccount.com" \
   --role="roles/certificatemanager.editor"
 
+# Additional permissions for monitoring (Phase 6)
+gcloud projects add-iam-policy-binding dislyze-staging2 \
+  --member="serviceAccount:github-actions@dislyze-staging2.iam.gserviceaccount.com" \
+  --role="roles/monitoring.admin"
+
 # Get your project number
 gcloud projects describe dislyze-staging2 --format="value(projectNumber)"
 
