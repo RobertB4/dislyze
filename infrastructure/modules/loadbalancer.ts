@@ -237,6 +237,29 @@ export function createLoadBalancer(
     { dependsOn: [httpsProxy, staticIp] }
   );
 
+  // IAM bindings to allow load balancer to invoke internal Cloud Run services
+  new gcp.cloudrun.IamBinding(
+    "lugia-invoker-binding",
+    {
+      service: lugiaService.name,
+      location: region,
+      role: "roles/run.invoker",
+      members: ["allUsers"],
+    },
+    { dependsOn: [lugiaService] }
+  );
+
+  new gcp.cloudrun.IamBinding(
+    "giratina-invoker-binding",
+    {
+      service: giratinaService.name,
+      location: region,
+      role: "roles/run.invoker",
+      members: ["allUsers"],
+    },
+    { dependsOn: [giratinaService] }
+  );
+
   return {
     staticIp,
     loadBalancerIp: staticIp.address,
