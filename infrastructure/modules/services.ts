@@ -131,6 +131,11 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
     {
       name: "lugia",
       location: region,
+      metadata: {
+        annotations: {
+          "run.googleapis.com/ingress": "internal",
+        },
+      },
       template: {
         metadata: {
           annotations: {
@@ -327,6 +332,11 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
     {
       name: "giratina",
       location: region,
+      metadata: {
+        annotations: {
+          "run.googleapis.com/ingress": "internal",
+        },
+      },
       template: {
         metadata: {
           annotations: {
