@@ -1,9 +1,10 @@
 import * as pulumi from "@pulumi/pulumi";
 import { createFoundation } from "./modules/foundation";
 import { createSecrets } from "./modules/secrets";
-import { createNetworking } from "./modules/networking";
+import { createVpc } from "./modules/vpc";
 import { createDatabase } from "./modules/database";
 import { createServices } from "./modules/services";
+import { createLoadBalancer } from "./modules/loadbalancer";
 import { createMonitoring } from "./modules/monitoring";
 
 const config = new pulumi.Config();
@@ -31,11 +32,19 @@ const secrets = createSecrets({
   apis: foundation.apis,
 });
 
+const vpc = createVpc({
+  projectId,
+  region,
+  apis: foundation.apis,
+});
+
 const db = createDatabase({
   projectId,
   region,
   dbTier,
   apis: foundation.apis,
+  vpc: vpc.vpc,
+  databaseSubnet: vpc.databaseSubnet,
 });
 
 const services = createServices({
@@ -50,6 +59,8 @@ const services = createServices({
   config,
   db,
   apis: foundation.apis,
+  vpc: vpc.vpc,
+  servicesSubnet: vpc.servicesSubnet,
   dbPasswordSecret: secrets.dbPasswordSecret,
   lugiaAuthJwtSecret: secrets.lugiaAuthJwtSecret,
   giratinaAuthJwtSecret: secrets.giratinaAuthJwtSecret,
@@ -60,8 +71,7 @@ const services = createServices({
   sendgridApiKeySecret: secrets.sendgridApiKeySecret,
 });
 
-const networking = createNetworking({
-  projectId,
+const loadBalancer = createLoadBalancer({
   region,
   lugiaDomain,
   giratinaDomain,
@@ -85,8 +95,14 @@ const monitoring = createMonitoring({
 
 export const artifactRegistry = foundation.artifactRegistry;
 export const artifactRegistryUrl = pulumi.interpolate`${region}-docker.pkg.dev/${projectId}/dislyze`;
+
+export const vpcName = vpc.vpc.name;
+export const servicesSubnetName = vpc.servicesSubnet.name;
+export const databaseSubnetName = vpc.databaseSubnet.name;
+
 export const databaseInstanceName = db.databaseInstanceName;
 export const databaseConnectionName = db.databaseConnectionName;
+
 export const lugiaServiceUrl = services.lugiaServiceUrl;
 export const lugiaServiceName = services.lugiaServiceName;
 export const lugiaServiceResourceName = "lugia"; // For targeting in workflows
@@ -95,11 +111,10 @@ export const giratinaServiceName = services.giratinaServiceName;
 export const giratinaServiceResourceName = "giratina"; // For targeting in workflows
 export const cloudRunServiceAccountEmail = services.cloudRunServiceAccountEmail;
 
-export const loadBalancerIp = networking.loadBalancerIp;
+export const loadBalancerIp = loadBalancer.loadBalancerIp;
+export const lugiaUrl = `https://${lugiaDomain}`;
+export const giratinaUrl = `https://${giratinaDomain}`;
 
 // Monitoring exports (only populated in production)
 export const monitoringEnabled = environment === "production";
 export const alertPoliciesCount = monitoring.alertPolicies?.length || 0;
-
-export const lugiaUrl = `https://${lugiaDomain}`;
-export const giratinaUrl = `https://${giratinaDomain}`;

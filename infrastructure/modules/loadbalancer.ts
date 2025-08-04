@@ -1,8 +1,8 @@
 import * as gcp from "@pulumi/gcp";
+import { GlobalForwardingRule } from "@pulumi/gcp/compute";
 import * as pulumi from "@pulumi/pulumi";
 
-export interface NetworkingInputs {
-  projectId: string | pulumi.Output<string>;
+export interface LoadBalancerInputs {
   region: string | pulumi.Output<string>;
   lugiaDomain: string;
   giratinaDomain: string;
@@ -11,12 +11,18 @@ export interface NetworkingInputs {
   apis: gcp.projects.Service[];
 }
 
-export interface NetworkingOutputs {
+export interface LoadBalancerOutputs {
   staticIp: gcp.compute.GlobalAddress;
   loadBalancerIp: pulumi.Output<string>;
+  lugiaCert: gcp.compute.ManagedSslCertificate;
+  giratinaCert: gcp.compute.ManagedSslCertificate;
+  httpForwardingRule: GlobalForwardingRule;
+  httpsForwardingRule: GlobalForwardingRule;
 }
 
-export function createNetworking(inputs: NetworkingInputs): NetworkingOutputs {
+export function createLoadBalancer(
+  inputs: LoadBalancerInputs
+): LoadBalancerOutputs {
   const {
     region,
     lugiaDomain,
@@ -93,7 +99,6 @@ export function createNetworking(inputs: NetworkingInputs): NetworkingOutputs {
     {
       loadBalancingScheme: "EXTERNAL_MANAGED",
       protocol: "HTTP",
-      timeoutSec: 30,
       backends: [
         {
           group: lugiaServerlessNeg.id,
@@ -108,7 +113,6 @@ export function createNetworking(inputs: NetworkingInputs): NetworkingOutputs {
     {
       loadBalancingScheme: "EXTERNAL_MANAGED",
       protocol: "HTTP",
-      timeoutSec: 30,
       backends: [
         {
           group: giratinaServerlessNeg.id,
@@ -181,6 +185,26 @@ export function createNetworking(inputs: NetworkingInputs): NetworkingOutputs {
     { dependsOn: [lugiaBackendService, giratinaBackendService] }
   );
 
+  const redirectUrlMap = new gcp.compute.URLMap(
+    "redirect-url-map",
+    {
+      defaultUrlRedirect: {
+        httpsRedirect: true,
+        stripQuery: false,
+        redirectResponseCode: "MOVED_PERMANENTLY_DEFAULT",
+      },
+    },
+    { dependsOn: apis }
+  );
+
+  const httpProxy = new gcp.compute.TargetHttpProxy(
+    "http-proxy",
+    {
+      urlMap: redirectUrlMap.id,
+    },
+    { dependsOn: [redirectUrlMap] }
+  );
+
   const httpsProxy = new gcp.compute.TargetHttpsProxy(
     "https-proxy",
     {
@@ -191,47 +215,32 @@ export function createNetworking(inputs: NetworkingInputs): NetworkingOutputs {
     { dependsOn: [urlMap, lugiaCert, giratinaCert, sslPolicy] }
   );
 
-  new gcp.compute.GlobalForwardingRule(
-    "https-forwarding-rule",
-    {
-      target: httpsProxy.id,
-      portRange: "443",
-      ipProtocol: "TCP",
-      ipAddress: staticIp.address,
-      loadBalancingScheme: "EXTERNAL_MANAGED",
-    },
-    { dependsOn: [httpsProxy, staticIp] }
-  );
-
-  const redirectUrlMap = new gcp.compute.URLMap("redirect-url-map", {
-    defaultUrlRedirect: {
-      httpsRedirect: true,
-      stripQuery: false,
-    },
-  });
-
-  const httpProxy = new gcp.compute.TargetHttpProxy(
-    "http-proxy",
-    {
-      urlMap: redirectUrlMap.id,
-    },
-    { dependsOn: [redirectUrlMap] }
-  );
-
-  new gcp.compute.GlobalForwardingRule(
+  const httpForwardingRule = new gcp.compute.GlobalForwardingRule(
     "http-forwarding-rule",
     {
       target: httpProxy.id,
       portRange: "80",
-      ipProtocol: "TCP",
       ipAddress: staticIp.address,
-      loadBalancingScheme: "EXTERNAL_MANAGED",
     },
     { dependsOn: [httpProxy, staticIp] }
+  );
+
+  const httpsForwardingRule = new gcp.compute.GlobalForwardingRule(
+    "https-forwarding-rule",
+    {
+      target: httpsProxy.id,
+      portRange: "443",
+      ipAddress: staticIp.address,
+    },
+    { dependsOn: [httpsProxy, staticIp] }
   );
 
   return {
     staticIp,
     loadBalancerIp: staticIp.address,
+    lugiaCert,
+    giratinaCert,
+    httpForwardingRule,
+    httpsForwardingRule,
   };
 }

@@ -14,6 +14,8 @@ export interface ServicesInputs {
   config: pulumi.Config;
   db: DatabaseOutputs;
   apis: gcp.projects.Service[];
+  vpc: gcp.compute.Network;
+  servicesSubnet: gcp.compute.Subnetwork;
   dbPasswordSecret: gcp.secretmanager.Secret;
   lugiaAuthJwtSecret: gcp.secretmanager.Secret;
   giratinaAuthJwtSecret: gcp.secretmanager.Secret;
@@ -48,6 +50,7 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
     config,
     db,
     apis,
+    vpc,
     dbPasswordSecret,
     lugiaAuthJwtSecret,
     giratinaAuthJwtSecret,
@@ -110,6 +113,19 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
       }
     });
 
+  const vpcConnector = new gcp.vpcaccess.Connector(
+    "cloudrun-vpc-connector",
+    {
+      name: "cloudrun-vpc-connector",
+      region: region,
+      network: vpc.name,
+      ipCidrRange: "10.0.3.0/28",
+      minThroughput: 200,
+      maxThroughput: 300,
+    },
+    { dependsOn: [...apis, vpc] }
+  );
+
   const lugiaService = new gcp.cloudrun.Service(
     "lugia",
     {
@@ -121,6 +137,8 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
             "autoscaling.knative.dev/maxScale": cloudRunMaxInstances,
             "run.googleapis.com/cloudsql-instances": db.databaseConnectionName,
             "run.googleapis.com/client-name": "pulumi",
+            "run.googleapis.com/vpc-access-connector": vpcConnector.name,
+            "run.googleapis.com/vpc-access-egress": "private-ranges-only",
           },
         },
         spec: {
@@ -315,6 +333,8 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
             "autoscaling.knative.dev/maxScale": cloudRunMaxInstances,
             "run.googleapis.com/cloudsql-instances": db.databaseConnectionName,
             "run.googleapis.com/client-name": "pulumi",
+            "run.googleapis.com/vpc-access-connector": vpcConnector.name,
+            "run.googleapis.com/vpc-access-egress": "private-ranges-only",
           },
         },
         spec: {

@@ -6,6 +6,8 @@ export interface DatabaseInputs {
   region: string | pulumi.Output<string>;
   dbTier: string;
   apis: gcp.projects.Service[];
+  vpc: gcp.compute.Network;
+  databaseSubnet: gcp.compute.Subnetwork;
 }
 
 export interface DatabaseOutputs {
@@ -17,7 +19,29 @@ export interface DatabaseOutputs {
 }
 
 export function createDatabase(inputs: DatabaseInputs): DatabaseOutputs {
-  const { projectId, region, dbTier, apis } = inputs;
+  const { projectId, region, dbTier, apis, vpc } = inputs;
+
+  const privateIpRange = new gcp.compute.GlobalAddress(
+    "postgresql-vpc-peering-range",
+    {
+      name: "postgresql-vpc-peering-range",
+      purpose: "VPC_PEERING",
+      addressType: "INTERNAL",
+      prefixLength: 16,
+      network: vpc.id,
+    },
+    { dependsOn: [...apis, vpc] }
+  );
+
+  const privateConnection = new gcp.servicenetworking.Connection(
+    "postgresql-private-connection",
+    {
+      network: vpc.id,
+      service: "servicenetworking.googleapis.com",
+      reservedPeeringRanges: [privateIpRange.name],
+    },
+    { dependsOn: [privateIpRange] }
+  );
 
   const dbInstance = new gcp.sql.DatabaseInstance(
     "dislyze-db",
@@ -41,8 +65,8 @@ export function createDatabase(inputs: DatabaseInputs): DatabaseOutputs {
           },
         },
         ipConfiguration: {
-          ipv4Enabled: true,
-          authorizedNetworks: [],
+          ipv4Enabled: false,
+          privateNetwork: vpc.id,
           sslMode: "ENCRYPTED_ONLY",
         },
         maintenanceWindow: {
@@ -58,7 +82,7 @@ export function createDatabase(inputs: DatabaseInputs): DatabaseOutputs {
         ],
       },
     },
-    { dependsOn: apis }
+    { dependsOn: [...apis, privateConnection] }
   );
 
   const database = new gcp.sql.Database(
