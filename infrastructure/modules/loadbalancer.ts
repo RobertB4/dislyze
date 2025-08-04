@@ -221,6 +221,7 @@ export function createLoadBalancer(
       target: httpProxy.id,
       portRange: "80",
       ipAddress: staticIp.address,
+      loadBalancingScheme: "EXTERNAL_MANAGED",
     },
     { dependsOn: [httpProxy, staticIp] }
   );
@@ -231,6 +232,7 @@ export function createLoadBalancer(
       target: httpsProxy.id,
       portRange: "443",
       ipAddress: staticIp.address,
+      loadBalancingScheme: "EXTERNAL_MANAGED",
     },
     { dependsOn: [httpsProxy, staticIp] }
   );
