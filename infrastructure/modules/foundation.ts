@@ -24,6 +24,7 @@ export function createFoundation(inputs: FoundationInputs): FoundationOutputs {
     "certificatemanager.googleapis.com",
     "monitoring.googleapis.com",
     "logging.googleapis.com",
+    "vpcaccess.googleapis.com",
   ];
 
   const apis = enableApis.map(
