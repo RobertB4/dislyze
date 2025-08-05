@@ -18,7 +18,7 @@ func NewDB(env *config.Env) (*pgxpool.Pool, error) {
 	var dsn string
 
 	dsn = fmt.Sprintf(
-		"user=%s password=%s host=%s dbname=%s sslmode=%s",
+		"user=%s password=%s host=%s port=5432 dbname=%s sslmode=%s",
 		env.DBUser, env.DBPassword, env.DBHost, env.DBName, env.DBSSLMode,
 	)
 

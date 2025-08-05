@@ -172,7 +172,7 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
                 },
                 {
                   name: "DB_HOST",
-                  value: pulumi.interpolate`${db.databasePrivateIp}:5432`,
+                  value: db.databasePrivateIp,
                 },
                 {
                   name: "DB_USER",
@@ -373,7 +373,7 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
                 },
                 {
                   name: "DB_HOST",
-                  value: pulumi.interpolate`${db.databasePrivateIp}:5432`,
+                  value: db.databasePrivateIp,
                 },
                 {
                   name: "DB_USER",
