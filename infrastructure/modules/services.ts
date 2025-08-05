@@ -133,7 +133,7 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
       location: region,
       metadata: {
         annotations: {
-          "run.googleapis.com/ingress": "internal",
+          "run.googleapis.com/ingress": "internal-and-cloud-load-balancing",
         },
       },
       template: {
@@ -334,7 +334,7 @@ export function createServices(inputs: ServicesInputs): ServicesOutputs {
       location: region,
       metadata: {
         annotations: {
-          "run.googleapis.com/ingress": "internal",
+          "run.googleapis.com/ingress": "internal-and-cloud-load-balancing",
         },
       },
       template: {
