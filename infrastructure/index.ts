@@ -6,6 +6,7 @@ import { createDatabase } from "./modules/database";
 import { createServices } from "./modules/services";
 import { createLoadBalancer } from "./modules/loadbalancer";
 import { createMonitoring } from "./modules/monitoring";
+import { createLogging } from "./modules/logging";
 
 const config = new pulumi.Config();
 const gcpConfig = new pulumi.Config("gcp");
@@ -80,6 +81,11 @@ const loadBalancer = createLoadBalancer({
   apis: foundation.apis,
 });
 
+const logging = createLogging({
+  projectId,
+  environment,
+});
+
 const monitoring = createMonitoring({
   projectId,
   region,
@@ -110,6 +116,12 @@ export const giratinaServiceUrl = services.giratinaServiceUrl;
 export const giratinaServiceName = services.giratinaServiceName;
 export const giratinaServiceResourceName = "giratina"; // For targeting in workflows
 export const cloudRunServiceAccountEmail = services.cloudRunServiceAccountEmail;
+
+export const auditLogBucket = logging.auditLogBucket.name;
+export const auditLogSinks = {
+  adminActivity: logging.adminActivitySink.name,
+  applicationLogs: logging.auditLogSink.name,
+};
 
 export const loadBalancerIp = loadBalancer.loadBalancerIp;
 export const lugiaUrl = `https://${lugiaDomain}`;
