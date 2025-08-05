@@ -16,6 +16,7 @@ export interface DatabaseOutputs {
   dbUser: gcp.sql.User;
   databaseInstanceName: pulumi.Output<string>;
   databaseConnectionName: pulumi.Output<string>;
+  databasePrivateIp: pulumi.Output<string>;
 }
 
 export function createDatabase(inputs: DatabaseInputs): DatabaseOutputs {
@@ -110,5 +111,6 @@ export function createDatabase(inputs: DatabaseInputs): DatabaseOutputs {
     dbUser,
     databaseInstanceName: dbInstance.name,
     databaseConnectionName: pulumi.interpolate`${projectId}:${region}:${dbInstance.name}`,
+    databasePrivateIp: dbInstance.privateIpAddress,
   };
 }
