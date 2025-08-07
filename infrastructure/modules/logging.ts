@@ -49,15 +49,6 @@ export function createLogging(inputs: LoggingInputs): LoggingOutputs {
     }
   );
 
-  // Create IAM binding for log sink to write to bucket
-  const logWriterServiceAccount = pulumi.interpolate`serviceAccount:cloud-logs@system.gserviceaccount.com`;
-  
-  new gcp.storage.BucketIAMBinding("audit-log-bucket-writer", {
-    bucket: auditLogBucket.name,
-    role: "roles/storage.objectCreator",
-    members: [logWriterServiceAccount],
-  });
-
   // Admin Activity Audit Log Sink (most critical events)
   const adminActivitySink = new gcp.logging.ProjectSink(
     "admin-activity-audit-sink",
@@ -76,6 +67,13 @@ export function createLogging(inputs: LoggingInputs): LoggingOutputs {
     },
     { dependsOn: [auditLogBucket] }
   );
+
+  // IAM binding for admin activity sink to write to bucket
+  new gcp.storage.BucketIAMBinding("admin-activity-bucket-writer", {
+    bucket: auditLogBucket.name,
+    role: "roles/storage.objectCreator",
+    members: [adminActivitySink.writerIdentity],
+  }, { dependsOn: [adminActivitySink] });
 
 
   // Application Log Sink (Cloud Run application logs)
@@ -97,6 +95,13 @@ export function createLogging(inputs: LoggingInputs): LoggingOutputs {
     },
     { dependsOn: [auditLogBucket] }
   );
+
+  // IAM binding for application audit sink to write to bucket
+  new gcp.storage.BucketIAMBinding("application-audit-bucket-writer", {
+    bucket: auditLogBucket.name,
+    role: "roles/storage.objectCreator",
+    members: [auditLogSink.writerIdentity],
+  }, { dependsOn: [auditLogSink] });
 
   return {
     auditLogBucket,
