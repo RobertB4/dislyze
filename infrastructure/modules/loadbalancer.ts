@@ -141,7 +141,7 @@ export function createLoadBalancer(
     {
       headerName: "Content-Security-Policy",
       headerValue:
-        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+        "default-src 'self'; script-src 'self'; style-src 'self'",
       replace: false,
     },
     {

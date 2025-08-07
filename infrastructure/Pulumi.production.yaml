@@ -3,6 +3,7 @@ config:
   gcp:region: asia-northeast1
   dislyze-infrastructure:environment: production
   dislyze-infrastructure:db-tier: db-f1-micro
+  dislyze-infrastructure:db-availability-type: REGIONAL
   dislyze-infrastructure:cloudrun-cpu: "0.5"
   dislyze-infrastructure:cloudrun-memory: 256Mi
   dislyze-infrastructure:cloudrun-max-instances: "1"

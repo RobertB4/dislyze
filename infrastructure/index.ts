@@ -11,6 +11,7 @@ import { createLogging } from "./modules/logging";
 const config = new pulumi.Config();
 const gcpConfig = new pulumi.Config("gcp");
 const dbTier = config.require("db-tier");
+const dbAvailabilityType = config.require("db-availability-type");
 const cloudRunCpu = config.require("cloudrun-cpu");
 const cloudRunMemory = config.require("cloudrun-memory");
 const cloudRunMaxInstances = config.require("cloudrun-max-instances");
@@ -43,6 +44,7 @@ const db = createDatabase({
   projectId,
   region,
   dbTier,
+  dbAvailabilityType,
   apis: foundation.apis,
   vpc: vpc.vpc,
   databaseSubnet: vpc.databaseSubnet,

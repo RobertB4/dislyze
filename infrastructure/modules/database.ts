@@ -5,6 +5,7 @@ export interface DatabaseInputs {
   projectId: string | pulumi.Output<string>;
   region: string | pulumi.Output<string>;
   dbTier: string;
+  dbAvailabilityType: string;
   apis: gcp.projects.Service[];
   vpc: gcp.compute.Network;
   databaseSubnet: gcp.compute.Subnetwork;
@@ -20,7 +21,7 @@ export interface DatabaseOutputs {
 }
 
 export function createDatabase(inputs: DatabaseInputs): DatabaseOutputs {
-  const { projectId, region, dbTier, apis, vpc } = inputs;
+  const { projectId, region, dbTier, dbAvailabilityType, apis, vpc } = inputs;
 
   const privateIpRange = new gcp.compute.GlobalAddress(
     "postgresql-vpc-peering-range",
@@ -54,7 +55,7 @@ export function createDatabase(inputs: DatabaseInputs): DatabaseOutputs {
       settings: {
         tier: dbTier,
         edition: "ENTERPRISE",
-        availabilityType: "ZONAL", // Use REGIONAL for production
+        availabilityType: dbAvailabilityType,
         backupConfiguration: {
           enabled: true,
           startTime: "03:00",
