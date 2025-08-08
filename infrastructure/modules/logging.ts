@@ -68,11 +68,11 @@ export function createLogging(inputs: LoggingInputs): LoggingOutputs {
     { dependsOn: [auditLogBucket] }
   );
 
-  // IAM binding for admin activity sink to write to bucket
-  new gcp.storage.BucketIAMBinding("admin-activity-bucket-writer", {
+  // IAM member for admin activity sink to write to bucket
+  new gcp.storage.BucketIAMMember("admin-activity-bucket-writer", {
     bucket: auditLogBucket.name,
     role: "roles/storage.objectCreator",
-    members: [adminActivitySink.writerIdentity],
+    member: adminActivitySink.writerIdentity,
   }, { dependsOn: [adminActivitySink] });
 
 
@@ -96,11 +96,11 @@ export function createLogging(inputs: LoggingInputs): LoggingOutputs {
     { dependsOn: [auditLogBucket] }
   );
 
-  // IAM binding for application audit sink to write to bucket
-  new gcp.storage.BucketIAMBinding("application-audit-bucket-writer", {
+  // IAM member for application audit sink to write to bucket
+  new gcp.storage.BucketIAMMember("application-audit-bucket-writer", {
     bucket: auditLogBucket.name,
     role: "roles/storage.objectCreator",
-    members: [auditLogSink.writerIdentity],
+    member: auditLogSink.writerIdentity,
   }, { dependsOn: [auditLogSink] });
 
   return {
