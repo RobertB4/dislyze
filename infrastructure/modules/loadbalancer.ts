@@ -70,6 +70,34 @@ export function createLoadBalancer(
     { dependsOn: apis }
   );
 
+  const securityPolicy = new gcp.compute.SecurityPolicy("armor-policy", {
+    name: "dislyze-armor-policy",
+    description: "Main WAF policy for all services",
+    rules: [
+        {
+            action: "deny(403)",
+            priority: 1000,
+            match: {
+                expr: {
+                    expression: "evaluatePreconfiguredExpr('owasp-crs-v3.3-stable')",
+                },
+            },
+            description: "OWASP Top 10 CRS",
+        },
+        {
+            action: "allow",
+            priority: 2147483647, // Default rule, must be lowest priority
+            match: {
+                versionedExpr: "SRC_IPS_V1",
+                config: {
+                    srcIpRanges: ["*"],
+                },
+            },
+            description: "Default allow all",
+        },
+    ],
+  });
+
   const lugiaServerlessNeg = new gcp.compute.RegionNetworkEndpointGroup(
     "lugia-serverless-neg",
     {
@@ -104,8 +132,9 @@ export function createLoadBalancer(
           group: lugiaServerlessNeg.id,
         },
       ],
+      securityPolicy: securityPolicy.id,
     },
-    { dependsOn: [lugiaServerlessNeg] }
+    { dependsOn: [lugiaServerlessNeg, securityPolicy] }
   );
 
   const giratinaBackendService = new gcp.compute.BackendService(
@@ -118,8 +147,9 @@ export function createLoadBalancer(
           group: giratinaServerlessNeg.id,
         },
       ],
+      securityPolicy: securityPolicy.id,
     },
-    { dependsOn: [giratinaServerlessNeg] }
+    { dependsOn: [giratinaServerlessNeg, securityPolicy] }
   );
 
   const securityHeaders = [

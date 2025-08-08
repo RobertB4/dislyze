@@ -101,7 +101,6 @@ const monitoring = createMonitoring({
   apis: foundation.apis,
 });
 
-export const artifactRegistry = foundation.artifactRegistry;
 export const artifactRegistryUrl = pulumi.interpolate`${region}-docker.pkg.dev/${projectId}/dislyze`;
 
 export const vpcName = vpc.vpc.name;
