@@ -42,8 +42,8 @@ export function createCloudArmor(inputs: CloudArmorInputs): CloudArmorOutputs {
     { dependsOn: apis }
   );
 
-  // Combined OWASP CRS 3.3 Protection (Priority 100)
-  new gcp.compute.SecurityPolicyRule("owasp-protection-rule", {
+  // Core Web Application Attacks (Priority 100)
+  new gcp.compute.SecurityPolicyRule("core-attacks-rule", {
     securityPolicy: securityPolicy.name,
     priority: 100,
     action: "deny(403)",
@@ -52,20 +52,30 @@ export function createCloudArmor(inputs: CloudArmorInputs): CloudArmorOutputs {
         expression: `
           evaluatePreconfiguredWaf('sqli-v33-stable', {'sensitivity': 1}) ||
           evaluatePreconfiguredWaf('xss-v33-stable', {'sensitivity': 1}) ||
-          evaluatePreconfiguredWaf('lfi-v33-stable', {'sensitivity': 1}) ||
-          evaluatePreconfiguredWaf('rfi-v33-stable', {'sensitivity': 1}) ||
           evaluatePreconfiguredWaf('rce-v33-stable', {'sensitivity': 1}) ||
-          evaluatePreconfiguredWaf('php-v33-stable', {'sensitivity': 1}) ||
-          evaluatePreconfiguredWaf('protocolattack-v33-stable', {'sensitivity': 1}) ||
-          evaluatePreconfiguredWaf('sessionfixation-v33-stable', {'sensitivity': 1}) ||
-          evaluatePreconfiguredWaf('methodenforcement-v33-stable', {'sensitivity': 1}) ||
-          evaluatePreconfiguredWaf('scannerdetection-v33-stable', {'sensitivity': 1}) ||
-          evaluatePreconfiguredWaf('java-v33-stable', {'sensitivity': 1}) ||
-          evaluatePreconfiguredWaf('nodejs-v33-stable', {'sensitivity': 1})
+          evaluatePreconfiguredWaf('lfi-v33-stable', {'sensitivity': 1})
         `.replace(/\s+/g, ' ').trim(),
       },
     },
-    description: "Block all OWASP CRS 3.3 attacks: SQL injection, XSS, file inclusion, RCE, PHP/Java/NodeJS injection, protocol attacks, session fixation, method enforcement, and scanner detection",
+    description: "Block core web application attacks: SQL injection, XSS, remote code execution, and local file inclusion",
+  }, { dependsOn: [securityPolicy] });
+
+  // Protocol & Detection Attacks (Priority 200)
+  new gcp.compute.SecurityPolicyRule("protocol-detection-rule", {
+    securityPolicy: securityPolicy.name,
+    priority: 200,
+    action: "deny(403)",
+    match: {
+      expr: {
+        expression: `
+          evaluatePreconfiguredWaf('rfi-v33-stable', {'sensitivity': 1}) ||
+          evaluatePreconfiguredWaf('methodenforcement-v33-stable', {'sensitivity': 1}) ||
+          evaluatePreconfiguredWaf('scannerdetection-v33-stable', {'sensitivity': 1}) ||
+          evaluatePreconfiguredWaf('protocolattack-v33-stable', {'sensitivity': 1})
+        `.replace(/\s+/g, ' ').trim(),
+      },
+    },
+    description: "Block protocol attacks and reconnaissance: remote file inclusion, HTTP method enforcement, scanner detection, and protocol attacks",
   }, { dependsOn: [securityPolicy] });
 
   // Rate limiting rule (Priority 1000) - Prevent brute force attacks
