@@ -7,6 +7,7 @@ import { createServices } from "./modules/services";
 import { createLoadBalancer } from "./modules/loadbalancer";
 import { createMonitoring } from "./modules/monitoring";
 import { createLogging } from "./modules/logging";
+import { createCloudArmor } from "./modules/cloudarmor";
 
 const config = new pulumi.Config();
 const gcpConfig = new pulumi.Config("gcp");
@@ -74,6 +75,12 @@ const services = createServices({
   sendgridApiKeySecret: secrets.sendgridApiKeySecret,
 });
 
+const cloudArmor = createCloudArmor({
+  projectId,
+  environment,
+  apis: foundation.apis,
+});
+
 const loadBalancer = createLoadBalancer({
   region,
   lugiaDomain,
@@ -81,6 +88,7 @@ const loadBalancer = createLoadBalancer({
   lugiaService: services.lugiaService,
   giratinaService: services.giratinaService,
   apis: foundation.apis,
+  securityPolicy: cloudArmor.securityPolicy,
 });
 
 const logging = createLogging({
@@ -127,6 +135,8 @@ export const auditLogSinks = {
 export const loadBalancerIp = loadBalancer.loadBalancerIp;
 export const lugiaUrl = `https://${lugiaDomain}`;
 export const giratinaUrl = `https://${giratinaDomain}`;
+
+export const securityPolicyName = cloudArmor.securityPolicy.name;
 
 // Monitoring exports (only populated in production)
 export const monitoringEnabled = environment === "production";
