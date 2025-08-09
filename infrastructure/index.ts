@@ -8,6 +8,7 @@ import { createLoadBalancer } from "./modules/loadbalancer";
 import { createMonitoring } from "./modules/monitoring";
 import { createLogging } from "./modules/logging";
 import { createCloudArmor } from "./modules/cloudarmor";
+import { createKms } from "./modules/kms";
 
 const config = new pulumi.Config();
 const gcpConfig = new pulumi.Config("gcp");
@@ -29,6 +30,12 @@ export const environment = config.require("environment");
 const foundation = createFoundation({
   projectId,
   region,
+});
+
+createKms({
+  region,
+  environment,
+  apis: foundation.apis,
 });
 
 const secrets = createSecrets({
