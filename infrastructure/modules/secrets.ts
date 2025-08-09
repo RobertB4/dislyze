@@ -3,6 +3,7 @@ import * as gcp from "@pulumi/gcp";
 export interface SecretsInputs {
   apis: gcp.projects.Service[];
   secretsEncryptionKey: gcp.kms.CryptoKey;
+  region: string;
 }
 
 export interface SecretsOutputs {
@@ -17,17 +18,20 @@ export interface SecretsOutputs {
 }
 
 export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
-  const { apis, secretsEncryptionKey } = inputs;
+  const { apis, secretsEncryptionKey, region } = inputs;
 
   const dbPasswordSecret = new gcp.secretmanager.Secret(
     "db-password",
     {
       secretId: "db-password",
       replication: {
-        auto: {
-          customerManagedEncryption: {
-            kmsKeyName: secretsEncryptionKey.id,
-          },
+        userManaged: {
+          replicas: [{
+            location: region,
+            customerManagedEncryption: {
+              kmsKeyName: secretsEncryptionKey.id,
+            },
+          }],
         },
       },
     },
@@ -39,10 +43,13 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
     {
       secretId: "lugia-auth-jwt-secret",
       replication: {
-        auto: {
-          customerManagedEncryption: {
-            kmsKeyName: secretsEncryptionKey.id,
-          },
+        userManaged: {
+          replicas: [{
+            location: region,
+            customerManagedEncryption: {
+              kmsKeyName: secretsEncryptionKey.id,
+            },
+          }],
         },
       },
     },
@@ -54,10 +61,13 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
     {
       secretId: "giratina-auth-jwt-secret",
       replication: {
-        auto: {
-          customerManagedEncryption: {
-            kmsKeyName: secretsEncryptionKey.id,
-          },
+        userManaged: {
+          replicas: [{
+            location: region,
+            customerManagedEncryption: {
+              kmsKeyName: secretsEncryptionKey.id,
+            },
+          }],
         },
       },
     },
@@ -69,10 +79,13 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
     {
       secretId: "create-tenant-jwt-secret",
       replication: {
-        auto: {
-          customerManagedEncryption: {
-            kmsKeyName: secretsEncryptionKey.id,
-          },
+        userManaged: {
+          replicas: [{
+            location: region,
+            customerManagedEncryption: {
+              kmsKeyName: secretsEncryptionKey.id,
+            },
+          }],
         },
       },
     },
@@ -84,10 +97,13 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
     {
       secretId: "ip-whitelist-emergency-jwt-secret",
       replication: {
-        auto: {
-          customerManagedEncryption: {
-            kmsKeyName: secretsEncryptionKey.id,
-          },
+        userManaged: {
+          replicas: [{
+            location: region,
+            customerManagedEncryption: {
+              kmsKeyName: secretsEncryptionKey.id,
+            },
+          }],
         },
       },
     },
@@ -99,10 +115,13 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
     {
       secretId: "initial-pw",
       replication: {
-        auto: {
-          customerManagedEncryption: {
-            kmsKeyName: secretsEncryptionKey.id,
-          },
+        userManaged: {
+          replicas: [{
+            location: region,
+            customerManagedEncryption: {
+              kmsKeyName: secretsEncryptionKey.id,
+            },
+          }],
         },
       },
     },
@@ -114,10 +133,13 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
     {
       secretId: "internal-user-pw",
       replication: {
-        auto: {
-          customerManagedEncryption: {
-            kmsKeyName: secretsEncryptionKey.id,
-          },
+        userManaged: {
+          replicas: [{
+            location: region,
+            customerManagedEncryption: {
+              kmsKeyName: secretsEncryptionKey.id,
+            },
+          }],
         },
       },
     },
@@ -129,10 +151,13 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
     {
       secretId: "sendgrid-api-key",
       replication: {
-        auto: {
-          customerManagedEncryption: {
-            kmsKeyName: secretsEncryptionKey.id,
-          },
+        userManaged: {
+          replicas: [{
+            location: region,
+            customerManagedEncryption: {
+              kmsKeyName: secretsEncryptionKey.id,
+            },
+          }],
         },
       },
     },
