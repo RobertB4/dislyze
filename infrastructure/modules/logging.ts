@@ -78,6 +78,13 @@ export function createLogging(inputs: LoggingInputs): LoggingOutputs {
     member: adminActivitySink.writerIdentity,
   }, { dependsOn: [adminActivitySink] });
 
+  // KMS permission for admin activity sink to encrypt objects
+  new gcp.kms.CryptoKeyIAMMember("admin-activity-kms-encrypter", {
+    cryptoKeyId: auditLogsEncryptionKey.id,
+    role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
+    member: adminActivitySink.writerIdentity,
+  }, { dependsOn: [adminActivitySink, auditLogsKeyBinding] });
+
 
   // Application Log Sink (Cloud Run application logs)
   const auditLogSink = new gcp.logging.ProjectSink(
@@ -105,6 +112,13 @@ export function createLogging(inputs: LoggingInputs): LoggingOutputs {
     role: "roles/storage.objectCreator",
     member: auditLogSink.writerIdentity,
   }, { dependsOn: [auditLogSink] });
+
+  // KMS permission for application audit sink to encrypt objects
+  new gcp.kms.CryptoKeyIAMMember("application-audit-kms-encrypter", {
+    cryptoKeyId: auditLogsEncryptionKey.id,
+    role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
+    member: auditLogSink.writerIdentity,
+  }, { dependsOn: [auditLogSink, auditLogsKeyBinding] });
 
   return {
     auditLogBucket,
