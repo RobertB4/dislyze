@@ -3,6 +3,7 @@ import * as gcp from "@pulumi/gcp";
 export interface SecretsInputs {
   apis: gcp.projects.Service[];
   secretsEncryptionKey: gcp.kms.CryptoKey;
+  secretsKeyBinding: gcp.kms.CryptoKeyIAMBinding;
   region: string;
 }
 
@@ -18,7 +19,7 @@ export interface SecretsOutputs {
 }
 
 export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
-  const { apis, secretsEncryptionKey, region } = inputs;
+  const { apis, secretsEncryptionKey, secretsKeyBinding, region } = inputs;
 
   const dbPasswordSecret = new gcp.secretmanager.Secret(
     "db-password",
@@ -35,7 +36,7 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
         },
       },
     },
-    { dependsOn: [...apis, secretsEncryptionKey] }
+    { dependsOn: [...apis, secretsEncryptionKey, secretsKeyBinding] }
   );
 
   const lugiaAuthJwtSecret = new gcp.secretmanager.Secret(
@@ -53,7 +54,7 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
         },
       },
     },
-    { dependsOn: [...apis, secretsEncryptionKey] }
+    { dependsOn: [...apis, secretsEncryptionKey, secretsKeyBinding] }
   );
 
   const giratinaAuthJwtSecret = new gcp.secretmanager.Secret(
@@ -71,7 +72,7 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
         },
       },
     },
-    { dependsOn: [...apis, secretsEncryptionKey] }
+    { dependsOn: [...apis, secretsEncryptionKey, secretsKeyBinding] }
   );
 
   const createTenantJwtSecret = new gcp.secretmanager.Secret(
@@ -89,7 +90,7 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
         },
       },
     },
-    { dependsOn: [...apis, secretsEncryptionKey] }
+    { dependsOn: [...apis, secretsEncryptionKey, secretsKeyBinding] }
   );
 
   const ipWhitelistEmergencyJwtSecret = new gcp.secretmanager.Secret(
@@ -107,7 +108,7 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
         },
       },
     },
-    { dependsOn: [...apis, secretsEncryptionKey] }
+    { dependsOn: [...apis, secretsEncryptionKey, secretsKeyBinding] }
   );
 
   const initialPwSecret = new gcp.secretmanager.Secret(
@@ -125,7 +126,7 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
         },
       },
     },
-    { dependsOn: [...apis, secretsEncryptionKey] }
+    { dependsOn: [...apis, secretsEncryptionKey, secretsKeyBinding] }
   );
 
   const internalUserPwSecret = new gcp.secretmanager.Secret(
@@ -143,7 +144,7 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
         },
       },
     },
-    { dependsOn: [...apis, secretsEncryptionKey] }
+    { dependsOn: [...apis, secretsEncryptionKey, secretsKeyBinding] }
   );
 
   const sendgridApiKeySecret = new gcp.secretmanager.Secret(
@@ -161,7 +162,7 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
         },
       },
     },
-    { dependsOn: [...apis, secretsEncryptionKey] }
+    { dependsOn: [...apis, secretsEncryptionKey, secretsKeyBinding] }
   );
 
   return {

@@ -13,6 +13,7 @@ export interface KmsOutputs {
   databaseKey: gcp.kms.CryptoKey;
   secretsKey: gcp.kms.CryptoKey;
   auditLogsKey: gcp.kms.CryptoKey;
+  secretsKeyBinding: gcp.kms.CryptoKeyIAMBinding;
 }
 
 export function createKms(inputs: KmsInputs): KmsOutputs {
@@ -97,7 +98,7 @@ export function createKms(inputs: KmsInputs): KmsOutputs {
   // IAM bindings for service accounts to use the keys
 
   // Secret Manager service account binding for secrets key
-  new gcp.kms.CryptoKeyIAMBinding(
+  const secretsKeyBinding = new gcp.kms.CryptoKeyIAMBinding(
     "secrets-key-sm-binding",
     {
       cryptoKeyId: secretsKey.id,
@@ -114,5 +115,6 @@ export function createKms(inputs: KmsInputs): KmsOutputs {
     databaseKey,
     secretsKey,
     auditLogsKey,
+    secretsKeyBinding,
   };
 }

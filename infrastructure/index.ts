@@ -42,6 +42,7 @@ const kms = createKms({
 const secrets = createSecrets({
   apis: foundation.apis,
   secretsEncryptionKey: kms.secretsKey,
+  secretsKeyBinding: kms.secretsKeyBinding,
   region: region,
 });
 
