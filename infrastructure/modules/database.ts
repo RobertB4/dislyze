@@ -87,7 +87,7 @@ export function createDatabase(inputs: DatabaseInputs): DatabaseOutputs {
         ],
       },
     },
-    { dependsOn: [...apis, privateConnection, databaseEncryptionKey, databaseKeyBinding] }
+    { dependsOn: [...apis, privateConnection, databaseEncryptionKey] }
   );
 
   const database = new gcp.sql.Database(
