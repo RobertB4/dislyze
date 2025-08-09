@@ -32,7 +32,7 @@ const foundation = createFoundation({
   region,
 });
 
-createKms({
+const kms = createKms({
   region,
   environment,
   apis: foundation.apis,
@@ -40,6 +40,7 @@ createKms({
 
 const secrets = createSecrets({
   apis: foundation.apis,
+  secretsEncryptionKey: kms.secretsKey,
 });
 
 const vpc = createVpc({
@@ -56,6 +57,7 @@ const db = createDatabase({
   apis: foundation.apis,
   vpc: vpc.vpc,
   databaseSubnet: vpc.databaseSubnet,
+  databaseEncryptionKey: kms.databaseKey,
 });
 
 const services = createServices({
@@ -101,6 +103,7 @@ const loadBalancer = createLoadBalancer({
 const logging = createLogging({
   projectId,
   environment,
+  auditLogsEncryptionKey: kms.auditLogsKey,
 });
 
 const monitoring = createMonitoring({

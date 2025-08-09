@@ -9,7 +9,6 @@ export interface KmsInputs {
 export interface KmsOutputs {
   keyRing: gcp.kms.KeyRing;
   databaseKey: gcp.kms.CryptoKey;
-  storageKey: gcp.kms.CryptoKey;
   secretsKey: gcp.kms.CryptoKey;
   auditLogsKey: gcp.kms.CryptoKey;
 }
@@ -47,27 +46,6 @@ export function createKms(inputs: KmsInputs): KmsOutputs {
     { dependsOn: [keyRing] }
   );
 
-  // Storage encryption key (for general Cloud Storage buckets)
-  const storageKey = new gcp.kms.CryptoKey(
-    "storage-key",
-    {
-      name: "storage-encryption-key",
-      keyRing: keyRing.id,
-      purpose: "ENCRYPT_DECRYPT",
-      rotationPeriod: "7776000s", // 90 days
-      versionTemplate: {
-        algorithm: "GOOGLE_SYMMETRIC_ENCRYPTION",
-        protectionLevel: "SOFTWARE",
-      },
-      labels: {
-        purpose: "storage-encryption",
-        environment: environment,
-        compliance: "iso-27001",
-        "managed-by": "pulumi",
-      },
-    },
-    { dependsOn: [keyRing] }
-  );
 
   const secretsKey = new gcp.kms.CryptoKey(
     "secrets-key",
@@ -118,7 +96,6 @@ export function createKms(inputs: KmsInputs): KmsOutputs {
   return {
     keyRing,
     databaseKey,
-    storageKey,
     secretsKey,
     auditLogsKey,
   };

@@ -2,6 +2,7 @@ import * as gcp from "@pulumi/gcp";
 
 export interface SecretsInputs {
   apis: gcp.projects.Service[];
+  secretsEncryptionKey: gcp.kms.CryptoKey;
 }
 
 export interface SecretsOutputs {
@@ -16,17 +17,21 @@ export interface SecretsOutputs {
 }
 
 export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
-  const { apis } = inputs;
+  const { apis, secretsEncryptionKey } = inputs;
 
   const dbPasswordSecret = new gcp.secretmanager.Secret(
     "db-password",
     {
       secretId: "db-password",
       replication: {
-        auto: {},
+        auto: {
+          customerManagedEncryption: {
+            kmsKeyName: secretsEncryptionKey.id,
+          },
+        },
       },
     },
-    { dependsOn: apis }
+    { dependsOn: [...apis, secretsEncryptionKey] }
   );
 
   const lugiaAuthJwtSecret = new gcp.secretmanager.Secret(
@@ -34,10 +39,14 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
     {
       secretId: "lugia-auth-jwt-secret",
       replication: {
-        auto: {},
+        auto: {
+          customerManagedEncryption: {
+            kmsKeyName: secretsEncryptionKey.id,
+          },
+        },
       },
     },
-    { dependsOn: apis }
+    { dependsOn: [...apis, secretsEncryptionKey] }
   );
 
   const giratinaAuthJwtSecret = new gcp.secretmanager.Secret(
@@ -45,10 +54,14 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
     {
       secretId: "giratina-auth-jwt-secret",
       replication: {
-        auto: {},
+        auto: {
+          customerManagedEncryption: {
+            kmsKeyName: secretsEncryptionKey.id,
+          },
+        },
       },
     },
-    { dependsOn: apis }
+    { dependsOn: [...apis, secretsEncryptionKey] }
   );
 
   const createTenantJwtSecret = new gcp.secretmanager.Secret(
@@ -56,10 +69,14 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
     {
       secretId: "create-tenant-jwt-secret",
       replication: {
-        auto: {},
+        auto: {
+          customerManagedEncryption: {
+            kmsKeyName: secretsEncryptionKey.id,
+          },
+        },
       },
     },
-    { dependsOn: apis }
+    { dependsOn: [...apis, secretsEncryptionKey] }
   );
 
   const ipWhitelistEmergencyJwtSecret = new gcp.secretmanager.Secret(
@@ -67,10 +84,14 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
     {
       secretId: "ip-whitelist-emergency-jwt-secret",
       replication: {
-        auto: {},
+        auto: {
+          customerManagedEncryption: {
+            kmsKeyName: secretsEncryptionKey.id,
+          },
+        },
       },
     },
-    { dependsOn: apis }
+    { dependsOn: [...apis, secretsEncryptionKey] }
   );
 
   const initialPwSecret = new gcp.secretmanager.Secret(
@@ -78,10 +99,14 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
     {
       secretId: "initial-pw",
       replication: {
-        auto: {},
+        auto: {
+          customerManagedEncryption: {
+            kmsKeyName: secretsEncryptionKey.id,
+          },
+        },
       },
     },
-    { dependsOn: apis }
+    { dependsOn: [...apis, secretsEncryptionKey] }
   );
 
   const internalUserPwSecret = new gcp.secretmanager.Secret(
@@ -89,10 +114,14 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
     {
       secretId: "internal-user-pw",
       replication: {
-        auto: {},
+        auto: {
+          customerManagedEncryption: {
+            kmsKeyName: secretsEncryptionKey.id,
+          },
+        },
       },
     },
-    { dependsOn: apis }
+    { dependsOn: [...apis, secretsEncryptionKey] }
   );
 
   const sendgridApiKeySecret = new gcp.secretmanager.Secret(
@@ -100,10 +129,14 @@ export function createSecrets(inputs: SecretsInputs): SecretsOutputs {
     {
       secretId: "sendgrid-api-key",
       replication: {
-        auto: {},
+        auto: {
+          customerManagedEncryption: {
+            kmsKeyName: secretsEncryptionKey.id,
+          },
+        },
       },
     },
-    { dependsOn: apis }
+    { dependsOn: [...apis, secretsEncryptionKey] }
   );
 
   return {
