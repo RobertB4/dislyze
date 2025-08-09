@@ -127,7 +127,7 @@ export function createKms(inputs: KmsInputs): KmsOutputs {
     {
       cryptoKeyId: databaseKey.id,
       role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
-      members: [cloudSqlServiceIdentity.email],
+      members: [pulumi.interpolate`serviceAccount:${cloudSqlServiceIdentity.email}`],
     },
     { dependsOn: [databaseKey, cloudSqlServiceIdentity] }
   );
