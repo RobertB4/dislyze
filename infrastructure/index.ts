@@ -61,6 +61,7 @@ const db = createDatabase({
   vpc: vpc.vpc,
   databaseSubnet: vpc.databaseSubnet,
   databaseEncryptionKey: kms.databaseKey,
+  databaseKeyBinding: kms.databaseKeyBinding,
 });
 
 const services = createServices({
@@ -107,6 +108,7 @@ const logging = createLogging({
   projectId,
   environment,
   auditLogsEncryptionKey: kms.auditLogsKey,
+  auditLogsKeyBinding: kms.auditLogsKeyBinding,
 });
 
 const monitoring = createMonitoring({

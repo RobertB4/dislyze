@@ -14,6 +14,8 @@ export interface KmsOutputs {
   secretsKey: gcp.kms.CryptoKey;
   auditLogsKey: gcp.kms.CryptoKey;
   secretsKeyBinding: gcp.kms.CryptoKeyIAMBinding;
+  databaseKeyBinding: gcp.kms.CryptoKeyIAMBinding;
+  auditLogsKeyBinding: gcp.kms.CryptoKeyIAMBinding;
 }
 
 export function createKms(inputs: KmsInputs): KmsOutputs {
@@ -110,11 +112,39 @@ export function createKms(inputs: KmsInputs): KmsOutputs {
     { dependsOn: [secretsKey] }
   );
 
+  // Cloud SQL service account binding for database key
+  const databaseKeyBinding = new gcp.kms.CryptoKeyIAMBinding(
+    "database-key-sql-binding",
+    {
+      cryptoKeyId: databaseKey.id,
+      role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
+      members: [
+        pulumi.interpolate`serviceAccount:service-${project.number}@gcp-sa-cloud-sql.iam.gserviceaccount.com`,
+      ],
+    },
+    { dependsOn: [databaseKey] }
+  );
+
+  // Cloud Storage service account binding for audit logs key
+  const auditLogsKeyBinding = new gcp.kms.CryptoKeyIAMBinding(
+    "audit-logs-key-gcs-binding",
+    {
+      cryptoKeyId: auditLogsKey.id,
+      role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
+      members: [
+        pulumi.interpolate`serviceAccount:service-${project.number}@gs-project-accounts.iam.gserviceaccount.com`,
+      ],
+    },
+    { dependsOn: [auditLogsKey] }
+  );
+
   return {
     keyRing,
     databaseKey,
     secretsKey,
     auditLogsKey,
     secretsKeyBinding,
+    databaseKeyBinding,
+    auditLogsKeyBinding,
   };
 }

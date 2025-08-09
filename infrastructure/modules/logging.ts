@@ -5,6 +5,7 @@ export interface LoggingInputs {
   projectId: string | pulumi.Output<string>;
   environment: string;
   auditLogsEncryptionKey: gcp.kms.CryptoKey;
+  auditLogsKeyBinding: gcp.kms.CryptoKeyIAMBinding;
 }
 
 export interface LoggingOutputs {
@@ -14,7 +15,7 @@ export interface LoggingOutputs {
 }
 
 export function createLogging(inputs: LoggingInputs): LoggingOutputs {
-  const { projectId, environment, auditLogsEncryptionKey } = inputs;
+  const { projectId, environment, auditLogsEncryptionKey, auditLogsKeyBinding } = inputs;
 
   // Create Cloud Storage bucket for long-term audit log storage
   const auditLogBucket = new gcp.storage.Bucket(
@@ -48,7 +49,7 @@ export function createLogging(inputs: LoggingInputs): LoggingOutputs {
         defaultKmsKeyName: auditLogsEncryptionKey.id,
       },
     },
-    { dependsOn: [auditLogsEncryptionKey] }
+    { dependsOn: [auditLogsEncryptionKey, auditLogsKeyBinding] }
   );
 
   // Admin Activity Audit Log Sink (most critical events)

@@ -10,6 +10,7 @@ export interface DatabaseInputs {
   vpc: gcp.compute.Network;
   databaseSubnet: gcp.compute.Subnetwork;
   databaseEncryptionKey: gcp.kms.CryptoKey;
+  databaseKeyBinding: gcp.kms.CryptoKeyIAMBinding;
 }
 
 export interface DatabaseOutputs {
@@ -22,7 +23,7 @@ export interface DatabaseOutputs {
 }
 
 export function createDatabase(inputs: DatabaseInputs): DatabaseOutputs {
-  const { projectId, region, dbTier, dbAvailabilityType, apis, vpc, databaseEncryptionKey } = inputs;
+  const { projectId, region, dbTier, dbAvailabilityType, apis, vpc, databaseEncryptionKey, databaseKeyBinding } = inputs;
 
   const privateIpRange = new gcp.compute.GlobalAddress(
     "postgresql-vpc-peering-range",
@@ -86,7 +87,7 @@ export function createDatabase(inputs: DatabaseInputs): DatabaseOutputs {
         ],
       },
     },
-    { dependsOn: [...apis, privateConnection, databaseEncryptionKey] }
+    { dependsOn: [...apis, privateConnection, databaseEncryptionKey, databaseKeyBinding] }
   );
 
   const database = new gcp.sql.Database(
