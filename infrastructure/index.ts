@@ -33,6 +33,7 @@ const foundation = createFoundation({
 });
 
 const kms = createKms({
+  projectId,
   region,
   environment,
   apis: foundation.apis,

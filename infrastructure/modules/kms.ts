@@ -1,6 +1,8 @@
 import * as gcp from "@pulumi/gcp";
+import * as pulumi from "@pulumi/pulumi";
 
 export interface KmsInputs {
+  projectId: string | pulumi.Output<string>;
   region: string;
   environment: string;
   apis: gcp.projects.Service[];
@@ -14,7 +16,7 @@ export interface KmsOutputs {
 }
 
 export function createKms(inputs: KmsInputs): KmsOutputs {
-  const { region, environment, apis } = inputs;
+  const { projectId, region, environment, apis } = inputs;
 
   const keyRing = new gcp.kms.KeyRing(
     "dislyze-keyring",
@@ -45,7 +47,6 @@ export function createKms(inputs: KmsInputs): KmsOutputs {
     },
     { dependsOn: [keyRing] }
   );
-
 
   const secretsKey = new gcp.kms.CryptoKey(
     "secrets-key",
@@ -90,8 +91,23 @@ export function createKms(inputs: KmsInputs): KmsOutputs {
     { dependsOn: [keyRing] }
   );
 
-  // NOTE: IAM bindings will be added in Phase 7 after service accounts are created
-  // Service accounts don't exist until we first use Cloud SQL, Storage, and Secret Manager
+  // Get project number for service account formatting
+  const project = gcp.organizations.getProjectOutput({ projectId: projectId });
+
+  // IAM bindings for service accounts to use the keys
+
+  // Secret Manager service account binding for secrets key
+  new gcp.kms.CryptoKeyIAMBinding(
+    "secrets-key-sm-binding",
+    {
+      cryptoKeyId: secretsKey.id,
+      role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
+      members: [
+        pulumi.interpolate`serviceAccount:service-${project.number}@gcp-sa-secretmanager.iam.gserviceaccount.com`,
+      ],
+    },
+    { dependsOn: [secretsKey] }
+  );
 
   return {
     keyRing,
