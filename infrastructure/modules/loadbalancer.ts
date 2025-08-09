@@ -143,11 +143,6 @@ export function createLoadBalancer(
       replace: false,
     },
     {
-      headerName: "Content-Security-Policy",
-      headerValue: "default-src 'self'; script-src 'self'; style-src 'self'",
-      replace: false,
-    },
-    {
       headerName: "X-XSS-Protection",
       headerValue: "1; mode=block",
       replace: false,

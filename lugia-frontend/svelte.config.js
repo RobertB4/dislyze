@@ -13,6 +13,20 @@ const config = {
 		}),
 		alias: {
 			$components: 'src/components'
+		},
+		csp: {
+			mode: 'hash',
+			directives: {
+				'default-src': ['self'],
+				'script-src': ['self'],
+				'style-src': ['self', 'unsafe-inline'], // Required until SvelteKit uses Web Animations API
+				'img-src': ['self', 'data:'],
+				'font-src': ['self'],
+				'connect-src': ['self'],
+				'object-src': ['none'],
+				'base-uri': ['self'],
+				'frame-ancestors': ['none']
+			}
 		}
 	}
 };
