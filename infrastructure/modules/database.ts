@@ -31,6 +31,7 @@ export function createDatabase(inputs: DatabaseInputs): DatabaseOutputs {
     apis,
     vpc,
     databaseEncryptionKey,
+    databaseKeyBinding,
   } = inputs;
 
   const privateIpRange = new gcp.compute.GlobalAddress(
@@ -95,7 +96,7 @@ export function createDatabase(inputs: DatabaseInputs): DatabaseOutputs {
         ],
       },
     },
-    { dependsOn: [...apis, privateConnection, databaseEncryptionKey] }
+    { dependsOn: [...apis, privateConnection, databaseEncryptionKey, databaseKeyBinding] }
   );
 
   const database = new gcp.sql.Database(

@@ -112,17 +112,24 @@ export function createKms(inputs: KmsInputs): KmsOutputs {
     { dependsOn: [secretsKey] }
   );
 
+  // Explicitly create the Cloud SQL service account
+  const cloudSqlServiceIdentity = new gcp.projects.ServiceIdentity(
+    "cloud-sql-service-identity",
+    {
+      service: "sqladmin.googleapis.com",
+    },
+    { dependsOn: apis }
+  );
+
   // Cloud SQL service account binding for database key
   const databaseKeyBinding = new gcp.kms.CryptoKeyIAMBinding(
     "database-key-sql-binding",
     {
       cryptoKeyId: databaseKey.id,
       role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
-      members: [
-        pulumi.interpolate`serviceAccount:service-${project.number}@gcp-sa-cloud-sql.iam.gserviceaccount.com`,
-      ],
+      members: [cloudSqlServiceIdentity.email],
     },
-    { dependsOn: [databaseKey] }
+    { dependsOn: [databaseKey, cloudSqlServiceIdentity] }
   );
 
   // Cloud Storage service account binding for audit logs key
