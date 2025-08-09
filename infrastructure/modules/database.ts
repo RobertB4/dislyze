@@ -23,7 +23,15 @@ export interface DatabaseOutputs {
 }
 
 export function createDatabase(inputs: DatabaseInputs): DatabaseOutputs {
-  const { projectId, region, dbTier, dbAvailabilityType, apis, vpc, databaseEncryptionKey, databaseKeyBinding } = inputs;
+  const {
+    projectId,
+    region,
+    dbTier,
+    dbAvailabilityType,
+    apis,
+    vpc,
+    databaseEncryptionKey,
+  } = inputs;
 
   const privateIpRange = new gcp.compute.GlobalAddress(
     "postgresql-vpc-peering-range",
