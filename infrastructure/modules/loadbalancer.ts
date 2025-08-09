@@ -72,7 +72,6 @@ export function createLoadBalancer(
     { dependsOn: apis }
   );
 
-
   const lugiaServerlessNeg = new gcp.compute.RegionNetworkEndpointGroup(
     "lugia-serverless-neg",
     {
@@ -145,8 +144,7 @@ export function createLoadBalancer(
     },
     {
       headerName: "Content-Security-Policy",
-      headerValue:
-        "default-src 'self'; script-src 'self'; style-src 'self'",
+      headerValue: "default-src 'self'; script-src 'self'; style-src 'self'",
       replace: false,
     },
     {
@@ -240,29 +238,6 @@ export function createLoadBalancer(
       loadBalancingScheme: "EXTERNAL_MANAGED",
     },
     { dependsOn: [httpsProxy, staticIp] }
-  );
-
-  // IAM bindings to allow load balancer to invoke internal Cloud Run services
-  new gcp.cloudrun.IamBinding(
-    "lugia-invoker-binding",
-    {
-      service: lugiaService.name,
-      location: region,
-      role: "roles/run.invoker",
-      members: ["allUsers"],
-    },
-    { dependsOn: [lugiaService] }
-  );
-
-  new gcp.cloudrun.IamBinding(
-    "giratina-invoker-binding",
-    {
-      service: giratinaService.name,
-      location: region,
-      role: "roles/run.invoker",
-      members: ["allUsers"],
-    },
-    { dependsOn: [giratinaService] }
   );
 
   return {
