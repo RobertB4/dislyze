@@ -40,7 +40,7 @@ func (r *ForgotPasswordRequestBody) Validate() error {
 func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	if !h.rateLimiter.Allow(r.RemoteAddr) {
+	if !h.rateLimiter.Allow(r.RemoteAddr, r) {
 		internalErr := errlib.New(fmt.Errorf("rate limit exceeded for forgot password: %s", r.RemoteAddr), http.StatusTooManyRequests, "Rate limit for forgot password")
 		errlib.LogError(internalErr)
 		w.WriteHeader(http.StatusOK)

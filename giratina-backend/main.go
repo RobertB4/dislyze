@@ -46,7 +46,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		log.Fatalf("Failed to convert env.AuthRateLimit to int: %v", err)
 	}
 
-	authRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, rateLimit)
+	authRateLimiter := ratelimit.NewRateLimiter("giratina", 5*time.Minute, rateLimit)
 
 	authConfig := config.NewGiratinaAuthConfig(env)
 	jirachiAuthMiddleware := jirachi_auth.NewAuthMiddleware(authConfig, dbConn, authRateLimiter)

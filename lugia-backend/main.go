@@ -48,11 +48,11 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		log.Fatalf("Failed to convert env.RateLimit to int: %v", err)
 	}
 
-	authRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, rateLimit)
-	resendInviteRateLimiter := ratelimit.NewRateLimiter(5*time.Minute, 1)
-	deleteUserRateLimiter := ratelimit.NewRateLimiter(1*time.Minute, 10)
-	changeEmailRateLimiter := ratelimit.NewRateLimiter(30*time.Minute, 1)
-	ipWhitelistRateLimiter := ratelimit.NewRateLimiter(10*time.Minute, 30)
+	authRateLimiter := ratelimit.NewRateLimiter("lugia", 5*time.Minute, rateLimit)
+	resendInviteRateLimiter := ratelimit.NewRateLimiter("lugia", 5*time.Minute, 1)
+	deleteUserRateLimiter := ratelimit.NewRateLimiter("lugia", 1*time.Minute, 10)
+	changeEmailRateLimiter := ratelimit.NewRateLimiter("lugia", 30*time.Minute, 1)
+	ipWhitelistRateLimiter := ratelimit.NewRateLimiter("lugia", 10*time.Minute, 30)
 
 	authConfig := config.NewLugiaAuthConfig(env)
 	jirachiAuthMiddleware := jirachi_auth.NewAuthMiddleware(authConfig, dbConn, authRateLimiter)

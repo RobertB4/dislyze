@@ -35,7 +35,7 @@ type ActivateWhitelistResponse struct {
 func (h *IPWhitelistHandler) ActivateWhitelist(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	if !h.rateLimiter.Allow(libctx.GetUserID(ctx).String()) {
+	if !h.rateLimiter.Allow(libctx.GetUserID(ctx).String(), r) {
 		appErr := errlib.New(fmt.Errorf("ActivateWhitelist: rate limit exceeded"), http.StatusTooManyRequests, "")
 		responder.RespondWithError(w, appErr)
 		return

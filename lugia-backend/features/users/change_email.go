@@ -60,7 +60,7 @@ func (h *UsersHandler) ChangeEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.changeEmail(ctx, userID, req)
+	err := h.changeEmail(ctx, userID, req, r)
 	if err != nil {
 		responder.RespondWithError(w, err)
 		return
@@ -69,7 +69,7 @@ func (h *UsersHandler) ChangeEmail(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *UsersHandler) changeEmail(ctx context.Context, userID pgtype.UUID, req ChangeEmailRequestBody) error {
+func (h *UsersHandler) changeEmail(ctx context.Context, userID pgtype.UUID, req ChangeEmailRequestBody, r *http.Request) error {
 	existingUser, err := h.q.GetUserByEmail(ctx, req.NewEmail)
 	if err == nil && existingUser != nil {
 		return errlib.New(fmt.Errorf("ChangeEmail: email %s is already in use", req.NewEmail), http.StatusConflict, "このメールアドレスは既に使用されています。")
@@ -78,7 +78,7 @@ func (h *UsersHandler) changeEmail(ctx context.Context, userID pgtype.UUID, req 
 		return errlib.New(fmt.Errorf("ChangeEmail: failed to check if email exists: %w", err), http.StatusInternalServerError, "")
 	}
 
-	if !h.changeEmailRateLimiter.Allow(userID.String()) {
+	if !h.changeEmailRateLimiter.Allow(userID.String(), r) {
 		return errlib.New(fmt.Errorf("ChangeEmail: rate limit exceeded for user %s", userID.String()), http.StatusTooManyRequests, "メールアドレス変更の試行回数が上限を超えました。しばらくしてから再度お試しください。")
 	}
 

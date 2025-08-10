@@ -22,7 +22,7 @@ import (
 func (h *IPWhitelistHandler) EmergencyDeactivate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	if !h.rateLimiter.Allow(libctx.GetUserID(ctx).String()) {
+	if !h.rateLimiter.Allow(libctx.GetUserID(ctx).String(), r) {
 		appErr := errlib.New(fmt.Errorf("EmergencyDeactivate: rate limit exceeded"), http.StatusTooManyRequests, "")
 		responder.RespondWithError(w, appErr)
 		return

@@ -40,7 +40,7 @@ func (r *LoginRequestBody) Validate() error {
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	if !h.rateLimiter.Allow(r.RemoteAddr) {
+	if !h.rateLimiter.Allow(r.RemoteAddr, r) {
 		appErr := errlib.New(fmt.Errorf("rate limit exceeded for login"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
 		responder.RespondWithError(w, appErr)
 		return

@@ -61,3 +61,22 @@ func LogAccessEvent(event AccessEvent) {
 	}
 	log.Printf("[ACCESS] %s", string(jsonData))
 }
+
+type RateLimitEvent struct {
+	EventType string    `json:"event_type"` // "rate_limit_violation"
+	Service   string    `json:"service"`
+	IPAddress string    `json:"ip_address"`
+	UserAgent string    `json:"user_agent,omitempty"`
+	Endpoint  string    `json:"endpoint"`
+	Timestamp time.Time `json:"timestamp"`
+	Limit     string    `json:"limit"` // e.g. "5 attempts per hour"
+}
+
+func LogRateLimitViolation(event RateLimitEvent) {
+	jsonData, err := json.Marshal(event)
+	if err != nil {
+		log.Printf("[RATE_LIMIT] Failed to marshal rate limit event: %v", err)
+		return
+	}
+	log.Printf("[RATE_LIMIT] %s", string(jsonData))
+}

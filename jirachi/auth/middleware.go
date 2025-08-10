@@ -100,7 +100,7 @@ func (m *AuthMiddleware) handleRefreshToken(w http.ResponseWriter, r *http.Reque
 		return nil, errors.New("no refresh token")
 	}
 
-	if !m.rateLimiter.Allow(r.RemoteAddr) {
+	if !m.rateLimiter.Allow(r.RemoteAddr, r) {
 		return nil, errors.New("too many refresh attempts")
 	}
 

@@ -1,26 +1,31 @@
 package ratelimit
 
 import (
+	"dislyze/jirachi/logger"
+	"fmt"
+	"net/http"
 	"sync"
 	"time"
 )
 
 type RateLimiter struct {
-	attempts map[string][]time.Time
-	mu       sync.RWMutex
-	window   time.Duration
-	max      int
+	serviceName string // e.g. lugia, giratina
+	attempts    map[string][]time.Time
+	mu          sync.RWMutex
+	window      time.Duration
+	max         int
 }
 
-func NewRateLimiter(window time.Duration, max int) *RateLimiter {
+func NewRateLimiter(serviceName string, window time.Duration, max int) *RateLimiter {
 	return &RateLimiter{
-		attempts: make(map[string][]time.Time),
-		window:   window,
-		max:      max,
+		serviceName: serviceName,
+		attempts:    make(map[string][]time.Time),
+		window:      window,
+		max:         max,
 	}
 }
 
-func (rl *RateLimiter) Allow(key string) bool {
+func (rl *RateLimiter) Allow(key string, r *http.Request) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
@@ -38,6 +43,15 @@ func (rl *RateLimiter) Allow(key string) bool {
 	}
 
 	if len(rl.attempts[key]) >= rl.max {
+		logger.LogRateLimitViolation(logger.RateLimitEvent{
+			EventType: "rate_limit_violation",
+			Service:   rl.serviceName,
+			IPAddress: r.RemoteAddr,
+			UserAgent: r.UserAgent(),
+			Endpoint:  r.URL.Path,
+			Timestamp: time.Now(),
+			Limit:     fmt.Sprintf("%d attempts per %d minutes", rl.max, int(rl.window.Minutes())),
+		})
 		return false
 	}
 

@@ -20,7 +20,7 @@ func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	targetUserIDStr := r.PathValue("userID")
 
-	if !h.deleteUserRateLimiter.Allow(targetUserIDStr) {
+	if !h.deleteUserRateLimiter.Allow(targetUserIDStr, r) {
 		appErr := errlib.New(fmt.Errorf("rate limit exceeded for user %s delete", targetUserIDStr), http.StatusTooManyRequests, "ユーザー削除の操作は制限されています。しばらくしてから再度お試しください。")
 		responder.RespondWithError(w, appErr)
 		return

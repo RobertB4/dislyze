@@ -28,7 +28,7 @@ func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
 
 	targetUserIDStr := r.PathValue("userID")
 
-	if !h.resendInviteRateLimiter.Allow(targetUserIDStr) {
+	if !h.resendInviteRateLimiter.Allow(targetUserIDStr, r) {
 		appErr := errlib.New(fmt.Errorf("rate limit exceeded for user %s resend invite", targetUserIDStr), http.StatusTooManyRequests, "招待メールの再送信は、ユーザーごとに5分間に1回のみ可能です。しばらくしてから再度お試しください。")
 		responder.RespondWithError(w, appErr)
 		return
