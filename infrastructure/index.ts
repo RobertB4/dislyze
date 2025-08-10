@@ -9,6 +9,7 @@ import { createMonitoring } from "./modules/monitoring";
 import { createLogging } from "./modules/logging";
 import { createCloudArmor } from "./modules/cloudarmor";
 import { createKms } from "./modules/kms";
+import { createGitHubActionsIAM } from "./modules/github-actions-iam";
 
 const config = new pulumi.Config();
 const gcpConfig = new pulumi.Config("gcp");
@@ -22,6 +23,7 @@ const giratinaFrontendUrl = config.require("giratina-frontend-url");
 const lugiaDomain = config.require("lugia-domain");
 const giratinaDomain = config.require("giratina-domain");
 const alertEmail = config.get("alert-email") || "";
+const githubActionsServiceAccount = config.require("github-actions-service-account");
 
 export const projectId = gcpConfig.require("project");
 export const region = gcpConfig.require("region");
@@ -30,6 +32,11 @@ export const environment = config.require("environment");
 const foundation = createFoundation({
   projectId,
   region,
+});
+
+createGitHubActionsIAM({
+  projectId,
+  serviceAccountEmail: githubActionsServiceAccount,
 });
 
 const kms = createKms({
