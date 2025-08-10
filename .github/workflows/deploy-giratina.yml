@@ -19,6 +19,11 @@ on:
         options:
           - staging
           - production
+      skip_security_scan:
+        description: 'Skip security vulnerability scanning (EMERGENCY USE ONLY)'
+        required: false
+        default: false
+        type: boolean
 
 env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
@@ -64,6 +69,90 @@ jobs:
         run: |
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/giratina:${{ github.sha }}
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/giratina:latest
+
+      - name: Run vulnerability scan
+        if: ${{ !inputs.skip_security_scan }}
+        run: |
+          IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/giratina:${{ github.sha }}"
+          echo "Starting on-demand vulnerability scan for $IMAGE_URL"
+          
+          # Run scan and capture scan name (use regional location for scan)
+          SCAN_NAME=$(gcloud artifacts docker images scan $IMAGE_URL \
+            --remote --quiet --location=asia \
+            --format="value(response.scan)")
+          
+          echo "Scan completed, scan name: $SCAN_NAME"
+          echo "SCAN_NAME=$SCAN_NAME" >> $GITHUB_ENV
+
+      - name: Check vulnerability results
+        if: ${{ !inputs.skip_security_scan }}
+        run: |
+          IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/giratina:${{ github.sha }}"
+          
+          # Count Critical and High vulnerabilities using scan name
+          CRITICAL_HIGH=$(gcloud artifacts docker images list-vulnerabilities $SCAN_NAME \
+            --location=asia \
+            --format="value(vulnerability.effectiveSeverity)" | grep -c "CRITICAL\|HIGH" || true)
+          
+          if [ "$CRITICAL_HIGH" -gt 0 ]; then
+            echo "❌ Found $CRITICAL_HIGH Critical/High vulnerabilities"
+            
+            # Log vulnerabilities to Cloud Logging            
+            gcloud logging write vulnerability-scan "{
+              \"severity\": \"ERROR\",
+              \"jsonPayload\": {
+                \"event\": \"critical_vulnerabilities_found\",
+                \"service\": \"giratina\",
+                \"image\": \"$IMAGE_URL\",
+                \"commit\": \"${{ github.sha }}\",
+                \"repository\": \"${{ github.repository }}\",
+                \"actor\": \"${{ github.actor }}\",
+                \"vulnerability_count\": $CRITICAL_HIGH,
+                \"branch\": \"${{ github.ref_name }}\",
+                \"timestamp\": \"$(date -Iseconds)\"
+              }
+            }"
+            
+            echo "Deployment blocked due to Critical/High vulnerabilities"
+            exit 1
+          else
+            echo "✅ No Critical/High vulnerabilities found"
+            
+            # Log successful scan
+            gcloud logging write vulnerability-scan "{
+              \"severity\": \"INFO\",
+              \"jsonPayload\": {
+                \"event\": \"vulnerability_scan_passed\",
+                \"service\": \"giratina\",
+                \"image\": \"$IMAGE_URL\",
+                \"commit\": \"${{ github.sha }}\",
+                \"repository\": \"${{ github.repository }}\",
+                \"timestamp\": \"$(date -Iseconds)\"
+              }
+            }"
+          fi
+
+      - name: Log emergency override
+        if: ${{ inputs.skip_security_scan }}
+        run: |
+          IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/giratina:${{ github.sha }}"
+          
+          gcloud logging write vulnerability-scan "{
+            \"severity\": \"WARNING\",
+            \"jsonPayload\": {
+              \"event\": \"security_scan_bypassed\",
+              \"service\": \"giratina\",
+              \"image\": \"$IMAGE_URL\",
+              \"user\": \"${{ github.actor }}\",
+              \"repository\": \"${{ github.repository }}\",
+              \"commit\": \"${{ github.sha }}\",
+              \"branch\": \"${{ github.ref_name }}\",
+              \"reason\": \"Emergency deployment override\",
+              \"timestamp\": \"$(date -Iseconds)\"
+            }
+          }"
+          
+          echo "⚠️ EMERGENCY DEPLOYMENT - Security scanning bypassed by ${{ github.actor }}"
 
       - name: Set up Node.js for Pulumi
         uses: actions/setup-node@v4
