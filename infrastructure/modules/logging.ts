@@ -92,15 +92,16 @@ export function createLogging(inputs: LoggingInputs): LoggingOutputs {
     {
       name: "application-audit-sink", 
       destination: pulumi.interpolate`storage.googleapis.com/${auditLogBucket.name}/application-logs`,
-      filter: `
-        resource.type="cloud_run_revision" AND
-        (severity="ERROR" OR
-         severity="WARNING" OR
-         severity="CRITICAL" OR
-         jsonPayload.event_type:"auth_failure" OR
-         jsonPayload.event_type:"auth_success" OR
-         textPayload:"[AUTH]")
-      `.replace(/\s+/g, ' ').trim(),
+      filter: pulumi.interpolate`
+        (resource.type="cloud_run_revision" AND
+         (severity="ERROR" OR
+          severity="WARNING" OR
+          severity="CRITICAL" OR
+          jsonPayload.event_type:"auth_failure" OR
+          jsonPayload.event_type:"auth_success" OR
+          textPayload:"[AUTH]")) OR
+        logName="projects/${projectId}/logs/vulnerability-scan"
+      `.apply(f => f.replace(/\s+/g, ' ').trim()),
       description: "Sink for Cloud Run application audit events",
     },
     { dependsOn: [auditLogBucket] }
