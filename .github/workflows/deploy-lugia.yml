@@ -84,6 +84,7 @@ jobs:
           
           # Count Critical and High vulnerabilities
           CRITICAL_HIGH=$(gcloud artifacts docker images list-vulnerabilities $IMAGE_URL \
+            --location=${{ env.REGION }} \
             --format="value(vulnerability.effectiveSeverity)" | grep -c "CRITICAL\|HIGH" || true)
           
           if [ "$CRITICAL_HIGH" -gt 0 ]; then
@@ -91,6 +92,7 @@ jobs:
             
             # Log vulnerabilities to Cloud Logging
             gcloud artifacts docker images list-vulnerabilities $IMAGE_URL \
+              --location=${{ env.REGION }} \
               --format=json > vulns.json
             
             gcloud logging write vulnerability-scan "{
