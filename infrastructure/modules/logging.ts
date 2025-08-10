@@ -110,11 +110,7 @@ export function createLogging(inputs: LoggingInputs): LoggingOutputs {
         (resource.type="cloud_run_revision" AND
          (severity="ERROR" OR
           severity="WARNING" OR
-          severity="CRITICAL" OR
-          textPayload:"[AUTH]" OR
-          textPayload:"[ACCESS]" OR
-          textPayload:"[RATE_LIMIT]" OR
-          textPayload:"[TOKEN_REFRESH]")) OR
+          severity="CRITICAL")) OR
         logName="projects/${projectId}/logs/vulnerability-scan"
       `.apply((f) => f.replace(/\s+/g, " ").trim()),
       description: "Sink for Cloud Run application audit events",

@@ -7,6 +7,7 @@ import (
 )
 
 type AuthEvent struct {
+	Category   string    `json:"category"`
 	EventType  string    `json:"event_type"`
 	Service    string    `json:"service"`
 	UserID     string    `json:"user_id"`
@@ -21,24 +22,35 @@ type AuthEvent struct {
 }
 
 func LogAuthEvent(event AuthEvent) {
+	event.Category = "AUTH"
 	jsonData, err := json.Marshal(event)
 	if err != nil {
-		log.Printf("[AUTH] Failed to marshal auth event: %v", err)
+		log.Printf("Failed to marshal auth event: %v", err)
 		return
 	}
-	log.Printf("[AUTH] %s", string(jsonData))
+	if event.Success {
+		log.Printf("%s", string(jsonData))
+	} else {
+		log.Printf("[WARNING] %s", string(jsonData))
+	}
 }
 
 func LogTokenRefresh(event AuthEvent) {
+	event.Category = "TOKEN_REFRESH"
 	jsonData, err := json.Marshal(event)
 	if err != nil {
-		log.Printf("[TOKEN_REFRESH] Failed to marshal token refresh event: %v", err)
+		log.Printf("Failed to marshal token refresh event: %v", err)
 		return
 	}
-	log.Printf("[TOKEN_REFRESH] %s", string(jsonData))
+	if event.Success {
+		log.Printf("%s", string(jsonData))
+	} else {
+		log.Printf("[WARNING] %s", string(jsonData))
+	}
 }
 
 type AccessEvent struct {
+	Category  string    `json:"category"`
 	EventType string    `json:"event_type"` // "permission" or "feature"
 	Service   string    `json:"service"`
 	UserID    string    `json:"user_id"`
@@ -54,15 +66,21 @@ type AccessEvent struct {
 }
 
 func LogAccessEvent(event AccessEvent) {
+	event.Category = "ACCESS"
 	jsonData, err := json.Marshal(event)
 	if err != nil {
-		log.Printf("[ACCESS] Failed to marshal access event: %v", err)
+		log.Printf("Failed to marshal access event: %v", err)
 		return
 	}
-	log.Printf("[ACCESS] %s", string(jsonData))
+	if event.Success {
+		log.Printf("%s", string(jsonData))
+	} else {
+		log.Printf("[WARNING] %s", string(jsonData))
+	}
 }
 
 type RateLimitEvent struct {
+	Category  string    `json:"category"`
 	EventType string    `json:"event_type"` // "rate_limit_violation"
 	Service   string    `json:"service"`
 	IPAddress string    `json:"ip_address"`
@@ -73,10 +91,11 @@ type RateLimitEvent struct {
 }
 
 func LogRateLimitViolation(event RateLimitEvent) {
+	event.Category = "RATE_LIMIT"
 	jsonData, err := json.Marshal(event)
 	if err != nil {
-		log.Printf("[RATE_LIMIT] Failed to marshal rate limit event: %v", err)
+		log.Printf("Failed to marshal rate limit event: %v", err)
 		return
 	}
-	log.Printf("[RATE_LIMIT] %s", string(jsonData))
+	log.Printf("[WARNING] %s", string(jsonData))
 }
