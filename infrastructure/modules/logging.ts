@@ -111,11 +111,10 @@ export function createLogging(inputs: LoggingInputs): LoggingOutputs {
          (severity="ERROR" OR
           severity="WARNING" OR
           severity="CRITICAL" OR
-          jsonPayload.event_type:"auth_failure" OR
-          jsonPayload.event_type:"auth_success" OR
           textPayload:"[AUTH]" OR
           textPayload:"[ACCESS]" OR
-          textPayload:"[RATE_LIMIT]")) OR
+          textPayload:"[RATE_LIMIT]" OR
+          textPayload:"[TOKEN_REFRESH]")) OR
         logName="projects/${projectId}/logs/vulnerability-scan"
       `.apply((f) => f.replace(/\s+/g, " ").trim()),
       description: "Sink for Cloud Run application audit events",
