@@ -21,6 +21,7 @@ export function createFoundation(inputs: FoundationInputs): FoundationOutputs {
     "secretmanager.googleapis.com",
     "artifactregistry.googleapis.com",
     "containerscanning.googleapis.com",
+    "ondemandscanning.googleapis.com",
     "compute.googleapis.com",
     "certificatemanager.googleapis.com",
     "monitoring.googleapis.com",
