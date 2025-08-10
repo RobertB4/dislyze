@@ -2,6 +2,7 @@ package logger
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 )
@@ -35,7 +36,7 @@ func LogAuthEvent(event AuthEvent) {
 		log.Printf("Failed to marshal auth event: %v", err)
 		return
 	}
-	log.Println(string(jsonData))
+	fmt.Println(string(jsonData))
 }
 
 func LogTokenRefresh(event AuthEvent) {
@@ -51,7 +52,7 @@ func LogTokenRefresh(event AuthEvent) {
 		log.Printf("Failed to marshal token refresh event: %v", err)
 		return
 	}
-	log.Println(string(jsonData))
+	fmt.Println(string(jsonData))
 }
 
 type AccessEvent struct {
@@ -84,7 +85,7 @@ func LogAccessEvent(event AccessEvent) {
 		log.Printf("Failed to marshal access event: %v", err)
 		return
 	}
-	log.Println(string(jsonData))
+	fmt.Println(string(jsonData))
 }
 
 type RateLimitEvent struct {
@@ -107,5 +108,5 @@ func LogRateLimitViolation(event RateLimitEvent) {
 		log.Printf("Failed to marshal rate limit event: %v", err)
 		return
 	}
-	log.Println(string(jsonData))
+	fmt.Println(string(jsonData))
 }
