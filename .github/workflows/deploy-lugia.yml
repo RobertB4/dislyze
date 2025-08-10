@@ -76,9 +76,9 @@ jobs:
           IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/lugia:${{ github.sha }}"
           echo "Starting on-demand vulnerability scan for $IMAGE_URL"
           
-          # Run scan and capture scan name
+          # Run scan and capture scan name (use regional location for scan)
           SCAN_NAME=$(gcloud artifacts docker images scan $IMAGE_URL \
-            --remote --quiet --location=${{ env.REGION }} \
+            --remote --quiet --location=asia \
             --format="value(response.scan)")
           
           echo "Scan completed, scan name: $SCAN_NAME"
@@ -91,17 +91,13 @@ jobs:
           
           # Count Critical and High vulnerabilities using scan name
           CRITICAL_HIGH=$(gcloud artifacts docker images list-vulnerabilities $SCAN_NAME \
-            --location=${{ env.REGION }} \
+            --location=asia \
             --format="value(vulnerability.effectiveSeverity)" | grep -c "CRITICAL\|HIGH" || true)
           
           if [ "$CRITICAL_HIGH" -gt 0 ]; then
             echo "❌ Found $CRITICAL_HIGH Critical/High vulnerabilities"
             
-            # Log vulnerabilities to Cloud Logging
-            gcloud artifacts docker images list-vulnerabilities $SCAN_NAME \
-              --location=${{ env.REGION }} \
-              --format=json > vulns.json
-            
+            # Log vulnerabilities to Cloud Logging            
             gcloud logging write vulnerability-scan "{
               \"severity\": \"ERROR\",
               \"jsonPayload\": {
