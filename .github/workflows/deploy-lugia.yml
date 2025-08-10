@@ -75,7 +75,7 @@ jobs:
         run: |
           IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/lugia:${{ github.sha }}"
           echo "Starting on-demand vulnerability scan for $IMAGE_URL"
-          gcloud artifacts docker images scan $IMAGE_URL --remote
+          gcloud artifacts docker images scan $IMAGE_URL --remote --quiet
 
       - name: Check vulnerability results
         if: ${{ !inputs.skip_security_scan }}
