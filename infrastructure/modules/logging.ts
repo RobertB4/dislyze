@@ -15,7 +15,12 @@ export interface LoggingOutputs {
 }
 
 export function createLogging(inputs: LoggingInputs): LoggingOutputs {
-  const { projectId, environment, auditLogsEncryptionKey, auditLogsKeyBinding } = inputs;
+  const {
+    projectId,
+    environment,
+    auditLogsEncryptionKey,
+    auditLogsKeyBinding,
+  } = inputs;
 
   // Create Cloud Storage bucket for long-term audit log storage
   const auditLogBucket = new gcp.storage.Bucket(
@@ -65,32 +70,41 @@ export function createLogging(inputs: LoggingInputs): LoggingOutputs {
         protoPayload.serviceName="run.googleapis.com" OR
         protoPayload.serviceName="secretmanager.googleapis.com" OR
         protoPayload.serviceName="compute.googleapis.com"
-      `.replace(/\s+/g, ' ').trim(),
+      `
+        .replace(/\s+/g, " ")
+        .trim(),
       description: "Sink for admin activity audit logs to Cloud Storage",
     },
     { dependsOn: [auditLogBucket] }
   );
 
   // IAM member for admin activity sink to write to bucket
-  new gcp.storage.BucketIAMMember("admin-activity-bucket-writer", {
-    bucket: auditLogBucket.name,
-    role: "roles/storage.objectCreator",
-    member: adminActivitySink.writerIdentity,
-  }, { dependsOn: [adminActivitySink] });
+  new gcp.storage.BucketIAMMember(
+    "admin-activity-bucket-writer",
+    {
+      bucket: auditLogBucket.name,
+      role: "roles/storage.objectCreator",
+      member: adminActivitySink.writerIdentity,
+    },
+    { dependsOn: [adminActivitySink] }
+  );
 
   // KMS permission for admin activity sink to encrypt objects
-  new gcp.kms.CryptoKeyIAMMember("admin-activity-kms-encrypter", {
-    cryptoKeyId: auditLogsEncryptionKey.id,
-    role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
-    member: adminActivitySink.writerIdentity,
-  }, { dependsOn: [adminActivitySink, auditLogsKeyBinding] });
-
+  new gcp.kms.CryptoKeyIAMMember(
+    "admin-activity-kms-encrypter",
+    {
+      cryptoKeyId: auditLogsEncryptionKey.id,
+      role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
+      member: adminActivitySink.writerIdentity,
+    },
+    { dependsOn: [adminActivitySink, auditLogsKeyBinding] }
+  );
 
   // Application Log Sink (Cloud Run application logs)
   const auditLogSink = new gcp.logging.ProjectSink(
     "application-audit-sink",
     {
-      name: "application-audit-sink", 
+      name: "application-audit-sink",
       destination: pulumi.interpolate`storage.googleapis.com/${auditLogBucket.name}/application-logs`,
       filter: pulumi.interpolate`
         (resource.type="cloud_run_revision" AND
@@ -99,27 +113,37 @@ export function createLogging(inputs: LoggingInputs): LoggingOutputs {
           severity="CRITICAL" OR
           jsonPayload.event_type:"auth_failure" OR
           jsonPayload.event_type:"auth_success" OR
-          textPayload:"[AUTH]")) OR
+          textPayload:"[AUTH]" OR
+          textPayload:"[ACCESS]" OR
+          textPayload:"[RATE_LIMIT]")) OR
         logName="projects/${projectId}/logs/vulnerability-scan"
-      `.apply(f => f.replace(/\s+/g, ' ').trim()),
+      `.apply((f) => f.replace(/\s+/g, " ").trim()),
       description: "Sink for Cloud Run application audit events",
     },
     { dependsOn: [auditLogBucket] }
   );
 
   // IAM member for application audit sink to write to bucket
-  new gcp.storage.BucketIAMMember("application-audit-bucket-writer", {
-    bucket: auditLogBucket.name,
-    role: "roles/storage.objectCreator",
-    member: auditLogSink.writerIdentity,
-  }, { dependsOn: [auditLogSink] });
+  new gcp.storage.BucketIAMMember(
+    "application-audit-bucket-writer",
+    {
+      bucket: auditLogBucket.name,
+      role: "roles/storage.objectCreator",
+      member: auditLogSink.writerIdentity,
+    },
+    { dependsOn: [auditLogSink] }
+  );
 
   // KMS permission for application audit sink to encrypt objects
-  new gcp.kms.CryptoKeyIAMMember("application-audit-kms-encrypter", {
-    cryptoKeyId: auditLogsEncryptionKey.id,
-    role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
-    member: auditLogSink.writerIdentity,
-  }, { dependsOn: [auditLogSink, auditLogsKeyBinding] });
+  new gcp.kms.CryptoKeyIAMMember(
+    "application-audit-kms-encrypter",
+    {
+      cryptoKeyId: auditLogsEncryptionKey.id,
+      role: "roles/cloudkms.cryptoKeyEncrypterDecrypter",
+      member: auditLogSink.writerIdentity,
+    },
+    { dependsOn: [auditLogSink, auditLogsKeyBinding] }
+  );
 
   return {
     auditLogBucket,
