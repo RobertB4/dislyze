@@ -164,6 +164,8 @@ pulumi login
 
 # Create a new access token at https://app.pulumi.com/account/tokens
 # Add it as PULUMI_ACCESS_TOKEN in GitHub secrets
+
+Update infrastructure/Pulumi.{environment}.stack file
 ```
 
 ## Step 5: Deploy Infrastructure
