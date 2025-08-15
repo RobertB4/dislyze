@@ -10,7 +10,9 @@ export interface GitHubActionsIAMOutputs {
   projectIAMBindings: gcp.projects.IAMMember[];
 }
 
-export function createGitHubActionsIAM(inputs: GitHubActionsIAMInputs): GitHubActionsIAMOutputs {
+export function createGitHubActionsIAM(
+  inputs: GitHubActionsIAMInputs
+): GitHubActionsIAMOutputs {
   const { projectId, serviceAccountEmail } = inputs;
 
   // Define exactly the same roles as in setup.md (in the same order)
@@ -30,19 +32,22 @@ export function createGitHubActionsIAM(inputs: GitHubActionsIAMInputs): GitHubAc
     "roles/certificatemanager.editor",
     "roles/monitoring.admin",
     "roles/vpcaccess.admin",
-    // Container vulnerability scanning roles (NEW)
     "roles/ondemandscanning.admin",
     "roles/containeranalysis.admin",
     "roles/logging.admin",
   ];
 
   // Create project IAM members (equivalent to gcloud projects add-iam-policy-binding)
-  const projectIAMBindings = requiredRoles.map((role) => 
-    new gcp.projects.IAMMember(`github-actions-${role.replace(/[.\/]/g, "-")}`, {
-      project: projectId,
-      role: role,
-      member: pulumi.interpolate`serviceAccount:${serviceAccountEmail}`,
-    })
+  const projectIAMBindings = requiredRoles.map(
+    (role) =>
+      new gcp.projects.IAMMember(
+        `github-actions-${role.replace(/[.\/]/g, "-")}`,
+        {
+          project: projectId,
+          role: role,
+          member: pulumi.interpolate`serviceAccount:${serviceAccountEmail}`,
+        }
+      )
   );
 
   return {
