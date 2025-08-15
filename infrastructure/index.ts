@@ -1,5 +1,5 @@
 import * as pulumi from "@pulumi/pulumi";
-// import { createFoundation } from "./modules/foundation";
+import { createFoundation } from "./modules/foundation";
 // import { createSecrets } from "./modules/secrets";
 // import { createVpc } from "./modules/vpc";
 // import { createDatabase } from "./modules/database";
@@ -31,10 +31,11 @@ export const projectId = gcpConfig.require("project");
 export const region = gcpConfig.require("region");
 export const environment = config.require("environment");
 
-// const foundation = createFoundation({
-//   projectId,
-//   region,
-// });
+const foundation = createFoundation({
+  projectId,
+  region,
+});
+foundation;
 
 createGitHubActionsIAM({
   projectId,
