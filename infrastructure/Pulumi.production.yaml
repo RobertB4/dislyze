@@ -1,5 +1,5 @@
 config:
-  gcp:project: dislyze-production
+  gcp:project: dislyze-production2
   gcp:region: asia-northeast1
   dislyze-infrastructure:environment: production
   dislyze-infrastructure:db-tier: db-f1-micro
@@ -12,4 +12,4 @@ config:
   dislyze-infrastructure:lugia-domain: app.flownavi.com
   dislyze-infrastructure:giratina-domain: internal.flownavi.com
   dislyze-infrastructure:alert-email: kudo.robert42@gmail.com
-  dislyze-infrastructure:github-actions-service-account: github-actions@dislyze-production.iam.gserviceaccount.com
+  dislyze-infrastructure:github-actions-service-account: github-actions@dislyze-production2.iam.gserviceaccount.com
