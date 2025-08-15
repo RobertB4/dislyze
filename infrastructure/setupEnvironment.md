@@ -127,6 +127,9 @@ Create/pdate infrastructure/Pulumi.{environment}.stack file
 Remove everything but createGitHubActionsIAM from index.ts
 Then slowly add more on every deploy until everything succeeds
 
+Step 1: createGitHubActionsIAM
+Step 2: foundation
+
 Run github actions
 
 ## Step 6: Update Database Password

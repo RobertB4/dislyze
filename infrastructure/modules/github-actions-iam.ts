@@ -35,6 +35,7 @@ export function createGitHubActionsIAM(
     "roles/ondemandscanning.admin",
     "roles/containeranalysis.admin",
     "roles/logging.admin",
+    "roles/cloudkms.admin",
   ];
 
   // Create project IAM members (equivalent to gcloud projects add-iam-policy-binding)

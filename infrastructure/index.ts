@@ -1,20 +1,20 @@
 import * as pulumi from "@pulumi/pulumi";
 import { createFoundation } from "./modules/foundation";
-import { createSecrets } from "./modules/secrets";
-import { createVpc } from "./modules/vpc";
-import { createDatabase } from "./modules/database";
+// import { createSecrets } from "./modules/secrets";
+// import { createVpc } from "./modules/vpc";
+// import { createDatabase } from "./modules/database";
 // import { createServices } from "./modules/services";
 // import { createLoadBalancer } from "./modules/loadbalancer";
 // import { createMonitoring } from "./modules/monitoring";
 // import { createLogging } from "./modules/logging";
 // import { createCloudArmor } from "./modules/cloudarmor";
-import { createKms } from "./modules/kms";
+// import { createKms } from "./modules/kms";
 import { createGitHubActionsIAM } from "./modules/github-actions-iam";
 
 const config = new pulumi.Config();
 const gcpConfig = new pulumi.Config("gcp");
-const dbTier = config.require("db-tier");
-const dbAvailabilityType = config.require("db-availability-type");
+// const dbTier = config.require("db-tier");
+// const dbAvailabilityType = config.require("db-availability-type");
 // const cloudRunCpu = config.require("cloudrun-cpu");
 // const cloudRunMemory = config.require("cloudrun-memory");
 // const cloudRunMaxInstances = config.require("cloudrun-max-instances");
@@ -35,45 +35,46 @@ const foundation = createFoundation({
   projectId,
   region,
 });
+foundation;
 
 createGitHubActionsIAM({
   projectId,
   serviceAccountEmail: githubActionsServiceAccount,
 });
 
-const kms = createKms({
-  projectId,
-  region,
-  environment,
-  apis: foundation.apis,
-});
+// const kms = createKms({
+//   projectId,
+//   region,
+//   environment,
+//   apis: foundation.apis,
+// });
 
-const secrets = createSecrets({
-  apis: foundation.apis,
-  secretsEncryptionKey: kms.secretsKey,
-  secretsKeyBinding: kms.secretsKeyBinding,
-  region: region,
-});
-secrets;
+// const secrets = createSecrets({
+//   apis: foundation.apis,
+//   secretsEncryptionKey: kms.secretsKey,
+//   secretsKeyBinding: kms.secretsKeyBinding,
+//   region: region,
+// });
+// secrets;
 
-const vpc = createVpc({
-  projectId,
-  region,
-  apis: foundation.apis,
-});
+// const vpc = createVpc({
+//   projectId,
+//   region,
+//   apis: foundation.apis,
+// });
 
-const db = createDatabase({
-  projectId,
-  region,
-  dbTier,
-  dbAvailabilityType,
-  apis: foundation.apis,
-  vpc: vpc.vpc,
-  databaseSubnet: vpc.databaseSubnet,
-  databaseEncryptionKey: kms.databaseKey,
-  databaseKeyBinding: kms.databaseKeyBinding,
-});
-db;
+// const db = createDatabase({
+//   projectId,
+//   region,
+//   dbTier,
+//   dbAvailabilityType,
+//   apis: foundation.apis,
+//   vpc: vpc.vpc,
+//   databaseSubnet: vpc.databaseSubnet,
+//   databaseEncryptionKey: kms.databaseKey,
+//   databaseKeyBinding: kms.databaseKeyBinding,
+// });
+// db;
 
 // const services = createServices({
 //   projectId,
@@ -137,12 +138,12 @@ db;
 
 export const artifactRegistryUrl = pulumi.interpolate`${region}-docker.pkg.dev/${projectId}/dislyze`;
 
-export const vpcName = vpc.vpc.name;
-export const servicesSubnetName = vpc.servicesSubnet.name;
-export const databaseSubnetName = vpc.databaseSubnet.name;
+// export const vpcName = vpc.vpc.name;
+// export const servicesSubnetName = vpc.servicesSubnet.name;
+// export const databaseSubnetName = vpc.databaseSubnet.name;
 
-export const databaseInstanceName = db.databaseInstanceName;
-export const databaseConnectionName = db.databaseConnectionName;
+// export const databaseInstanceName = db.databaseInstanceName;
+// export const databaseConnectionName = db.databaseConnectionName;
 
 // export const lugiaServiceUrl = services.lugiaServiceUrl;
 // export const lugiaServiceName = services.lugiaServiceName;
