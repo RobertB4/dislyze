@@ -129,6 +129,7 @@ Then slowly add more on every deploy until everything succeeds
 
 Step 1: createGitHubActionsIAM
 Step 2: foundation
+Step 3: Create a secret and a bucket and wait for service accounts to be created???
 
 Run github actions
 
