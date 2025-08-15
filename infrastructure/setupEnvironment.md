@@ -58,67 +58,21 @@ gcloud iam service-accounts create github-actions \
   --project="{project_id}" \
   --display-name="GitHub Actions Service Account"
 
-# Grant necessary permissions to the service account
-gcloud projects add-iam-policy-binding {project_id} \
-  --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
-  --role="roles/run.admin"
-
-gcloud projects add-iam-policy-binding {project_id} \
-  --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
-  --role="roles/cloudsql.admin"
-
-gcloud projects add-iam-policy-binding {project_id} \
-  --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
-  --role="roles/secretmanager.admin"
-
-gcloud projects add-iam-policy-binding {project_id} \
-  --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
-  --role="roles/artifactregistry.admin"
-
-gcloud projects add-iam-policy-binding {project_id} \
-  --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
-  --role="roles/iam.serviceAccountAdmin"
-
-gcloud projects add-iam-policy-binding {project_id} \
-  --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
-  --role="roles/iam.serviceAccountUser"
-
-gcloud projects add-iam-policy-binding {project_id} \
-  --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
-  --role="roles/compute.viewer"
-
-gcloud projects add-iam-policy-binding {project_id} \
-  --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
-  --role="roles/serviceusage.serviceUsageAdmin"
-
 gcloud projects add-iam-policy-binding {project_id} \
   --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
   --role="roles/resourcemanager.projectIamAdmin"
-
-# Additional permissions for load balancer (Phase 4)
-gcloud projects add-iam-policy-binding {project_id} \
-  --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
-  --role="roles/compute.networkAdmin"
-
-gcloud projects add-iam-policy-binding {project_id} \
-  --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
-  --role="roles/compute.securityAdmin"
-
-gcloud projects add-iam-policy-binding {project_id} \
-  --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
-  --role="roles/compute.loadBalancerAdmin"
-
-gcloud projects add-iam-policy-binding {project_id} \
-  --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
-  --role="roles/certificatemanager.editor"
 
 gcloud projects add-iam-policy-binding {project_id} \
   --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
   --role="roles/monitoring.admin"
 
-gcloud projects add-iam-policy-binding {project_id} \
+  gcloud projects add-iam-policy-binding {project_id} \
   --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
-  --role="roles/vpcaccess.admin"
+  --role="roles/run.admin"
+
+  gcloud projects add-iam-policy-binding {project_id} \
+  --member="serviceAccount:github-actions@{project_id}.iam.gserviceaccount.com" \
+  --role="roles/compute.viewer"
 
 # Get your project number
 gcloud projects describe {project_id} --format="value(projectNumber)"
@@ -170,19 +124,7 @@ Update infrastructure/Pulumi.{environment}.stack file
 
 ## Step 5: Deploy Infrastructure
 
-```bash
-# Navigate to infrastructure directory
-cd infrastructure
-
-# Install dependencies
-npm install
-
-# Create and select the staging stack
-pulumi stack select staging --create
-
-# Deploy the infrastructure
-pulumi up
-```
+Run github actions
 
 ## Step 6: Update Database Password
 
