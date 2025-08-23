@@ -1,10 +1,10 @@
 -- name: GetUserByEmail :one
 SELECT * FROM users
-WHERE email = $1;
+WHERE email = $1 AND deleted_at IS NULL;
 
 -- name: GetUserByID :one
 SELECT * FROM users
-WHERE id = $1;
+WHERE id = $1 AND deleted_at IS NULL;
 
 -- name: GetRefreshTokenByUserID :one
 SELECT * FROM refresh_tokens 
@@ -33,5 +33,5 @@ WHERE jti = $1;
 
 -- name: GetInternalUserByTenantID :one
 SELECT * FROM users
-WHERE tenant_id = $1 AND is_internal_user = true;
+WHERE tenant_id = $1 AND is_internal_user = true AND deleted_at IS NULL;
 
