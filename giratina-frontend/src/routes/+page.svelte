@@ -20,7 +20,8 @@
 	let { data: pageData }: { data: PageData } = $props();
 
 	const featureKeyToLabelMap: Record<string, string> = {
-		rbac: "権限設定"
+		rbac: "権限設定",
+		ip_whitelist: "IPアドレス制限"
 	};
 
 	interface UpdateTenantRequestBody {
@@ -44,7 +45,8 @@
 	} = createForm({
 		initialValues: {
 			name: "",
-			rbac_enabled: false
+			rbac_enabled: false,
+			ip_whitelist_enabled: false
 		},
 		validate: (values) => {
 			const errs: Record<string, string> = {};
@@ -63,7 +65,11 @@
 				name: values.name,
 				enterprise_features: {
 					...pageData.me.enterprise_features,
-					rbac: { enabled: values.rbac_enabled }
+					rbac: { enabled: values.rbac_enabled },
+					ip_whitelist: {
+						...pageData.me.enterprise_features.ip_whitelist,
+						enabled: values.ip_whitelist_enabled
+					}
 				}
 			};
 
@@ -87,7 +93,8 @@
 	const handleEditTenant = (tenant: Tenant) => {
 		setEditFormInitialValues({
 			name: tenant.name,
-			rbac_enabled: tenant.enterprise_features.rbac.enabled
+			rbac_enabled: tenant.enterprise_features.rbac.enabled,
+			ip_whitelist_enabled: tenant.enterprise_features.ip_whitelist.enabled
 		});
 		editingTenant = tenant;
 	};
@@ -384,6 +391,30 @@
 										<InteractivePill
 											selected={$editData.rbac_enabled}
 											onclick={() => ($editData.rbac_enabled = true)}
+											variant="orange"
+											data-testid="rbac-enabled"
+										>
+											有効
+										</InteractivePill>
+									</div>
+								</div>
+							</div>
+
+							<div class="border border-gray-200 rounded-lg p-4">
+								<div class="flex items-center justify-between">
+									<h4 class="text-sm font-medium text-gray-900">IPアドレス制限</h4>
+									<div class="flex gap-2">
+										<InteractivePill
+											selected={!$editData.ip_whitelist_enabled}
+											onclick={() => ($editData.ip_whitelist_enabled = false)}
+											variant="orange"
+											data-testid="rbac-disabled"
+										>
+											無効
+										</InteractivePill>
+										<InteractivePill
+											selected={$editData.ip_whitelist_enabled}
+											onclick={() => ($editData.ip_whitelist_enabled = true)}
 											variant="orange"
 											data-testid="rbac-enabled"
 										>
