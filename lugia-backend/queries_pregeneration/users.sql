@@ -3,6 +3,7 @@ SELECT COUNT(*)
 FROM users
 WHERE tenant_id = $1 
 AND is_internal_user = false
+AND deleted_at IS NULL
 AND (
     $2 = '' OR 
     name ILIKE '%' || $2 || '%' OR 
@@ -41,8 +42,14 @@ WHERE user_id = $1 AND tenant_id = $2;
 DELETE FROM refresh_tokens
 WHERE user_id = $1;
 
--- name: DeleteUser :exec
-DELETE FROM users
+-- name: MarkUserDeletedAndAnonymize :exec
+UPDATE users 
+SET 
+    email = id::text || '@deleted.invalid',
+    name = '削除済みユーザー',
+    password_hash = '$2a$10$invalidhashthatshouldnevermatchanythingever',
+    deleted_at = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
 WHERE id = $1;
 
 -- name: UpdateUserName :exec
@@ -183,6 +190,7 @@ WITH paginated_users AS (
     FROM users
     WHERE users.tenant_id = @tenant_id
     AND users.is_internal_user = false
+    AND users.deleted_at IS NULL
     AND (
         @search_term = '' OR 
         users.name ILIKE '%' || @search_term || '%' OR 

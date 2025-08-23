@@ -12,7 +12,6 @@ import (
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/responder"
-	"lugia/queries"
 )
 
 func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -74,19 +73,8 @@ func (h *UsersHandler) deleteUser(ctx context.Context, targetUserID, invokerUser
 	}()
 	qtx := h.q.WithTx(tx)
 
-	if err := qtx.DeleteInvitationTokensByUserIDAndTenantID(ctx, &queries.DeleteInvitationTokensByUserIDAndTenantIDParams{
-		UserID:   targetUserID,
-		TenantID: targetDBUser.TenantID,
-	}); err != nil {
-		return errlib.New(fmt.Errorf("DeleteUser: failed to delete invitation tokens for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
-	}
-
-	if err := qtx.DeleteRefreshTokensByUserID(ctx, targetUserID); err != nil {
-		return errlib.New(fmt.Errorf("DeleteUser: failed to delete refresh tokens for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
-	}
-
-	if err := qtx.DeleteUser(ctx, targetUserID); err != nil {
-		return errlib.New(fmt.Errorf("DeleteUser: failed to delete user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
+	if err := qtx.MarkUserDeletedAndAnonymize(ctx, targetUserID); err != nil {
+		return errlib.New(fmt.Errorf("DeleteUser: failed to anonymize user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
 	}
 
 	if err := tx.Commit(ctx); err != nil {

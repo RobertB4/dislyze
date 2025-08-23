@@ -1,6 +1,6 @@
 -- name: GetUserByEmail :one
 SELECT * FROM users
-WHERE email = $1;
+WHERE email = $1 AND deleted_at IS NULL;
 
 -- name: GetTenantByID :one
 SELECT * FROM tenants
@@ -27,7 +27,7 @@ INSERT INTO users (
 
 -- name: ExistsUserWithEmail :one
 SELECT EXISTS (
-    SELECT 1 FROM users WHERE email = $1
+    SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL
 );
 
 -- name: GetRefreshTokenByUserID :one
@@ -57,7 +57,7 @@ WHERE jti = $1;
 
 -- name: GetUserByID :one
 SELECT * FROM users
-WHERE id = $1; 
+WHERE id = $1 AND deleted_at IS NULL; 
 
 -- name: DeletePasswordResetTokenByUserID :exec
 DELETE FROM password_reset_tokens
@@ -98,4 +98,4 @@ SELECT
     users.is_internal_user
 FROM tenants
 JOIN users ON users.tenant_id = tenants.id
-WHERE tenants.id = @tenant_id AND users.id = @user_id;
+WHERE tenants.id = @tenant_id AND users.id = @user_id AND users.deleted_at IS NULL;

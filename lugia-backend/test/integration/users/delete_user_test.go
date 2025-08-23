@@ -16,7 +16,7 @@ import (
 func CheckUserExists(t *testing.T, pool *pgxpool.Pool, userID string) bool {
 	t.Helper()
 	var exists bool
-	err := pool.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", userID).Scan(&exists)
+	err := pool.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 AND deleted_at IS NULL)", userID).Scan(&exists)
 	assert.NoError(t, err, "Error checking if user exists")
 	return exists
 }
@@ -162,12 +162,9 @@ func TestDeleteUser_Integration(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Unexpected status code for test: %s", tt.name)
 
 			if tt.expectedStatus == http.StatusOK {
-				// Verify user is actually deleted from DB
-				assert.False(t, CheckUserExists(t, pool, targetUserID), "User %s should have been deleted from DB", targetUserID)
-				// Verify associated tokens are deleted
-				assert.False(t, CheckInvitationTokensExistForUser(t, pool, targetUserID), "Invitation tokens for user %s should have been deleted", targetUserID)
-				assert.False(t, CheckRefreshTokensExistForUser(t, pool, targetUserID), "Refresh tokens for user %s should have been deleted", targetUserID)
-				// Password reset tokens are deleted by ON DELETE CASCADE with user, but good to be explicit if we had a direct call
+				// Verify user is marked as deleted (anonymized)
+				assert.False(t, CheckUserExists(t, pool, targetUserID), "User %s should have been marked as deleted", targetUserID)
+				// Note: tokens are preserved for audit compliance, so we don't check for deletion
 			} else if tt.expectedErrorMsg != "" {
 				var errResp ErrorResponse
 				err = json.NewDecoder(resp.Body).Decode(&errResp)
