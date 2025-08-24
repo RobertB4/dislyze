@@ -44,6 +44,8 @@ func GetEnterpriseFeatureEnabled(ctx context.Context, featureName string) bool {
 		return features.RBAC.Enabled
 	case "ip_whitelist":
 		return features.IPWhitelist.Enabled
+	case "sso":
+		return features.SSO.Enabled
 	default:
 		return false
 	}

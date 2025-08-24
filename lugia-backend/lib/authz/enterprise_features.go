@@ -11,6 +11,7 @@ type EnterpriseFeature string
 const (
 	FeatureRBAC        EnterpriseFeature = "rbac"
 	FeatureIPWhitelist EnterpriseFeature = "ip_whitelist"
+	FeatureSSO         EnterpriseFeature = "sso"
 )
 
 func TenantHasFeature(ctx context.Context, feature EnterpriseFeature) bool {
@@ -19,6 +20,8 @@ func TenantHasFeature(ctx context.Context, feature EnterpriseFeature) bool {
 		return libctx.GetEnterpriseFeatureEnabled(ctx, "rbac")
 	case FeatureIPWhitelist:
 		return libctx.GetEnterpriseFeatureEnabled(ctx, "ip_whitelist")
+	case FeatureSSO:
+		return libctx.GetEnterpriseFeatureEnabled(ctx, "sso")
 	default:
 		return false
 	}
