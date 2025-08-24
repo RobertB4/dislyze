@@ -1,5 +1,5 @@
 dev:
-	make -j5 dev-lugia-backend dev-lugia-frontend dev-giratina-backend dev-giratina-frontend dev-sendgrid-mock
+	make -j6 dev-lugia-backend dev-lugia-frontend dev-giratina-backend dev-giratina-frontend dev-sendgrid-mock dev-keycloak-mock
 
 dev-lugia-backend:
 	cd lugia-backend && make dev
@@ -15,6 +15,9 @@ dev-giratina-frontend:
 
 dev-sendgrid-mock:
 	cd sendgrid-mock && SENDGRID_API_KEY=sendgrid npm run start
+
+dev-keycloak-mock:
+	cd keycloak-mock && ./start.sh
 
 migrate: 
 	goose --dir ./database/migrations postgres postgresql://postgres:password@localhost:5432/dislyze up

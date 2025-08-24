@@ -21,6 +21,22 @@ services:
     environment:
       - SENDGRID_API_KEY=sendgrid
       - PORT=17000
+  mock-keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak-integration
+    ports:
+      - "17001:17001"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin123
+    volumes:
+      - ../../sso-mock/realm.json:/opt/keycloak/data/import/realm.json
+    command:
+      - start-dev
+      - --http-port=17001
+      - --import-realm
+      - --hostname-strict=false
+      - --hostname-strict-https=false
   lugia-backend:
     container_name: lugia-backend-integration
     build:
@@ -43,12 +59,16 @@ services:
       - SENDGRID_API_URL=http://mock-sendgrid:17000
       - INITIAL_PW=password
       - INTERNAL_USER_PW=password123
+      # - SSO_SP_BASE_URL=http://lugia-backend:13001
+      # - SSO_KEYCLOAK_BASE_URL=http://keycloak:17001
     ports:
       - "13001:13001"
     depends_on:
       postgres:
         condition: service_healthy
       mock-sendgrid:
+        condition: service_started
+      mock-keycloak:
         condition: service_started
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:13001/health"]

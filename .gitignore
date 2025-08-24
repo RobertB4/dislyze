@@ -39,3 +39,6 @@ test-results
 # build directories
 */build
 */dist
+
+# keycloak executable
+keycloak-mock/keycloak*
