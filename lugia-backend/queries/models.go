@@ -114,6 +114,8 @@ type User struct {
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
 	Status          string             `json:"status"`
+	AuthMethod      string             `json:"auth_method"`
+	ExternalSsoID   pgtype.Text        `json:"external_sso_id"`
 }
 
 type UserRole struct {

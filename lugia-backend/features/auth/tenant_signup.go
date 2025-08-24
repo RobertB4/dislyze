@@ -193,6 +193,8 @@ func (h *AuthHandler) tenantSignup(ctx context.Context, req *TenantSignupRequest
 		Name:           req.UserName,
 		Status:         "active",
 		IsInternalUser: false,
+		AuthMethod:     "password",
+		ExternalSsoID:  pgtype.Text{Valid: false},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
@@ -205,6 +207,8 @@ func (h *AuthHandler) tenantSignup(ctx context.Context, req *TenantSignupRequest
 		Name:           "内部ユーザー",
 		Status:         "active",
 		IsInternalUser: true,
+		AuthMethod:     "password",
+		ExternalSsoID:  pgtype.Text{Valid: false},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create internal user %w", err)

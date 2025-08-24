@@ -72,10 +72,13 @@ CREATE TABLE users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
     status VARCHAR(50) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'pending_verification', 'suspended')),
+    auth_method VARCHAR(50) NOT NULL CHECK (auth_method IN ('password', 'sso')),
+    external_sso_id VARCHAR(255),
     UNIQUE(email)
 );
 CREATE INDEX idx_users_tenant_id ON users(tenant_id);
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_tenant_id_external_sso_id ON users(tenant_id, external_sso_id) WHERE external_sso_id IS NOT NULL;
 
 CREATE TABLE user_roles (
     user_id UUID NOT NULL REFERENCES users(id),
@@ -217,6 +220,7 @@ DROP INDEX IF EXISTS idx_roles_tenant_id;
 DROP INDEX IF EXISTS idx_tenants_stripe_customer_id;
 DROP INDEX IF EXISTS idx_tenants_enterprise_features;
 DROP INDEX IF EXISTS idx_users_email;
+DROP INDEX IF EXISTS idx_users_external_sso_id;
 DROP INDEX IF EXISTS idx_refresh_tokens_user_id;
 DROP INDEX IF EXISTS idx_password_reset_tokens_user_id;
 DROP INDEX IF EXISTS idx_password_reset_tokens_token_hash;

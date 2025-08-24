@@ -23,7 +23,7 @@ services:
       - PORT=17000
   mock-keycloak:
     image: quay.io/keycloak/keycloak:24.0
-    container_name: keycloak-integration
+    container_name: mock-keycloak
     ports:
       - "17001:17001"
     environment:

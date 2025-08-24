@@ -142,11 +142,14 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequestBody, r *htt
 	}
 
 	user, err := qtx.CreateUser(ctx, &queries.CreateUserParams{
-		TenantID:     tenant.ID,
-		Email:        req.Email,
-		PasswordHash: string(hashedPassword),
-		Name:         req.UserName,
-		Status:       "active",
+		TenantID:       tenant.ID,
+		Email:          req.Email,
+		PasswordHash:   string(hashedPassword),
+		Name:           req.UserName,
+		Status:         "active",
+		IsInternalUser: false,
+		AuthMethod:     "password",
+		ExternalSsoID:  pgtype.Text{Valid: false},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
