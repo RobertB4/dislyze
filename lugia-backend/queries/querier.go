@@ -81,6 +81,7 @@ type Querier interface {
 	UpdateUserExternalSSOID(ctx context.Context, arg *UpdateUserExternalSSOIDParams) error
 	UpdateUserName(ctx context.Context, arg *UpdateUserNameParams) error
 	UpdateUserPassword(ctx context.Context, arg *UpdateUserPasswordParams) error
+	UpdateUserStatus(ctx context.Context, arg *UpdateUserStatusParams) error
 	UserHasPermission(ctx context.Context, arg *UserHasPermissionParams) (bool, error)
 	ValidateRolesBelongToTenant(ctx context.Context, arg *ValidateRolesBelongToTenantParams) ([]pgtype.UUID, error)
 }

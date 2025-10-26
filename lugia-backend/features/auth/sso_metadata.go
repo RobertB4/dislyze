@@ -55,7 +55,7 @@ func (h *AuthHandler) generateSPMetadata() ([]byte, error) {
 		MetadataURL:       *spMetadataURL,
 		AcsURL:            *acsURL,
 		EntityID:          h.env.FrontendURL,
-		AuthnNameIDFormat: saml.EmailAddressNameIDFormat,
+		AuthnNameIDFormat: saml.PersistentNameIDFormat,
 		SignatureMethod:   "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
 	}
 

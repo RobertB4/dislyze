@@ -610,6 +610,22 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg *UpdateUserPasswor
 	return err
 }
 
+const UpdateUserStatus = `-- name: UpdateUserStatus :exec
+UPDATE users
+SET status = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2
+`
+
+type UpdateUserStatusParams struct {
+	Status string      `json:"status"`
+	ID     pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateUserStatus(ctx context.Context, arg *UpdateUserStatusParams) error {
+	_, err := q.db.Exec(ctx, UpdateUserStatus, arg.Status, arg.ID)
+	return err
+}
+
 const UserHasPermission = `-- name: UserHasPermission :one
 WITH user_permissions AS (
   -- Get permissions from user's assigned roles (filtered by RBAC status)

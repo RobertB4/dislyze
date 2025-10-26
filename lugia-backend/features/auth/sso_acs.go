@@ -175,7 +175,7 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 		AcsURL:            *acsURL,
 		IDPMetadata:       idpMetadata,
 		EntityID:          h.env.FrontendURL,
-		AuthnNameIDFormat: saml.EmailAddressNameIDFormat,
+		AuthnNameIDFormat: saml.PersistentNameIDFormat,
 		SignatureMethod:   "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
 	}
 
@@ -272,7 +272,13 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 		}
 
 		if user.Status == "pending_verification" {
-			return nil, fmt.Errorf("アカウントが有効化されていません。招待メールを確認し、登録を完了してください。")
+			err = h.queries.UpdateUserStatus(ctx, &queries.UpdateUserStatusParams{
+				Status: "active",
+				ID:     user.ID,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to activate SSO user: %w", err)
+			}
 		}
 
 		if user.Status == "suspended" {

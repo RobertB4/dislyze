@@ -157,7 +157,7 @@ func (h *AuthHandler) ssoLogin(ctx context.Context, req *SSOLoginRequest) (*SSOL
 		AcsURL:            *acsURL,
 		IDPMetadata:       idpMetadata,
 		EntityID:          h.env.FrontendURL,
-		AuthnNameIDFormat: saml.EmailAddressNameIDFormat,
+		AuthnNameIDFormat: saml.PersistentNameIDFormat,
 		SignatureMethod:   "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
 	}
 

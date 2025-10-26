@@ -72,6 +72,11 @@ UPDATE users
 SET external_sso_id = $1, updated_at = CURRENT_TIMESTAMP
 WHERE id = $2;
 
+-- name: UpdateUserStatus :exec
+UPDATE users
+SET status = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2;
+
 -- name: CreateEmailChangeToken :exec
 INSERT INTO email_change_tokens (
     user_id,
