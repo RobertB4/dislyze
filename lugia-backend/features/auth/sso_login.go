@@ -166,6 +166,12 @@ func (h *AuthHandler) ssoLogin(ctx context.Context, req *SSOLoginRequest) (*SSOL
 		return nil, fmt.Errorf("failed to create SAML request: %w", err)
 	}
 
+	authnRequest.Subject = &saml.Subject{
+		NameID: &saml.NameID{
+			Value: req.Email,
+		},
+	}
+
 	expiresAt := time.Now().Add(5 * time.Minute)
 	err = h.queries.CreateSSOAuthRequest(ctx, &queries.CreateSSOAuthRequestParams{
 		RequestID: authnRequest.ID,
