@@ -25,22 +25,24 @@ func (c *LugiaAuthConfig) IsCookieSecure() bool {
 }
 
 type Env struct {
-	AppEnv                        string
-	Port                          string
-	DBHost                        string
-	DBUser                        string
-	DBPassword                    string
-	DBName                        string
-	DBSSLMode                     string
-	AuthJWTSecret                 string
-	AuthRateLimit                 string
-	CreateTenantJwtSecret         string
-	IPWhitelistEmergencyJWTSecret string
-	FrontendURL                   string
-	InitialPW                     string
-	InternalUserPW                string
-	SendgridAPIKey                string
-	SendgridAPIUrl                string
+	AppEnv                         string
+	Port                           string
+	DBHost                         string
+	DBUser                         string
+	DBPassword                     string
+	DBName                         string
+	DBSSLMode                      string
+	AuthJWTSecret                  string
+	AuthRateLimit                  string
+	CreateTenantJwtSecret          string
+	IPWhitelistEmergencyJWTSecret  string
+	FrontendURL                    string
+	InitialPW                      string
+	InternalUserPW                 string
+	SendgridAPIKey                 string
+	SendgridAPIUrl                 string
+	SAMLServiceProviderPrivateKey  string
+	SAMLServiceProviderCertificate string
 }
 
 func LoadEnv() (*Env, error) {
@@ -70,6 +72,8 @@ func LoadEnv() (*Env, error) {
 		"INTERNAL_USER_PW":                  &env.InternalUserPW,
 		"SENDGRID_API_KEY":                  &env.SendgridAPIKey,
 		"SENDGRID_API_URL":                  &env.SendgridAPIUrl,
+		"SAML_SERVICE_PROVIDER_PRIVATE_KEY": &env.SAMLServiceProviderPrivateKey,
+		"SAML_SERVICE_PROVIDER_CERTIFICATE": &env.SAMLServiceProviderCertificate,
 	}
 
 	var missing []string

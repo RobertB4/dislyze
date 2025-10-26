@@ -91,6 +91,13 @@ CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
 CREATE INDEX idx_user_roles_role_id ON user_roles(role_id);
 CREATE INDEX idx_user_roles_tenant_id ON user_roles(tenant_id);
 
+CREATE TABLE sso_auth_requests (
+    request_id VARCHAR(255) PRIMARY KEY,
+    tenant_id UUID NOT NULL REFERENCES tenants(id),
+    email VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
 CREATE TABLE refresh_tokens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id),
@@ -233,6 +240,7 @@ DROP TABLE IF EXISTS email_change_tokens;
 DROP TABLE IF EXISTS invitation_tokens;
 DROP TABLE IF EXISTS password_reset_tokens;
 DROP TABLE IF EXISTS refresh_tokens;
+DROP TABLE IF EXISTS sso_auth_requests;
 DROP TABLE IF EXISTS user_roles;
 DROP TABLE IF EXISTS role_permissions;
 DROP TABLE IF EXISTS permissions;

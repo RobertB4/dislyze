@@ -562,6 +562,22 @@ func (q *Queries) UpdateUserEmail(ctx context.Context, arg *UpdateUserEmailParam
 	return err
 }
 
+const UpdateUserExternalSSOID = `-- name: UpdateUserExternalSSOID :exec
+UPDATE users
+SET external_sso_id = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2
+`
+
+type UpdateUserExternalSSOIDParams struct {
+	ExternalSsoID pgtype.Text `json:"external_sso_id"`
+	ID            pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateUserExternalSSOID(ctx context.Context, arg *UpdateUserExternalSSOIDParams) error {
+	_, err := q.db.Exec(ctx, UpdateUserExternalSSOID, arg.ExternalSsoID, arg.ID)
+	return err
+}
+
 const UpdateUserName = `-- name: UpdateUserName :exec
 UPDATE users
 SET name = $1, updated_at = CURRENT_TIMESTAMP

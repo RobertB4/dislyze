@@ -83,6 +83,28 @@ func (q *Queries) CreateRefreshToken(ctx context.Context, arg *CreateRefreshToke
 	return &i, err
 }
 
+const CreateSSOAuthRequest = `-- name: CreateSSOAuthRequest :exec
+INSERT INTO sso_auth_requests (request_id, tenant_id, email, expires_at)
+VALUES ($1, $2, $3, $4)
+`
+
+type CreateSSOAuthRequestParams struct {
+	RequestID string             `json:"request_id"`
+	TenantID  pgtype.UUID        `json:"tenant_id"`
+	Email     string             `json:"email"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) CreateSSOAuthRequest(ctx context.Context, arg *CreateSSOAuthRequestParams) error {
+	_, err := q.db.Exec(ctx, CreateSSOAuthRequest,
+		arg.RequestID,
+		arg.TenantID,
+		arg.Email,
+		arg.ExpiresAt,
+	)
+	return err
+}
+
 const CreateTenant = `-- name: CreateTenant :one
 INSERT INTO tenants (
     name
@@ -161,6 +183,16 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User,
 	return &i, err
 }
 
+const DeleteExpiredSSORequests = `-- name: DeleteExpiredSSORequests :exec
+DELETE FROM sso_auth_requests
+WHERE expires_at < NOW()
+`
+
+func (q *Queries) DeleteExpiredSSORequests(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, DeleteExpiredSSORequests)
+	return err
+}
+
 const DeletePasswordResetTokenByUserID = `-- name: DeletePasswordResetTokenByUserID :exec
 DELETE FROM password_reset_tokens
 WHERE user_id = $1
@@ -169,6 +201,24 @@ WHERE user_id = $1
 func (q *Queries) DeletePasswordResetTokenByUserID(ctx context.Context, userID pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, DeletePasswordResetTokenByUserID, userID)
 	return err
+}
+
+const DeleteSSORequestReturning = `-- name: DeleteSSORequestReturning :one
+DELETE FROM sso_auth_requests
+WHERE request_id = $1
+RETURNING request_id, tenant_id, email, expires_at
+`
+
+func (q *Queries) DeleteSSORequestReturning(ctx context.Context, requestID string) (*SsoAuthRequest, error) {
+	row := q.db.QueryRow(ctx, DeleteSSORequestReturning, requestID)
+	var i SsoAuthRequest
+	err := row.Scan(
+		&i.RequestID,
+		&i.TenantID,
+		&i.Email,
+		&i.ExpiresAt,
+	)
+	return &i, err
 }
 
 const ExistsUserWithEmail = `-- name: ExistsUserWithEmail :one
@@ -227,8 +277,27 @@ func (q *Queries) GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUI
 	return &i, err
 }
 
+const GetSSOTenantByDomain = `-- name: GetSSOTenantByDomain :one
+SELECT id, enterprise_features
+FROM tenants
+WHERE enterprise_features->'sso'->>'enabled' = 'true'
+AND enterprise_features->'sso'->'allowed_domains' ? $1
+`
+
+type GetSSOTenantByDomainRow struct {
+	ID                 pgtype.UUID `json:"id"`
+	EnterpriseFeatures []byte      `json:"enterprise_features"`
+}
+
+func (q *Queries) GetSSOTenantByDomain(ctx context.Context, domain []byte) (*GetSSOTenantByDomainRow, error) {
+	row := q.db.QueryRow(ctx, GetSSOTenantByDomain, domain)
+	var i GetSSOTenantByDomainRow
+	err := row.Scan(&i.ID, &i.EnterpriseFeatures)
+	return &i, err
+}
+
 const GetTenantAndUserContext = `-- name: GetTenantAndUserContext :one
-SELECT 
+SELECT
     tenants.enterprise_features,
     users.is_internal_user
 FROM tenants

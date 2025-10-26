@@ -122,12 +122,16 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequestBody, r *http.
 		return nil, user.ID.String(), fmt.Errorf("アカウントが有効化されていません。招待メールを確認し、登録を完了してください。")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		return nil, user.ID.String(), fmt.Errorf("メールアドレスまたはパスワードが正しくありません")
-	}
-
 	if user.Status == "suspended" {
 		return nil, user.ID.String(), fmt.Errorf("アカウントが停止されています。サポートにお問い合わせください。")
+	}
+
+	if user.AuthMethod == "sso" {
+		return nil, user.ID.String(), fmt.Errorf("このアカウントはSSO専用です。SSOでログインしてください。")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		return nil, user.ID.String(), fmt.Errorf("メールアドレスまたはパスワードが正しくありません")
 	}
 
 	tenant, err := h.queries.GetTenantByID(ctx, user.TenantID)

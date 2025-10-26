@@ -11,10 +11,8 @@ This is an internal admin application for managing customers, subscriptions, and
 
 ## Essential Commands
 ```bash
-make build        # Build Go binary
-make dev          # Start development server with hot reload
 make test-unit    # Run unit tests
-make lint         # Run golangci-lint
+make test-integration # Run integration tests
 make sqlc         # Generate SQL queries from queries_pregeneration/*.sql
 ```
 

@@ -1,6 +1,6 @@
 {
-  "id": "realm",
-  "realm": "realm",
+  "id": "test-realm",
+  "realm": "test-realm",
   "displayName": "Test Realm",
   "enabled": true,
   "registrationAllowed": false,
@@ -50,50 +50,49 @@
   },
   "users": [
     {
-      "id": "admin-user",
-      "username": "admin@example.com",
-      "email": "admin@example.com",
+      "id": "existing-user",
+      "username": "enterprise1@enterprise.test",
+      "email": "enterprise1@enterprise.test",
       "emailVerified": true,
-      "firstName": "Admin",
-      "lastName": "User",
+      "firstName": "田中",
+      "lastName": "太郎",
       "enabled": true,
-      "attributes": {
-        "domain": ["example.com"]
-      }
+      "credentials": [
+        {
+          "type": "password",
+          "value": "1234567890",
+          "temporary": false
+        }
+      ]
     },
     {
-      "id": "editor-user",
-      "username": "editor@example.com",
-      "email": "editor@example.com",
+      "id": "new-sso-user",
+      "username": "ssonewuser@enterprise.test",
+      "email": "ssonewuser@enterprise.test",
       "emailVerified": true,
-      "firstName": "Editor",
-      "lastName": "User",
+      "firstName": "SSO",
+      "lastName": "NewUser",
       "enabled": true,
-      "attributes": {
-        "domain": ["example.com"]
-      }
-    },
-    {
-      "id": "corp-admin",
-      "username": "admin@corp.com",
-      "email": "admin@corp.com",
-      "emailVerified": true,
-      "firstName": "Corp",
-      "lastName": "Admin",
-      "enabled": true,
-      "attributes": {
-        "domain": ["corp.com"]
-      }
+      "credentials": [
+        {
+          "type": "password",
+          "value": "1234567890",
+          "temporary": false
+        }
+      ]
     }
   ],
   "clients": [
     {
-      "id": "sp",
-      "clientId": "sp",
-      "name": "Service Provider",
+      "id": "http://localhost:3000",
+      "clientId": "http://localhost:3000",
+      "name": "dislyze",
       "description": "SAML 2.0 Service Provider",
       "enabled": true,
       "protocol": "saml",
+      "redirectUris": [
+        "http://localhost:3000/api/auth/sso/acs"
+      ],
       "attributes": {
         "saml.assertion.signature": "true",
         "saml.force.post.binding": "true",

@@ -1,5 +1,5 @@
-# .env.ignore contains sensitive data
-# all other .env files are fine, the contain only
+# .env.sensitive contains sensitive data
+# all other .env files are fine, they contain only
 # environment variables for localhost
 .env.sensitive
 

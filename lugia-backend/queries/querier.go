@@ -29,16 +29,20 @@ type Querier interface {
 	CreateRefreshToken(ctx context.Context, arg *CreateRefreshTokenParams) (*RefreshToken, error)
 	CreateRole(ctx context.Context, arg *CreateRoleParams) (*CreateRoleRow, error)
 	CreateRolePermissionsBulk(ctx context.Context, arg *CreateRolePermissionsBulkParams) error
+	CreateSSOAuthRequest(ctx context.Context, arg *CreateSSOAuthRequestParams) error
 	CreateTenant(ctx context.Context, name string) (*Tenant, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
 	DeleteEmailChangeTokensByUserID(ctx context.Context, userID pgtype.UUID) error
+	DeleteExpiredSSORequests(ctx context.Context) error
 	DeleteInvitationTokensByUserIDAndTenantID(ctx context.Context, arg *DeleteInvitationTokensByUserIDAndTenantIDParams) error
 	DeletePasswordResetTokenByUserID(ctx context.Context, userID pgtype.UUID) error
 	DeleteRefreshTokensByUserID(ctx context.Context, userID pgtype.UUID) error
 	DeleteRole(ctx context.Context, arg *DeleteRoleParams) error
 	DeleteRolePermissions(ctx context.Context, arg *DeleteRolePermissionsParams) error
+	DeleteSSORequestReturning(ctx context.Context, requestID string) (*SsoAuthRequest, error)
 	ExistsUserWithEmail(ctx context.Context, email string) (bool, error)
 	GetAllPermissions(ctx context.Context) ([]*GetAllPermissionsRow, error)
+	GetDefaultViewerRole(ctx context.Context, tenantID pgtype.UUID) (*Role, error)
 	GetEmailChangeTokenByHash(ctx context.Context, tokenHash string) (*EmailChangeToken, error)
 	GetIPWhitelistEmergencyTokenByJTI(ctx context.Context, jti pgtype.UUID) (*IpWhitelistEmergencyToken, error)
 	GetIPWhitelistForMiddleware(ctx context.Context, id pgtype.UUID) ([]*GetIPWhitelistForMiddlewareRow, error)
@@ -47,6 +51,7 @@ type Querier interface {
 	GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error)
 	GetRefreshTokenByUserID(ctx context.Context, userID pgtype.UUID) (*RefreshToken, error)
 	GetRoleByID(ctx context.Context, arg *GetRoleByIDParams) (*Role, error)
+	GetSSOTenantByDomain(ctx context.Context, domain []byte) (*GetSSOTenantByDomainRow, error)
 	GetTenantAndUserContext(ctx context.Context, arg *GetTenantAndUserContextParams) (*GetTenantAndUserContextRow, error)
 	GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, error)
 	GetTenantIPWhitelist(ctx context.Context, tenantID pgtype.UUID) ([]*TenantIpWhitelist, error)
@@ -73,6 +78,7 @@ type Querier interface {
 	UpdateTenantEnterpriseFeatures(ctx context.Context, arg *UpdateTenantEnterpriseFeaturesParams) error
 	UpdateTenantName(ctx context.Context, arg *UpdateTenantNameParams) error
 	UpdateUserEmail(ctx context.Context, arg *UpdateUserEmailParams) error
+	UpdateUserExternalSSOID(ctx context.Context, arg *UpdateUserExternalSSOIDParams) error
 	UpdateUserName(ctx context.Context, arg *UpdateUserNameParams) error
 	UpdateUserPassword(ctx context.Context, arg *UpdateUserPasswordParams) error
 	UserHasPermission(ctx context.Context, arg *UserHasPermissionParams) (bool, error)

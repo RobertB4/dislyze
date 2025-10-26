@@ -18,10 +18,7 @@ type IPWhitelist struct {
 
 type SSO struct {
 	Enabled          bool              `json:"enabled"`
-	Provider         string            `json:"provider"`
-	IdpURL           string            `json:"idp_url"`
-	IdpCertificate   string            `json:"idp_certificate"`
-	EntityID         string            `json:"entity_id"`
+	IdpMetadataURL   string            `json:"idp_metadata_url"`
 	AttributeMapping map[string]string `json:"attribute_mapping"`
 	AllowedDomains   []string          `json:"allowed_domains"`
 }

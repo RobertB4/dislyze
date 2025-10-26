@@ -55,3 +55,7 @@ SELECT EXISTS(
 -- name: DeleteRole :exec
 DELETE FROM roles
 WHERE id = $1 AND tenant_id = $2 AND is_default = false;
+
+-- name: GetDefaultViewerRole :one
+SELECT * FROM roles
+WHERE tenant_id = $1 AND is_default = true AND name = '閲覧者';

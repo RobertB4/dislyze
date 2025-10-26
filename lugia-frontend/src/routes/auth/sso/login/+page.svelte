@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { toast, Button, Input, Alert, KnownError, safeGoto } from "@dislyze/zoroark";
+	import { toast, Button, Input, Alert, KnownError } from "@dislyze/zoroark";
 	import { createForm } from "felte";
 	import type { PageData } from "./$types";
 
@@ -7,45 +7,49 @@
 
 	const { form, errors, data, isSubmitting } = createForm({
 		initialValues: {
-			email: "",
-			password: ""
+			email: ""
 		},
 		validate: (values) => {
 			const errors: Record<string, string> = {};
 
 			values.email = values.email.trim();
-			values.password = values.password.trim();
 
 			if (!values.email) {
 				errors.email = "メールアドレスは必須です";
 			} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
 				errors.email = "メールアドレスの形式が正しくありません";
 			}
-			if (!values.password) {
-				errors.password = "パスワードは必須です";
-			}
 
 			return errors;
 		},
 		onSubmit: async (values) => {
 			try {
-				const response = await fetch(`/api/auth/login`, {
+				const response = await fetch(`/api/auth/sso/login`, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json"
 					},
-					body: JSON.stringify(values),
-					credentials: "include"
+					body: JSON.stringify(values)
 				});
 
 				if (!response.ok) {
 					const data = (await response.json()) as { error?: string };
 					if (data.error) {
-						throw new KnownError(data.error);
+						throw new KnownError("ログインに失敗しました。");
 					}
 				}
 
-				safeGoto(pageData.redirectTo);
+				const { html } = (await response.json()) as { html: string };
+
+				const container = document.createElement("div");
+				container.innerHTML = html;
+				document.body.appendChild(container);
+
+				const form = container.querySelector("form");
+				if (!form) {
+					throw new Error("expected form");
+				}
+				form.submit();
 			} catch (err) {
 				toast.showError(err);
 			}
@@ -58,25 +62,15 @@
 		<div>
 			<img src="/logofull.png" alt="Dislyze Logo" class="mx-auto h-12 w-auto" />
 			<h2
-				data-testid="login-heading"
+				data-testid="sso-login-heading"
 				class="mt-6 text-center text-3xl font-extrabold text-gray-900"
 			>
-				ログイン
+				SSOでログイン
 			</h2>
-			<p class="mt-2 text-center text-sm text-gray-600">
-				または
-				<a
-					data-testid="signup-link"
-					href="/auth/signup"
-					class="font-medium text-indigo-600 hover:text-indigo-500"
-				>
-					新規アカウントを作成
-				</a>
-			</p>
 		</div>
 
 		{#if pageData.message}
-			<Alert type="info" data-testid="login-message">
+			<Alert type="info" data-testid="sso-login-message">
 				<p class="text-sm">{pageData.message}</p>
 			</Alert>
 		{/if}
@@ -93,42 +87,25 @@
 					bind:value={$data.email}
 					error={$errors.email?.[0]}
 				/>
-
-				<Input
-					id="password"
-					name="password"
-					type="password"
-					label="パスワード"
-					placeholder="パスワード"
-					required
-					bind:value={$data.password}
-					error={$errors.password?.[0]}
-				/>
 			</div>
 
 			<div>
-				<Button data-testid="login-submit-button" type="submit" loading={$isSubmitting} fullWidth
-					>ログイン</Button
+				<Button
+					data-testid="sso-login-submit-button"
+					type="submit"
+					loading={$isSubmitting}
+					fullWidth>SSOでログイン</Button
 				>
 			</div>
 
-			<div class="flex flex-col items-center justify-center space-y-2">
+			<div class="flex items-center justify-center">
 				<div class="text-sm">
 					<a
-						data-testid="forgot-password-link"
-						href="/auth/forgot-password"
+						data-testid="regular-login-link"
+						href="/auth/login"
 						class="font-medium text-indigo-600 hover:text-indigo-500"
 					>
-						パスワードをお忘れですか？
-					</a>
-				</div>
-				<div class="text-sm">
-					<a
-						data-testid="sso-login-link"
-						href="/auth/sso/login"
-						class="font-medium text-indigo-600 hover:text-indigo-500"
-					>
-						SSOでログインする方はこちら
+						パスワードでログインする方はこちら
 					</a>
 				</div>
 			</div>

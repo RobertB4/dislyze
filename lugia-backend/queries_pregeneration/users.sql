@@ -62,6 +62,16 @@ UPDATE users
 SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
 WHERE id = $2;
 
+-- name: UpdateUserEmail :exec
+UPDATE users
+SET email = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2;
+
+-- name: UpdateUserExternalSSOID :exec
+UPDATE users
+SET external_sso_id = $1, updated_at = CURRENT_TIMESTAMP
+WHERE id = $2;
+
 -- name: CreateEmailChangeToken :exec
 INSERT INTO email_change_tokens (
     user_id,
@@ -82,11 +92,6 @@ WHERE user_id = $1;
 UPDATE email_change_tokens
 SET used_at = CURRENT_TIMESTAMP
 WHERE id = $1;
-
--- name: UpdateUserEmail :exec
-UPDATE users
-SET email = $1, updated_at = CURRENT_TIMESTAMP
-WHERE id = $2;
 
 -- name: UserHasPermission :one
 WITH user_permissions AS (

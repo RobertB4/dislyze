@@ -95,9 +95,28 @@ SET enterprise_features = $1, updated_at = CURRENT_TIMESTAMP
 WHERE id = $2;
 
 -- name: GetTenantAndUserContext :one
-SELECT 
+SELECT
     tenants.enterprise_features,
     users.is_internal_user
 FROM tenants
 JOIN users ON users.tenant_id = tenants.id
 WHERE tenants.id = @tenant_id AND users.id = @user_id AND users.deleted_at IS NULL;
+
+-- name: GetSSOTenantByDomain :one
+SELECT id, enterprise_features
+FROM tenants
+WHERE enterprise_features->'sso'->>'enabled' = 'true'
+AND enterprise_features->'sso'->'allowed_domains' ? @domain;
+
+-- name: CreateSSOAuthRequest :exec
+INSERT INTO sso_auth_requests (request_id, tenant_id, email, expires_at)
+VALUES ($1, $2, $3, $4);
+
+-- name: DeleteSSORequestReturning :one
+DELETE FROM sso_auth_requests
+WHERE request_id = $1
+RETURNING request_id, tenant_id, email, expires_at;
+
+-- name: DeleteExpiredSSORequests :exec
+DELETE FROM sso_auth_requests
+WHERE expires_at < NOW();

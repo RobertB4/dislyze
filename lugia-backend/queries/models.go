@@ -84,6 +84,13 @@ type RolePermission struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
 
+type SsoAuthRequest struct {
+	RequestID string             `json:"request_id"`
+	TenantID  pgtype.UUID        `json:"tenant_id"`
+	Email     string             `json:"email"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
 type Tenant struct {
 	ID                 pgtype.UUID        `json:"id"`
 	Name               string             `json:"name"`

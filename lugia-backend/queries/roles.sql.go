@@ -173,6 +173,26 @@ func (q *Queries) GetAllPermissions(ctx context.Context) ([]*GetAllPermissionsRo
 	return items, nil
 }
 
+const GetDefaultViewerRole = `-- name: GetDefaultViewerRole :one
+SELECT id, tenant_id, name, description, is_default, created_at, updated_at FROM roles
+WHERE tenant_id = $1 AND is_default = true AND name = '閲覧者'
+`
+
+func (q *Queries) GetDefaultViewerRole(ctx context.Context, tenantID pgtype.UUID) (*Role, error) {
+	row := q.db.QueryRow(ctx, GetDefaultViewerRole, tenantID)
+	var i Role
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Name,
+		&i.Description,
+		&i.IsDefault,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
 const GetRoleByID = `-- name: GetRoleByID :one
 SELECT id, tenant_id, name, description, is_default, created_at, updated_at FROM roles
 WHERE id = $1 AND tenant_id = $2
