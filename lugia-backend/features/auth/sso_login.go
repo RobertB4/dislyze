@@ -78,7 +78,7 @@ func (h *AuthHandler) SSOLogin(w http.ResponseWriter, r *http.Request) {
 			Error:     err.Error(),
 		})
 
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
+		appErr := errlib.New(err, http.StatusUnauthorized, "")
 		responder.RespondWithError(w, appErr)
 		return
 	}

@@ -54,8 +54,24 @@
       "username": "ssonewuser@enterprise.test",
       "email": "ssonewuser@enterprise.test",
       "emailVerified": true,
-      "firstName": "SSO",
-      "lastName": "NewUser",
+      "firstName": "翔太",
+      "lastName": "山口",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "1234567890",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "invalid-user",
+      "username": "ssoinvaliduser@differentdomain.test",
+      "email": "ssoinvaliduser@differentdomain.test",
+      "emailVerified": true,
+      "firstName": "英美",
+      "lastName": "竹内",
       "enabled": true,
       "credentials": [
         {

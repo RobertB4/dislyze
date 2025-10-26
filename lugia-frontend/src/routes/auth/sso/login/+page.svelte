@@ -33,10 +33,7 @@
 				});
 
 				if (!response.ok) {
-					const data = (await response.json()) as { error?: string };
-					if (data.error) {
-						throw new KnownError("ログインに失敗しました。");
-					}
+					throw new KnownError("SSOログインに失敗しました。");
 				}
 
 				const { html } = (await response.json()) as { html: string };
@@ -69,9 +66,9 @@
 			</h2>
 		</div>
 
-		{#if pageData.message}
-			<Alert type="info" data-testid="sso-login-message">
-				<p class="text-sm">{pageData.message}</p>
+		{#if pageData.error}
+			<Alert type="danger" data-testid="sso-login-error">
+				<p class="text-sm">{pageData.error}</p>
 			</Alert>
 		{/if}
 
