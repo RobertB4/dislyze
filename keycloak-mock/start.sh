@@ -39,4 +39,4 @@ echo ""
 echo "Press Ctrl+C to stop Keycloak"
 
 KEYCLOAK_ADMIN=admin KEYCLOAK_ADMIN_PASSWORD=admin123 \
-./bin/kc.sh start-dev --http-port=${PORT} --import-realm
+./bin/kc.sh start-dev --http-port=${PORT} --import-realm --health-enabled=true

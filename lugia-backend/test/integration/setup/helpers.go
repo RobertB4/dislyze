@@ -3,10 +3,10 @@ package setup
 import (
 	"bytes"
 	"context"
+	"dislyze/jirachi/sendgridlib"
 	"encoding/json"
 	"fmt"
 	"lugia/features/auth"
-	"dislyze/jirachi/sendgridlib"
 	"net/http"
 	"net/url"
 	"os"
@@ -78,7 +78,28 @@ func seedDB(t *testing.T, pool *pgxpool.Pool) {
 		t.Fatalf("seedDB: Failed to execute seed.sql: %v", err)
 	}
 
+	overrideEnvironmentSpecificSeedData(t, pool)
+
 	t.Log("seedDB: Database seeding completed successfully")
+}
+
+func overrideEnvironmentSpecificSeedData(t *testing.T, pool *pgxpool.Pool) {
+	t.Helper()
+
+	query := `
+          UPDATE tenants
+          SET enterprise_features = jsonb_set(
+              enterprise_features,
+              '{sso,idp_metadata_url}',
+              to_jsonb($1::text)
+          )
+          WHERE id = '11111111-1111-1111-1111-111111111111'
+      `
+
+	_, err := pool.Exec(context.Background(), query, "http://mock-keycloak:17001/realms/test-realm/protocol/saml/descriptor")
+	if err != nil {
+		t.Fatalf("Failed to update SSO metadata URL: %v", err)
+	}
 }
 
 func ResetAndSeedDB(t *testing.T, pool *pgxpool.Pool) {
