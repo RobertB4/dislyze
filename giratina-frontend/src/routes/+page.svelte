@@ -16,6 +16,7 @@
 	import { mutationFetch } from "$lib/fetch";
 	import type { Tenant } from "./+page";
 	import type { EnterpriseFeatures } from "@dislyze/zoroark";
+	import { resolve } from "$app/paths";
 
 	let { data: pageData }: { data: PageData } = $props();
 
@@ -530,7 +531,7 @@
 												data-testid={`tenant-name-${tenant.id}`}
 											>
 												<a
-													href={`/tenants/${tenant.id}/users`}
+													href={resolve(`/tenants/${tenant.id}/users`)}
 													class="text-indigo-600 hover:text-indigo-900 font-medium"
 													data-testid={`tenant-users-link-${tenant.id}`}
 												>

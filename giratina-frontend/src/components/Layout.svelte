@@ -7,6 +7,7 @@
 	import { slide, fade } from "svelte/transition";
 	import type { Snippet } from "svelte";
 	import type { Me } from "@dislyze/zoroark";
+	import { resolve } from "$app/paths";
 
 	let isMobileNavigationOpen = $state(false);
 
@@ -144,7 +145,7 @@
 					<nav class="mt-5 space-y-1 px-2">
 						<a
 							data-testid="navigation-home-mobile"
-							href="/"
+							href={resolve("/")}
 							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 mb-4 text-base rounded-md"
 							class:bg-gray-900={page.route.id === "/"}
@@ -232,7 +233,7 @@
 			<nav class="mt-5 flex-1 space-y-1 px-2">
 				<a
 					data-testid="navigation-home"
-					href="/"
+					href={resolve("/")}
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 mb-4 text-sm font-medium rounded-md"
 					class:bg-gray-900={page.route.id === "/"}
 				>
