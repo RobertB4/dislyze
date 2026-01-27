@@ -17,3 +17,5 @@ func NewUUID() (pgtype.UUID, error) {
 	pguid.Valid = true
 	return pguid, nil
 }
+
+// testo
