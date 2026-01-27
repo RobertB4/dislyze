@@ -1,5 +1,5 @@
-import adapter from '@sveltejs/adapter-static';
-import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import adapter from "@sveltejs/adapter-static";
+import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -7,25 +7,31 @@ const config = {
 	// for more information about preprocessors
 	preprocess: vitePreprocess(),
 
+	compilerOptions: {
+		warningFilter: (warning) => {
+			return warning.code !== "state_referenced_locally";
+		}
+	},
+
 	kit: {
 		adapter: adapter({
 			fallback: "app.html"
 		}),
 		alias: {
-			$components: 'src/components'
+			$components: "src/components"
 		},
 		csp: {
-			mode: 'hash',
+			mode: "hash",
 			directives: {
-				'default-src': ['self'],
-				'script-src': ['self'],
-				'style-src': ['self', 'unsafe-inline'], // Required until SvelteKit uses Web Animations API
-				'img-src': ['self', 'data:'],
-				'font-src': ['self'],
-				'connect-src': ['self'],
-				'object-src': ['none'],
-				'base-uri': ['self'],
-				'frame-ancestors': ['none']
+				"default-src": ["self"],
+				"script-src": ["self"],
+				"style-src": ["self", "unsafe-inline"], // Required until SvelteKit uses Web Animations API
+				"img-src": ["self", "data:"],
+				"font-src": ["self"],
+				"connect-src": ["self"],
+				"object-src": ["none"],
+				"base-uri": ["self"],
+				"frame-ancestors": ["none"]
 			}
 		}
 	}

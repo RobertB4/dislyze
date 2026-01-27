@@ -9,14 +9,14 @@
 	const tabs = [
 		{
 			name: "プロフィール",
-			href: "/settings/profile",
+			href: "/settings/profile" as const,
 			id: "profile"
 		},
 		...(hasPermission(me, "users.view")
 			? [
 					{
 						name: "ユーザー管理",
-						href: "/settings/users",
+						href: "/settings/users" as const,
 						id: "users"
 					}
 				]
@@ -25,7 +25,7 @@
 			? [
 					{
 						name: "ロール管理",
-						href: "/settings/roles",
+						href: "/settings/roles" as const,
 						id: "roles"
 					}
 				]
@@ -34,7 +34,7 @@
 			? [
 					{
 						name: "IPアドレス制限",
-						href: "/settings/ip-whitelist",
+						href: "/settings/ip-whitelist" as const,
 						id: "ip-whitelist"
 					}
 				]

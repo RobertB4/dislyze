@@ -43,7 +43,7 @@
 		if (search) {
 			params.set("search", search);
 		}
-		goto(resolve(`?${params.toString()}`), {
+		goto(resolve(`?${params.toString()}` as any), {
 			replaceState: false,
 			invalidate: [
 				(url: URL) => {

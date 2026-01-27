@@ -1,8 +1,9 @@
 name: Lugia Frontend E2E Tests
 
-on: [push]
-  paths-ignore:
-        - 'infrastructure/**'
+on:
+  push:
+    paths-ignore:
+      - 'infrastructure/**'
 
 jobs:
   e2e-test:
