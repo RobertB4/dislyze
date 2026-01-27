@@ -8,9 +8,9 @@ const INVALID_TOKEN = "invalid_token_12345";
 const EXPIRED_TOKEN = TestInvitationTokensData.enterprise_14_expired.token;
 const ACTIVE_USER_TOKEN = TestInvitationTokensData.enterprise_10_active_user.token;
 const INVITER_NAME = TestUsersData.enterprise_1.name; // 田中 太郎
-const INVITED_EMAIL = TestUsersData.enterprise_11.email; // enterprise11@localhost.com
-const EXPIRED_TOKEN_EMAIL = TestUsersData.enterprise_14.email; // enterprise14@localhost.com
-const ACTIVE_USER_EMAIL = TestUsersData.enterprise_10.email; // enterprise10@localhost.com
+const INVITED_EMAIL = TestUsersData.enterprise_11.email; // enterprise11@internal.test
+const EXPIRED_TOKEN_EMAIL = TestUsersData.enterprise_14.email; // enterprise14@internal.test
+const ACTIVE_USER_EMAIL = TestUsersData.enterprise_10.email; // enterprise10@internal.test
 
 test.beforeAll(async () => {
 	await resetAndSeedDatabase();

@@ -111,7 +111,7 @@ var TestRolesData = map[string]RoleTestData{
 
 var TestUsersData = map[string]UserTestData{
 	"internal_1": {
-		Email:             "internal1@localhost.com",
+		Email:             "internal1@internal.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "c0000000-0000-0000-0000-000000000001",
 		TenantID:          "33333333-3333-3333-3333-333333333333",
@@ -119,7 +119,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"internal_2": {
-		Email:             "internal2@localhost.com",
+		Email:             "internal2@internal.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "c0000000-0000-0000-0000-000000000002",
 		TenantID:          "33333333-3333-3333-3333-333333333333",
@@ -127,7 +127,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"enterprise_1": {
-		Email:             "enterprise1@localhost.com",
+		Email:             "enterprise1@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000001",
 		TenantID:          "11111111-1111-1111-1111-111111111111",

@@ -118,7 +118,7 @@ func TestGenerateTenantInvitationToken_Integration(t *testing.T) {
 			name:         "email already exists returns 400",
 			loginUserKey: "internal_1",
 			requestBody: tenants.GenerateTenantInvitationTokenRequest{
-				Email: "enterprise1@localhost.com",
+				Email: "enterprise1@enterprise.test",
 			},
 			expectedStatus:      http.StatusBadRequest,
 			expectErrorResponse: true,
