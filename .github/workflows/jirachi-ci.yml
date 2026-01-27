@@ -3,9 +3,9 @@ name: Jirachi CI
 on:
   push:
     paths:
-      - 'jirachi/**'
-      - 'database/**'
-      - '.github/workflows/jirachi-ci.yml'
+      - "jirachi/**"
+      - "database/**"
+      - ".github/workflows/jirachi-ci.yml"
 
 jobs:
   lint-test:
@@ -18,7 +18,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.6'
+          go-version: "1.24.12"
 
       - name: Cache Go modules
         uses: actions/cache@v4
