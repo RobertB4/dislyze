@@ -373,11 +373,11 @@ func TestGetUsersSearch_Integration(t *testing.T) {
 		},
 		{
 			name:           "search by common email domain pattern",
-			search:         "localhost", // Most test emails contain localhost
+			search:         "enterprise", // Enterprise tenant users have enterprise.test emails
 			expectedStatus: http.StatusOK,
 			validateFunc: func(t *testing.T, response users.GetUsersResponse, searchTerm string) {
-				// localhost should match many/all users since test emails contain localhost
-				assert.Greater(t, len(response.Users), 0, "Search should find users with localhost in email")
+				// enterprise should match enterprise tenant users since test emails contain enterprise.test
+				assert.Greater(t, len(response.Users), 0, "Search should find users with enterprise in email")
 
 				// All results should contain the search term in email
 				for _, user := range response.Users {
@@ -468,7 +468,7 @@ func TestGetUsersSearchWithPagination_Integration(t *testing.T) {
 	}{
 		{
 			name:           "search with pagination - basic test",
-			search:         "localhost", // Most test emails contain this
+			search:         "enterprise", // Most test emails contain this
 			page:           1,
 			limit:          2,
 			expectedStatus: http.StatusOK,

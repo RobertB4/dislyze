@@ -205,8 +205,8 @@ var TestRolesData = map[string]RoleTestData{
 var TestUsersData = map[string]UserTestData{
 	// Internal User (is_internal_user = true, employee user)
 	"internal_user_enterprise": {
-		Email:             "11111111-1111-1111-1111-111111111111@internal.com",
-		PlainTextPassword: "password123",
+		Email:             "11111111-1111-1111-1111-111111111111@internal.test",
+		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000000",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
 		Name:              "内部ユーザー",
@@ -215,7 +215,7 @@ var TestUsersData = map[string]UserTestData{
 
 	// Enterprise Users (first 20 only)
 	"enterprise_1": {
-		Email:             "enterprise1@localhost.com",
+		Email:             "enterprise1@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000001",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -223,7 +223,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"enterprise_2": {
-		Email:             "enterprise2@localhost.com",
+		Email:             "enterprise2@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000002",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -231,7 +231,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"enterprise_3": {
-		Email:             "enterprise3@localhost.com",
+		Email:             "enterprise3@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000003",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -239,7 +239,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"enterprise_4": {
-		Email:             "enterprise4@localhost.com",
+		Email:             "enterprise4@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000004",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -247,7 +247,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"enterprise_5": {
-		Email:             "enterprise5@localhost.com",
+		Email:             "enterprise5@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000005",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -255,7 +255,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"enterprise_6": {
-		Email:             "enterprise6@localhost.com",
+		Email:             "enterprise6@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000006",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -263,7 +263,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"enterprise_7": {
-		Email:             "enterprise7@localhost.com",
+		Email:             "enterprise7@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000007",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -271,7 +271,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"enterprise_8": {
-		Email:             "enterprise8@localhost.com",
+		Email:             "enterprise8@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000008",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -279,7 +279,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"enterprise_9": {
-		Email:             "enterprise9@localhost.com",
+		Email:             "enterprise9@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000009",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -287,7 +287,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"enterprise_10": {
-		Email:             "enterprise10@localhost.com",
+		Email:             "enterprise10@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000010",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -295,7 +295,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"enterprise_11": {
-		Email:             "enterprise11@localhost.com",
+		Email:             "enterprise11@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000011",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -303,7 +303,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "pending_verification",
 	},
 	"enterprise_12": {
-		Email:             "enterprise12@localhost.com",
+		Email:             "enterprise12@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000012",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -311,7 +311,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "pending_verification",
 	},
 	"enterprise_13": {
-		Email:             "enterprise13@localhost.com",
+		Email:             "enterprise13@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000013",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -319,7 +319,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "pending_verification",
 	},
 	"enterprise_14": {
-		Email:             "enterprise14@localhost.com",
+		Email:             "enterprise14@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000014",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -327,7 +327,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "pending_verification",
 	},
 	"enterprise_15": {
-		Email:             "enterprise15@localhost.com",
+		Email:             "enterprise15@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000015",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -335,7 +335,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "pending_verification",
 	},
 	"enterprise_16": {
-		Email:             "enterprise16@localhost.com",
+		Email:             "enterprise16@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000016",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -343,7 +343,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "suspended",
 	},
 	"enterprise_17": {
-		Email:             "enterprise17@localhost.com",
+		Email:             "enterprise17@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000017",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -351,7 +351,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "suspended",
 	},
 	"enterprise_18": {
-		Email:             "enterprise18@localhost.com",
+		Email:             "enterprise18@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000018",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -359,7 +359,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "suspended",
 	},
 	"enterprise_19": {
-		Email:             "enterprise19@localhost.com",
+		Email:             "enterprise19@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000019",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -367,7 +367,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "suspended",
 	},
 	"enterprise_20": {
-		Email:             "enterprise20@localhost.com",
+		Email:             "enterprise20@enterprise.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "a0000000-0000-0000-0000-000000000020",
 		TenantID:          "11111111-1111-1111-1111-111111111111",
@@ -377,7 +377,7 @@ var TestUsersData = map[string]UserTestData{
 
 	// SMB Users (all 10)
 	"smb_1": {
-		Email:             "smb1@localhost.com",
+		Email:             "smb1@smb.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "b0000000-0000-0000-0000-000000000001",
 		TenantID:          "22222222-2222-2222-2222-222222222222",
@@ -385,7 +385,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"smb_2": {
-		Email:             "smb2@localhost.com",
+		Email:             "smb2@smb.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "b0000000-0000-0000-0000-000000000002",
 		TenantID:          "22222222-2222-2222-2222-222222222222",
@@ -393,7 +393,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"smb_3": {
-		Email:             "smb3@localhost.com",
+		Email:             "smb3@smb.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "b0000000-0000-0000-0000-000000000003",
 		TenantID:          "22222222-2222-2222-2222-222222222222",
@@ -401,7 +401,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"smb_4": {
-		Email:             "smb4@localhost.com",
+		Email:             "smb4@smb.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "b0000000-0000-0000-0000-000000000004",
 		TenantID:          "22222222-2222-2222-2222-222222222222",
@@ -409,7 +409,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"smb_5": {
-		Email:             "smb5@localhost.com",
+		Email:             "smb5@smb.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "b0000000-0000-0000-0000-000000000005",
 		TenantID:          "22222222-2222-2222-2222-222222222222",
@@ -417,7 +417,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"smb_6": {
-		Email:             "smb6@localhost.com",
+		Email:             "smb6@smb.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "b0000000-0000-0000-0000-000000000006",
 		TenantID:          "22222222-2222-2222-2222-222222222222",
@@ -425,7 +425,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"smb_7": {
-		Email:             "smb7@localhost.com",
+		Email:             "smb7@smb.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "b0000000-0000-0000-0000-000000000007",
 		TenantID:          "22222222-2222-2222-2222-222222222222",
@@ -433,7 +433,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"smb_8": {
-		Email:             "smb8@localhost.com",
+		Email:             "smb8@smb.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "b0000000-0000-0000-0000-000000000008",
 		TenantID:          "22222222-2222-2222-2222-222222222222",
@@ -441,7 +441,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"smb_9": {
-		Email:             "smb9@localhost.com",
+		Email:             "smb9@smb.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "b0000000-0000-0000-0000-000000000009",
 		TenantID:          "22222222-2222-2222-2222-222222222222",
@@ -449,7 +449,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"smb_10": {
-		Email:             "smb10@localhost.com",
+		Email:             "smb10@smb.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "b0000000-0000-0000-0000-000000000010",
 		TenantID:          "22222222-2222-2222-2222-222222222222",
@@ -459,7 +459,7 @@ var TestUsersData = map[string]UserTestData{
 
 	// Internal Users (all 2)
 	"internal_1": {
-		Email:             "internal1@localhost.com",
+		Email:             "internal1@internal.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "c0000000-0000-0000-0000-000000000001",
 		TenantID:          "33333333-3333-3333-3333-333333333333",
@@ -467,7 +467,7 @@ var TestUsersData = map[string]UserTestData{
 		Status:            "active",
 	},
 	"internal_2": {
-		Email:             "internal2@localhost.com",
+		Email:             "internal2@internal.test",
 		PlainTextPassword: "1234567890",
 		UserID:            "c0000000-0000-0000-0000-000000000002",
 		TenantID:          "33333333-3333-3333-3333-333333333333",

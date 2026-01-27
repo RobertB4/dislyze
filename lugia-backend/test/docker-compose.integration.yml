@@ -21,28 +21,32 @@ services:
     environment:
       - SENDGRID_API_KEY=sendgrid
       - PORT=17000
-  mock-keycloak:
-    image: quay.io/keycloak/keycloak:24.0
-    container_name: mock-keycloak
-    ports:
-      - "17001:17001"
-    environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin123
-    volumes:
-      - ../../keycloak-mock/realm.json:/opt/keycloak/data/import/realm.json
-    command:
-      - start-dev
-      - --http-port=17001
-      - --import-realm
-      - --hostname-strict=false
-      - --hostname-strict-https=false
-      - --health-enabled=true
-    healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/17001 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && head -n 10 <&3 | grep -q '200'"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+  # mock-keycloak:
+  #   image: quay.io/keycloak/keycloak:24.0
+  #   container_name: mock-keycloak
+  #   ports:
+  #     - "17001:17001"
+  #   environment:
+  #     KEYCLOAK_ADMIN: admin
+  #     KEYCLOAK_ADMIN_PASSWORD: admin123
+  #   volumes:
+  #     - ../../keycloak-mock/realm.json:/opt/keycloak/data/import/realm.json
+  #   command:
+  #     - start-dev
+  #     - --http-port=17001
+  #     - --import-realm
+  #     - --hostname-strict=false
+  #     - --hostname-strict-https=false
+  #     - --health-enabled=true
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD-SHELL",
+  #         "exec 3<>/dev/tcp/localhost/17001 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && head -n 10 <&3 | grep -q '200'",
+  #       ]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 10
   lugia-backend:
     container_name: lugia-backend-integration
     build:
@@ -65,55 +69,55 @@ services:
       - SENDGRID_API_URL=http://mock-sendgrid:17000
       - INITIAL_PW=password
       - INTERNAL_USER_PW=password123
-      - >-
+      - |-
         SAML_SERVICE_PROVIDER_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----
-          MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDj6Uted6XzmlPx
-          apEbeKO2OkltkcYXJtVpw6PuXlyDdVIWT8LBxSqlOba9InfctPm+VL+skvkTwDzl
-          K+NU4PrwASCRPP6T9bTlfh1c0mwaHMEy72GckTQHLKNNGzTEdQ2vSsz0x2Zeu8We
-          n0DEP1ZGs7LaQavZG2nA7j1kJhYIZjadDH19NDyCQCieR2b6UBNHHqhk12V0l99K
-          dljMBz+bSz3qnx8nsJxSThXL89XCOnZr+7b8NPbXDJsJhzg9Ga2Icxnt07394hTE
-          lvkWZKr4pAWZTagffiLrcJR2IRIdWzUN7dOmPhMDrn4kMFmHkzTfxbQ4xBe/2Sbx
-          oaplEKJtAgMBAAECggEACKZivT5z8UpFg/90Fm4pDdIp1fDBwJXcD7GPLTguRrGo
-          iz7nuLb6UV8JYnrxFagAuoqOORyIO4mrm1RjwmWaNeBfvg4Uk2+wjUKQwWRzGeKc
-          KooPUwPnzPCSxMBoQPSNr74lB+fxfghJDdDO186Xla4ITGRQWLhuS8Dpr5K1JLMP
-          av6VcqWB/Tn0wpZxrZqsyieOmB8fnqu6c+1+eWMj0Lb1ca6YxeXD16ZMKMkzrt12
-          UIJTBNw62Ek1OjMmA0bmC4WNmuU5wB4VruO5pQm0rtHsEZG44m4koXu92lnwc/sB
-          gjN2RKkpxZdinopr3JSVN0iYA40Cp6jJDvua5lPOgQKBgQDzAtOKIHZJ+UTiLhH5
-          lAfstmrsvIx8bmTND/2XXA1tu34cm+eEe/m0C4Rl/6Mc3NySoBDfc6VwyhZNVNRr
-          GrSebGAuZQ7IBeaFweMLX2m2jYDjDnuNeyiQETmNq8cWRxTJl2/K3o8flpLE1j/4
-          Gf5V8wYynVdDkdQbI+G6cS7x/QKBgQDwF9rnS/ho9NlP/QTAn6z5IDUhlS2jeHDY
-          fZT7vMuExEahNQ0ekLGVCfstY1UiR9j/7m7niS/WRrrdcfd2XLEVuNSSJvojmKAv
-          VJ7gqwolsrVURXkiGu5n3qL0315t82xY8zOtPGLhtvSXjcfJwYUKtufJXOFztS3M
-          ONtlJyHlMQKBgBpVjhMD3Y26o4pXL796GTm/suqgrCC33diTCQokAZiInuv+wSIM
-          RU0Lind7MnPoQ0bobaupXp5QaAZNUQ+iPzyDxhCBBw8KBKcuEaqj1lLgFr2ETkNQ
-          u16RX0lI+jQh09DcxlKXt67WpGUMSrZaKsOpqFxHzLMX1IJ0avvHVC0JAoGANi3b
-          6xf8rYqbQ26gVOtzeCBpfPOSAfKa3G+yYABhmMtF+PjkxgH24OAIu1xQCNVXxaFD
-          i6IsllkNsA0Yv6/5EiLMbVK4XbICa8vXsnFGb+1c9/BZfnW/WNcnxMRnJb6ps4Tm
-          I3CeC7tihJStAf1WjW1q7siz441+ETi/YZssDfECgYBHEUM3zsJaE1vdx0Uvwax5
-          FPseqDwkJXftPWh0ukKU9+Ob+cpDpssjOMF/tzyQnCDEZHv0QoOiw09nRwH+PbXo
-          lm4QVeMxEWD9jiQEMXImlQpo8gogmurZ2ZH3xKjuSm3KmQV1pdq1s3LKxGdC2j+O
-          pVj803Bao5t6ZWgCxM22kw==
-          -----END PRIVATE KEY-----
-      - >-
+        MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDj6Uted6XzmlPx
+        apEbeKO2OkltkcYXJtVpw6PuXlyDdVIWT8LBxSqlOba9InfctPm+VL+skvkTwDzl
+        K+NU4PrwASCRPP6T9bTlfh1c0mwaHMEy72GckTQHLKNNGzTEdQ2vSsz0x2Zeu8We
+        n0DEP1ZGs7LaQavZG2nA7j1kJhYIZjadDH19NDyCQCieR2b6UBNHHqhk12V0l99K
+        dljMBz+bSz3qnx8nsJxSThXL89XCOnZr+7b8NPbXDJsJhzg9Ga2Icxnt07394hTE
+        lvkWZKr4pAWZTagffiLrcJR2IRIdWzUN7dOmPhMDrn4kMFmHkzTfxbQ4xBe/2Sbx
+        oaplEKJtAgMBAAECggEACKZivT5z8UpFg/90Fm4pDdIp1fDBwJXcD7GPLTguRrGo
+        iz7nuLb6UV8JYnrxFagAuoqOORyIO4mrm1RjwmWaNeBfvg4Uk2+wjUKQwWRzGeKc
+        KooPUwPnzPCSxMBoQPSNr74lB+fxfghJDdDO186Xla4ITGRQWLhuS8Dpr5K1JLMP
+        av6VcqWB/Tn0wpZxrZqsyieOmB8fnqu6c+1+eWMj0Lb1ca6YxeXD16ZMKMkzrt12
+        UIJTBNw62Ek1OjMmA0bmC4WNmuU5wB4VruO5pQm0rtHsEZG44m4koXu92lnwc/sB
+        gjN2RKkpxZdinopr3JSVN0iYA40Cp6jJDvua5lPOgQKBgQDzAtOKIHZJ+UTiLhH5
+        lAfstmrsvIx8bmTND/2XXA1tu34cm+eEe/m0C4Rl/6Mc3NySoBDfc6VwyhZNVNRr
+        GrSebGAuZQ7IBeaFweMLX2m2jYDjDnuNeyiQETmNq8cWRxTJl2/K3o8flpLE1j/4
+        Gf5V8wYynVdDkdQbI+G6cS7x/QKBgQDwF9rnS/ho9NlP/QTAn6z5IDUhlS2jeHDY
+        fZT7vMuExEahNQ0ekLGVCfstY1UiR9j/7m7niS/WRrrdcfd2XLEVuNSSJvojmKAv
+        VJ7gqwolsrVURXkiGu5n3qL0315t82xY8zOtPGLhtvSXjcfJwYUKtufJXOFztS3M
+        ONtlJyHlMQKBgBpVjhMD3Y26o4pXL796GTm/suqgrCC33diTCQokAZiInuv+wSIM
+        RU0Lind7MnPoQ0bobaupXp5QaAZNUQ+iPzyDxhCBBw8KBKcuEaqj1lLgFr2ETkNQ
+        u16RX0lI+jQh09DcxlKXt67WpGUMSrZaKsOpqFxHzLMX1IJ0avvHVC0JAoGANi3b
+        6xf8rYqbQ26gVOtzeCBpfPOSAfKa3G+yYABhmMtF+PjkxgH24OAIu1xQCNVXxaFD
+        i6IsllkNsA0Yv6/5EiLMbVK4XbICa8vXsnFGb+1c9/BZfnW/WNcnxMRnJb6ps4Tm
+        I3CeC7tihJStAf1WjW1q7siz441+ETi/YZssDfECgYBHEUM3zsJaE1vdx0Uvwax5
+        FPseqDwkJXftPWh0ukKU9+Ob+cpDpssjOMF/tzyQnCDEZHv0QoOiw09nRwH+PbXo
+        lm4QVeMxEWD9jiQEMXImlQpo8gogmurZ2ZH3xKjuSm3KmQV1pdq1s3LKxGdC2j+O
+        pVj803Bao5t6ZWgCxM22kw==
+        -----END PRIVATE KEY-----
+      - |-
         SAML_SERVICE_PROVIDER_CERTIFICATE=-----BEGIN CERTIFICATE-----
-          MIIDDzCCAfegAwIBAgIUFUbtvKdy3bhFEKo799c5QqiF51kwDQYJKoZIhvcNAQEL
-          BQAwFjEUMBIGA1UEAwwLZGlzbHl6ZS5jb20wIBcNMjUxMDI1MDUzMzA4WhgPMjEy
-          NTEwMDEwNTMzMDhaMBYxFDASBgNVBAMMC2Rpc2x5emUuY29tMIIBIjANBgkqhkiG
-          9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4+lLXnel85pT8WqRG3ijtjpJbZHGFybVacOj
-          7l5cg3VSFk/CwcUqpTm2vSJ33LT5vlS/rJL5E8A85SvjVOD68AEgkTz+k/W05X4d
-          XNJsGhzBMu9hnJE0ByyjTRs0xHUNr0rM9MdmXrvFnp9AxD9WRrOy2kGr2RtpwO49
-          ZCYWCGY2nQx9fTQ8gkAonkdm+lATRx6oZNdldJffSnZYzAc/m0s96p8fJ7CcUk4V
-          y/PVwjp2a/u2/DT21wybCYc4PRmtiHMZ7dO9/eIUxJb5FmSq+KQFmU2oH34i63CU
-          diESHVs1De3Tpj4TA65+JDBZh5M038W0OMQXv9km8aGqZRCibQIDAQABo1MwUTAd
-          BgNVHQ4EFgQUR3ViYjQXP8+bLAGym3VmWw+QsXAwHwYDVR0jBBgwFoAUR3ViYjQX
-          P8+bLAGym3VmWw+QsXAwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOC
-          AQEAyWQdEHXEKQ4djdFx3UvzVFaMw0v4soT+giTStK8nZbjJfw7zmhM4PAjFeHzY
-          B/LpwLSvLyv6XOwZFDsyCcWGTWnIRPRvBBSemsSdOxBhBpHgx23TM4i7mjT6jFpt
-          6zq//Em5LfHqipCgGwxQBv4sAEcixObQAfYoKL+cyma/RjU4d8bcHzPtEi4tf3fe
-          MoJjLsChJJFCwMwXqzUJUn5Rfts++ov4l6i1IHDUd6NR+rUVvHJBV37N/LoE8088
-          dgsqmgTz0jYqYvMIL9T55EhqYLPt0OEiu2Wu82aVVSPj9V/9A+lE2ZaJk5eexC/8
-          B8Gyb0C4jSr0oS3xNo0mLgCRJQ==
-          -----END CERTIFICATE-----
+        MIIDDzCCAfegAwIBAgIUFUbtvKdy3bhFEKo799c5QqiF51kwDQYJKoZIhvcNAQEL
+        BQAwFjEUMBIGA1UEAwwLZGlzbHl6ZS5jb20wIBcNMjUxMDI1MDUzMzA4WhgPMjEy
+        NTEwMDEwNTMzMDhaMBYxFDASBgNVBAMMC2Rpc2x5emUuY29tMIIBIjANBgkqhkiG
+        9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4+lLXnel85pT8WqRG3ijtjpJbZHGFybVacOj
+        7l5cg3VSFk/CwcUqpTm2vSJ33LT5vlS/rJL5E8A85SvjVOD68AEgkTz+k/W05X4d
+        XNJsGhzBMu9hnJE0ByyjTRs0xHUNr0rM9MdmXrvFnp9AxD9WRrOy2kGr2RtpwO49
+        ZCYWCGY2nQx9fTQ8gkAonkdm+lATRx6oZNdldJffSnZYzAc/m0s96p8fJ7CcUk4V
+        y/PVwjp2a/u2/DT21wybCYc4PRmtiHMZ7dO9/eIUxJb5FmSq+KQFmU2oH34i63CU
+        diESHVs1De3Tpj4TA65+JDBZh5M038W0OMQXv9km8aGqZRCibQIDAQABo1MwUTAd
+        BgNVHQ4EFgQUR3ViYjQXP8+bLAGym3VmWw+QsXAwHwYDVR0jBBgwFoAUR3ViYjQX
+        P8+bLAGym3VmWw+QsXAwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOC
+        AQEAyWQdEHXEKQ4djdFx3UvzVFaMw0v4soT+giTStK8nZbjJfw7zmhM4PAjFeHzY
+        B/LpwLSvLyv6XOwZFDsyCcWGTWnIRPRvBBSemsSdOxBhBpHgx23TM4i7mjT6jFpt
+        6zq//Em5LfHqipCgGwxQBv4sAEcixObQAfYoKL+cyma/RjU4d8bcHzPtEi4tf3fe
+        MoJjLsChJJFCwMwXqzUJUn5Rfts++ov4l6i1IHDUd6NR+rUVvHJBV37N/LoE8088
+        dgsqmgTz0jYqYvMIL9T55EhqYLPt0OEiu2Wu82aVVSPj9V/9A+lE2ZaJk5eexC/8
+        B8Gyb0C4jSr0oS3xNo0mLgCRJQ==
+        -----END CERTIFICATE-----
     ports:
       - "13001:13001"
     depends_on:
@@ -121,8 +125,8 @@ services:
         condition: service_healthy
       mock-sendgrid:
         condition: service_started
-      mock-keycloak:
-        condition: service_healthy
+      # mock-keycloak:
+      #   condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:13001/health"]
       interval: 5s

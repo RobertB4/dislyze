@@ -501,7 +501,7 @@ func TestTenantSignupEmailCollision(t *testing.T) {
 	defer setup.CloseDB(pool)
 	
 	// Use an email that already exists in the seeded data
-	existingEmail := "enterprise1@localhost.com" // This exists in the seed data
+	existingEmail := setup.TestUsersData["enterprise_1"].Email
 	token := generateValidJWTToken(t, existingEmail)
 	
 	requestBody := TenantSignupRequestBody{
