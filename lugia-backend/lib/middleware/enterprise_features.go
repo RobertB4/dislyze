@@ -45,7 +45,3 @@ func RequireRBAC() func(http.Handler) http.Handler {
 func RequireIPWhitelist() func(http.Handler) http.Handler {
 	return RequireFeature(authz.FeatureIPWhitelist)
 }
-
-func RequireSSO() func(http.Handler) http.Handler {
-	return RequireFeature(authz.FeatureSSO)
-}
