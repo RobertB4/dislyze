@@ -93,16 +93,11 @@
 			}
 
 			if (err.location) {
-				Promise.resolve().then(() => {
-					safeGoto(err.location!);
-				});
+				await safeGoto(err.location);
 				return {} as ResolvedObject<PromisesMap>;
 			}
 
-			// Use a microtask to ensure navigation happens after the current processing cycle
-			Promise.resolve().then(() => {
-				safeGoto(`/error?status=${status}&message=${encodeURIComponent(message)}`);
-			});
+			await safeGoto(`/error?status=${status}&message=${encodeURIComponent(message)}`);
 
 			// Return an empty object. The navigation should ideally prevent children from rendering
 			// or attempting to use potentially incomplete data.

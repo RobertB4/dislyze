@@ -1,7 +1,7 @@
 export const TestUsersData = {
 	// Enterprise tenant users (RBAC enabled)
 	enterprise_1: {
-		email: "enterprise1@localhost.com",
+		email: "enterprise1@enterprise.test",
 		plainTextPassword: "1234567890", // All users have same password
 		userID: "a0000000-0000-0000-0000-000000000001",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -10,7 +10,7 @@ export const TestUsersData = {
 		role: "管理者" // Admin role
 	},
 	enterprise_2: {
-		email: "enterprise2@localhost.com",
+		email: "enterprise2@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000002",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -19,7 +19,7 @@ export const TestUsersData = {
 		role: "編集者" // Editor role
 	},
 	enterprise_3: {
-		email: "enterprise3@localhost.com",
+		email: "enterprise3@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000003",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -28,7 +28,7 @@ export const TestUsersData = {
 		role: "編集者" // Editor role
 	},
 	enterprise_4: {
-		email: "enterprise4@localhost.com",
+		email: "enterprise4@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000004",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -37,7 +37,7 @@ export const TestUsersData = {
 		role: "編集者" // Editor role
 	},
 	enterprise_5: {
-		email: "enterprise5@localhost.com",
+		email: "enterprise5@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000005",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -46,7 +46,7 @@ export const TestUsersData = {
 		role: "編集者" // Editor role
 	},
 	enterprise_6: {
-		email: "enterprise6@localhost.com",
+		email: "enterprise6@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000006",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -55,7 +55,7 @@ export const TestUsersData = {
 		role: "編集者" // Editor role
 	},
 	enterprise_7: {
-		email: "enterprise7@localhost.com",
+		email: "enterprise7@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000007",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -64,7 +64,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role
 	},
 	enterprise_8: {
-		email: "enterprise8@localhost.com",
+		email: "enterprise8@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000008",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -73,7 +73,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role
 	},
 	enterprise_9: {
-		email: "enterprise9@localhost.com",
+		email: "enterprise9@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000009",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -82,7 +82,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role
 	},
 	enterprise_10: {
-		email: "enterprise10@localhost.com",
+		email: "enterprise10@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000010",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -91,7 +91,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role
 	},
 	enterprise_11: {
-		email: "enterprise11@localhost.com",
+		email: "enterprise11@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000011",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -100,7 +100,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role (will be assigned after acceptance)
 	},
 	enterprise_12: {
-		email: "enterprise12@localhost.com",
+		email: "enterprise12@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000012",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -109,7 +109,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role (will be assigned after acceptance)
 	},
 	enterprise_13: {
-		email: "enterprise13@localhost.com",
+		email: "enterprise13@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000013",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -118,7 +118,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role (will be assigned after acceptance)
 	},
 	enterprise_14: {
-		email: "enterprise14@localhost.com",
+		email: "enterprise14@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000014",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -127,7 +127,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role (will be assigned after acceptance)
 	},
 	enterprise_15: {
-		email: "enterprise15@localhost.com",
+		email: "enterprise15@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000015",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -136,7 +136,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role (will be assigned after acceptance)
 	},
 	enterprise_16: {
-		email: "enterprise16@localhost.com",
+		email: "enterprise16@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000016",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -145,7 +145,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role
 	},
 	enterprise_17: {
-		email: "enterprise17@localhost.com",
+		email: "enterprise17@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000017",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -154,7 +154,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role
 	},
 	enterprise_18: {
-		email: "enterprise18@localhost.com",
+		email: "enterprise18@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000018",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -163,7 +163,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role
 	},
 	enterprise_19: {
-		email: "enterprise19@localhost.com",
+		email: "enterprise19@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000019",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -172,7 +172,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role
 	},
 	enterprise_20: {
-		email: "enterprise20@localhost.com",
+		email: "enterprise20@enterprise.test",
 		plainTextPassword: "1234567890",
 		userID: "a0000000-0000-0000-0000-000000000020",
 		tenantID: "11111111-1111-1111-1111-111111111111",
@@ -183,7 +183,7 @@ export const TestUsersData = {
 
 	// SMB tenant users (RBAC disabled)
 	smb_1: {
-		email: "smb1@localhost.com",
+		email: "smb1@smb.test",
 		plainTextPassword: "1234567890",
 		userID: "b0000000-0000-0000-0000-000000000001",
 		tenantID: "22222222-2222-2222-2222-222222222222",
@@ -192,7 +192,7 @@ export const TestUsersData = {
 		role: "管理者" // Admin role
 	},
 	smb_2: {
-		email: "smb2@localhost.com",
+		email: "smb2@smb.test",
 		plainTextPassword: "1234567890",
 		userID: "b0000000-0000-0000-0000-000000000002",
 		tenantID: "22222222-2222-2222-2222-222222222222",
@@ -201,7 +201,7 @@ export const TestUsersData = {
 		role: "編集者" // Editor role
 	},
 	smb_3: {
-		email: "smb3@localhost.com",
+		email: "smb3@smb.test",
 		plainTextPassword: "1234567890",
 		userID: "b0000000-0000-0000-0000-000000000003",
 		tenantID: "22222222-2222-2222-2222-222222222222",
@@ -210,7 +210,7 @@ export const TestUsersData = {
 		role: "編集者" // Editor role
 	},
 	smb_4: {
-		email: "smb4@localhost.com",
+		email: "smb4@smb.test",
 		plainTextPassword: "1234567890",
 		userID: "b0000000-0000-0000-0000-000000000004",
 		tenantID: "22222222-2222-2222-2222-222222222222",
@@ -219,7 +219,7 @@ export const TestUsersData = {
 		role: "編集者" // Editor role
 	},
 	smb_5: {
-		email: "smb5@localhost.com",
+		email: "smb5@smb.test",
 		plainTextPassword: "1234567890",
 		userID: "b0000000-0000-0000-0000-000000000005",
 		tenantID: "22222222-2222-2222-2222-222222222222",
@@ -228,7 +228,7 @@ export const TestUsersData = {
 		role: "編集者" // Editor role
 	},
 	smb_6: {
-		email: "smb6@localhost.com",
+		email: "smb6@smb.test",
 		plainTextPassword: "1234567890",
 		userID: "b0000000-0000-0000-0000-000000000006",
 		tenantID: "22222222-2222-2222-2222-222222222222",
@@ -237,7 +237,7 @@ export const TestUsersData = {
 		role: "編集者" // Editor role
 	},
 	smb_7: {
-		email: "smb7@localhost.com",
+		email: "smb7@smb.test",
 		plainTextPassword: "1234567890",
 		userID: "b0000000-0000-0000-0000-000000000007",
 		tenantID: "22222222-2222-2222-2222-222222222222",
@@ -246,7 +246,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role
 	},
 	smb_8: {
-		email: "smb8@localhost.com",
+		email: "smb8@smb.test",
 		plainTextPassword: "1234567890",
 		userID: "b0000000-0000-0000-0000-000000000008",
 		tenantID: "22222222-2222-2222-2222-222222222222",
@@ -255,7 +255,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role
 	},
 	smb_9: {
-		email: "smb9@localhost.com",
+		email: "smb9@smb.test",
 		plainTextPassword: "1234567890",
 		userID: "b0000000-0000-0000-0000-000000000009",
 		tenantID: "22222222-2222-2222-2222-222222222222",
@@ -264,7 +264,7 @@ export const TestUsersData = {
 		role: "閲覧者" // Viewer role
 	},
 	smb_10: {
-		email: "smb10@localhost.com",
+		email: "smb10@smb.test",
 		plainTextPassword: "1234567890",
 		userID: "b0000000-0000-0000-0000-000000000010",
 		tenantID: "22222222-2222-2222-2222-222222222222",
@@ -275,7 +275,7 @@ export const TestUsersData = {
 
 	// Internal tenant users (RBAC enabled)
 	internal_1: {
-		email: "internal1@localhost.com",
+		email: "internal1@internal.test",
 		plainTextPassword: "1234567890",
 		userID: "c0000000-0000-0000-0000-000000000001",
 		tenantID: "33333333-3333-3333-3333-333333333333",
@@ -284,7 +284,7 @@ export const TestUsersData = {
 		role: "管理者" // Admin role
 	},
 	internal_2: {
-		email: "internal2@localhost.com",
+		email: "internal2@internal.test",
 		plainTextPassword: "1234567890",
 		userID: "c0000000-0000-0000-0000-000000000002",
 		tenantID: "33333333-3333-3333-3333-333333333333",
@@ -405,8 +405,8 @@ export const TestInvitationTokensData = {
 		token: "26U7PPxCPCFwWifs8gMD73Gq4tLIBlKBgroHOpkb1bQ",
 		tokenHash: "3874d22b39c01882df8ee09c464ebc7441293d6e295299d35e26a8ec12f68a3d",
 		tenantId: "11111111-1111-1111-1111-111111111111",
-		userId: "a0000000-0000-0000-0000-000000000011", // enterprise11@localhost.com
-		userEmail: "enterprise11@localhost.com",
+		userId: "a0000000-0000-0000-0000-000000000011", // enterprise11@enterprise.test
+		userEmail: "enterprise11@enterprise.test",
 		userName: "吉田 雄二",
 		expiresIn: "48 hours", // NOW() + INTERVAL '48 hours'
 		description: "Valid token for pending user"
@@ -416,8 +416,8 @@ export const TestInvitationTokensData = {
 		token: "MO-Cw4btd5KDj1TK16yxNo-zkFtkyjyjOlqUZ5AFWYA=",
 		tokenHash: "7de910a7f03bb39e3c24375b8f34d787d8af449706904edc83986224de97c163",
 		tenantId: "11111111-1111-1111-1111-111111111111",
-		userId: "a0000000-0000-0000-0000-000000000012", // enterprise12@localhost.com
-		userEmail: "enterprise12@localhost.com",
+		userId: "a0000000-0000-0000-0000-000000000012", // enterprise12@enterprise.test
+		userEmail: "enterprise12@enterprise.test",
 		userName: "福田 あかり",
 		expiresIn: "48 hours",
 		description: "Valid token for pending user"
@@ -427,8 +427,8 @@ export const TestInvitationTokensData = {
 		token: "CM-rBsZ3PDoIenm_Od4pRdUMAcIgqUWlqs3rMSvmrk0=",
 		tokenHash: "e6418e6d62b63b8a0a0eac30ba45797ac9273590c2110efc8ed5453711310473",
 		tenantId: "11111111-1111-1111-1111-111111111111",
-		userId: "a0000000-0000-0000-0000-000000000013", // enterprise13@localhost.com
-		userEmail: "enterprise13@localhost.com",
+		userId: "a0000000-0000-0000-0000-000000000013", // enterprise13@enterprise.test
+		userEmail: "enterprise13@enterprise.test",
 		userName: "森 拓也",
 		expiresIn: "48 hours",
 		description: "Valid token for pending user"
@@ -438,8 +438,8 @@ export const TestInvitationTokensData = {
 		token: "accept-invite-active-user-token-for-testing",
 		tokenHash: "7261975581a789f841dca6d6261cb3a6ab06bdec4a81e987ca4f8865a3c3fe67",
 		tenantId: "11111111-1111-1111-1111-111111111111",
-		userId: "a0000000-0000-0000-0000-000000000010", // enterprise10@localhost.com
-		userEmail: "enterprise10@localhost.com",
+		userId: "a0000000-0000-0000-0000-000000000010", // enterprise10@enterprise.test
+		userEmail: "enterprise10@enterprise.test",
 		userName: "加藤 恵",
 		expiresIn: "48 hours",
 		description: "Token for already active user (should fail)"
@@ -449,8 +449,8 @@ export const TestInvitationTokensData = {
 		token: "accept-invite-expired-token-for-testing",
 		tokenHash: "1689934ddd1d942277310ce36b363be5bd6201523f348d2dda35ebce74643db3",
 		tenantId: "11111111-1111-1111-1111-111111111111",
-		userId: "a0000000-0000-0000-0000-000000000014", // enterprise14@localhost.com
-		userEmail: "enterprise14@localhost.com",
+		userId: "a0000000-0000-0000-0000-000000000014", // enterprise14@enterprise.test
+		userEmail: "enterprise14@enterprise.test",
 		userName: "清水 愛",
 		expiresIn: "-48 hours", // NOW() - INTERVAL '48 hours' (expired)
 		description: "Expired token for testing"

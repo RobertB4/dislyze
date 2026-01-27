@@ -102,7 +102,7 @@ test.describe("Settings - Users Page", () => {
 
 		test("should search for users by email", async ({ page }) => {
 			// Enter search term in the search input using id selector
-			await page.locator("#user-search").fill("enterprise2@localhost.com");
+			await page.locator("#user-search").fill(TestUsersData.enterprise_2.email);
 
 			// Since we're changing the URL with search, wait for navigation to complete
 			await page.waitForResponse(
@@ -116,7 +116,7 @@ test.describe("Settings - Users Page", () => {
 			await expect(page.getByTestId(`user-row-${TestUsersData.enterprise_2.userID}`)).toBeVisible();
 
 			// User should see their search term in the URL
-			await expect(page).toHaveURL(/.*search=enterprise2%40localhost.com.*/);
+			await expect(page).toHaveURL(/.*search=enterprise2%40enterprise.test.*/);
 
 			// Only the editor user should be visible
 			expect(await page.getByTestId(/^user-row-/).count()).toBe(1);
