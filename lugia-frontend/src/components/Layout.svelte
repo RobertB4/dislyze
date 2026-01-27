@@ -8,6 +8,7 @@
 	import type { Snippet } from "svelte";
 	import type { Me } from "@dislyze/zoroark";
 	import { hasPermission } from "$lib/authz";
+	import { resolve } from "$app/paths";
 
 	let isMobileNavigationOpen = $state(false);
 
@@ -145,7 +146,7 @@
 					<nav class="mt-5 space-y-1 px-2">
 						<a
 							data-testid="navigation-home-mobile"
-							href="/"
+							href={resolve("/")}
 							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 mb-4 text-base rounded-md"
 							class:bg-gray-900={page.route.id === "/"}
@@ -181,7 +182,7 @@
 
 						<a
 							data-testid="navigation-custom-fields-mobile"
-							href="/data/custom-fields"
+							href={resolve("/")}
 							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
 							class:bg-gray-900={page.route.id?.includes("/data/custom-fields")}
@@ -208,7 +209,7 @@
 
 						<a
 							data-testid="navigation-companies-mobile"
-							href="/data/companies"
+							href={resolve("/")}
 							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
 							class:bg-gray-900={page.route.id?.includes("/data/companies")}
@@ -235,7 +236,7 @@
 
 						<a
 							data-testid="navigation-users-mobile"
-							href="/data/users"
+							href={resolve("/")}
 							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
 							class:bg-gray-900={page.route.id?.includes("/data/users")}
@@ -261,7 +262,7 @@
 
 						<a
 							data-testid="navigation-segments-mobile"
-							href="/data/segments"
+							href={resolve("/")}
 							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
 							class:bg-gray-900={page.route.id?.includes("/data/segments")}
@@ -295,7 +296,7 @@
 				<nav class="px-2 pb-2">
 					<a
 						data-testid="navigation-settings-mobile"
-						href="/settings/users"
+						href={resolve("/settings/users")}
 						onclick={toggleMobileNavigation}
 						class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
 						class:bg-gray-900={page.route.id?.includes("/settings")}
@@ -355,7 +356,7 @@
 				<div class="flex flex-shrink-0 bg-gray-700 p-4">
 					<a
 						data-testid="navigation-avatar-mobile"
-						href="/settings/profile"
+						href={resolve("/settings/profile")}
 						class="group block flex-shrink-0"
 					>
 						<div class="flex items-center">
@@ -390,7 +391,7 @@
 			<nav class="mt-5 flex-1 space-y-1 px-2">
 				<a
 					data-testid="navigation-home"
-					href="/"
+					href={resolve("/")}
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 mb-4 text-sm font-medium rounded-md"
 					class:bg-gray-900={page.route.id === "/"}
 				>
@@ -425,7 +426,7 @@
 
 				<a
 					data-testid="navigation-custom-fields"
-					href="/data/custom-fields"
+					href={resolve("/")}
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
 					class:bg-gray-900={page.route.id?.includes("/data/custom-fields")}
 				>
@@ -451,7 +452,7 @@
 
 				<a
 					data-testid="navigation-companies"
-					href="/data/companies"
+					href={resolve("/")}
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
 					class:bg-gray-900={page.route.id?.includes("/data/companies")}
 				>
@@ -477,7 +478,7 @@
 
 				<a
 					data-testid="navigation-users"
-					href="/data/users"
+					href={resolve("/")}
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
 					class:bg-gray-900={page.route.id?.includes("/data/users")}
 				>
@@ -502,7 +503,7 @@
 
 				<a
 					data-testid="navigation-segments"
-					href="/data/segments"
+					href={resolve("/")}
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
 					class:bg-gray-900={page.route.id?.includes("/data/segments")}
 				>
@@ -537,7 +538,7 @@
 			{#if hasPermission(me, "users.view")}
 				<a
 					data-testid="navigation-settings"
-					href="/settings/users"
+					href={resolve("/settings/users")}
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
 					class:bg-gray-900={page.route.id?.includes("/settings")}
 				>
@@ -597,7 +598,7 @@
 		<div class="flex flex-shrink-0 bg-gray-700 px-2 py-4">
 			<a
 				data-testid="navigation-avatar"
-				href="/settings/profile"
+				href={resolve("/settings/profile")}
 				class="group block w-full flex-shrink-0"
 			>
 				<div class="flex items-center">

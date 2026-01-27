@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { toast, Button, Input, KnownError, safeGoto } from "@dislyze/zoroark";
 	import { createForm } from "felte";
+	import { resolve } from "$app/paths";
 
 	const { form, errors, data, isSubmitting } = createForm({
 		initialValues: {
@@ -83,7 +84,7 @@
 				または
 				<a
 					data-testid="login-link"
-					href="/auth/login"
+					href={resolve("/auth/login")}
 					class="font-medium text-indigo-600 hover:text-indigo-500"
 				>
 					既存のアカウントにログイン

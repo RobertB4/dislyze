@@ -4,6 +4,7 @@
 	import type { PageData } from "./$types";
 	import { safeGoto } from "@dislyze/zoroark";
 	import { mutationFetch } from "$lib/fetch";
+	import { resolve } from "$app/paths";
 
 	let { data: pageData }: { data: PageData } = $props();
 
@@ -149,7 +150,7 @@
 				</p>
 				<div class="mt-6">
 					<a
-						href="/auth/login"
+						href={resolve("/auth/login")}
 						class="text-indigo-600 hover:text-indigo-500 font-medium"
 						data-testid="login-link"
 					>

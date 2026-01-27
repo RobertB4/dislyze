@@ -20,6 +20,8 @@
 	import { hasPermission } from "$lib/authz";
 	import { goto } from "$app/navigation";
 	import RoleCard from "./RoleCard.svelte";
+	import { SvelteURLSearchParams } from "svelte/reactivity";
+	import { resolve } from "$app/paths";
 
 	let { data: pageData }: { data: PageData } = $props();
 
@@ -35,13 +37,13 @@
 		limit: number = pageData.currentLimit,
 		search: string = pageData.currentSearch
 	) {
-		const params = new URLSearchParams();
+		const params = new SvelteURLSearchParams();
 		params.set("page", page.toString());
 		params.set("limit", limit.toString());
 		if (search) {
 			params.set("search", search);
 		}
-		goto(`?${params.toString()}`, {
+		goto(resolve(`?${params.toString()}`), {
 			replaceState: false,
 			invalidate: [
 				(url: URL) => {

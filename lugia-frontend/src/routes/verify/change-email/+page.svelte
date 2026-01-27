@@ -2,11 +2,12 @@
 	import { Button, Alert } from "@dislyze/zoroark";
 	import type { PageData } from "./$types";
 	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
 
 	let { data }: { data: PageData } = $props();
 
 	const goToProfile = () => {
-		goto("/settings/profile");
+		goto(resolve("/settings/profile"));
 	};
 </script>
 

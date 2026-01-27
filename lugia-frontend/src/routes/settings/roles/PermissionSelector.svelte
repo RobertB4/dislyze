@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { InteractivePill } from "@dislyze/zoroark";
 	import type { PermissionInfo } from "./+page";
+	import { SvelteMap } from "svelte/reactivity";
 
 	let {
 		permissionIds = $bindable(),
@@ -76,7 +77,7 @@
 
 	// Group permissions by resource for better UI organization
 	let groupedPermissions = $derived(() => {
-		const groups = new Map<string, PermissionInfo[]>();
+		const groups = new SvelteMap<string, PermissionInfo[]>();
 
 		availablePermissions.forEach((permission) => {
 			if (!groups.has(permission.resource)) {

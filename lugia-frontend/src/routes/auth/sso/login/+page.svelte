@@ -2,6 +2,7 @@
 	import { toast, Button, Input, Alert, KnownError } from "@dislyze/zoroark";
 	import { createForm } from "felte";
 	import type { PageData } from "./$types";
+	import { resolve } from "$app/paths";
 
 	let { data: pageData }: { data: PageData } = $props();
 
@@ -99,7 +100,7 @@
 				<div class="text-sm">
 					<a
 						data-testid="regular-login-link"
-						href="/auth/login"
+						href={resolve("/auth/login")}
 						class="font-medium text-indigo-600 hover:text-indigo-500"
 					>
 						パスワードでログインする方はこちら

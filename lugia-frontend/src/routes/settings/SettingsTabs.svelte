@@ -2,6 +2,7 @@
 	import { page } from "$app/state";
 	import type { Me } from "@dislyze/zoroark";
 	import { hasFeature, hasPermission } from "$lib/authz";
+	import { resolve } from "$app/paths";
 
 	let { me }: { me: Me } = $props();
 
@@ -49,7 +50,7 @@
 	<nav class="-mb-px flex space-x-8" aria-label="Tabs" data-testid="settings-tabs">
 		{#each tabs as tab (tab.id)}
 			<a
-				href={tab.href}
+				href={resolve(tab.href)}
 				class={`
 					whitespace-nowrap py-2 px-1 border-b-2 text-sm transition-all duration-200
 					${

@@ -2,6 +2,7 @@
 	import { toast, Button, Input, Alert, KnownError, safeGoto } from "@dislyze/zoroark";
 	import { createForm } from "felte";
 	import type { PageData } from "./$types";
+	import { resolve } from "$app/paths";
 
 	let { data: pageData }: { data: PageData } = $props();
 
@@ -67,7 +68,7 @@
 				または
 				<a
 					data-testid="signup-link"
-					href="/auth/signup"
+					href={resolve("/auth/signup")}
 					class="font-medium text-indigo-600 hover:text-indigo-500"
 				>
 					新規アカウントを作成
@@ -116,7 +117,7 @@
 				<div class="text-sm">
 					<a
 						data-testid="forgot-password-link"
-						href="/auth/forgot-password"
+						href={resolve("/auth/forgot-password")}
 						class="font-medium text-indigo-600 hover:text-indigo-500"
 					>
 						パスワードをお忘れですか？
@@ -125,7 +126,7 @@
 				<div class="text-sm">
 					<a
 						data-testid="sso-login-link"
-						href="/auth/sso/login"
+						href={resolve("/auth/sso/login")}
 						class="font-medium text-indigo-600 hover:text-indigo-500"
 					>
 						SSOでログインする方はこちら

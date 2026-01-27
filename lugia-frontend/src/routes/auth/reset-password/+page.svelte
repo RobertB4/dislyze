@@ -3,6 +3,7 @@
 	import { createForm } from "felte";
 	import type { PageData } from "./$types";
 	import { safeGoto } from "@dislyze/zoroark";
+	import { resolve } from "$app/paths";
 
 	export let data: PageData;
 
@@ -70,7 +71,7 @@
 <main class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
 	<div class="max-w-md w-full space-y-8">
 		<div>
-			<a href="/">
+			<a href={resolve("/")}>
 				<img src="/logofull.png" alt="Dislyze Logo" class="mx-auto h-12 w-auto" />
 			</a>
 			<h2
@@ -131,7 +132,7 @@
 				</p>
 				<a
 					data-testid="reset-password-retry-link"
-					href="/auth/forgot-password"
+					href={resolve("/auth/forgot-password")}
 					class="mt-4 font-medium text-indigo-600 hover:text-indigo-500"
 				>
 					パスワードリセットを再試行
@@ -141,7 +142,7 @@
 		<div class="text-sm text-center">
 			<a
 				data-testid="reset-password-back-to-login-link"
-				href="/auth/login"
+				href={resolve("/auth/login")}
 				class="font-medium text-indigo-600 hover:text-indigo-500"
 			>
 				ログインページに戻る
