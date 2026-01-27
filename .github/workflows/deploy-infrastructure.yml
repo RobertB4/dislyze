@@ -3,18 +3,17 @@ name: Deploy Infrastructure
 on:
   push:
     branches:
-      - staging
-      - main
+      - none
     paths:
-      - 'infrastructure/**'
-      - 'database/migrations/**'
-      - '.github/workflows/deploy-infrastructure.yml'
+      - "infrastructure/**"
+      - "database/migrations/**"
+      - ".github/workflows/deploy-infrastructure.yml"
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy to'
+        description: "Environment to deploy to"
         required: true
-        default: 'staging'
+        default: "staging"
         type: choice
         options:
           - staging
@@ -28,7 +27,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
-    
+
     permissions:
       contents: read
       id-token: write
@@ -51,8 +50,8 @@ jobs:
       - name: Set up Node.js for Pulumi
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: infrastructure/package-lock.json
 
       - name: Install Pulumi dependencies
@@ -63,16 +62,16 @@ jobs:
       - name: Set up Pulumi
         uses: pulumi/actions@v4
         with:
-          pulumi-version: 'latest'
+          pulumi-version: "latest"
 
       - name: Validate infrastructure changes
         run: |
           cd infrastructure
-          
+
           STACK_NAME="${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}"
-          
+
           pulumi stack select $STACK_NAME --create
-          
+
           # Preview and validate - will fail if there are errors
           pulumi preview --non-interactive
         env:
@@ -81,7 +80,7 @@ jobs:
       - name: Deploy infrastructure
         run: |
           cd infrastructure
-          
+
           # Deploy only if preview succeeded
           pulumi up --yes
         env:

@@ -3,24 +3,23 @@ name: Deploy Giratina
 on:
   push:
     branches:
-      - staging
-      - main
+      - none
     paths:
-      - 'giratina-backend/**'
-      - 'jirachi/**'
-      - '.github/workflows/deploy-giratina.yml'
+      - "giratina-backend/**"
+      - "jirachi/**"
+      - ".github/workflows/deploy-giratina.yml"
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy to'
+        description: "Environment to deploy to"
         required: true
-        default: 'staging'
+        default: "staging"
         type: choice
         options:
           - staging
           - production
       skip_security_scan:
-        description: 'Skip security vulnerability scanning (EMERGENCY USE ONLY)'
+        description: "Skip security vulnerability scanning (EMERGENCY USE ONLY)"
         required: false
         default: false
         type: boolean
@@ -34,7 +33,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
-    
+
     permissions:
       contents: read
       id-token: write
@@ -75,12 +74,12 @@ jobs:
         run: |
           IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/giratina:${{ github.sha }}"
           echo "Starting on-demand vulnerability scan for $IMAGE_URL"
-          
+
           # Run scan and capture scan name (use regional location for scan)
           SCAN_NAME=$(gcloud artifacts docker images scan $IMAGE_URL \
             --remote --quiet --location=asia \
             --format="value(response.scan)")
-          
+
           echo "Scan completed, scan name: $SCAN_NAME"
           echo "SCAN_NAME=$SCAN_NAME" >> $GITHUB_ENV
 
@@ -88,12 +87,12 @@ jobs:
         if: ${{ !inputs.skip_security_scan }}
         run: |
           IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/giratina:${{ github.sha }}"
-          
+
           # Count Critical and High vulnerabilities using scan name
           CRITICAL_HIGH=$(gcloud artifacts docker images list-vulnerabilities $SCAN_NAME \
             --location=asia \
             --format="value(vulnerability.effectiveSeverity)" | grep -c "CRITICAL\|HIGH" || true)
-          
+
           if [ "$CRITICAL_HIGH" -gt 0 ]; then
             echo "❌ Found $CRITICAL_HIGH Critical/High vulnerabilities"
             
@@ -136,7 +135,7 @@ jobs:
         if: ${{ inputs.skip_security_scan }}
         run: |
           IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/giratina:${{ github.sha }}"
-          
+
           gcloud logging write vulnerability-scan "{
             \"severity\": \"WARNING\",
             \"jsonPayload\": {
@@ -151,14 +150,14 @@ jobs:
               \"timestamp\": \"$(date -Iseconds)\"
             }
           }"
-          
+
           echo "⚠️ EMERGENCY DEPLOYMENT - Security scanning bypassed by ${{ github.actor }}"
 
       - name: Set up Node.js for Pulumi
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: infrastructure/package-lock.json
 
       - name: Install Pulumi dependencies
@@ -169,16 +168,16 @@ jobs:
       - name: Set up Pulumi
         uses: pulumi/actions@v4
         with:
-          pulumi-version: 'latest'
+          pulumi-version: "latest"
 
       - name: Deploy giratina service with new image
         run: |
           cd infrastructure
-          
+
           STACK_NAME="${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}"
-          
+
           pulumi stack select $STACK_NAME
-          
+
           pulumi config set giratina-image-tag ${{ github.sha }}
           pulumi up --target="urn:pulumi:$STACK_NAME::dislyze-infrastructure::gcp:cloudrun/service:Service::giratina" --yes
         env:
