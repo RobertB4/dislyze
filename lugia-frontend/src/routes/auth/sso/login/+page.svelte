@@ -69,7 +69,7 @@
 
 		{#if pageData.error}
 			<Alert type="danger" data-testid="sso-login-error">
-				<p class="text-sm">{pageData.error}</p>
+				<p data-testid="sso-login-error-message" class="text-sm">{pageData.error}</p>
 			</Alert>
 		{/if}
 

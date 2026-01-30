@@ -601,7 +601,10 @@
 
 					<div class="ml-4 overflow-hidden">
 						<p class="text-sm font-medium text-white h-4 mb-1">{me.user_name}</p>
-						<p class="text-xs font-medium text-gray-300 group-hover:text-gray-200 h-4 truncate">
+						<p
+							data-testid="layout-user-email"
+							class="text-xs font-medium text-gray-300 group-hover:text-gray-200 h-4 truncate"
+						>
 							{me.email}
 						</p>
 					</div>

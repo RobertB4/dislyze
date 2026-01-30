@@ -79,14 +79,31 @@ var TestTenantsData = map[string]TenantTestData{
 		EnterpriseFeatures: map[string]interface{}{
 			"rbac": map[string]interface{}{"enabled": true},
 			"sso": map[string]interface{}{
-				"enabled":            true,
-				"idp_metadata_url":   "http://localhost:7001/realms/test-realm/protocol/saml/descriptor",
+				"enabled":          true,
+				"idp_metadata_url": "http://localhost:7001/realms/test-realm/protocol/saml/descriptor",
 				"attribute_mapping": map[string]interface{}{
 					"email":     "email",
 					"firstName": "firstName",
 					"lastName":  "lastName",
 				},
 				"allowed_domains": []string{"sso.test"},
+			},
+		},
+	},
+	"ssodisabled": {
+		ID:   "55555555-5555-5555-5555-555555555555",
+		Name: "SSO無効株式会社",
+		EnterpriseFeatures: map[string]interface{}{
+			"rbac": map[string]interface{}{"enabled": true},
+			"sso": map[string]interface{}{
+				"enabled":          false,
+				"idp_metadata_url": "http://localhost:7001/realms/test-realm/protocol/saml/descriptor",
+				"attribute_mapping": map[string]interface{}{
+					"email":     "email",
+					"firstName": "firstName",
+					"lastName":  "lastName",
+				},
+				"allowed_domains": []string{"ssodisabled.test"},
 			},
 		},
 	},
@@ -233,6 +250,27 @@ var TestRolesData = map[string]RoleTestData{
 	"sso_viewer": {
 		ID:          "77777777-7777-8888-9999-bbbbbbbbbbbb",
 		TenantID:    "44444444-4444-4444-4444-444444444444",
+		Name:        "閲覧者",
+		Description: "閲覧権限のみ",
+		IsDefault:   true,
+	},
+	"ssodisabled_admin": {
+		ID:          "88888888-8888-9999-aaaa-cccccccccccc",
+		TenantID:    "55555555-5555-5555-5555-555555555555",
+		Name:        "管理者",
+		Description: "すべての機能にアクセス可能",
+		IsDefault:   true,
+	},
+	"ssodisabled_editor": {
+		ID:          "99999999-9999-aaaa-bbbb-dddddddddddd",
+		TenantID:    "55555555-5555-5555-5555-555555555555",
+		Name:        "編集者",
+		Description: "ユーザー管理以外の編集権限",
+		IsDefault:   true,
+	},
+	"ssodisabled_viewer": {
+		ID:          "aaaaaaaa-aaaa-bbbb-cccc-eeeeeeeeeeee",
+		TenantID:    "55555555-5555-5555-5555-555555555555",
 		Name:        "閲覧者",
 		Description: "閲覧権限のみ",
 		IsDefault:   true,
@@ -517,7 +555,7 @@ var TestUsersData = map[string]UserTestData{
 	"sso_1": {
 		Email:             "sso1@sso.test",
 		PlainTextPassword: "1234567890", // Keycloak password, not used for login
-		UserID:            "50000000-0000-0000-0000-000000000001",
+		UserID:            "d0000000-0000-0000-0000-000000000001",
 		TenantID:          "44444444-4444-4444-4444-444444444444",
 		Name:              "山田 太郎",
 		Status:            "active",
@@ -525,9 +563,27 @@ var TestUsersData = map[string]UserTestData{
 	"sso_2": {
 		Email:             "sso2@sso.test",
 		PlainTextPassword: "1234567890", // Keycloak password, not used for login
-		UserID:            "50000000-0000-0000-0000-000000000002",
+		UserID:            "d0000000-0000-0000-0000-000000000002",
 		TenantID:          "44444444-4444-4444-4444-444444444444",
 		Name:              "鈴木 花子",
+		Status:            "pending_verification",
+	},
+	"sso_3": {
+		Email:             "sso3@sso.test",
+		PlainTextPassword: "1234567890", // Keycloak password, not used for login
+		UserID:            "d0000000-0000-0000-0000-000000000003",
+		TenantID:          "44444444-4444-4444-4444-444444444444",
+		Name:              "高橋 三郎",
+		Status:            "suspended",
+	},
+
+	// SSO Disabled tenant user
+	"ssodisabled_1": {
+		Email:             "ssodisabled1@ssodisabled.test",
+		PlainTextPassword: "1234567890", // Keycloak password
+		UserID:            "e0000000-0000-0000-0000-000000000001",
+		TenantID:          "55555555-5555-5555-5555-555555555555",
+		Name:              "山田 花子",
 		Status:            "active",
 	},
 }
@@ -702,14 +758,26 @@ var TestUserRolesData = map[string]UserRoleTestData{
 
 	// SSO tenant role assignments
 	"sso_1_admin": {
-		UserID:   "50000000-0000-0000-0000-000000000001",
+		UserID:   "d0000000-0000-0000-0000-000000000001",
 		RoleID:   "55555555-5555-6666-7777-999999999999",
 		TenantID: "44444444-4444-4444-4444-444444444444",
 	},
 	"sso_2_viewer": {
-		UserID:   "50000000-0000-0000-0000-000000000002",
+		UserID:   "d0000000-0000-0000-0000-000000000002",
 		RoleID:   "77777777-7777-8888-9999-bbbbbbbbbbbb",
 		TenantID: "44444444-4444-4444-4444-444444444444",
+	},
+	"sso_3_viewer": {
+		UserID:   "d0000000-0000-0000-0000-000000000003",
+		RoleID:   "77777777-7777-8888-9999-bbbbbbbbbbbb",
+		TenantID: "44444444-4444-4444-4444-444444444444",
+	},
+
+	// SSO Disabled tenant role assignments
+	"ssodisabled_1_viewer": {
+		UserID:   "e0000000-0000-0000-0000-000000000001",
+		RoleID:   "aaaaaaaa-aaaa-bbbb-cccc-eeeeeeeeeeee",
+		TenantID: "55555555-5555-5555-5555-555555555555",
 	},
 }
 

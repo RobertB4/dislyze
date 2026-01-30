@@ -82,6 +82,22 @@
       ]
     },
     {
+      "id": "sso3",
+      "username": "sso3@sso.test",
+      "email": "sso3@sso.test",
+      "emailVerified": true,
+      "firstName": "三郎",
+      "lastName": "高橋",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "1234567890",
+          "temporary": false
+        }
+      ]
+    },
+    {
       "id": "ssonewuser",
       "username": "ssonewuser@sso.test",
       "email": "ssonewuser@sso.test",
@@ -104,6 +120,22 @@
       "emailVerified": true,
       "firstName": "英美",
       "lastName": "竹内",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "1234567890",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "ssodisabled1",
+      "username": "ssodisabled1@ssodisabled.test",
+      "email": "ssodisabled1@ssodisabled.test",
+      "emailVerified": true,
+      "firstName": "花子",
+      "lastName": "山田",
       "enabled": true,
       "credentials": [
         {

@@ -297,7 +297,7 @@ export const TestUsersData = {
 	sso_1: {
 		email: "sso1@sso.test",
 		plainTextPassword: "1234567890", // Keycloak password, not used for login
-		userID: "50000000-0000-0000-0000-000000000001",
+		userID: "d0000000-0000-0000-0000-000000000001",
 		tenantID: "44444444-4444-4444-4444-444444444444",
 		name: "山田 太郎",
 		status: "active",
@@ -306,9 +306,27 @@ export const TestUsersData = {
 	sso_2: {
 		email: "sso2@sso.test",
 		plainTextPassword: "1234567890", // Keycloak password, not used for login
-		userID: "50000000-0000-0000-0000-000000000002",
+		userID: "d0000000-0000-0000-0000-000000000002",
 		tenantID: "44444444-4444-4444-4444-444444444444",
 		name: "鈴木 花子",
+		status: "pending_verification",
+		role: "閲覧者" // Viewer role
+	},
+	sso_3: {
+		email: "sso3@sso.test",
+		plainTextPassword: "1234567890", // Keycloak password, not used for login
+		userID: "d0000000-0000-0000-0000-000000000003",
+		tenantID: "44444444-4444-4444-4444-444444444444",
+		name: "高橋 三郎",
+		status: "suspended",
+		role: "閲覧者" // Viewer role
+	},
+	ssodisabled_1: {
+		email: "ssodisabled1@ssodisabled.test",
+		plainTextPassword: "1234567890", // Keycloak password
+		userID: "e0000000-0000-0000-0000-000000000001",
+		tenantID: "55555555-5555-5555-5555-555555555555",
+		name: "山田 花子",
 		status: "active",
 		role: "閲覧者" // Viewer role
 	}
