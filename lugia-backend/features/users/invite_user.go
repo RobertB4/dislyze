@@ -18,6 +18,7 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 	"golang.org/x/crypto/bcrypt"
 
+	"dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/responder"
@@ -81,6 +82,21 @@ func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UsersHandler) inviteUser(ctx context.Context, req InviteUserRequestBody) error {
+	tenantID := libctx.GetTenantID(ctx)
+
+	tenant, err := h.q.GetTenantByID(ctx, tenantID)
+	if err != nil {
+		return errlib.New(fmt.Errorf("InviteUser: failed to get tenant: %w", err), http.StatusInternalServerError, "")
+	}
+
+	if tenant.AuthMethod == "sso" {
+		return h.inviteSSOUser(ctx, req, tenant)
+	}
+
+	return h.invitePasswordUser(ctx, req)
+}
+
+func (h *UsersHandler) invitePasswordUser(ctx context.Context, req InviteUserRequestBody) error {
 	tenantID := libctx.GetTenantID(ctx)
 	inviterUserID := libctx.GetUserID(ctx)
 
@@ -190,6 +206,151 @@ func (h *UsersHandler) inviteUser(ctx context.Context, req InviteUserRequestBody
 	<p>%sさんがあなたをdislyzeに招待しています。</p>
 	<p>以下のリンクをクリックして登録を完了してください。</p>
 	<p><a href="%s">登録を完了する</a></p>
+	<p>このメールにお心当たりがない場合は、無視してください。</p>`, req.Name, inviterDBUser.Name, invitationLink)
+
+	sgMailBody := sendgridlib.SendGridMailRequestBody{
+		Personalizations: []sendgridlib.SendGridPersonalization{
+			{
+				To:      []sendgridlib.SendGridEmailAddress{{Email: req.Email, Name: req.Name}},
+				Subject: subject,
+			},
+		},
+		From:    sendgridlib.SendGridEmailAddress{Email: sendgridlib.SendGridFromEmail, Name: sendgridlib.SendGridFromName},
+		Content: []sendgridlib.SendGridContent{{Type: "text/plain", Value: plainTextContent}, {Type: "text/html", Value: htmlContent}},
+	}
+
+	bodyBytes, err := json.Marshal(sgMailBody)
+	if err != nil {
+		return errlib.New(fmt.Errorf("InviteUser: failed to marshal SendGrid request body: %w", err), http.StatusInternalServerError, "")
+	}
+
+	sendgridRequest := sendgrid.GetRequest(h.env.SendgridAPIKey, "/v3/mail/send", h.env.SendgridAPIUrl)
+	sendgridRequest.Method = "POST"
+	sendgridRequest.Body = bodyBytes
+	response, err := sendgrid.API(sendgridRequest)
+	if err != nil {
+		return errlib.New(fmt.Errorf("InviteUser: SendGrid API call failed: %w", err), http.StatusInternalServerError, "")
+	}
+
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return errlib.New(fmt.Errorf("InviteUser: SendGrid API returned error status code: %d, Body: %s", response.StatusCode, response.Body), http.StatusInternalServerError, "")
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return errlib.New(fmt.Errorf("InviteUser: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
+	}
+
+	return nil
+}
+
+func (h *UsersHandler) inviteSSOUser(ctx context.Context, req InviteUserRequestBody, tenant *queries.Tenant) error {
+	tenantID := libctx.GetTenantID(ctx)
+	inviterUserID := libctx.GetUserID(ctx)
+
+	var enterpriseFeatures authz.EnterpriseFeatures
+	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
+		return errlib.New(fmt.Errorf("InviteUser: failed to parse enterprise features: %w", err), http.StatusInternalServerError, "")
+	}
+
+	if !enterpriseFeatures.SSO.Enabled {
+		return errlib.New(fmt.Errorf("InviteUser: SSO not enabled for tenant"), http.StatusBadRequest, "")
+	}
+
+	emailParts := strings.Split(req.Email, "@")
+	if len(emailParts) != 2 {
+		return errlib.New(fmt.Errorf("InviteUser: invalid email format"), http.StatusBadRequest, "")
+	}
+	domain := emailParts[1]
+
+	domainAllowed := false
+	for _, allowedDomain := range enterpriseFeatures.SSO.AllowedDomains {
+		if domain == allowedDomain {
+			domainAllowed = true
+			break
+		}
+	}
+	if !domainAllowed {
+		return errlib.New(fmt.Errorf("InviteUser: email domain %s not in allowed domains for SSO", domain), http.StatusBadRequest, "許可されていないメールアドレスです。")
+	}
+
+	inviterDBUser, err := h.q.GetUserByID(ctx, inviterUserID)
+	if err != nil {
+		return errlib.New(fmt.Errorf("InviteUser: failed to get inviter's user details for UserID %s: %w", inviterUserID.String(), err), http.StatusInternalServerError, "")
+	}
+
+	_, err = h.q.GetUserByEmail(ctx, req.Email)
+	if err == nil {
+		return errlib.New(fmt.Errorf("InviteUser: attempt to invite existing email: %s", req.Email), http.StatusConflict, "このメールアドレスは既に使用されています。")
+	}
+	if !errlib.Is(err, pgx.ErrNoRows) {
+		return errlib.New(fmt.Errorf("InviteUser: GetUserByEmail failed: %w", err), http.StatusInternalServerError, "")
+	}
+
+	tx, err := h.dbConn.Begin(ctx)
+	if err != nil {
+		return errlib.New(fmt.Errorf("InviteUser: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+	}
+	defer func() {
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
+			errlib.LogError(fmt.Errorf("InviteUser: failed to rollback transaction: %w", rbErr))
+		}
+	}()
+	qtx := h.q.WithTx(tx)
+
+	createdUserID, err := qtx.InviteUserToTenant(ctx, &queries.InviteUserToTenantParams{
+		TenantID:      tenantID,
+		Email:         req.Email,
+		PasswordHash:  "!",
+		Name:          req.Name,
+		Status:        "pending_verification",
+		ExternalSsoID: pgtype.Text{Valid: false},
+	})
+	if err != nil {
+		return errlib.New(fmt.Errorf("InviteUser: InviteUserToTenant failed: %w", err), http.StatusInternalServerError, "")
+	}
+
+	roleIDs := make([]pgtype.UUID, len(req.RoleIDs))
+	for i, roleIDStr := range req.RoleIDs {
+		var roleID pgtype.UUID
+		err := roleID.Scan(roleIDStr)
+		if err != nil {
+			return errlib.New(fmt.Errorf("InviteUser: invalid role ID format %s: %w", roleIDStr, err), http.StatusBadRequest, "")
+		}
+		roleIDs[i] = roleID
+	}
+
+	validRoleIDs, err := qtx.ValidateRolesBelongToTenant(ctx, &queries.ValidateRolesBelongToTenantParams{
+		Column1:  roleIDs,
+		TenantID: tenantID,
+	})
+	if err != nil {
+		return errlib.New(fmt.Errorf("InviteUser: failed to validate roles: %w", err), http.StatusInternalServerError, "")
+	}
+	if len(validRoleIDs) != len(roleIDs) {
+		return errlib.New(fmt.Errorf("InviteUser: some role IDs do not belong to tenant"), http.StatusBadRequest, "")
+	}
+
+	for _, roleID := range roleIDs {
+		err = qtx.AssignRoleToUser(ctx, &queries.AssignRoleToUserParams{
+			UserID:   createdUserID,
+			RoleID:   roleID,
+			TenantID: tenantID,
+		})
+		if err != nil {
+			return errlib.New(fmt.Errorf("InviteUser: failed to assign role %s to user: %w", roleID.String(), err), http.StatusInternalServerError, "")
+		}
+	}
+
+	subject := fmt.Sprintf("%sさんから%s様へのdislyzeへのご招待", inviterDBUser.Name, req.Name)
+	invitationLink := fmt.Sprintf("%s/auth/sso/login?email=%s",
+		h.env.FrontendURL,
+		url.QueryEscape(req.Email))
+
+	plainTextContent := fmt.Sprintf("%s様、\n\n%sさんがあなたをdislyzeに招待しています。\n\n以下のリンクをクリックしてSSOでログインしてください。\n%s\n\nこのメールにお心当たりがない場合は、無視してください。", req.Name, inviterDBUser.Name, invitationLink)
+	htmlContent := fmt.Sprintf(`<p>%s様</p>
+	<p>%sさんがあなたをdislyzeに招待しています。</p>
+	<p>以下のリンクをクリックしてSSOでログインしてください。</p>
+	<p><a href="%s">SSOでログインする</a></p>
 	<p>このメールにお心当たりがない場合は、無視してください。</p>`, req.Name, inviterDBUser.Name, invitationLink)
 
 	sgMailBody := sendgridlib.SendGridMailRequestBody{

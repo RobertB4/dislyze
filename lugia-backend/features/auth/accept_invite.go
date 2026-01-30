@@ -109,6 +109,15 @@ func (h *AuthHandler) acceptInvite(ctx context.Context, req AcceptInviteRequestB
 		return errlib.New(fmt.Errorf("AcceptInvite: GetUserByID failed: %w", err), http.StatusInternalServerError, "")
 	}
 
+	tenant, err := qtx.GetTenantByID(ctx, dbUser.TenantID)
+	if err != nil {
+		return errlib.New(fmt.Errorf("AcceptInvite: failed to get tenant: %w", err), http.StatusInternalServerError, "")
+	}
+
+	if tenant.AuthMethod == "sso" {
+		return errlib.New(fmt.Errorf("AcceptInvite: user belongs to SSO tenant"), http.StatusBadRequest, "")
+	}
+
 	if dbUser.Status != "pending_verification" {
 		return errlib.New(fmt.Errorf("AcceptInvite: user %s status is '%s', expected 'pending_verification' for token %s", dbUser.ID.String(), dbUser.Status, hashedTokenStr), http.StatusBadRequest, "このユーザーはすでに承諾済みです。")
 	}

@@ -8,7 +8,7 @@
 
 	const { form, errors, data, isSubmitting } = createForm({
 		initialValues: {
-			email: ""
+			email: pageData.email || ""
 		},
 		validate: (values) => {
 			const errors: Record<string, string> = {};
