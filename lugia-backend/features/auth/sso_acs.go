@@ -189,6 +189,10 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 		return nil, fmt.Errorf("failed to validate SAML response: %w", err), ""
 	}
 
+	if assertion.Subject.NameID.Format != string(saml.PersistentNameIDFormat) {
+		return nil, fmt.Errorf("invalid NameID format: expected %s, got %s", saml.PersistentNameIDFormat, assertion.Subject.NameID.Format), ""
+	}
+
 	externalSSOID := assertion.Subject.NameID.Value
 	email := extractAttribute(assertion.AttributeStatements, enterpriseFeatures.SSO.AttributeMapping["email"])
 	firstName := extractAttribute(assertion.AttributeStatements, enterpriseFeatures.SSO.AttributeMapping["firstName"])
@@ -267,6 +271,16 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 		if err := tx.Commit(ctx); err != nil {
 			return nil, fmt.Errorf("failed to commit transaction: %w", err), ""
 		}
+
+		logger.LogAuthEvent(logger.AuthEvent{
+			EventType: "sso_user_auto_provisioned",
+			Service:   "lugia",
+			UserID:    user.ID.String(),
+			IPAddress: r.RemoteAddr,
+			UserAgent: r.UserAgent(),
+			Timestamp: time.Now(),
+			Success:   true,
+		})
 
 	} else {
 		// User exists
