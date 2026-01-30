@@ -14,15 +14,19 @@
 	import { createForm } from "felte";
 	import { invalidate } from "$app/navigation";
 	import { mutationFetch } from "$lib/fetch";
-	import type { Tenant } from "./+page";
-	import type { EnterpriseFeatures } from "@dislyze/zoroark";
+	import type { Tenant, EnterpriseFeatures } from "./+page";
 	import { resolve } from "$app/paths";
 
 	let { data: pageData }: { data: PageData } = $props();
 
 	const featureKeyToLabelMap: Record<string, string> = {
 		rbac: "権限設定",
-		ip_whitelist: "IPアドレス制限"
+		ip_whitelist: "IPアドレス制限",
+		sso: "SSO認証"
+	};
+
+	const isFeatureEditable = (featureKey: string): boolean => {
+		return featureKey !== "sso";
 	};
 
 	interface UpdateTenantRequestBody {
@@ -43,11 +47,10 @@
 		isSubmitting: editIsSubmitting,
 		reset: editReset,
 		setInitialValues: setEditFormInitialValues
-	} = createForm({
+	} = createForm<{ name: string; enterprise_features: EnterpriseFeatures }>({
 		initialValues: {
 			name: "",
-			rbac_enabled: false,
-			ip_whitelist_enabled: false
+			enterprise_features: {} as EnterpriseFeatures
 		},
 		validate: (values) => {
 			const errs: Record<string, string> = {};
@@ -64,14 +67,7 @@
 
 			const requestBody: UpdateTenantRequestBody = {
 				name: values.name,
-				enterprise_features: {
-					...pageData.me.enterprise_features,
-					rbac: { enabled: values.rbac_enabled },
-					ip_whitelist: {
-						...pageData.me.enterprise_features.ip_whitelist,
-						enabled: values.ip_whitelist_enabled
-					}
-				}
+				enterprise_features: values.enterprise_features
 			};
 
 			const { success } = await mutationFetch(`/api/tenants/${editingTenant.id}/update`, {
@@ -94,8 +90,7 @@
 	const handleEditTenant = (tenant: Tenant) => {
 		setEditFormInitialValues({
 			name: tenant.name,
-			rbac_enabled: tenant.enterprise_features.rbac.enabled,
-			ip_whitelist_enabled: tenant.enterprise_features.ip_whitelist.enabled
+			enterprise_features: tenant.enterprise_features
 		});
 		editingTenant = tenant;
 	};
@@ -377,53 +372,54 @@
 						<div class="space-y-4">
 							<h3 class="text-sm font-medium text-gray-700">エンタープライズ機能</h3>
 
-							<div class="border border-gray-200 rounded-lg p-4">
-								<div class="flex items-center justify-between">
-									<h4 class="text-sm font-medium text-gray-900">権限設定 (RBAC)</h4>
-									<div class="flex gap-2">
-										<InteractivePill
-											selected={!$editData.rbac_enabled}
-											onclick={() => ($editData.rbac_enabled = false)}
-											variant="orange"
-											data-testid="rbac-disabled"
-										>
-											無効
-										</InteractivePill>
-										<InteractivePill
-											selected={$editData.rbac_enabled}
-											onclick={() => ($editData.rbac_enabled = true)}
-											variant="orange"
-											data-testid="rbac-enabled"
-										>
-											有効
-										</InteractivePill>
-									</div>
-								</div>
-							</div>
+							{#each Object.entries(editingTenant.enterprise_features) as [featureKey] (featureKey)}
+								{@const editable = isFeatureEditable(featureKey)}
+								{@const isEnabled =
+									$editData.enterprise_features[featureKey as keyof EnterpriseFeatures]?.enabled}
 
-							<div class="border border-gray-200 rounded-lg p-4">
-								<div class="flex items-center justify-between">
-									<h4 class="text-sm font-medium text-gray-900">IPアドレス制限</h4>
-									<div class="flex gap-2">
-										<InteractivePill
-											selected={!$editData.ip_whitelist_enabled}
-											onclick={() => ($editData.ip_whitelist_enabled = false)}
-											variant="orange"
-											data-testid="rbac-disabled"
-										>
-											無効
-										</InteractivePill>
-										<InteractivePill
-											selected={$editData.ip_whitelist_enabled}
-											onclick={() => ($editData.ip_whitelist_enabled = true)}
-											variant="orange"
-											data-testid="rbac-enabled"
-										>
-											有効
-										</InteractivePill>
+								<div class="border border-gray-200 rounded-lg p-4">
+									<div class="flex items-center justify-between">
+										<div class="flex items-center gap-2">
+											<h4 class="text-sm font-medium text-gray-900">
+												{featureKeyToLabelMap[featureKey]}
+											</h4>
+											{#if !editable}
+												<span class="text-xs text-gray-500">(読み取り専用)</span>
+											{/if}
+										</div>
+										<div class="flex gap-2">
+											<InteractivePill
+												selected={!isEnabled}
+												onclick={editable
+													? () =>
+															($editData.enterprise_features[
+																featureKey as keyof EnterpriseFeatures
+															].enabled = false)
+													: undefined}
+												variant={editable ? "orange" : "gray"}
+												class={!editable ? "opacity-50" : ""}
+												data-testid={`${featureKey}-disabled`}
+											>
+												無効
+											</InteractivePill>
+											<InteractivePill
+												selected={isEnabled}
+												onclick={editable
+													? () =>
+															($editData.enterprise_features[
+																featureKey as keyof EnterpriseFeatures
+															].enabled = true)
+													: undefined}
+												variant={editable ? "orange" : "gray"}
+												class={!editable ? "opacity-50" : ""}
+												data-testid={`${featureKey}-enabled`}
+											>
+												有効
+											</InteractivePill>
+										</div>
 									</div>
 								</div>
-							</div>
+							{/each}
 						</div>
 					</div>
 				</Slideover>

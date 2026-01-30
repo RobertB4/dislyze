@@ -1,6 +1,16 @@
 import type { PageLoad } from "./$types";
 import { loadFunctionFetch } from "$lib/fetch";
-import { type EnterpriseFeatures } from "@dislyze/zoroark";
+import { type EnterpriseFeatures as BaseEnterpriseFeatures } from "@dislyze/zoroark";
+
+// Extended type for giratina internal app - includes SSO data not exposed to public apps
+export type EnterpriseFeatures = BaseEnterpriseFeatures & {
+	sso: {
+		enabled: boolean;
+		idp_metadata_url: string;
+		attribute_mapping: Record<string, string>;
+		allowed_domains: string[];
+	};
+};
 
 export interface Tenant {
 	id: string;
