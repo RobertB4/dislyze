@@ -118,7 +118,7 @@
 			allowed_domains: [{ value: "" }]
 		},
 		validate: (values) => {
-			const errs: Record<string, string | { value: string }[]> = {};
+			const errs: Record<string, string | { value?: string }[]> = {};
 			values.email = values.email?.trim() || "";
 			values.company_name = values.company_name?.trim() || "";
 			if (values.user_name !== undefined) {
