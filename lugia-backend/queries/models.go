@@ -96,6 +96,7 @@ type Tenant struct {
 	Name               string             `json:"name"`
 	EnterpriseFeatures []byte             `json:"enterprise_features"`
 	StripeCustomerID   pgtype.Text        `json:"stripe_customer_id"`
+	AuthMethod         string             `json:"auth_method"`
 	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
 }
@@ -121,7 +122,6 @@ type User struct {
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
 	Status          string             `json:"status"`
-	AuthMethod      string             `json:"auth_method"`
 	ExternalSsoID   pgtype.Text        `json:"external_sso_id"`
 }
 

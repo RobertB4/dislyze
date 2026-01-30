@@ -119,7 +119,6 @@ func (h *UsersHandler) inviteUser(ctx context.Context, req InviteUserRequestBody
 		PasswordHash:  string(hashedInitialPassword),
 		Name:          req.Name,
 		Status:        "pending_verification",
-		AuthMethod:    "password",
 		ExternalSsoID: pgtype.Text{Valid: false},
 	})
 	if err != nil {

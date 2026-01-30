@@ -181,7 +181,10 @@ func (h *AuthHandler) tenantSignup(ctx context.Context, req *TenantSignupRequest
 
 	qtx := h.queries.WithTx(tx)
 
-	tenant, err := qtx.CreateTenant(ctx, req.CompanyName)
+	tenant, err := qtx.CreateTenant(ctx, &queries.CreateTenantParams{
+		Name:       req.CompanyName,
+		AuthMethod: "password",
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tenant: %w", err)
 	}
@@ -193,7 +196,6 @@ func (h *AuthHandler) tenantSignup(ctx context.Context, req *TenantSignupRequest
 		Name:           req.UserName,
 		Status:         "active",
 		IsInternalUser: false,
-		AuthMethod:     "password",
 		ExternalSsoID:  pgtype.Text{Valid: false},
 	})
 	if err != nil {
@@ -207,7 +209,6 @@ func (h *AuthHandler) tenantSignup(ctx context.Context, req *TenantSignupRequest
 		Name:           "内部ユーザー",
 		Status:         "active",
 		IsInternalUser: true,
-		AuthMethod:     "password",
 		ExternalSsoID:  pgtype.Text{Valid: false},
 	})
 	if err != nil {

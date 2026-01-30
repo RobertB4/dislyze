@@ -30,7 +30,7 @@ type Querier interface {
 	CreateRole(ctx context.Context, arg *CreateRoleParams) (*CreateRoleRow, error)
 	CreateRolePermissionsBulk(ctx context.Context, arg *CreateRolePermissionsBulkParams) error
 	CreateSSOAuthRequest(ctx context.Context, arg *CreateSSOAuthRequestParams) error
-	CreateTenant(ctx context.Context, name string) (*Tenant, error)
+	CreateTenant(ctx context.Context, arg *CreateTenantParams) (*Tenant, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
 	DeleteEmailChangeTokensByUserID(ctx context.Context, userID pgtype.UUID) error
 	DeleteExpiredSSORequests(ctx context.Context) error

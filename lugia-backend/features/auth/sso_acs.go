@@ -249,7 +249,6 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 			Name:           fullName,
 			Status:         "active",
 			IsInternalUser: false,
-			AuthMethod:     "sso",
 			ExternalSsoID:  pgtype.Text{String: externalSSOID, Valid: true},
 		})
 		if err != nil {
@@ -290,7 +289,7 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 			return nil, fmt.Errorf("account suspended"), "アカウントが停止されています。サポートにお問い合わせください。"
 		}
 
-		if user.AuthMethod == "password" {
+		if tenant.AuthMethod == "password" {
 			return nil, fmt.Errorf("user with auth_method password attempted sso login"), "このアカウントはSSOが無効です。パスワードでログインしてください。"
 		}
 

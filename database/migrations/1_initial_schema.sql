@@ -8,6 +8,7 @@ CREATE TABLE tenants (
     name VARCHAR(255) NOT NULL,
     enterprise_features JSONB DEFAULT '{}', -- Feature toggles: {"feature_name": {"enabled": boolean, ...config}}
     stripe_customer_id VARCHAR(255) UNIQUE,
+    auth_method VARCHAR(50) NOT NULL CHECK (auth_method IN ('password', 'sso')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -72,7 +73,6 @@ CREATE TABLE users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
     status VARCHAR(50) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'pending_verification', 'suspended')),
-    auth_method VARCHAR(50) NOT NULL CHECK (auth_method IN ('password', 'sso')),
     external_sso_id VARCHAR(255),
     UNIQUE(email)
 );

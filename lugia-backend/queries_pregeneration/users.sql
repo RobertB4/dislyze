@@ -11,8 +11,8 @@ AND (
 ); 
 
 -- name: InviteUserToTenant :one
-INSERT INTO users (tenant_id, email, password_hash, name, status, auth_method, external_sso_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO users (tenant_id, email, password_hash, name, status, external_sso_id)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id; 
 
 -- name: CreateInvitationToken :one

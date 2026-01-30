@@ -8,9 +8,10 @@ WHERE id = $1;
 
 -- name: CreateTenant :one
 INSERT INTO tenants (
-    name
+    name,
+    auth_method
 ) VALUES (
-    $1
+    $1, $2
 ) RETURNING *;
 
 -- name: CreateUser :one
@@ -21,10 +22,9 @@ INSERT INTO users (
     name,
     status,
     is_internal_user,
-    auth_method,
     external_sso_id
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
+    $1, $2, $3, $4, $5, $6, $7
 ) RETURNING *;
 
 -- name: ExistsUserWithEmail :one

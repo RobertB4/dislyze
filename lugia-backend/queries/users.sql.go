@@ -462,8 +462,8 @@ func (q *Queries) GetUsersWithRolesRespectingRBAC(ctx context.Context, arg *GetU
 }
 
 const InviteUserToTenant = `-- name: InviteUserToTenant :one
-INSERT INTO users (tenant_id, email, password_hash, name, status, auth_method, external_sso_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO users (tenant_id, email, password_hash, name, status, external_sso_id)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id
 `
 
@@ -473,7 +473,6 @@ type InviteUserToTenantParams struct {
 	PasswordHash  string      `json:"password_hash"`
 	Name          string      `json:"name"`
 	Status        string      `json:"status"`
-	AuthMethod    string      `json:"auth_method"`
 	ExternalSsoID pgtype.Text `json:"external_sso_id"`
 }
 
@@ -484,7 +483,6 @@ func (q *Queries) InviteUserToTenant(ctx context.Context, arg *InviteUserToTenan
 		arg.PasswordHash,
 		arg.Name,
 		arg.Status,
-		arg.AuthMethod,
 		arg.ExternalSsoID,
 	)
 	var id pgtype.UUID

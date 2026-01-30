@@ -107,20 +107,27 @@ func (q *Queries) CreateSSOAuthRequest(ctx context.Context, arg *CreateSSOAuthRe
 
 const CreateTenant = `-- name: CreateTenant :one
 INSERT INTO tenants (
-    name
+    name,
+    auth_method
 ) VALUES (
-    $1
-) RETURNING id, name, enterprise_features, stripe_customer_id, created_at, updated_at
+    $1, $2
+) RETURNING id, name, enterprise_features, stripe_customer_id, auth_method, created_at, updated_at
 `
 
-func (q *Queries) CreateTenant(ctx context.Context, name string) (*Tenant, error) {
-	row := q.db.QueryRow(ctx, CreateTenant, name)
+type CreateTenantParams struct {
+	Name       string `json:"name"`
+	AuthMethod string `json:"auth_method"`
+}
+
+func (q *Queries) CreateTenant(ctx context.Context, arg *CreateTenantParams) (*Tenant, error) {
+	row := q.db.QueryRow(ctx, CreateTenant, arg.Name, arg.AuthMethod)
 	var i Tenant
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.EnterpriseFeatures,
 		&i.StripeCustomerID,
+		&i.AuthMethod,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -135,11 +142,10 @@ INSERT INTO users (
     name,
     status,
     is_internal_user,
-    auth_method,
     external_sso_id
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
-) RETURNING id, tenant_id, email, password_hash, name, is_internal_admin, is_internal_user, created_at, updated_at, deleted_at, status, auth_method, external_sso_id
+    $1, $2, $3, $4, $5, $6, $7
+) RETURNING id, tenant_id, email, password_hash, name, is_internal_admin, is_internal_user, created_at, updated_at, deleted_at, status, external_sso_id
 `
 
 type CreateUserParams struct {
@@ -149,7 +155,6 @@ type CreateUserParams struct {
 	Name           string      `json:"name"`
 	Status         string      `json:"status"`
 	IsInternalUser bool        `json:"is_internal_user"`
-	AuthMethod     string      `json:"auth_method"`
 	ExternalSsoID  pgtype.Text `json:"external_sso_id"`
 }
 
@@ -161,7 +166,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User,
 		arg.Name,
 		arg.Status,
 		arg.IsInternalUser,
-		arg.AuthMethod,
 		arg.ExternalSsoID,
 	)
 	var i User
@@ -177,7 +181,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User,
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Status,
-		&i.AuthMethod,
 		&i.ExternalSsoID,
 	)
 	return &i, err
@@ -323,7 +326,7 @@ func (q *Queries) GetTenantAndUserContext(ctx context.Context, arg *GetTenantAnd
 }
 
 const GetTenantByID = `-- name: GetTenantByID :one
-SELECT id, name, enterprise_features, stripe_customer_id, created_at, updated_at FROM tenants
+SELECT id, name, enterprise_features, stripe_customer_id, auth_method, created_at, updated_at FROM tenants
 WHERE id = $1
 `
 
@@ -335,6 +338,7 @@ func (q *Queries) GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, e
 		&i.Name,
 		&i.EnterpriseFeatures,
 		&i.StripeCustomerID,
+		&i.AuthMethod,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -342,7 +346,7 @@ func (q *Queries) GetTenantByID(ctx context.Context, id pgtype.UUID) (*Tenant, e
 }
 
 const GetUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, tenant_id, email, password_hash, name, is_internal_admin, is_internal_user, created_at, updated_at, deleted_at, status, auth_method, external_sso_id FROM users
+SELECT id, tenant_id, email, password_hash, name, is_internal_admin, is_internal_user, created_at, updated_at, deleted_at, status, external_sso_id FROM users
 WHERE email = $1 AND deleted_at IS NULL
 `
 
@@ -361,14 +365,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Status,
-		&i.AuthMethod,
 		&i.ExternalSsoID,
 	)
 	return &i, err
 }
 
 const GetUserByID = `-- name: GetUserByID :one
-SELECT id, tenant_id, email, password_hash, name, is_internal_admin, is_internal_user, created_at, updated_at, deleted_at, status, auth_method, external_sso_id FROM users
+SELECT id, tenant_id, email, password_hash, name, is_internal_admin, is_internal_user, created_at, updated_at, deleted_at, status, external_sso_id FROM users
 WHERE id = $1 AND deleted_at IS NULL
 `
 
@@ -387,7 +390,6 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (*User, error
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Status,
-		&i.AuthMethod,
 		&i.ExternalSsoID,
 	)
 	return &i, err

@@ -126,17 +126,17 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequestBody, r *http.
 		return nil, user.ID.String(), fmt.Errorf("アカウントが停止されています。サポートにお問い合わせください。")
 	}
 
-	if user.AuthMethod == "sso" {
+	tenant, err := h.queries.GetTenantByID(ctx, user.TenantID)
+	if err != nil {
+		return nil, user.ID.String(), fmt.Errorf("failed to get tenant: %w", err)
+	}
+
+	if tenant.AuthMethod == "sso" {
 		return nil, user.ID.String(), fmt.Errorf("このアカウントはSSO専用です。SSOでログインしてください。")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
 		return nil, user.ID.String(), fmt.Errorf("メールアドレスまたはパスワードが正しくありません")
-	}
-
-	tenant, err := h.queries.GetTenantByID(ctx, user.TenantID)
-	if err != nil {
-		return nil, user.ID.String(), fmt.Errorf("failed to get tenant: %w", err)
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
