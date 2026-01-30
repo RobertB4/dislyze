@@ -9,9 +9,10 @@ WHERE id = $1;
 -- name: CreateTenant :one
 INSERT INTO tenants (
     name,
-    auth_method
+    auth_method,
+    enterprise_features
 ) VALUES (
-    $1, $2
+    $1, $2, $3
 ) RETURNING *;
 
 -- name: CreateUser :one

@@ -108,19 +108,21 @@ func (q *Queries) CreateSSOAuthRequest(ctx context.Context, arg *CreateSSOAuthRe
 const CreateTenant = `-- name: CreateTenant :one
 INSERT INTO tenants (
     name,
-    auth_method
+    auth_method,
+    enterprise_features
 ) VALUES (
-    $1, $2
+    $1, $2, $3
 ) RETURNING id, name, enterprise_features, stripe_customer_id, auth_method, created_at, updated_at
 `
 
 type CreateTenantParams struct {
-	Name       string `json:"name"`
-	AuthMethod string `json:"auth_method"`
+	Name               string `json:"name"`
+	AuthMethod         string `json:"auth_method"`
+	EnterpriseFeatures []byte `json:"enterprise_features"`
 }
 
 func (q *Queries) CreateTenant(ctx context.Context, arg *CreateTenantParams) (*Tenant, error) {
-	row := q.db.QueryRow(ctx, CreateTenant, arg.Name, arg.AuthMethod)
+	row := q.db.QueryRow(ctx, CreateTenant, arg.Name, arg.AuthMethod, arg.EnterpriseFeatures)
 	var i Tenant
 	err := row.Scan(
 		&i.ID,

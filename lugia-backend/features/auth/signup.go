@@ -137,8 +137,9 @@ func (h *AuthHandler) signup(ctx context.Context, req *SignupRequestBody, r *htt
 	qtx := h.queries.WithTx(tx)
 
 	tenant, err := qtx.CreateTenant(ctx, &queries.CreateTenantParams{
-		Name:       req.CompanyName,
-		AuthMethod: "password",
+		Name:               req.CompanyName,
+		AuthMethod:         "password",
+		EnterpriseFeatures: []byte("{}"),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tenant: %w", err)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -15,10 +16,17 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+type SSOConfig struct {
+	Enabled        bool     `json:"enabled"`
+	IdpMetadataURL string   `json:"idp_metadata_url"`
+	AllowedDomains []string `json:"allowed_domains"`
+}
+
 type GenerateTenantInvitationTokenRequest struct {
-	Email       string `json:"email"`
-	CompanyName string `json:"company_name"`
-	UserName    string `json:"user_name"`
+	Email       string     `json:"email"`
+	CompanyName string     `json:"company_name"`
+	UserName    string     `json:"user_name"`
+	SSO         *SSOConfig `json:"sso,omitempty"`
 }
 
 func (r *GenerateTenantInvitationTokenRequest) Validate() error {
@@ -32,6 +40,30 @@ func (r *GenerateTenantInvitationTokenRequest) Validate() error {
 	if !strings.Contains(r.Email, "@") {
 		return fmt.Errorf("valid email is required")
 	}
+
+	if r.SSO != nil && r.SSO.Enabled {
+		r.SSO.IdpMetadataURL = strings.TrimSpace(r.SSO.IdpMetadataURL)
+
+		if r.SSO.IdpMetadataURL == "" {
+			return fmt.Errorf("idp_metadata_url is required when SSO is enabled")
+		}
+
+		if _, err := url.ParseRequestURI(r.SSO.IdpMetadataURL); err != nil {
+			return fmt.Errorf("idp_metadata_url must be a valid URL")
+		}
+
+		if len(r.SSO.AllowedDomains) == 0 {
+			return fmt.Errorf("at least one allowed domain is required when SSO is enabled")
+		}
+
+		for i, domain := range r.SSO.AllowedDomains {
+			r.SSO.AllowedDomains[i] = strings.TrimSpace(domain)
+			if r.SSO.AllowedDomains[i] == "" {
+				return fmt.Errorf("allowed domains cannot be empty")
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -40,9 +72,10 @@ type GenerateTenantInvitationTokenResponse struct {
 }
 
 type TenantInvitationClaims struct {
-	Email       string `json:"email"`
-	CompanyName string `json:"company_name"`
-	UserName    string `json:"user_name"`
+	Email       string     `json:"email"`
+	CompanyName string     `json:"company_name"`
+	UserName    string     `json:"user_name"`
+	SSO         *SSOConfig `json:"sso,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -93,6 +126,7 @@ func (h *TenantsHandler) generateTenantInvitationToken(ctx context.Context, req 
 		Email:       req.Email,
 		CompanyName: req.CompanyName,
 		UserName:    req.UserName,
+		SSO:         req.SSO,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(48 * time.Hour)),

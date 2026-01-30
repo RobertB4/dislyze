@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, toast, Input } from "@dislyze/zoroark";
+	import { Button, toast, Input, KnownError } from "@dislyze/zoroark";
 	import { createForm } from "felte";
 	import type { PageData } from "./$types";
 	import { safeGoto } from "@dislyze/zoroark";
@@ -22,45 +22,83 @@
 			const errs: Record<string, string> = {};
 			values.company_name = values.company_name.trim();
 			values.user_name = values.user_name.trim();
-			values.password = values.password.trim();
-			values.password_confirm = values.password_confirm.trim();
 
 			if (!values.company_name) {
 				errs.company_name = "会社名は必須です";
 			}
+
 			if (!values.user_name) {
 				errs.user_name = "氏名は必須です";
 			}
-			if (!values.password) {
-				errs.password = "パスワードは必須です";
-			} else if (values.password.length < 8) {
-				errs.password = "パスワードは8文字以上である必要があります";
+
+			if (!pageData.ssoEnabled) {
+				values.password = values.password.trim();
+				values.password_confirm = values.password_confirm.trim();
+
+				if (!values.password) {
+					errs.password = "パスワードは必須です";
+				} else if (values.password.length < 8) {
+					errs.password = "パスワードは8文字以上である必要があります";
+				}
+				if (!values.password_confirm) {
+					errs.password_confirm = "パスワードを確認してください";
+				} else if (values.password !== values.password_confirm) {
+					errs.password_confirm = "パスワードが一致しません";
+				}
 			}
-			if (!values.password_confirm) {
-				errs.password_confirm = "パスワードを確認してください";
-			} else if (values.password !== values.password_confirm) {
-				errs.password_confirm = "パスワードが一致しません";
-			}
+
 			return errs;
 		},
 		onSubmit: async (values) => {
-			const encodedToken = encodeURIComponent(pageData.token);
-			const { success } = await mutationFetch(`/api/auth/tenant-signup?token=${encodedToken}`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					password: values.password,
-					password_confirm: values.password_confirm,
-					company_name: values.company_name,
-					user_name: values.user_name
-				})
-			});
+			try {
+				const encodedToken = encodeURIComponent(pageData.token);
+				const { success } = await mutationFetch(`/api/auth/tenant-signup?token=${encodedToken}`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json"
+					},
+					body: JSON.stringify({
+						password: values.password,
+						password_confirm: values.password_confirm,
+						company_name: values.company_name,
+						user_name: values.user_name
+					})
+				});
 
-			if (success) {
-				toast.show("アカウントが作成されました。", "success");
-				safeGoto("/");
+				if (success) {
+					if (pageData.ssoEnabled) {
+						const response = await fetch(`/api/auth/sso/login`, {
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json"
+							},
+							body: JSON.stringify({
+								email: pageData.email
+							})
+						});
+
+						if (!response.ok) {
+							throw new KnownError("SSOログインに失敗しました。");
+						}
+
+						const { html } = (await response.json()) as { html: string };
+
+						const container = document.createElement("div");
+						container.innerHTML = html;
+						document.body.appendChild(container);
+
+						const form = container.querySelector("form");
+						if (!form) {
+							throw new Error("expected form");
+						}
+						form.submit();
+					} else {
+						toast.show("アカウントが作成されました。", "success");
+						safeGoto("/");
+					}
+				}
+			} catch (err) {
+				toast.showError(err);
 			}
 		}
 	});
@@ -112,26 +150,28 @@
 						bind:value={$data.company_name}
 						error={$errors.company_name?.[0]}
 					/>
-					<Input
-						id="password"
-						name="password"
-						type="password"
-						label="パスワード"
-						placeholder="パスワード"
-						required
-						bind:value={$data.password}
-						error={$errors.password?.[0]}
-					/>
-					<Input
-						id="password_confirm"
-						name="password_confirm"
-						type="password"
-						label="パスワード（確認）"
-						placeholder="パスワード（確認）"
-						required
-						bind:value={$data.password_confirm}
-						error={$errors.password_confirm?.[0]}
-					/>
+					{#if !pageData.ssoEnabled}
+						<Input
+							id="password"
+							name="password"
+							type="password"
+							label="パスワード"
+							placeholder="パスワード"
+							required
+							bind:value={$data.password}
+							error={$errors.password?.[0]}
+						/>
+						<Input
+							id="password_confirm"
+							name="password_confirm"
+							type="password"
+							label="パスワード（確認）"
+							placeholder="パスワード（確認）"
+							required
+							bind:value={$data.password_confirm}
+							error={$errors.password_confirm?.[0]}
+						/>
+					{/if}
 				</div>
 
 				<div>

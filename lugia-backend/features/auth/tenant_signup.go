@@ -29,14 +29,25 @@ type TenantSignupRequestBody struct {
 	UserName        string `json:"user_name"`
 }
 
+type SSOConfig struct {
+	Enabled        bool     `json:"enabled"`
+	IdpMetadataURL string   `json:"idp_metadata_url"`
+	AllowedDomains []string `json:"allowed_domains"`
+}
+
 type CreateTenantTokenClaims struct {
-	Email string `json:"email"`
+	Email       string     `json:"email"`
+	CompanyName string     `json:"company_name"`
+	UserName    string     `json:"user_name"`
+	SSO         *SSOConfig `json:"sso,omitempty"`
 	jwt.RegisteredClaims
 }
 
-func (r *TenantSignupRequestBody) Validate() error {
+func (r *TenantSignupRequestBody) ValidatePasswordSignup() error {
 	r.Password = strings.TrimSpace(r.Password)
 	r.PasswordConfirm = strings.TrimSpace(r.PasswordConfirm)
+	r.CompanyName = strings.TrimSpace(r.CompanyName)
+	r.UserName = strings.TrimSpace(r.UserName)
 
 	if r.Password == "" {
 		return fmt.Errorf("password is required")
@@ -47,6 +58,21 @@ func (r *TenantSignupRequestBody) Validate() error {
 	if r.Password != r.PasswordConfirm {
 		return fmt.Errorf("passwords do not match")
 	}
+
+	if r.CompanyName == "" {
+		return fmt.Errorf("company_name is required")
+	}
+
+	if r.UserName == "" {
+		return fmt.Errorf("user_name is required")
+	}
+
+	return nil
+}
+
+func (r *TenantSignupRequestBody) ValidateSSOSignup() error {
+	r.CompanyName = strings.TrimSpace(r.CompanyName)
+	r.UserName = strings.TrimSpace(r.UserName)
 
 	if r.CompanyName == "" {
 		return fmt.Errorf("company_name is required")
@@ -110,12 +136,6 @@ func (h *AuthHandler) TenantSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := req.Validate(); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
 	exists, err := h.queries.ExistsUserWithEmail(r.Context(), claims.Email)
 	if err != nil {
 		appErr := errlib.New(err, http.StatusInternalServerError, "")
@@ -128,7 +148,29 @@ func (h *AuthHandler) TenantSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenPair, err := h.tenantSignup(r.Context(), &req, claims, r)
+	if claims.SSO != nil && claims.SSO.Enabled {
+		if err := req.ValidateSSOSignup(); err != nil {
+			appErr := errlib.New(err, http.StatusBadRequest, "")
+			responder.RespondWithError(w, appErr)
+			return
+		}
+
+		if err := h.ssoTenantSignup(r.Context(), &req, claims); err != nil {
+			appErr := errlib.New(err, http.StatusInternalServerError, "")
+			responder.RespondWithError(w, appErr)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if err := req.ValidatePasswordSignup(); err != nil {
+		appErr := errlib.New(err, http.StatusBadRequest, "")
+		responder.RespondWithError(w, appErr)
+		return
+	}
+
+	tokenPair, err := h.passwordTenantSignup(r.Context(), &req, claims, r)
 	if err != nil {
 		appErr := errlib.New(err, http.StatusInternalServerError, "")
 		responder.RespondWithError(w, appErr)
@@ -158,7 +200,7 @@ func (h *AuthHandler) TenantSignup(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *AuthHandler) tenantSignup(ctx context.Context, req *TenantSignupRequestBody, claims *CreateTenantTokenClaims, r *http.Request) (*jirachijwt.TokenPair, error) {
+func (h *AuthHandler) passwordTenantSignup(ctx context.Context, req *TenantSignupRequestBody, claims *CreateTenantTokenClaims, r *http.Request) (*jirachijwt.TokenPair, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
@@ -182,8 +224,9 @@ func (h *AuthHandler) tenantSignup(ctx context.Context, req *TenantSignupRequest
 	qtx := h.queries.WithTx(tx)
 
 	tenant, err := qtx.CreateTenant(ctx, &queries.CreateTenantParams{
-		Name:       req.CompanyName,
-		AuthMethod: "password",
+		Name:               claims.CompanyName,
+		AuthMethod:         "password",
+		EnterpriseFeatures: []byte("{}"),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tenant: %w", err)
@@ -260,4 +303,104 @@ func (h *AuthHandler) tenantSignup(ctx context.Context, req *TenantSignupRequest
 	})
 
 	return tokenPair, nil
+}
+
+func (h *AuthHandler) ssoTenantSignup(ctx context.Context, req *TenantSignupRequestBody, claims *CreateTenantTokenClaims) error {
+	internalUserHashedPassword, err := bcrypt.GenerateFromPassword([]byte(h.env.InternalUserPW), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	tx, err := h.dbConn.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() {
+		if rErr := tx.Rollback(ctx); rErr != nil && !errlib.Is(rErr, pgx.ErrTxClosed) {
+			errlib.LogError(fmt.Errorf("failed to rollback transaction in sso tenant signup: %w", rErr))
+		}
+	}()
+
+	qtx := h.queries.WithTx(tx)
+
+	enterpriseFeaturesJSON, err := json.Marshal(map[string]any{
+		"sso": map[string]any{
+			"enabled":          claims.SSO.Enabled,
+			"idp_metadata_url": claims.SSO.IdpMetadataURL,
+			"attribute_mapping": map[string]string{
+				"email":     "email",
+				"firstName": "firstName",
+				"lastName":  "lastName",
+			},
+			"allowed_domains": claims.SSO.AllowedDomains,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal enterprise features: %w", err)
+	}
+
+	tenant, err := qtx.CreateTenant(ctx, &queries.CreateTenantParams{
+		Name:               req.CompanyName,
+		AuthMethod:         "sso",
+		EnterpriseFeatures: enterpriseFeaturesJSON,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create tenant: %w", err)
+	}
+
+	user, err := qtx.CreateUser(ctx, &queries.CreateUserParams{
+		TenantID:       tenant.ID,
+		Email:          claims.Email,
+		PasswordHash:   "!",
+		Name:           req.UserName,
+		Status:         "active",
+		IsInternalUser: false,
+		ExternalSsoID:  pgtype.Text{Valid: false},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create user: %w", err)
+	}
+
+	internalUser, err := qtx.CreateUser(ctx, &queries.CreateUserParams{
+		TenantID:       tenant.ID,
+		Email:          fmt.Sprintf("%s@internal.com", tenant.ID),
+		PasswordHash:   string(internalUserHashedPassword),
+		Name:           "内部ユーザー",
+		Status:         "active",
+		IsInternalUser: true,
+		ExternalSsoID:  pgtype.Text{Valid: false},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create internal user: %w", err)
+	}
+
+	adminRoleID, err := h.setupDefaultRoles(ctx, qtx, tenant.ID, user.ID)
+	if err != nil {
+		return fmt.Errorf("failed to setup default roles: %w", err)
+	}
+
+	err = qtx.AssignRoleToUser(ctx, &queries.AssignRoleToUserParams{
+		UserID:   internalUser.ID,
+		RoleID:   adminRoleID,
+		TenantID: tenant.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to assign admin role to internal user: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	logger.LogAuthEvent(logger.AuthEvent{
+		EventType: "sso_tenant_signup",
+		Service:   "lugia",
+		UserID:    user.ID.String(),
+		IPAddress: "",
+		UserAgent: "",
+		Timestamp: time.Now(),
+		Success:   true,
+	})
+
+	return nil
 }

@@ -105,18 +105,25 @@
 		data: inviteData,
 		errors: inviteErrors,
 		isSubmitting: inviteIsSubmitting,
-		reset: inviteReset
+		reset: inviteReset,
+		addField: addInviteField,
+		unsetField: unsetInviteField
 	} = createForm({
 		initialValues: {
 			email: "",
 			company_name: "",
-			user_name: ""
+			user_name: "",
+			sso_enabled: false,
+			idp_metadata_url: "",
+			allowed_domains: [{ value: "" }]
 		},
 		validate: (values) => {
-			const errs: Record<string, string> = {};
-			values.email = values.email.trim();
-			values.company_name = values.company_name.trim();
-			values.user_name = values.user_name.trim();
+			const errs: Record<string, string | { value: string }[]> = {};
+			values.email = values.email?.trim() || "";
+			values.company_name = values.company_name?.trim() || "";
+			if (values.user_name !== undefined) {
+				values.user_name = values.user_name.trim();
+			}
 
 			if (!values.email) {
 				errs.email = "メールアドレスは必須です";
@@ -124,19 +131,72 @@
 				errs.email = "有効なメールアドレスを入力してください";
 			}
 
+			if (values.sso_enabled) {
+				if (values.idp_metadata_url !== undefined) {
+					values.idp_metadata_url = values.idp_metadata_url.trim();
+				}
+
+				if (!values.idp_metadata_url) {
+					errs.idp_metadata_url = "IdPメタデータURLは必須です";
+				} else {
+					try {
+						new URL(values.idp_metadata_url);
+					} catch {
+						errs.idp_metadata_url = "有効なURLを入力してください";
+					}
+				}
+
+				if (values.allowed_domains && Array.isArray(values.allowed_domains)) {
+					const hasAtLeastOneDomain = values.allowed_domains.some((d) => d?.value?.trim() !== "");
+					if (!hasAtLeastOneDomain && values.allowed_domains.length > 0) {
+						errs.allowed_domains = [{ value: "少なくとも1つの許可ドメインが必要です" }];
+					}
+
+					const domainErrors: { value?: string }[] = [];
+					values.allowed_domains.forEach((domain) => {
+						if (domain?.value?.trim()) {
+							const trimmedDomain = domain.value.trim();
+							if (trimmedDomain.startsWith("http://") || trimmedDomain.startsWith("https://")) {
+								domainErrors.push({ value: "プロトコル（http://、https://）を含めないでください" });
+							} else {
+								domainErrors.push({});
+							}
+						} else {
+							domainErrors.push({});
+						}
+					});
+
+					if (domainErrors.some((err) => err.value)) {
+						errs.allowed_domains = domainErrors;
+					}
+				}
+			}
+
 			return errs;
 		},
 		onSubmit: async (values) => {
+			const body: any = {
+				email: values.email,
+				company_name: values.company_name,
+				user_name: values.user_name
+			};
+
+			if (values.sso_enabled) {
+				body.sso = {
+					enabled: true,
+					idp_metadata_url: values.idp_metadata_url,
+					allowed_domains: values.allowed_domains
+						.filter((d) => d?.value?.trim() !== "")
+						.map((d) => d.value.trim())
+				};
+			}
+
 			const { response, success } = await mutationFetch("/api/tenants/generate-token", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json"
 				},
-				body: JSON.stringify({
-					email: values.email,
-					company_name: values.company_name,
-					user_name: values.user_name
-				})
+				body: JSON.stringify(body)
 			});
 
 			if (success && response) {
@@ -158,6 +218,29 @@
 		generatedInviteUrl = null;
 		inviteReset();
 	};
+
+	const addAllowedDomain = () => {
+		addInviteField("allowed_domains", { value: "" });
+	};
+
+	const removeAllowedDomain = (index: number) => {
+		if ($inviteData.allowed_domains.length > 1) {
+			unsetInviteField(`allowed_domains.${index}`);
+		}
+	};
+
+	const isInviteFormValid = $derived(() => {
+		const emailValid = $inviteData.email?.trim() !== "";
+
+		if (!$inviteData.sso_enabled) {
+			return emailValid;
+		}
+
+		const metadataUrlValid = $inviteData.idp_metadata_url?.trim() !== "";
+		const hasAtLeastOneDomain = $inviteData.allowed_domains.some((d) => d?.value?.trim() !== "");
+
+		return emailValid && metadataUrlValid && hasAtLeastOneDomain;
+	});
 
 	const copyToClipboard = async () => {
 		if (generatedInviteUrl) {
@@ -286,13 +369,17 @@
 							variant="underlined"
 						/>
 
-						<!-- User name input field (optional) -->
+						<!-- User name input field -->
 						<Input
 							id="invite-user-name"
 							name="user_name"
 							type="text"
 							label="氏名（任意）"
-							bind:value={$inviteData.user_name}
+							value={$inviteData.user_name ?? ""}
+							oninput={(e) => {
+								const target = e.currentTarget as HTMLInputElement;
+								$inviteData.user_name = target.value;
+							}}
 							error={$inviteErrors.user_name?.[0]}
 							placeholder="田中太郎"
 							variant="underlined"
@@ -311,12 +398,88 @@
 							variant="underlined"
 						/>
 
+						<!-- SSO Toggle -->
+						<div class="space-y-2">
+							<label class="flex items-center cursor-pointer">
+								<input
+									type="checkbox"
+									bind:checked={$inviteData.sso_enabled}
+									onchange={() => {
+										if ($inviteData.sso_enabled && $inviteData.allowed_domains.length === 0) {
+											addInviteField("allowed_domains", { value: "" });
+										}
+									}}
+									class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+									data-testid="sso-enabled-toggle"
+								/>
+								<span class="ml-2 text-sm font-medium text-gray-700">SSO認証を有効にする</span>
+							</label>
+						</div>
+
+						{#if $inviteData.sso_enabled}
+							<!-- IdP Metadata URL -->
+							<Input
+								id="invite-idp-metadata-url"
+								name="idp_metadata_url"
+								type="text"
+								label="IdPメタデータURL"
+								value={$inviteData.idp_metadata_url ?? ""}
+								oninput={(e) => {
+									const target = e.currentTarget as HTMLInputElement;
+									$inviteData.idp_metadata_url = target.value;
+								}}
+								error={$inviteErrors.idp_metadata_url?.[0]}
+								required
+								placeholder="IdPメタデータURL。例）https://idp.example.com/metadata"
+								variant="underlined"
+							/>
+
+							<!-- Allowed Domains -->
+							<div class="space-y-3">
+								<div class="block text-sm font-medium text-gray-700">許可ドメイン</div>
+								{#each $inviteData.allowed_domains as domain, index (domain.key)}
+									<div class="flex items-center gap-2">
+										<Input
+											id="allowed-domain-{index}"
+											name="allowed_domains.{index}.value"
+											type="text"
+											label=""
+											bind:value={$inviteData.allowed_domains[index].value}
+											placeholder="example.com"
+											variant="underlined"
+										/>
+										{#if $inviteData.allowed_domains.length > 1}
+											<Button
+												type="button"
+												variant="secondary"
+												onclick={() => removeAllowedDomain(index)}
+												data-testid="remove-domain-{index}"
+											>
+												削除
+											</Button>
+										{/if}
+									</div>
+								{/each}
+								<Button
+									type="button"
+									variant="secondary"
+									onclick={addAllowedDomain}
+									data-testid="add-domain-button"
+								>
+									+ ドメインを追加
+								</Button>
+								{#if $inviteErrors.allowed_domains?.[0]?.value}
+									<p class="text-sm text-red-600">{$inviteErrors.allowed_domains[0].value}</p>
+								{/if}
+							</div>
+						{/if}
+
 						<!-- Generate token button (not primary button of slideover) -->
 						<Button
 							type="submit"
 							variant="primary"
 							loading={$inviteIsSubmitting}
-							disabled={$inviteIsSubmitting || !$inviteData.email.trim()}
+							disabled={$inviteIsSubmitting || !isInviteFormValid()}
 							data-testid="generate-token-button"
 						>
 							招待URLを生成
