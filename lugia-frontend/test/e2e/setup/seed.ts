@@ -291,6 +291,26 @@ export const TestUsersData = {
 		name: "運営 花子",
 		status: "active",
 		role: "編集者" // Editor role
+	},
+
+	// SSO tenant users (already logged in via SSO)
+	sso_1: {
+		email: "sso1@sso.test",
+		plainTextPassword: "1234567890", // Keycloak password, not used for login
+		userID: "50000000-0000-0000-0000-000000000001",
+		tenantID: "44444444-4444-4444-4444-444444444444",
+		name: "山田 太郎",
+		status: "active",
+		role: "管理者" // Admin role
+	},
+	sso_2: {
+		email: "sso2@sso.test",
+		plainTextPassword: "1234567890", // Keycloak password, not used for login
+		userID: "50000000-0000-0000-0000-000000000002",
+		tenantID: "44444444-4444-4444-4444-444444444444",
+		name: "鈴木 花子",
+		status: "active",
+		role: "閲覧者" // Viewer role
 	}
 } as const;
 
@@ -312,6 +332,23 @@ export const TestTenantsData = {
 		id: "33333333-3333-3333-3333-333333333333",
 		name: "内部株式会社",
 		enterpriseFeatures: { rbac: { enabled: true } }
+	},
+	sso: {
+		id: "44444444-4444-4444-4444-444444444444",
+		name: "SSO株式会社",
+		enterpriseFeatures: {
+			rbac: { enabled: true },
+			sso: {
+				enabled: true,
+				idp_metadata_url: "http://localhost:7001/realms/test-realm/protocol/saml/descriptor",
+				attribute_mapping: {
+					email: "email",
+					firstName: "firstName",
+					lastName: "lastName"
+				},
+				allowed_domains: ["sso.test"]
+			}
+		}
 	}
 } as const;
 
@@ -390,6 +427,29 @@ export const TestRolesData = {
 	internal_viewer: {
 		id: "44444444-5555-6666-7777-888888888888",
 		tenantId: "33333333-3333-3333-3333-333333333333",
+		name: "閲覧者",
+		description: "閲覧権限のみ",
+		isDefault: true
+	},
+
+	// SSO tenant roles
+	sso_admin: {
+		id: "55555555-5555-6666-7777-999999999999",
+		tenantId: "44444444-4444-4444-4444-444444444444",
+		name: "管理者",
+		description: "すべての機能にアクセス可能",
+		isDefault: true
+	},
+	sso_editor: {
+		id: "66666666-6666-7777-8888-aaaaaaaaaaaa",
+		tenantId: "44444444-4444-4444-4444-444444444444",
+		name: "編集者",
+		description: "ユーザー管理以外の編集権限",
+		isDefault: true
+	},
+	sso_viewer: {
+		id: "77777777-7777-8888-9999-bbbbbbbbbbbb",
+		tenantId: "44444444-4444-4444-4444-444444444444",
 		name: "閲覧者",
 		description: "閲覧権限のみ",
 		isDefault: true

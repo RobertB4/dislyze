@@ -73,6 +73,23 @@ var TestTenantsData = map[string]TenantTestData{
 			"rbac": map[string]interface{}{"enabled": true},
 		},
 	},
+	"sso": {
+		ID:   "44444444-4444-4444-4444-444444444444",
+		Name: "SSO株式会社",
+		EnterpriseFeatures: map[string]interface{}{
+			"rbac": map[string]interface{}{"enabled": true},
+			"sso": map[string]interface{}{
+				"enabled":            true,
+				"idp_metadata_url":   "http://localhost:7001/realms/test-realm/protocol/saml/descriptor",
+				"attribute_mapping": map[string]interface{}{
+					"email":     "email",
+					"firstName": "firstName",
+					"lastName":  "lastName",
+				},
+				"allowed_domains": []string{"sso.test"},
+			},
+		},
+	},
 }
 
 // TestPermissionsData provides easy access to permission data
@@ -195,6 +212,27 @@ var TestRolesData = map[string]RoleTestData{
 	"internal_viewer": {
 		ID:          "44444444-5555-6666-7777-888888888888",
 		TenantID:    "33333333-3333-3333-3333-333333333333",
+		Name:        "閲覧者",
+		Description: "閲覧権限のみ",
+		IsDefault:   true,
+	},
+	"sso_admin": {
+		ID:          "55555555-5555-6666-7777-999999999999",
+		TenantID:    "44444444-4444-4444-4444-444444444444",
+		Name:        "管理者",
+		Description: "すべての機能にアクセス可能",
+		IsDefault:   true,
+	},
+	"sso_editor": {
+		ID:          "66666666-6666-7777-8888-aaaaaaaaaaaa",
+		TenantID:    "44444444-4444-4444-4444-444444444444",
+		Name:        "編集者",
+		Description: "ユーザー管理以外の編集権限",
+		IsDefault:   true,
+	},
+	"sso_viewer": {
+		ID:          "77777777-7777-8888-9999-bbbbbbbbbbbb",
+		TenantID:    "44444444-4444-4444-4444-444444444444",
 		Name:        "閲覧者",
 		Description: "閲覧権限のみ",
 		IsDefault:   true,
@@ -474,6 +512,24 @@ var TestUsersData = map[string]UserTestData{
 		Name:              "運営 花子",
 		Status:            "active",
 	},
+
+	// SSO Users (already logged in via SSO)
+	"sso_1": {
+		Email:             "sso1@sso.test",
+		PlainTextPassword: "1234567890", // Keycloak password, not used for login
+		UserID:            "50000000-0000-0000-0000-000000000001",
+		TenantID:          "44444444-4444-4444-4444-444444444444",
+		Name:              "山田 太郎",
+		Status:            "active",
+	},
+	"sso_2": {
+		Email:             "sso2@sso.test",
+		PlainTextPassword: "1234567890", // Keycloak password, not used for login
+		UserID:            "50000000-0000-0000-0000-000000000002",
+		TenantID:          "44444444-4444-4444-4444-444444444444",
+		Name:              "鈴木 花子",
+		Status:            "active",
+	},
 }
 
 // TestUserRolesData provides easy access to user role assignments
@@ -642,6 +698,18 @@ var TestUserRolesData = map[string]UserRoleTestData{
 		UserID:   "c0000000-0000-0000-0000-000000000002",
 		RoleID:   "33333333-4444-5555-6666-777777777777",
 		TenantID: "33333333-3333-3333-3333-333333333333",
+	},
+
+	// SSO tenant role assignments
+	"sso_1_admin": {
+		UserID:   "50000000-0000-0000-0000-000000000001",
+		RoleID:   "55555555-5555-6666-7777-999999999999",
+		TenantID: "44444444-4444-4444-4444-444444444444",
+	},
+	"sso_2_viewer": {
+		UserID:   "50000000-0000-0000-0000-000000000002",
+		RoleID:   "77777777-7777-8888-9999-bbbbbbbbbbbb",
+		TenantID: "44444444-4444-4444-4444-444444444444",
 	},
 }
 

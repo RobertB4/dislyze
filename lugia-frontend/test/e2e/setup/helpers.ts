@@ -36,6 +36,30 @@ async function executeSqlFile(filePath: string): Promise<void> {
 	}
 }
 
+async function overrideEnvironmentSpecificSeedData(): Promise<void> {
+	const client = await pool.connect();
+	try {
+		const query = `
+			UPDATE tenants
+			SET enterprise_features = jsonb_set(
+				enterprise_features,
+				'{sso,idp_metadata_url}',
+				to_jsonb($1::text)
+			)
+			WHERE id = '44444444-4444-4444-4444-444444444444'
+		`;
+
+		await client.query(query, [
+			"http://mock-keycloak:27001/realms/test-realm/protocol/saml/descriptor"
+		]);
+	} catch (error) {
+		console.error("Error overriding SSO metadata URL:", error);
+		throw error;
+	} finally {
+		client.release();
+	}
+}
+
 export async function resetAndSeedDatabase(): Promise<void> {
 	try {
 		const deleteFilePath = "../database/delete.sql";
@@ -47,6 +71,7 @@ export async function resetAndSeedDatabase(): Promise<void> {
 
 		console.log("Starting database seeding...");
 		await executeSqlFile(seedFilePath);
+		await overrideEnvironmentSpecificSeedData();
 		console.log("Database seeded.");
 	} catch (error) {
 		console.error("Critical error during database reset/seed process:", error);

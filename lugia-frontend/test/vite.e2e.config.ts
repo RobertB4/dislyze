@@ -11,7 +11,7 @@ export default defineConfig({
 		port: 23000,
 		strictPort: true,
 		cors: true,
-		allowedHosts: ["lugia-frontend-e2e"],
+		allowedHosts: ["lugia-frontend"],
 		proxy: {
 			"/api": {
 				target: "http://lugia-backend:23001",

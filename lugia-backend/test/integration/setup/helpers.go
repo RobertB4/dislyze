@@ -93,7 +93,7 @@ func overrideEnvironmentSpecificSeedData(t *testing.T, pool *pgxpool.Pool) {
               '{sso,idp_metadata_url}',
               to_jsonb($1::text)
           )
-          WHERE id = '11111111-1111-1111-1111-111111111111'
+          WHERE id = '44444444-4444-4444-4444-444444444444'
       `
 
 	_, err := pool.Exec(context.Background(), query, "http://mock-keycloak:17001/realms/test-realm/protocol/saml/descriptor")

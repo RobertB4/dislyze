@@ -50,12 +50,44 @@
   },
   "users": [
     {
-      "id": "new-sso-user",
-      "username": "ssonewuser@enterprise.test",
-      "email": "ssonewuser@enterprise.test",
+      "id": "sso1",
+      "username": "sso1@sso.test",
+      "email": "sso1@sso.test",
       "emailVerified": true,
-      "firstName": "翔太",
-      "lastName": "山口",
+      "firstName": "太郎",
+      "lastName": "山田",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "1234567890",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "sso2",
+      "username": "sso2@sso.test",
+      "email": "sso2@sso.test",
+      "emailVerified": true,
+      "firstName": "花子",
+      "lastName": "鈴木",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "1234567890",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "ssonewuser",
+      "username": "ssonewuser@sso.test",
+      "email": "ssonewuser@sso.test",
+      "emailVerified": true,
+      "firstName": "次郎",
+      "lastName": "佐藤",
       "enabled": true,
       "credentials": [
         {
@@ -80,1635 +112,18 @@
           "temporary": false
         }
       ]
-    },
-    {
-      "id": "enterprise1",
-      "username": "enterprise1@enterprise",
-      "email": "enterprise1@enterprise.test",
-      "emailVerified": true,
-      "firstName": "太郎",
-      "lastName": "田中",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise2",
-      "username": "enterprise2@enterprise.test",
-      "email": "enterprise2@enterprise.test",
-      "emailVerified": true,
-      "firstName": "花子",
-      "lastName": "佐藤",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise3",
-      "username": "enterprise3@enterprise.test",
-      "email": "enterprise3@enterprise.test",
-      "emailVerified": true,
-      "firstName": "一郎",
-      "lastName": "鈴木",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise4",
-      "username": "enterprise4@enterprise.test",
-      "email": "enterprise4@enterprise.test",
-      "emailVerified": true,
-      "firstName": "美咲",
-      "lastName": "高橋",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise5",
-      "username": "enterprise5@enterprise.test",
-      "email": "enterprise5@enterprise.test",
-      "emailVerified": true,
-      "firstName": "健太",
-      "lastName": "伊藤",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise6",
-      "username": "enterprise6@enterprise.test",
-      "email": "enterprise6@enterprise.test",
-      "emailVerified": true,
-      "firstName": "真由美",
-      "lastName": "渡辺",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise7",
-      "username": "enterprise7@enterprise.test",
-      "email": "enterprise7@enterprise.test",
-      "emailVerified": true,
-      "firstName": "慎太郎",
-      "lastName": "山本",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise8",
-      "username": "enterprise8@enterprise.test",
-      "email": "enterprise8@enterprise.test",
-      "emailVerified": true,
-      "firstName": "由美",
-      "lastName": "中村",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise9",
-      "username": "enterprise9@enterprise.test",
-      "email": "enterprise9@enterprise.test",
-      "emailVerified": true,
-      "firstName": "大輔",
-      "lastName": "小林",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise10",
-      "username": "enterprise10@enterprise.test",
-      "email": "enterprise10@enterprise.test",
-      "emailVerified": true,
-      "firstName": "恵",
-      "lastName": "加藤",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise11",
-      "username": "enterprise11@enterprise.test",
-      "email": "enterprise11@enterprise.test",
-      "emailVerified": true,
-      "firstName": "雄二",
-      "lastName": "吉田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise12",
-      "username": "enterprise12@enterprise.test",
-      "email": "enterprise12@enterprise.test",
-      "emailVerified": true,
-      "firstName": "あかり",
-      "lastName": "福田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise13",
-      "username": "enterprise13@enterprise.test",
-      "email": "enterprise13@enterprise.test",
-      "emailVerified": true,
-      "firstName": "拓也",
-      "lastName": "森",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise14",
-      "username": "enterprise14@enterprise.test",
-      "email": "enterprise14@enterprise.test",
-      "emailVerified": true,
-      "firstName": "愛",
-      "lastName": "清水",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise15",
-      "username": "enterprise15@enterprise.test",
-      "email": "enterprise15@enterprise.test",
-      "emailVerified": true,
-      "firstName": "翔太",
-      "lastName": "三浦",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise16",
-      "username": "enterprise16@enterprise.test",
-      "email": "enterprise16@enterprise.test",
-      "emailVerified": true,
-      "firstName": "詩織",
-      "lastName": "橋本",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise17",
-      "username": "enterprise17@enterprise.test",
-      "email": "enterprise17@enterprise.test",
-      "emailVerified": true,
-      "firstName": "浩一",
-      "lastName": "岡田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise18",
-      "username": "enterprise18@enterprise.test",
-      "email": "enterprise18@enterprise.test",
-      "emailVerified": true,
-      "firstName": "麻衣",
-      "lastName": "前田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise19",
-      "username": "enterprise19@enterprise.test",
-      "email": "enterprise19@enterprise.test",
-      "emailVerified": true,
-      "firstName": "竜也",
-      "lastName": "長谷川",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise20",
-      "username": "enterprise20@enterprise.test",
-      "email": "enterprise20@enterprise.test",
-      "emailVerified": true,
-      "firstName": "結衣",
-      "lastName": "石川",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise21",
-      "username": "enterprise21@enterprise.test",
-      "email": "enterprise21@enterprise.test",
-      "emailVerified": true,
-      "firstName": "次郎",
-      "lastName": "田中",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise22",
-      "username": "enterprise22@enterprise.test",
-      "email": "enterprise22@enterprise.test",
-      "emailVerified": true,
-      "firstName": "美代子",
-      "lastName": "佐藤",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise23",
-      "username": "enterprise23@enterprise.test",
-      "email": "enterprise23@enterprise.test",
-      "emailVerified": true,
-      "firstName": "和子",
-      "lastName": "鈴木",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise24",
-      "username": "enterprise24@enterprise.test",
-      "email": "enterprise24@enterprise.test",
-      "emailVerified": true,
-      "firstName": "直樹",
-      "lastName": "高橋",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise25",
-      "username": "enterprise25@enterprise.test",
-      "email": "enterprise25@enterprise.test",
-      "emailVerified": true,
-      "firstName": "智子",
-      "lastName": "渡辺",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise26",
-      "username": "enterprise26@enterprise.test",
-      "email": "enterprise26@enterprise.test",
-      "emailVerified": true,
-      "firstName": "孝志",
-      "lastName": "伊藤",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise27",
-      "username": "enterprise27@enterprise.test",
-      "email": "enterprise27@enterprise.test",
-      "emailVerified": true,
-      "firstName": "恵美",
-      "lastName": "山本",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise28",
-      "username": "enterprise28@enterprise.test",
-      "email": "enterprise28@enterprise.test",
-      "emailVerified": true,
-      "firstName": "裕司",
-      "lastName": "中村",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise29",
-      "username": "enterprise29@enterprise.test",
-      "email": "enterprise29@enterprise.test",
-      "emailVerified": true,
-      "firstName": "千佳",
-      "lastName": "小林",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise30",
-      "username": "enterprise30@enterprise.test",
-      "email": "enterprise30@enterprise.test",
-      "emailVerified": true,
-      "firstName": "雄介",
-      "lastName": "加藤",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise31",
-      "username": "enterprise31@enterprise.test",
-      "email": "enterprise31@enterprise.test",
-      "emailVerified": true,
-      "firstName": "明美",
-      "lastName": "吉田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise32",
-      "username": "enterprise32@enterprise.test",
-      "email": "enterprise32@enterprise.test",
-      "emailVerified": true,
-      "firstName": "博之",
-      "lastName": "村上",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise33",
-      "username": "enterprise33@enterprise.test",
-      "email": "enterprise33@enterprise.test",
-      "emailVerified": true,
-      "firstName": "由香",
-      "lastName": "森田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise34",
-      "username": "enterprise34@enterprise.test",
-      "email": "enterprise34@enterprise.test",
-      "emailVerified": true,
-      "firstName": "隆志",
-      "lastName": "松本",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise35",
-      "username": "enterprise35@enterprise.test",
-      "email": "enterprise35@enterprise.test",
-      "emailVerified": true,
-      "firstName": "理恵",
-      "lastName": "井上",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise36",
-      "username": "enterprise36@enterprise.test",
-      "email": "enterprise36@enterprise.test",
-      "emailVerified": true,
-      "firstName": "康弘",
-      "lastName": "木村",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise37",
-      "username": "enterprise37@enterprise.test",
-      "email": "enterprise37@enterprise.test",
-      "emailVerified": true,
-      "firstName": "さゆり",
-      "lastName": "林",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise38",
-      "username": "enterprise38@enterprise.test",
-      "email": "enterprise38@enterprise.test",
-      "emailVerified": true,
-      "firstName": "信一",
-      "lastName": "清水",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise39",
-      "username": "enterprise39@enterprise.test",
-      "email": "enterprise39@enterprise.test",
-      "emailVerified": true,
-      "firstName": "和美",
-      "lastName": "石川",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise40",
-      "username": "enterprise40@enterprise.test",
-      "email": "enterprise40@enterprise.test",
-      "emailVerified": true,
-      "firstName": "俊彦",
-      "lastName": "山田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise41",
-      "username": "enterprise41@enterprise.test",
-      "email": "enterprise41@enterprise.test",
-      "emailVerified": true,
-      "firstName": "美穂",
-      "lastName": "近藤",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise42",
-      "username": "enterprise42@enterprise.test",
-      "email": "enterprise42@enterprise.test",
-      "emailVerified": true,
-      "firstName": "秀樹",
-      "lastName": "橋本",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise43",
-      "username": "enterprise43@enterprise.test",
-      "email": "enterprise43@enterprise.test",
-      "emailVerified": true,
-      "firstName": "麻紀",
-      "lastName": "池田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise44",
-      "username": "enterprise44@enterprise.test",
-      "email": "enterprise44@enterprise.test",
-      "emailVerified": true,
-      "firstName": "正男",
-      "lastName": "前田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise45",
-      "username": "enterprise45@enterprise.test",
-      "email": "enterprise45@enterprise.test",
-      "emailVerified": true,
-      "firstName": "夏美",
-      "lastName": "岡田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise46",
-      "username": "enterprise46@enterprise.test",
-      "email": "enterprise46@enterprise.test",
-      "emailVerified": true,
-      "firstName": "健",
-      "lastName": "長谷川",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise47",
-      "username": "enterprise47@enterprise.test",
-      "email": "enterprise47@enterprise.test",
-      "emailVerified": true,
-      "firstName": "智恵",
-      "lastName": "藤田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise48",
-      "username": "enterprise48@enterprise.test",
-      "email": "enterprise48@enterprise.test",
-      "emailVerified": true,
-      "firstName": "良一",
-      "lastName": "後藤",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise49",
-      "username": "enterprise49@enterprise.test",
-      "email": "enterprise49@enterprise.test",
-      "emailVerified": true,
-      "firstName": "陽子",
-      "lastName": "新井",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise50",
-      "username": "enterprise50@enterprise.test",
-      "email": "enterprise50@enterprise.test",
-      "emailVerified": true,
-      "firstName": "浩二",
-      "lastName": "竹内",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise51",
-      "username": "enterprise51@enterprise.test",
-      "email": "enterprise51@enterprise.test",
-      "emailVerified": true,
-      "firstName": "香織",
-      "lastName": "金子",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise52",
-      "username": "enterprise52@enterprise.test",
-      "email": "enterprise52@enterprise.test",
-      "emailVerified": true,
-      "firstName": "武史",
-      "lastName": "原田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise53",
-      "username": "enterprise53@enterprise.test",
-      "email": "enterprise53@enterprise.test",
-      "emailVerified": true,
-      "firstName": "真理",
-      "lastName": "田村",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise54",
-      "username": "enterprise54@enterprise.test",
-      "email": "enterprise54@enterprise.test",
-      "emailVerified": true,
-      "firstName": "雅人",
-      "lastName": "西村",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise55",
-      "username": "enterprise55@enterprise.test",
-      "email": "enterprise55@enterprise.test",
-      "emailVerified": true,
-      "firstName": "紀子",
-      "lastName": "中島",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise56",
-      "username": "enterprise56@enterprise.test",
-      "email": "enterprise56@enterprise.test",
-      "emailVerified": true,
-      "firstName": "洋平",
-      "lastName": "小川",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise57",
-      "username": "enterprise57@enterprise.test",
-      "email": "enterprise57@enterprise.test",
-      "emailVerified": true,
-      "firstName": "涼子",
-      "lastName": "中田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise58",
-      "username": "enterprise58@enterprise.test",
-      "email": "enterprise58@enterprise.test",
-      "emailVerified": true,
-      "firstName": "亮太",
-      "lastName": "松田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise59",
-      "username": "enterprise59@enterprise.test",
-      "email": "enterprise59@enterprise.test",
-      "emailVerified": true,
-      "firstName": "郁美",
-      "lastName": "内田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise60",
-      "username": "enterprise60@enterprise.test",
-      "email": "enterprise60@enterprise.test",
-      "emailVerified": true,
-      "firstName": "光男",
-      "lastName": "斎藤",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise61",
-      "username": "enterprise61@enterprise.test",
-      "email": "enterprise61@enterprise.test",
-      "emailVerified": true,
-      "firstName": "恵子",
-      "lastName": "服部",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise62",
-      "username": "enterprise62@enterprise.test",
-      "email": "enterprise62@enterprise.test",
-      "emailVerified": true,
-      "firstName": "晃",
-      "lastName": "野村",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise63",
-      "username": "enterprise63@enterprise.test",
-      "email": "enterprise63@enterprise.test",
-      "emailVerified": true,
-      "firstName": "瞳",
-      "lastName": "吉野",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise64",
-      "username": "enterprise64@enterprise.test",
-      "email": "enterprise64@enterprise.test",
-      "emailVerified": true,
-      "firstName": "健司",
-      "lastName": "小野",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise65",
-      "username": "enterprise65@enterprise.test",
-      "email": "enterprise65@enterprise.test",
-      "emailVerified": true,
-      "firstName": "順子",
-      "lastName": "平野",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise66",
-      "username": "enterprise66@enterprise.test",
-      "email": "enterprise66@enterprise.test",
-      "emailVerified": true,
-      "firstName": "良太",
-      "lastName": "大橋",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise67",
-      "username": "enterprise67@enterprise.test",
-      "email": "enterprise67@enterprise.test",
-      "emailVerified": true,
-      "firstName": "まり",
-      "lastName": "望月",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise68",
-      "username": "enterprise68@enterprise.test",
-      "email": "enterprise68@enterprise.test",
-      "emailVerified": true,
-      "firstName": "孝",
-      "lastName": "星野",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise69",
-      "username": "enterprise69@enterprise.test",
-      "email": "enterprise69@enterprise.test",
-      "emailVerified": true,
-      "firstName": "静香",
-      "lastName": "永田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise70",
-      "username": "enterprise70@enterprise.test",
-      "email": "enterprise70@enterprise.test",
-      "emailVerified": true,
-      "firstName": "勇",
-      "lastName": "久保",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise71",
-      "username": "enterprise71@enterprise.test",
-      "email": "enterprise71@enterprise.test",
-      "emailVerified": true,
-      "firstName": "亜紀",
-      "lastName": "上田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise72",
-      "username": "enterprise72@enterprise.test",
-      "email": "enterprise72@enterprise.test",
-      "emailVerified": true,
-      "firstName": "正樹",
-      "lastName": "福田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise73",
-      "username": "enterprise73@enterprise.test",
-      "email": "enterprise73@enterprise.test",
-      "emailVerified": true,
-      "firstName": "千春",
-      "lastName": "宮崎",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise74",
-      "username": "enterprise74@enterprise.test",
-      "email": "enterprise74@enterprise.test",
-      "emailVerified": true,
-      "firstName": "元",
-      "lastName": "今井",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise75",
-      "username": "enterprise75@enterprise.test",
-      "email": "enterprise75@enterprise.test",
-      "emailVerified": true,
-      "firstName": "文子",
-      "lastName": "三浦",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise76",
-      "username": "enterprise76@enterprise.test",
-      "email": "enterprise76@enterprise.test",
-      "emailVerified": true,
-      "firstName": "信二",
-      "lastName": "本田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise77",
-      "username": "enterprise77@enterprise.test",
-      "email": "enterprise77@enterprise.test",
-      "emailVerified": true,
-      "firstName": "貴子",
-      "lastName": "横田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise78",
-      "username": "enterprise78@enterprise.test",
-      "email": "enterprise78@enterprise.test",
-      "emailVerified": true,
-      "firstName": "光一",
-      "lastName": "田口",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise79",
-      "username": "enterprise79@enterprise.test",
-      "email": "enterprise79@enterprise.test",
-      "emailVerified": true,
-      "firstName": "弘美",
-      "lastName": "植田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise80",
-      "username": "enterprise80@enterprise.test",
-      "email": "enterprise80@enterprise.test",
-      "emailVerified": true,
-      "firstName": "昭",
-      "lastName": "岩田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise81",
-      "username": "enterprise81@enterprise.test",
-      "email": "enterprise81@enterprise.test",
-      "emailVerified": true,
-      "firstName": "真由美",
-      "lastName": "石田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise82",
-      "username": "enterprise82@enterprise.test",
-      "email": "enterprise82@enterprise.test",
-      "emailVerified": true,
-      "firstName": "徹",
-      "lastName": "小島",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise83",
-      "username": "enterprise83@enterprise.test",
-      "email": "enterprise83@enterprise.test",
-      "emailVerified": true,
-      "firstName": "雅子",
-      "lastName": "古川",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise84",
-      "username": "enterprise84@enterprise.test",
-      "email": "enterprise84@enterprise.test",
-      "emailVerified": true,
-      "firstName": "哲也",
-      "lastName": "安田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise85",
-      "username": "enterprise85@enterprise.test",
-      "email": "enterprise85@enterprise.test",
-      "emailVerified": true,
-      "firstName": "英子",
-      "lastName": "杉山",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise86",
-      "username": "enterprise86@enterprise.test",
-      "email": "enterprise86@enterprise.test",
-      "emailVerified": true,
-      "firstName": "進",
-      "lastName": "田島",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise87",
-      "username": "enterprise87@enterprise.test",
-      "email": "enterprise87@enterprise.test",
-      "emailVerified": true,
-      "firstName": "明美",
-      "lastName": "山口",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise88",
-      "username": "enterprise88@enterprise.test",
-      "email": "enterprise88@enterprise.test",
-      "emailVerified": true,
-      "firstName": "健",
-      "lastName": "坂本",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise89",
-      "username": "enterprise89@enterprise.test",
-      "email": "enterprise89@enterprise.test",
-      "emailVerified": true,
-      "firstName": "幸子",
-      "lastName": "森本",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise90",
-      "username": "enterprise90@enterprise.test",
-      "email": "enterprise90@enterprise.test",
-      "emailVerified": true,
-      "firstName": "修",
-      "lastName": "大野",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise91",
-      "username": "enterprise91@enterprise.test",
-      "email": "enterprise91@enterprise.test",
-      "emailVerified": true,
-      "firstName": "美樹",
-      "lastName": "細川",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise92",
-      "username": "enterprise92@enterprise.test",
-      "email": "enterprise92@enterprise.test",
-      "emailVerified": true,
-      "firstName": "豪",
-      "lastName": "谷口",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise93",
-      "username": "enterprise93@enterprise.test",
-      "email": "enterprise93@enterprise.test",
-      "emailVerified": true,
-      "firstName": "律子",
-      "lastName": "増田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise94",
-      "username": "enterprise94@enterprise.test",
-      "email": "enterprise94@enterprise.test",
-      "emailVerified": true,
-      "firstName": "圭",
-      "lastName": "菅原",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise95",
-      "username": "enterprise95@enterprise.test",
-      "email": "enterprise95@enterprise.test",
-      "emailVerified": true,
-      "firstName": "節子",
-      "lastName": "千葉",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise96",
-      "username": "enterprise96@enterprise.test",
-      "email": "enterprise96@enterprise.test",
-      "emailVerified": true,
-      "firstName": "剛",
-      "lastName": "浜田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise97",
-      "username": "enterprise97@enterprise.test",
-      "email": "enterprise97@enterprise.test",
-      "emailVerified": true,
-      "firstName": "舞",
-      "lastName": "大塚",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise98",
-      "username": "enterprise98@enterprise.test",
-      "email": "enterprise98@enterprise.test",
-      "emailVerified": true,
-      "firstName": "明",
-      "lastName": "川村",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise99",
-      "username": "enterprise99@enterprise.test",
-      "email": "enterprise99@enterprise.test",
-      "emailVerified": true,
-      "firstName": "和代",
-      "lastName": "富田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise100",
-      "username": "enterprise100@enterprise.test",
-      "email": "enterprise100@enterprise.test",
-      "emailVerified": true,
-      "firstName": "正",
-      "lastName": "石井",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "enterprise101",
-      "username": "enterprise101@enterprise.test",
-      "email": "enterprise101@enterprise.test",
-      "emailVerified": true,
-      "firstName": "由紀",
-      "lastName": "鎌田",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "1234567890",
-          "temporary": false
-        }
-      ]
     }
   ],
   "clients": [
     {
       "id": "http://localhost:3000",
       "clientId": "http://localhost:3000",
-      "name": "dislyze",
-      "description": "SAML 2.0 Service Provider",
+      "name": "dislyze-local",
+      "description": "SAML 2.0 Service Provider (Local Development)",
       "enabled": true,
       "protocol": "saml",
       "redirectUris": [
-        "http://localhost:3000/api/auth/sso/acs",
-        "http://lugia-frontend-e2e:23000/api/auth/sso/acs"
+        "http://localhost:3000/api/auth/sso/acs"
       ],
       "attributes": {
         "saml.assertion.signature": "true",
@@ -1756,6 +171,148 @@
         },
         {
           "id": "last-name-mapper",
+          "name": "Last Name Mapper",
+          "protocol": "saml",
+          "protocolMapper": "saml-user-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "attribute.nameformat": "urn:oasis:names:tc:SAML:2.0:attrname-format:basic",
+            "user.attribute": "lastName",
+            "friendly.name": "LastName",
+            "attribute.name": "lastName"
+          }
+        }
+      ],
+      "defaultClientScopes": [],
+      "optionalClientScopes": []
+    },
+    {
+      "id": "http://lugia-frontend:13000",
+      "clientId": "http://lugia-frontend:13000",
+      "name": "dislyze-integration",
+      "description": "SAML 2.0 Service Provider (Integration Tests)",
+      "enabled": true,
+      "protocol": "saml",
+      "redirectUris": [
+        "http://lugia-frontend:13000/api/auth/sso/acs"
+      ],
+      "attributes": {
+        "saml.assertion.signature": "true",
+        "saml.force.post.binding": "true",
+        "saml.multivalued.roles": "false",
+        "saml.encrypt": "false",
+        "saml.server.signature": "true",
+        "saml.server.signature.keyinfo.ext": "false",
+        "exclude.session.state.from.auth.response": "false",
+        "saml_force_name_id_format": "false",
+        "saml.client.signature": "false",
+        "tls.client.certificate.bound.access.tokens": "false",
+        "saml.authnstatement": "true",
+        "display.on.consent.screen": "false",
+        "saml.onetimeuse.condition": "false"
+      },
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "email-mapper-integration",
+          "name": "Email Mapper",
+          "protocol": "saml",
+          "protocolMapper": "saml-user-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "attribute.nameformat": "urn:oasis:names:tc:SAML:2.0:attrname-format:basic",
+            "user.attribute": "email",
+            "friendly.name": "Email",
+            "attribute.name": "email"
+          }
+        },
+        {
+          "id": "first-name-mapper-integration",
+          "name": "First Name Mapper",
+          "protocol": "saml",
+          "protocolMapper": "saml-user-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "attribute.nameformat": "urn:oasis:names:tc:SAML:2.0:attrname-format:basic",
+            "user.attribute": "firstName",
+            "friendly.name": "FirstName",
+            "attribute.name": "firstName"
+          }
+        },
+        {
+          "id": "last-name-mapper-integration",
+          "name": "Last Name Mapper",
+          "protocol": "saml",
+          "protocolMapper": "saml-user-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "attribute.nameformat": "urn:oasis:names:tc:SAML:2.0:attrname-format:basic",
+            "user.attribute": "lastName",
+            "friendly.name": "LastName",
+            "attribute.name": "lastName"
+          }
+        }
+      ],
+      "defaultClientScopes": [],
+      "optionalClientScopes": []
+    },
+    {
+      "id": "http://lugia-frontend:23000",
+      "clientId": "http://lugia-frontend:23000",
+      "name": "dislyze-e2e",
+      "description": "SAML 2.0 Service Provider (E2E Tests)",
+      "enabled": true,
+      "protocol": "saml",
+      "redirectUris": [
+        "http://lugia-frontend:23000/api/auth/sso/acs"
+      ],
+      "attributes": {
+        "saml.assertion.signature": "true",
+        "saml.force.post.binding": "true",
+        "saml.multivalued.roles": "false",
+        "saml.encrypt": "false",
+        "saml.server.signature": "true",
+        "saml.server.signature.keyinfo.ext": "false",
+        "exclude.session.state.from.auth.response": "false",
+        "saml_force_name_id_format": "false",
+        "saml.client.signature": "false",
+        "tls.client.certificate.bound.access.tokens": "false",
+        "saml.authnstatement": "true",
+        "display.on.consent.screen": "false",
+        "saml.onetimeuse.condition": "false"
+      },
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "email-mapper-e2e",
+          "name": "Email Mapper",
+          "protocol": "saml",
+          "protocolMapper": "saml-user-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "attribute.nameformat": "urn:oasis:names:tc:SAML:2.0:attrname-format:basic",
+            "user.attribute": "email",
+            "friendly.name": "Email",
+            "attribute.name": "email"
+          }
+        },
+        {
+          "id": "first-name-mapper-e2e",
+          "name": "First Name Mapper",
+          "protocol": "saml",
+          "protocolMapper": "saml-user-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "attribute.nameformat": "urn:oasis:names:tc:SAML:2.0:attrname-format:basic",
+            "user.attribute": "firstName",
+            "friendly.name": "FirstName",
+            "attribute.name": "firstName"
+          }
+        },
+        {
+          "id": "last-name-mapper-e2e",
           "name": "Last Name Mapper",
           "protocol": "saml",
           "protocolMapper": "saml-user-property-mapper",

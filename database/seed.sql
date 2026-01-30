@@ -5,20 +5,23 @@
 INSERT INTO tenants (id, name, enterprise_features, auth_method) VALUES
 ('11111111-1111-1111-1111-111111111111', 'エンタープライズ株式会社', '{
   "rbac": {"enabled": true},
-  "ip_whitelist": {"enabled": true, "active": false, "allow_internal_admin_bypass": true},
+  "ip_whitelist": {"enabled": true, "active": false, "allow_internal_admin_bypass": true}
+}', 'password'),
+('22222222-2222-2222-2222-222222222222', 'SMB株式会社', '{ "rbac": {"enabled": false}, "ip_whitelist": {"enabled": false} }', 'password'),
+('33333333-3333-3333-3333-333333333333', '内部株式会社', '{ "rbac": {"enabled": true}, "ip_whitelist": {"enabled": true, "active": false, "allow_internal_admin_bypass": true} }', 'password'),
+('44444444-4444-4444-4444-444444444444', 'SSO株式会社', '{
+  "rbac": {"enabled": true},
   "sso": {
-    "enabled": false,
+    "enabled": true,
     "idp_metadata_url": "http://localhost:7001/realms/test-realm/protocol/saml/descriptor",
     "attribute_mapping": {
       "email": "email",
       "firstName": "firstName",
       "lastName": "lastName"
     },
-    "allowed_domains": ["enterprise.test"]
+    "allowed_domains": ["sso.test"]
   }
-}', 'password'),
-('22222222-2222-2222-2222-222222222222', 'SMB株式会社', '{ "rbac": {"enabled": false}, "ip_whitelist": {"enabled": false} }', 'password'),
-('33333333-3333-3333-3333-333333333333', '内部株式会社', '{ "rbac": {"enabled": true}, "ip_whitelist": {"enabled": true, "active": false, "allow_internal_admin_bypass": true} }', 'password');
+}', 'sso');
 
 -- Insert default roles for all tenants (管理者, 編集者, 閲覧者)
 -- Enterprise tenant default roles
@@ -37,7 +40,12 @@ INSERT INTO roles (id, tenant_id, name, description, is_default) VALUES
 -- Internal tenant default roles
 ('22222222-3333-4444-5555-666666666666', '33333333-3333-3333-3333-333333333333', '管理者', 'すべての機能にアクセス可能', true),
 ('33333333-4444-5555-6666-777777777777', '33333333-3333-3333-3333-333333333333', '編集者', 'ユーザー管理以外の編集権限', true),
-('44444444-5555-6666-7777-888888888888', '33333333-3333-3333-3333-333333333333', '閲覧者', '閲覧権限のみ', true);
+('44444444-5555-6666-7777-888888888888', '33333333-3333-3333-3333-333333333333', '閲覧者', '閲覧権限のみ', true),
+
+-- SSO tenant default roles
+('55555555-5555-6666-7777-999999999999', '44444444-4444-4444-4444-444444444444', '管理者', 'すべての機能にアクセス可能', true),
+('66666666-6666-7777-8888-aaaaaaaaaaaa', '44444444-4444-4444-4444-444444444444', '編集者', 'ユーザー管理以外の編集権限', true),
+('77777777-7777-8888-9999-bbbbbbbbbbbb', '44444444-4444-4444-4444-444444444444', '閲覧者', '閲覧権限のみ', true);
 
 -- Assign permissions to admin roles (all edit permissions)
 -- Enterprise tenant admin role permissions
@@ -59,7 +67,13 @@ INSERT INTO role_permissions (role_id, permission_id, tenant_id) VALUES
 ('22222222-3333-4444-5555-666666666666', '6e95ed87-f380-41fe-bc5b-f8af002345a4', '33333333-3333-3333-3333-333333333333'), -- tenant edit
 ('22222222-3333-4444-5555-666666666666', 'db994eda-6ff7-4ae5-a675-3abe735ce9cc', '33333333-3333-3333-3333-333333333333'), -- users edit
 ('22222222-3333-4444-5555-666666666666', 'cccf277b-5fd5-4f1d-b763-ebf69973e5b7', '33333333-3333-3333-3333-333333333333'), -- roles edit
-('22222222-3333-4444-5555-666666666666', 'a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4', '33333333-3333-3333-3333-333333333333'); -- ip_whitelist edit
+('22222222-3333-4444-5555-666666666666', 'a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4', '33333333-3333-3333-3333-333333333333'), -- ip_whitelist edit
+
+-- SSO tenant admin role permissions
+('55555555-5555-6666-7777-999999999999', '6e95ed87-f380-41fe-bc5b-f8af002345a4', '44444444-4444-4444-4444-444444444444'), -- tenant edit
+('55555555-5555-6666-7777-999999999999', 'db994eda-6ff7-4ae5-a675-3abe735ce9cc', '44444444-4444-4444-4444-444444444444'), -- users edit
+('55555555-5555-6666-7777-999999999999', 'cccf277b-5fd5-4f1d-b763-ebf69973e5b7', '44444444-4444-4444-4444-444444444444'), -- roles edit
+('55555555-5555-6666-7777-999999999999', 'a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4', '44444444-4444-4444-4444-444444444444'); -- ip_whitelist edit
 
 -- Insert Users
 INSERT INTO users (id, tenant_id, email, password_hash, name, status, is_internal_admin, is_internal_user, external_sso_id) VALUES
@@ -180,10 +194,16 @@ INSERT INTO users (id, tenant_id, email, password_hash, name, status, is_interna
 ('b0000000-0000-0000-0000-000000000009', '22222222-2222-2222-2222-222222222222', 'smb9@smb.test', '$2a$10$nAveWwnSGnoVTo91fCikNOBFOxptLVx1jnh0sRtpwQWxcJAXGfaRC', '柴田 勝', 'active', false, false, NULL),
 ('b0000000-0000-0000-0000-000000000010', '22222222-2222-2222-2222-222222222222', 'smb10@smb.test', '$2a$10$nAveWwnSGnoVTo91fCikNOBFOxptLVx1jnh0sRtpwQWxcJAXGfaRC', '坂田 恵里', 'active', false, false, NULL),
 
--- Internal Users (2 users)  
+-- Internal Users (2 users)
 ('c0000000-0000-0000-0000-000000000000', '33333333-3333-3333-3333-333333333333', '33333333-3333-3333-3333-333333333333@internal.test', '$2a$10$nAveWwnSGnoVTo91fCikNOBFOxptLVx1jnh0sRtpwQWxcJAXGfaRC', '内部ユーザー', 'active', false, true, NULL),
 ('c0000000-0000-0000-0000-000000000001', '33333333-3333-3333-3333-333333333333', 'internal1@internal.test', '$2a$10$nAveWwnSGnoVTo91fCikNOBFOxptLVx1jnh0sRtpwQWxcJAXGfaRC', '管理 太郎', 'active', true, false, NULL),
-('c0000000-0000-0000-0000-000000000002', '33333333-3333-3333-3333-333333333333', 'internal2@internal.test', '$2a$10$nAveWwnSGnoVTo91fCikNOBFOxptLVx1jnh0sRtpwQWxcJAXGfaRC', '運営 花子', 'active', true, false, NULL);
+('c0000000-0000-0000-0000-000000000002', '33333333-3333-3333-3333-333333333333', 'internal2@internal.test', '$2a$10$nAveWwnSGnoVTo91fCikNOBFOxptLVx1jnh0sRtpwQWxcJAXGfaRC', '運営 花子', 'active', true, false, NULL),
+
+-- SSO Users (2 users - already logged in via SSO)
+-- Note: ssonewuser@sso.test exists only in Keycloak for testing auto-provisioning
+('d0000000-0000-0000-0000-000000000000', '44444444-4444-4444-4444-444444444444', '44444444-4444-4444-4444-444444444444@internal.test', '$2a$10$nAveWwnSGnoVTo91fCikNOBFOxptLVx1jnh0sRtpwQWxcJAXGfaRC', '内部ユーザー', 'active', false, true, NULL),
+('d0000000-0000-0000-0000-000000000001', '44444444-4444-4444-4444-444444444444', 'sso1@sso.test', '!', '山田 太郎', 'active', false, false, 'sso1'),
+('d0000000-0000-0000-0000-000000000002', '44444444-4444-4444-4444-444444444444', 'sso2@sso.test', '!', '鈴木 花子', 'active', false, false, 'sso2');
 
 -- Assign user roles
 INSERT INTO user_roles (user_id, role_id, tenant_id) VALUES
@@ -307,7 +327,11 @@ INSERT INTO user_roles (user_id, role_id, tenant_id) VALUES
 -- Internal tenant role assignments
 ('c0000000-0000-0000-0000-000000000000', '22222222-3333-4444-5555-666666666666', '33333333-3333-3333-3333-333333333333'), -- 内部ユーザー: 管理者
 ('c0000000-0000-0000-0000-000000000001', '22222222-3333-4444-5555-666666666666', '33333333-3333-3333-3333-333333333333'), -- user 1: 管理者
-('c0000000-0000-0000-0000-000000000002', '33333333-4444-5555-6666-777777777777', '33333333-3333-3333-3333-333333333333'); -- user 2: 編集者
+('c0000000-0000-0000-0000-000000000002', '33333333-4444-5555-6666-777777777777', '33333333-3333-3333-3333-333333333333'), -- user 2: 編集者
+
+-- SSO tenant role assignments
+('d0000000-0000-0000-0000-000000000001', '55555555-5555-6666-7777-999999999999', '44444444-4444-4444-4444-444444444444'), -- sso1: 管理者
+('d0000000-0000-0000-0000-000000000002', '77777777-7777-8888-9999-bbbbbbbbbbbb', '44444444-4444-4444-4444-444444444444'); -- sso2: 閲覧者
 
 -- Invitation tokens for pending users
 INSERT INTO invitation_tokens (id, token_hash, tenant_id, user_id, expires_at, created_at) VALUES

@@ -18,6 +18,33 @@ services:
       - SENDGRID_API_KEY=e2e_fake_sendgrid_key
       - PORT=27000
 
+  mock-keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: mock-keycloak
+    ports:
+      - "27001:27001"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin123
+    volumes:
+      - ../../keycloak-mock/realm.json:/opt/keycloak/data/import/realm.json
+    command:
+      - start-dev
+      - --http-port=27001
+      - --import-realm
+      - --hostname-strict=false
+      - --hostname-strict-https=false
+      - --health-enabled=true
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/localhost/27001 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && head -n 10 <&3 | grep -q '200'"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   lugia-backend:
     build:
       context: ../../ # Project root
@@ -36,12 +63,12 @@ services:
       - AUTH_RATE_LIMIT=1000 # Higher limit for E2E tests
       - SENDGRID_API_KEY=e2e_fake_sendgrid_key
       - SENDGRID_API_URL=http://mock-sendgrid:27000
-      - FRONTEND_URL=http://lugia-frontend-e2e:23000
+      - FRONTEND_URL=http://lugia-frontend:23000
       - INITIAL_PW=e2e_initial_password
       - INTERNAL_USER_PW=password123
       - CREATE_TENANT_JWT_SECRET=test_create_tenant_jwt_secret_for_testing_only
       - IP_WHITELIST_EMERGENCY_JWT_SECRET=test_ip_whitelist_emergency_jwt_secret
-      - TRUSTED_PROXIES=lugia-frontend-e2e,127.0.0.1,localhost
+      - TRUSTED_PROXIES=lugia-frontend,127.0.0.1,localhost
       - |-
         SAML_SERVICE_PROVIDER_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----
         MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDj6Uted6XzmlPx
@@ -96,6 +123,8 @@ services:
         condition: service_healthy
       mock-sendgrid:
         condition: service_started
+      mock-keycloak:
+        condition: service_healthy
     container_name: lugia-backend-e2e
 
   postgres:

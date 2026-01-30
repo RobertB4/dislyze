@@ -89,6 +89,21 @@ for i in $(seq 1 $MAX_RETRIES); do
   fi
 done
 
+# Health check for Mock Keycloak (mock-keycloak:27001)
+echo "Checking Mock Keycloak (http://mock-keycloak:27001/health/ready)..."
+for i in $(seq 1 $MAX_RETRIES); do
+  if docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null http://mock-keycloak:27001/health/ready; then
+    echo "Mock Keycloak is ready."
+    break
+  fi
+  echo "Mock Keycloak not ready, retrying in $RETRY_INTERVAL seconds... ($i/$MAX_RETRIES)"
+  sleep $RETRY_INTERVAL
+  if [ "$i" -eq "$MAX_RETRIES" ]; then
+    echo "Mock Keycloak health check failed after $MAX_RETRIES retries."
+    exit 1
+  fi
+done
+
 # Health check for Backend (lugia-backend:23001)
 echo "Checking lugia-backend (http://lugia-backend:23001/health)..."
 for i in $(seq 1 $MAX_RETRIES); do
@@ -104,8 +119,8 @@ for i in $(seq 1 $MAX_RETRIES); do
   fi
 done
 
-# Health check for lugia-frontend (using static container hostname)
-FRONTEND_URL="http://lugia-frontend-e2e:23000"
+# Health check for lugia-frontend (using static service name)
+FRONTEND_URL="http://lugia-frontend:23000"
 echo "Checking lugia-frontend (${FRONTEND_URL})..."
 for i in $(seq 1 $MAX_RETRIES); do
   if docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null "${FRONTEND_URL}"; then
