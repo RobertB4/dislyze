@@ -36,14 +36,12 @@ services:
       - AUTH_RATE_LIMIT=1000 # Higher limit for E2E tests
       - SENDGRID_API_KEY=e2e_fake_sendgrid_key
       - SENDGRID_API_URL=http://mock-sendgrid:27000
-      # Using container IP for frontend. Vite returns 403 for requests from http://lugia-frontend:23000
-      # frontend ip address retrieved and passed from test.sh
-      - FRONTEND_URL=${DYNAMIC_FRONTEND_URL}
+      - FRONTEND_URL=http://lugia-frontend-e2e:23000
       - INITIAL_PW=e2e_initial_password
       - INTERNAL_USER_PW=password123
       - CREATE_TENANT_JWT_SECRET=test_create_tenant_jwt_secret_for_testing_only
       - IP_WHITELIST_EMERGENCY_JWT_SECRET=test_ip_whitelist_emergency_jwt_secret
-      - TRUSTED_PROXIES=172.18.0.4,lugia-frontend,127.0.0.1,localhost
+      - TRUSTED_PROXIES=lugia-frontend-e2e,127.0.0.1,localhost
       - |-
         SAML_SERVICE_PROVIDER_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----
         MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDj6Uted6XzmlPx

@@ -50,29 +50,9 @@ docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" down -v --remove-orphans
 echo "Pre-building lugia-backend service..."
 docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" build lugia-backend
 
-# Step 1: Start lugia-frontend service first to get its IP
-echo "Starting lugia-frontend service to determine its IP..."
-docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans lugia-frontend
-
-# Step 2: Determine lugia-frontend IP dynamically
-FRONTEND_CONTAINER_NAME="lugia-frontend-e2e"
-FRONTEND_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$FRONTEND_CONTAINER_NAME")
-
-if [ -z "$FRONTEND_IP" ]; then
-  echo "Error: Could not determine IP address for lugia-frontend container ($FRONTEND_CONTAINER_NAME)."
-  exit 1
-fi
-echo "lugia-frontend container ($FRONTEND_CONTAINER_NAME) IP address: $FRONTEND_IP"
-
-# Step 3: Export the dynamic URL for the backend and Playwright
-export DYNAMIC_FRONTEND_URL="http://${FRONTEND_IP}:23000"
-echo "Exported DYNAMIC_FRONTEND_URL=${DYNAMIC_FRONTEND_URL}"
-
-# Step 4: Build and start other E2E services.
-# The DYNAMIC_FRONTEND_URL will be available to the docker-compose command for the backend.
-echo "Building and starting other E2E services (lugia-backend, postgres, mock-sendgrid, playwright)..."
-# We use --no-deps to avoid restarting the lugia-frontend if it's already up.
-docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans --no-deps lugia-backend postgres mock-sendgrid playwright
+# Build and start all E2E services
+echo "Building and starting E2E services (lugia-frontend, lugia-backend, postgres, mock-sendgrid, mock-keycloak, playwright)..."
+docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans
 
 # Health checks
 echo "Waiting for services to be healthy..."
@@ -124,10 +104,11 @@ for i in $(seq 1 $MAX_RETRIES); do
   fi
 done
 
-# Health check for lugia-frontend (using the dynamically obtained IP)
-echo "Checking lugia-frontend (${DYNAMIC_FRONTEND_URL})..."
+# Health check for lugia-frontend (using static container hostname)
+FRONTEND_URL="http://lugia-frontend-e2e:23000"
+echo "Checking lugia-frontend (${FRONTEND_URL})..."
 for i in $(seq 1 $MAX_RETRIES); do
-  if docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null "${DYNAMIC_FRONTEND_URL}"; then
+  if docker compose -p lugia-frontend-e2e -f "$COMPOSE_FILE" exec -T playwright curl --fail --silent --output /dev/null "${FRONTEND_URL}"; then
     echo "lugia-frontend is ready."
     break
   fi
@@ -162,14 +143,14 @@ fi
 echo "npm ci completed successfully in Playwright container."
 
 # Run Playwright E2E tests
-echo "Running Playwright E2E tests targeting ${DYNAMIC_FRONTEND_URL} (CI Mode: $CI_MODE, UI Mode: $UI_MODE)..."
+echo "Running Playwright E2E tests targeting ${FRONTEND_URL} (CI Mode: $CI_MODE, UI Mode: $UI_MODE)..."
 
 PLAYWRIGHT_COMMAND_BASE="npx playwright test"
 PLAYWRIGHT_COMMAND_ARGS="--config test/playwright.e2e.config.js"
 
 DOCKER_EXEC_ENV_VARS=("-e" "CI=${CI_MODE}")
 DOCKER_EXEC_ENV_VARS+=("-e" "PLAYWRIGHT_HEADED=false")
-DOCKER_EXEC_ENV_VARS+=("-e" "PLAYWRIGHT_BASE_URL=${DYNAMIC_FRONTEND_URL}")
+DOCKER_EXEC_ENV_VARS+=("-e" "PLAYWRIGHT_BASE_URL=${FRONTEND_URL}")
 
 COMMAND_PREFIX=""
 

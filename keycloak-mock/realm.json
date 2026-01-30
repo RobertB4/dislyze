@@ -1707,7 +1707,8 @@
       "enabled": true,
       "protocol": "saml",
       "redirectUris": [
-        "http://localhost:3000/api/auth/sso/acs"
+        "http://localhost:3000/api/auth/sso/acs",
+        "http://lugia-frontend-e2e:23000/api/auth/sso/acs"
       ],
       "attributes": {
         "saml.assertion.signature": "true",
