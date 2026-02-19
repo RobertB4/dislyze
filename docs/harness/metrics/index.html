@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harness Metrics Dashboard</title>
+  <script src="./chart.js"></script>
+  <script src="./sessions.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; padding: 24px; }
+    h1 { font-size: 24px; margin-bottom: 8px; color: #f0f6fc; }
+    .subtitle { color: #8b949e; margin-bottom: 32px; font-size: 14px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 1400px; margin: 0 auto; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; }
+    .card h2 { font-size: 14px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
+    .card.full { grid-column: 1 / -1; }
+    .stats { display: flex; gap: 24px; margin-bottom: 32px; max-width: 1400px; margin: 0 auto 24px; }
+    .stat { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; flex: 1; }
+    .stat .value { font-size: 32px; font-weight: 700; color: #f0f6fc; }
+    .stat .label { font-size: 12px; color: #8b949e; margin-top: 4px; }
+    .no-data { text-align: center; padding: 60px 20px; color: #8b949e; }
+    .no-data p { margin-top: 8px; font-size: 14px; }
+    canvas { max-height: 300px; }
+  </style>
+</head>
+<body>
+  <div style="max-width: 1400px; margin: 0 auto;">
+    <h1>Harness Metrics Dashboard</h1>
+    <p class="subtitle">Measuring whether harness improvements actually help agents produce better output.</p>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="grid" id="charts">
+    <div class="card full">
+      <h2>Overall Score Trend by Harness Version</h2>
+      <canvas id="trendChart"></canvas>
+    </div>
+    <div class="card">
+      <h2>Average Score by Difficulty Level</h2>
+      <canvas id="difficultyChart"></canvas>
+    </div>
+    <div class="card">
+      <h2>Difficulty Threshold (Where Agents Struggle)</h2>
+      <canvas id="thresholdChart"></canvas>
+    </div>
+    <div class="card">
+      <h2>Conversation Turns per Task</h2>
+      <canvas id="turnsChart"></canvas>
+    </div>
+    <div class="card">
+      <h2>Average Score by Task Type</h2>
+      <canvas id="typeChart"></canvas>
+    </div>
+  </div>
+
+  <div class="no-data" id="noData" style="display: none;">
+    <h2>No session data yet</h2>
+    <p>Add sessions to <code>sessions.json</code> to see metrics.</p>
+  </div>
+
+  <script>
+    var COLORS = {
+      blue: '#58a6ff',
+      green: '#3fb950',
+      orange: '#d29922',
+      red: '#f85149',
+      purple: '#bc8cff',
+      cyan: '#39d2c0',
+      gray: '#8b949e',
+      gridLine: '#21262d',
+      text: '#8b949e'
+    };
+
+    var DIMENSION_COLORS = {
+      completion: COLORS.blue,
+      conventions: COLORS.green,
+      ci_pass: COLORS.orange,
+      scope: COLORS.purple,
+      self_sufficiency: COLORS.cyan
+    };
+
+    var DIMENSION_LABELS = {
+      completion: 'Completion',
+      conventions: 'Conventions',
+      ci_pass: 'CI Pass',
+      scope: 'Scope',
+      self_sufficiency: 'Self-sufficiency'
+    };
+
+    var CHART_DEFAULTS = {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { labels: { color: COLORS.text, font: { size: 11 } } }
+      },
+      scales: {
+        x: { ticks: { color: COLORS.text }, grid: { color: COLORS.gridLine } },
+        y: { ticks: { color: COLORS.text }, grid: { color: COLORS.gridLine }, min: 0, max: 5 }
+      }
+    };
+
+    function avgScore(session) {
+      var s = session.scores;
+      return (s.completion + s.conventions + s.ci_pass + s.scope + s.self_sufficiency) / 5;
+    }
+
+    function groupBy(arr, keyFn) {
+      var result = {};
+      arr.forEach(function(item) {
+        var key = keyFn(item);
+        if (!result[key]) result[key] = [];
+        result[key].push(item);
+      });
+      return result;
+    }
+
+    function avgOfArr(arr) {
+      if (arr.length === 0) return 0;
+      return arr.reduce(function(a, b) { return a + b; }, 0) / arr.length;
+    }
+
+    function deepMerge(target, source) {
+      var result = JSON.parse(JSON.stringify(target));
+      for (var key in source) {
+        if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+          result[key] = deepMerge(result[key] || {}, source[key]);
+        } else {
+          result[key] = source[key];
+        }
+      }
+      return result;
+    }
+
+    function renderStats(sessions) {
+      var container = document.getElementById('stats');
+      var totalSessions = sessions.length;
+      var avgOverall = avgOfArr(sessions.map(avgScore));
+      var avgDifficulty = avgOfArr(sessions.map(function(s) { return s.difficulty; }));
+      var turnsData = sessions.filter(function(s) { return s.turns != null; }).map(function(s) { return s.turns; });
+      var avgTurns = avgOfArr(turnsData);
+
+      var versions = groupBy(sessions, function(s) { return s.harness_version; });
+      var versionCount = Object.keys(versions).length;
+
+      var turnsDisplay = turnsData.length > 0 ? avgTurns.toFixed(0) : '—';
+      container.innerHTML =
+        '<div class="stat"><div class="value">' + totalSessions + '</div><div class="label">Total Sessions</div></div>' +
+        '<div class="stat"><div class="value">' + avgOverall.toFixed(1) + '</div><div class="label">Avg Score (all dimensions)</div></div>' +
+        '<div class="stat"><div class="value">' + avgDifficulty.toFixed(1) + '</div><div class="label">Avg Task Difficulty</div></div>' +
+        '<div class="stat"><div class="value">' + turnsDisplay + '</div><div class="label">Avg Conversation Turns</div></div>' +
+        '<div class="stat"><div class="value">' + versionCount + '</div><div class="label">Harness Versions</div></div>';
+    }
+
+    function renderTrendChart(sessions) {
+      var sorted = sessions.slice().sort(function(a, b) { return a.date.localeCompare(b.date); });
+      var labels = sorted.map(function(s) { return s.date; });
+
+      var datasets = Object.keys(DIMENSION_LABELS).map(function(dim) {
+        return {
+          label: DIMENSION_LABELS[dim],
+          data: sorted.map(function(s) { return s.scores[dim]; }),
+          borderColor: DIMENSION_COLORS[dim],
+          backgroundColor: DIMENSION_COLORS[dim] + '33',
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        };
+      });
+
+      // Add harness version annotations as point labels
+      var versionDataset = {
+        label: 'Avg Score',
+        data: sorted.map(avgScore),
+        borderColor: COLORS.gray,
+        borderDash: [5, 5],
+        tension: 0.3,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointStyle: sorted.map(function(s, i) {
+          // Show version change with different point style
+          if (i === 0 || sorted[i].harness_version !== sorted[i - 1].harness_version) return 'rectRot';
+          return 'circle';
+        })
+      };
+      datasets.push(versionDataset);
+
+      new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: { labels: labels, datasets: datasets },
+        options: deepMerge(CHART_DEFAULTS, {
+          plugins: {
+            tooltip: {
+              callbacks: {
+                afterBody: function(context) {
+                  var idx = context[0].dataIndex;
+                  var session = sorted[idx];
+                  return 'Harness: ' + session.harness_version + '\nTask: ' + session.task + '\nDifficulty: ' + session.difficulty;
+                }
+              }
+            }
+          }
+        })
+      });
+    }
+
+    function renderDifficultyChart(sessions) {
+      var byDifficulty = groupBy(sessions, function(s) { return s.difficulty; });
+      var levels = [1, 2, 3, 4, 5];
+      var labels = levels.map(function(l) { return 'Difficulty ' + l; });
+
+      var datasets = Object.keys(DIMENSION_LABELS).map(function(dim) {
+        return {
+          label: DIMENSION_LABELS[dim],
+          data: levels.map(function(level) {
+            var group = byDifficulty[level] || [];
+            return avgOfArr(group.map(function(s) { return s.scores[dim]; }));
+          }),
+          backgroundColor: DIMENSION_COLORS[dim] + 'cc'
+        };
+      });
+
+      new Chart(document.getElementById('difficultyChart'), {
+        type: 'bar',
+        data: { labels: labels, datasets: datasets },
+        options: CHART_DEFAULTS
+      });
+    }
+
+    function renderThresholdChart(sessions) {
+      var byVersionAndDifficulty = {};
+      sessions.forEach(function(s) {
+        if (!byVersionAndDifficulty[s.harness_version]) byVersionAndDifficulty[s.harness_version] = {};
+        if (!byVersionAndDifficulty[s.harness_version][s.difficulty]) byVersionAndDifficulty[s.harness_version][s.difficulty] = [];
+        byVersionAndDifficulty[s.harness_version][s.difficulty].push(avgScore(s));
+      });
+
+      var levels = [1, 2, 3, 4, 5];
+      var labels = levels.map(function(l) { return 'Difficulty ' + l; });
+      var versionColors = [COLORS.red, COLORS.orange, COLORS.green, COLORS.blue, COLORS.purple];
+
+      var datasets = Object.keys(byVersionAndDifficulty).map(function(version, i) {
+        return {
+          label: version,
+          data: levels.map(function(level) {
+            var scores = byVersionAndDifficulty[version][level] || [];
+            return avgOfArr(scores);
+          }),
+          borderColor: versionColors[i % versionColors.length],
+          backgroundColor: versionColors[i % versionColors.length] + '33',
+          tension: 0.3,
+          pointRadius: 5
+        };
+      });
+
+      // Add the "acceptable" threshold line
+      datasets.push({
+        label: 'Acceptable (3.0)',
+        data: levels.map(function() { return 3; }),
+        borderColor: COLORS.gray,
+        borderDash: [8, 4],
+        pointRadius: 0,
+        fill: false
+      });
+
+      new Chart(document.getElementById('thresholdChart'), {
+        type: 'line',
+        data: { labels: labels, datasets: datasets },
+        options: deepMerge(CHART_DEFAULTS, {
+          plugins: {
+            title: {
+              display: true,
+              text: 'Goal: push the line above 3.0 at higher difficulty levels',
+              color: COLORS.gray,
+              font: { size: 11, weight: 'normal' }
+            }
+          }
+        })
+      });
+    }
+
+    function renderTurnsChart(sessions) {
+      var withTurns = sessions.filter(function(s) { return s.turns != null; });
+      var sorted = withTurns.slice().sort(function(a, b) { return a.date.localeCompare(b.date); });
+      var labels = sorted.map(function(s) { return s.date; });
+
+      if (sorted.length === 0) {
+        document.getElementById('turnsChart').parentElement.innerHTML = '<h2>Conversation Turns per Task</h2><p style="color: #8b949e; text-align: center; padding: 40px;">No turn data recorded yet</p>';
+        return;
+      }
+
+      new Chart(document.getElementById('turnsChart'), {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Conversation Turns',
+            data: sorted.map(function(s) { return s.turns; }),
+            backgroundColor: sorted.map(function(s) {
+              var colors = { baseline: COLORS.red, 'tier-1': COLORS.orange, 'tier-2': COLORS.green, 'tier-3': COLORS.blue };
+              return (colors[s.harness_version] || COLORS.gray) + 'cc';
+            }),
+            borderRadius: 4
+          }]
+        },
+        options: deepMerge(CHART_DEFAULTS, {
+          scales: { y: { min: 0, max: undefined } },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                afterBody: function(context) {
+                  var idx = context[0].dataIndex;
+                  var session = sorted[idx];
+                  return 'Task: ' + session.task + '\nDifficulty: ' + session.difficulty + '\nHarness: ' + session.harness_version;
+                }
+              }
+            }
+          }
+        })
+      });
+    }
+
+    function renderTypeChart(sessions) {
+      var byType = groupBy(sessions, function(s) { return s.type; });
+      var types = Object.keys(byType).sort();
+      var typeColors = [COLORS.blue, COLORS.green, COLORS.orange, COLORS.purple, COLORS.cyan, COLORS.red];
+
+      new Chart(document.getElementById('typeChart'), {
+        type: 'radar',
+        data: {
+          labels: Object.keys(DIMENSION_LABELS).map(function(k) { return DIMENSION_LABELS[k]; }),
+          datasets: types.map(function(type, i) {
+            var group = byType[type];
+            return {
+              label: type,
+              data: Object.keys(DIMENSION_LABELS).map(function(dim) {
+                return avgOfArr(group.map(function(s) { return s.scores[dim]; }));
+              }),
+              borderColor: typeColors[i % typeColors.length],
+              backgroundColor: typeColors[i % typeColors.length] + '22',
+              pointRadius: 3
+            };
+          })
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { labels: { color: COLORS.text, font: { size: 11 } } }
+          },
+          scales: {
+            r: {
+              min: 0, max: 5,
+              ticks: { color: COLORS.text, backdropColor: 'transparent', stepSize: 1 },
+              grid: { color: COLORS.gridLine },
+              angleLines: { color: COLORS.gridLine },
+              pointLabels: { color: COLORS.text, font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    function render(data) {
+      var sessions = data.sessions;
+
+      if (sessions.length === 0) {
+        document.getElementById('charts').style.display = 'none';
+        document.getElementById('stats').style.display = 'none';
+        document.getElementById('noData').style.display = 'block';
+        return;
+      }
+
+      renderStats(sessions);
+      renderTrendChart(sessions);
+      renderDifficultyChart(sessions);
+      renderThresholdChart(sessions);
+      renderTurnsChart(sessions);
+      renderTypeChart(sessions);
+    }
+
+    render(SESSION_DATA);
+  </script>
+</body>
+</html>

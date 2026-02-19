@@ -107,6 +107,14 @@ Detailed findings for each workstream live in `docs/harness/`. HARNESS.md is the
 
 ---
 
+## Implementation Plan
+
+All 24 workstreams are audited. The prioritized implementation plan lives at [docs/harness/implementation-plan.md](docs/harness/implementation-plan.md).
+
+Implementation order: **Tier 0** (measurement foundation) → **Tier 1** (quick wins) → **Tier 2** (medium effort, high impact) → **Tier 3** (medium effort, medium impact).
+
+---
+
 ## References
 
 - [Harness Engineering | OpenAI](https://openai.com/index/harness-engineering/)
