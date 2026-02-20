@@ -54,6 +54,30 @@ func LoadEnterpriseFeatures(db *queries.Queries) func(http.Handler) http.Handler
 }
 ```
 
+### Good: Share data via context instead of repeated DB calls
+```go
+// Middleware loads tenant once, stores in context
+func LoadTenant(db *queries.Queries) func(http.Handler) http.Handler {
+    return func(next http.Handler) http.Handler {
+        tenant, _ := db.GetTenantByID(ctx, tenantID)
+        ctx = libctx.SetTenant(ctx, tenant)
+        next.ServeHTTP(w, r.WithContext(ctx))
+    }
+}
+
+// Handlers read from context — no extra DB call
+func HandleSomething(w http.ResponseWriter, r *http.Request) {
+    tenant := libctx.GetTenant(r.Context())
+}
+```
+
+### Poor: Repeated DB calls for the same data
+```go
+func HandleSomething(w http.ResponseWriter, r *http.Request) {
+    tenant, _ := db.GetTenantByID(ctx, tenantID) // Already loaded by middleware
+}
+```
+
 ### Poor: Create duplicate types
 ```go
 type TenantData struct { // Unnecessary duplication of queries.Tenant

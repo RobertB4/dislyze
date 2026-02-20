@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Full-stack multi-tenant SaaS application: Go backends (Chi, SQLC, PostgreSQL) + SvelteKit frontends (Svelte 5, TypeScript, Tailwind).
 
+Key capabilities: JWT auth, multi-tenant architecture, RBAC, SSO (SAML/OIDC via Keycloak), IP whitelisting, user invitations, password reset, email change verification, rate limiting.
+
 ## Architecture
 
 ```
@@ -103,6 +105,7 @@ When changing a shared resource, verify all consumers still work by running `mak
 4. **Scope is clean**: No unrelated changes in the diff
 5. **Generated code is correct**: If queries changed, `make generate` was run (not hand-edited)
 6. **Self-reviewed**: `/review` was run and issues addressed
+7. **PR follows template**: PR description follows `.github/PULL_REQUEST_TEMPLATE.md` — read the template and fill in every section
 
 ## Escalation protocol
 
@@ -117,6 +120,7 @@ When changing a shared resource, verify all consumers still work by running `mak
 | `docs/conventions.md` | Detailed coding conventions with examples |
 | `docs/harness/implementation-plan.md` | Harness engineering roadmap and tier system |
 | `PROGRESS.md` | Current state: what's done, in flight, and next |
+| `database/CLAUDE.md` | Schema migrations, seed data, goose conventions |
 | `lugia-backend/CLAUDE.md` | Customer backend: handlers, middleware, enterprise features |
 | `giratina-backend/CLAUDE.md` | Admin backend: handlers, tenant management |
 | `lugia-frontend/CLAUDE.md` | Customer frontend: routes, components, fetch patterns |
