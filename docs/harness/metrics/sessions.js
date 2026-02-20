@@ -97,6 +97,23 @@ var SESSION_DATA = {
       "turns": null,
       "duration_minutes": null,
       "notes": "Audited 8 workstreams, created prioritized implementation plan, built Tier 0 (scoring rubric, sessions.js, Chart.js dashboard). CORS bug with fetch on file:// protocol required fix. User provided direction on playwright-cli, abstract vs concrete selfimprove output, baseline score adjustments."
+    },
+    {
+      "date": "2025-02-20",
+      "task": "Tier 1 harness implementation (15 quick wins) + CI fixes",
+      "type": "infra",
+      "difficulty": 3,
+      "harness_version": "tier-1",
+      "scores": {
+        "completion": 5,
+        "conventions": 4,
+        "ci_pass": 3,
+        "scope": 4,
+        "self_sufficiency": 3
+      },
+      "turns": null,
+      "duration_minutes": null,
+      "notes": "Implemented all 15 Tier 1 items: Makefile verify/generate targets, CI pull_request triggers, PR template, .claude/settings.json deny rules, /selfimprove rewrite, /review command, CLAUDE.md knowledge layer (architecture, DoD, escalation, blast radius), jirachi/zoroark CLAUDE.md. CI fix pass: Go 1.24.13 bump (govulncheck), eslint 9->10 migration (npm audit), gosec #nosec annotations + test dir exclusion, svelte-check type imports + adapter-node dep. User corrections: (1) inconsistent jirachi lint in Makefile, (2) missing zoroark check, (3) npm override proposed before upgrading direct deps (led to 'Root cause over workaround' principle), (4) reminded to verify changes work after making them."
     }
   ]
 };
