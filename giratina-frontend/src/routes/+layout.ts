@@ -32,7 +32,7 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 		forceUpdateMeCache.set(false);
 	}
 
-	let me: Me = null as any;
+	let me!: Me;
 
 	if (url.pathname.startsWith("/auth")) {
 		// SCENARIO A: User is on an /auth page (e.g., /auth/login, /auth/signup)

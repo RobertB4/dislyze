@@ -97,7 +97,8 @@ export async function mutationFetch(
 	} catch (networkError) {
 		toast.showError();
 		throw new Error(
-			`mutationFetch: Network error for URL ${url.toString()}: ${networkError as string}`
+			`mutationFetch: Network error for URL ${url.toString()}: ${networkError as string}`,
+			{ cause: networkError }
 		);
 	}
 
@@ -115,7 +116,8 @@ export async function mutationFetch(
 		} catch (logoutAttemptError) {
 			toast.showError();
 			throw new Error(
-				`mutationFetch: Logout attempt network error: ${logoutAttemptError as string}`
+				`mutationFetch: Logout attempt network error: ${logoutAttemptError as string}`,
+				{ cause: logoutAttemptError }
 			);
 		}
 

@@ -87,6 +87,12 @@ We prioritize writing correct code over writing code fast. This means we want to
 - Correctly understand the problem before writing code
 - Proactively ask claryfing questions and communicate unknowns/risks before writing code
 
+### Verify changes work
+After making a change, verify it works as expected. Think through the happy path, edge cases, and ways it could break — then test all of them. If the results aren't what you expect, analyze what's wrong and fix the root cause.
+
+### Root cause over workaround
+When encountering a problem, fix the underlying cause rather than applying a workaround that masks it. If the root cause fix is significantly more work, flag this to the human — don't silently choose the shortcut. Signs you're implementing a workaround: you're suppressing a warning, pinning/overriding a transitive dependency, adding a special case to avoid a deeper issue, or skipping a check.
+
 ### Task scope
 - We prioritize focusing exclusively on the scope of the task at hand without making any unrelated changes
 - If we find something that is unrelated to the task at hand but we think is a good change, we add comments explaining what we want to change and why

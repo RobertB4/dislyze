@@ -28,8 +28,8 @@ type Claims struct {
 }
 
 type TokenPair struct {
-	AccessToken  string
-	RefreshToken string
+	AccessToken  string // #nosec G117 -- intentional: this struct returns JWT tokens to clients
+	RefreshToken string // #nosec G117
 	ExpiresIn    int64
 	JTI          pgtype.UUID
 }
