@@ -165,7 +165,7 @@ func (h *AuthHandler) forgotPassword(ctx context.Context, req ForgotPasswordRequ
 		return errlib.New(fmt.Errorf("SendGrid API returned error status code: %d, Body: %s", sgResponse.StatusCode, sgResponse.Body), http.StatusInternalServerError, fmt.Sprintf("ForgotPassword: SendGrid API error for %s", req.Email))
 	}
 
-	log.Printf("Password reset email successfully sent via SendGrid to user with id: %s", user.ID)
+	log.Printf("Password reset email successfully sent via SendGrid to user with id: %s", user.ID) // #nosec G706 -- user.ID is a database UUID, not user input
 
 	return nil
 }

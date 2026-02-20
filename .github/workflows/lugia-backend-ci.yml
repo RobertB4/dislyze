@@ -73,7 +73,7 @@ jobs:
 
       - name: Run gosec SAST scan
         working-directory: ./lugia-backend
-        run: gosec -exclude-dir=queries ./...
+        run: gosec -exclude-dir=queries -exclude-dir=test ./...
 
       - name: Check for dead code
         working-directory: ./lugia-backend

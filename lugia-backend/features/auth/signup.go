@@ -24,7 +24,7 @@ type SignupRequestBody struct {
 	CompanyName     string `json:"company_name"`
 	UserName        string `json:"user_name"`
 	Email           string `json:"email"`
-	Password        string `json:"password"`
+	Password        string `json:"password"` // #nosec G117 -- intentional: request body, not a leaked secret
 	PasswordConfirm string `json:"password_confirm"`
 }
 

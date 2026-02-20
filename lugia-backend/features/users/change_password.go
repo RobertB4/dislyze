@@ -19,8 +19,8 @@ import (
 )
 
 type ChangePasswordRequestBody struct {
-	CurrentPassword    string `json:"current_password"`
-	NewPassword        string `json:"new_password"`
+	CurrentPassword    string `json:"current_password"` // #nosec G117 -- intentional: request body, not a leaked secret
+	NewPassword        string `json:"new_password"`    // #nosec G117
 	NewPasswordConfirm string `json:"new_password_confirm"`
 }
 

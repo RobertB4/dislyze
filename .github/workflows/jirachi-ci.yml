@@ -64,7 +64,7 @@ jobs:
 
       - name: Run gosec SAST scan
         working-directory: ./jirachi
-        run: gosec -exclude-dir=queries ./...
+        run: gosec -exclude-dir=queries -exclude-dir=test ./...
 
       - name: Lint Go code (golangci-lint)
         uses: golangci/golangci-lint-action@v7

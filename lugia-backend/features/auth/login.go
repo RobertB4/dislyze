@@ -23,7 +23,7 @@ import (
 
 type LoginRequestBody struct {
 	Email    string `json:"email"`
-	Password string `json:"password"`
+	Password string `json:"password"` // #nosec G117 -- intentional: login request body, not a leaked secret
 }
 
 func (r *LoginRequestBody) Validate() error {

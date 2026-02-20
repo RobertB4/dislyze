@@ -1,5 +1,5 @@
-import { Page } from "@playwright/test";
-import { TestUser } from "./seed";
+import type { Page } from "@playwright/test";
+import type { TestUser } from "./seed";
 
 /**
  * Helper function to login as a specific user

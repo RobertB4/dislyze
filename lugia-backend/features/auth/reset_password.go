@@ -21,7 +21,7 @@ import (
 
 type ResetPasswordRequestBody struct {
 	Token           string `json:"token"`
-	Password        string `json:"password"`
+	Password        string `json:"password"` // #nosec G117 -- intentional: request body, not a leaked secret
 	PasswordConfirm string `json:"password_confirm"`
 }
 

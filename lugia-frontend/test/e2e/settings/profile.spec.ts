@@ -1,4 +1,4 @@
-import { test, expect, APIRequestContext } from "@playwright/test";
+import { test, expect, type APIRequestContext } from "@playwright/test";
 import { resetAndSeedDatabase } from "../setup/helpers";
 import { TestUsersData } from "../setup/seed";
 import { logInAs } from "../setup/auth";
