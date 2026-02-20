@@ -194,36 +194,47 @@ These retroactive scores won't be perfectly accurate, but they establish the "be
 
 **Goal:** Build the enforcement and measurement infrastructure that makes the harness self-reinforcing.
 
+### Session management
+
+| # | Item | Source | Effort | What it enables |
+|---|---|---|---|---|
+| 2.1 | Session startup protocol in CLAUDE.md | Anthropic article, #18 | ~15 min | Agents follow a defined startup sequence: read progress, baseline verify, then implement. Prevents cold-start waste and catches broken state early. |
+| 2.2 | Cross-session progress file | Anthropic article, #18 | ~20 min | Persistent `PROGRESS.md` or similar tracks what's done, what's in flight, what's next. Survives compaction and new sessions. |
+| 2.3 | CLAUDE.md table of contents pattern | OpenAI article | ~30 min | Keep root CLAUDE.md concise (~100 lines) as a map pointing to deeper docs. Prevents context bloat as knowledge grows. |
+
 ### Structural tests
 
 | # | Item | Source | Effort | What it enables |
 |---|---|---|---|---|
-| 2.1 | Enterprise feature flag sync test | #10 | ~30 min | Go constants and DB rows must match — agents can't add a feature flag in only one place |
-| 2.2 | Generated code boundary test | #10 | ~30 min | Fails if generated files are hand-edited (detected via header comments or file patterns) |
-| 2.3 | CLAUDE.md reference validation test | #24 | ~30 min | File paths and Makefile targets referenced in CLAUDE.md must exist |
+| 2.4 | Enterprise feature flag sync test | #10 | ~30 min | Go constants and DB rows must match — agents can't add a feature flag in only one place |
+| 2.5 | Generated code boundary test | #10 | ~30 min | Fails if generated files are hand-edited (detected via header comments or file patterns) |
+| 2.6 | CLAUDE.md reference validation test | #24 | ~30 min | File paths and Makefile targets referenced in CLAUDE.md must exist |
 
 ### Observability
 
 | # | Item | Source | Effort | What it enables |
 |---|---|---|---|---|
-| 2.4 | Preserve Go test JSON output in CI | #23 | ~15 min | Per-test timing and pass/fail data captured as artifact |
-| 2.5 | Add code coverage to Go test commands | #23 | ~15 min | Coverage percentage tracked per CI run |
-| 2.6 | Add Playwright JUnit XML reporter | #23 | ~10 min | E2E test results captured in machine-readable format |
+| 2.7 | Preserve Go test JSON output in CI | #23 | ~15 min | Per-test timing and pass/fail data captured as artifact |
+| 2.8 | Add code coverage to Go test commands | #23 | ~15 min | Coverage percentage tracked per CI run |
+| 2.9 | Add Playwright JUnit XML reporter | #23 | ~10 min | E2E test results captured in machine-readable format |
 
 ### Tooling
 
 | # | Item | Source | Effort | What it enables |
 |---|---|---|---|---|
-| 2.7 | `make setup` bootstrap command | #2, #17, #20 | ~1-2 hours | Agents can self-provision from a fresh clone |
-| 2.8 | `make test-unit-single TEST=<name>` | #20 | ~15 min | Agents can re-run individual failing tests |
+| 2.10 | `make setup` bootstrap command | #2, #17, #20, multiple articles | ~1-2 hours | Agents can self-provision from a fresh clone. Multiple articles flag "wasted tokens on env setup" as a top failure mode. |
+| 2.11 | `make test-unit-single TEST=<name>` | #20 | ~15 min | Agents can re-run individual failing tests |
 
 ### Scheduled automation
 
 | # | Item | Source | Effort | What it enables |
 |---|---|---|---|---|
-| 2.9 | Weekly cleanup scan workflow | #24 | ~30 min | Catches entropy between pushes: deadcode, govulncheck, npm audit |
+| 2.12 | Weekly cleanup scan workflow | #24 | ~30 min | Catches entropy between pushes: deadcode, govulncheck, npm audit |
 
 ### Tier 2 exit criteria
+- Session startup protocol defined and followed
+- Progress file pattern established
+- Root CLAUDE.md refactored to table-of-contents pattern
 - Structural tests run as part of `make verify`
 - CI uploads test output JSON and coverage as artifacts
 - `make setup` works from a fresh clone
@@ -246,8 +257,10 @@ These retroactive scores won't be perfectly accurate, but they establish the "be
 | 3.5 | Seed data sync validation test | #10 | ~1 hour | Three seed files must agree on key invariants |
 | 3.6 | Configuration drift detection test | #24 | ~30 min | Golangci-lint and ESLint configs must match across modules |
 | 3.7 | Agent role definitions in CLAUDE.md | #21 | ~20 min | Different workflow lenses documented for coding, review, testing |
-| 3.8 | `feature-list.json` | #14 | ~30 min | Machine-readable inventory of features and their code paths |
+| 3.8 | `feature-list.json` | #14 | ~30 min | Machine-readable inventory of features and their code paths. Anthropic article found JSON format critical — agents are less likely to corrupt JSON than Markdown. Consider promoting if session data shows agents struggling with cross-session context. |
 | 3.9 | Version pinning (`.tool-versions`) | #17 | ~15 min | Reproducible tool versions across environments |
+| 3.10 | Educational linter error messages | #9, OpenAI article, Substack article | ~1-2 hours | Linter failures double as instructional context for the agent's next attempt. Phase 1: document common fixes in CLAUDE.md. Phase 2: custom lint rules with teaching messages. |
+| 3.11 | "Build to delete" modularity principle | Phil Schmid article | ~15 min | Document in CLAUDE.md: harness infrastructure should be modular enough to replace as models improve. Avoid over-engineering control flow — each new model release renders yesterday's logic obsolete. |
 
 ### Tier 3 exit criteria
 - Items shipped based on priority determined by metric data
