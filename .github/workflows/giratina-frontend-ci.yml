@@ -6,6 +6,11 @@ on:
       - 'giratina-frontend/**'
       - 'zoroark/**'
       - '.github/workflows/giratina-frontend-ci.yml'
+  pull_request:
+    paths:
+      - 'giratina-frontend/**'
+      - 'zoroark/**'
+      - '.github/workflows/giratina-frontend-ci.yml'
 
 jobs:
   build-lint-check:

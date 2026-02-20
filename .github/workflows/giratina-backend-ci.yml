@@ -7,6 +7,12 @@ on:
       - "database/**"
       - "jirachi/**"
       - ".github/workflows/giratina-backend-ci.yml"
+  pull_request:
+    paths:
+      - "giratina-backend/**"
+      - "database/**"
+      - "jirachi/**"
+      - ".github/workflows/giratina-backend-ci.yml"
 
 jobs:
   build-lint-test:

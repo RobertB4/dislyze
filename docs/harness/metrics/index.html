@@ -103,7 +103,8 @@
 
     function avgScore(session) {
       var s = session.scores;
-      return (s.completion + s.conventions + s.ci_pass + s.scope + s.self_sufficiency) / 5;
+      var values = [s.completion, s.conventions, s.ci_pass, s.scope, s.self_sufficiency].filter(function(v) { return v != null; });
+      return values.length > 0 ? values.reduce(function(a, b) { return a + b; }, 0) / values.length : 0;
     }
 
     function groupBy(arr, keyFn) {

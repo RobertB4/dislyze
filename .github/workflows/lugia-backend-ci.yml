@@ -7,6 +7,12 @@ on:
       - "database/**"
       - "jirachi/**"
       - ".github/workflows/lugia-backend-ci.yml"
+  pull_request:
+    paths:
+      - "lugia-backend/**"
+      - "database/**"
+      - "jirachi/**"
+      - ".github/workflows/lugia-backend-ci.yml"
 
 jobs:
   build-lint-test:

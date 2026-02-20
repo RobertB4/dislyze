@@ -4,6 +4,9 @@ on:
   push:
     paths-ignore:
       - 'infrastructure/**'
+  pull_request:
+    paths-ignore:
+      - 'infrastructure/**'
 
 jobs:
   e2e-test:

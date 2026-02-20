@@ -6,6 +6,11 @@ on:
       - 'lugia-backend/**'
       - 'database/**'
       - '.github/workflows/lugia-backend-integration-tests.yml'
+  pull_request:
+    paths:
+      - 'lugia-backend/**'
+      - 'database/**'
+      - '.github/workflows/lugia-backend-integration-tests.yml'
 
 jobs:
   integration-test:

@@ -6,6 +6,11 @@ on:
       - 'giratina-backend/**'
       - 'database/**'
       - '.github/workflows/giratina-backend-integration-tests.yml'
+  pull_request:
+    paths:
+      - 'giratina-backend/**'
+      - 'database/**'
+      - '.github/workflows/giratina-backend-integration-tests.yml'
 
 jobs:
   integration-test:

@@ -6,6 +6,11 @@ on:
       - 'lugia-frontend/**'
       - 'zoroark/**'
       - '.github/workflows/lugia-frontend-ci.yml'
+  pull_request:
+    paths:
+      - 'lugia-frontend/**'
+      - 'zoroark/**'
+      - '.github/workflows/lugia-frontend-ci.yml'
 
 jobs:
   build-lint-check:

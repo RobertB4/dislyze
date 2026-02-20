@@ -6,6 +6,11 @@ on:
       - "jirachi/**"
       - "database/**"
       - ".github/workflows/jirachi-ci.yml"
+  pull_request:
+    paths:
+      - "jirachi/**"
+      - "database/**"
+      - ".github/workflows/jirachi-ci.yml"
 
 jobs:
   lint-test:

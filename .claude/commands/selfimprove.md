@@ -1,9 +1,23 @@
-You are an expert in prompt engineering, specializing in optimizing AI code assistant instructions. Your task is to analyze and improve the instructions for Claude Code found in u/CLAUDE.md. Follow these steps carefully:
+You are an expert in prompt engineering, specializing in optimizing AI code assistant instructions. Your task is to analyze this session and propose improvements to agent-facing files.
 
-1. Analysis Phase:
-Review the chat history in your context window.
+## Critical Rule: Abstract Over Concrete
 
-Then, examine the current Claude instructions:
+Improvements MUST be abstract, transferable principles — NOT concrete facts about a specific task.
+
+| Bad (concrete) | Good (abstract) |
+|---|---|
+| "The IP whitelist feature uses CIDR notation" | "When working with network inputs, validate both IPv4 and IPv6 formats" |
+| "SSO endpoints need keycloak running" | "Features with external service dependencies should document their dev setup requirements" |
+| "The auth middleware must come before feature checks" | "Middleware ordering is load-bearing — document the required order when adding new middleware" |
+
+Ask yourself: "Would this help an agent working on a completely different task?" If the answer is no, make it more abstract.
+
+## Process
+
+### 1. Analysis Phase
+
+Review the chat history in your context window. Then examine the current instructions:
+
 <claude_instructions>
 @CLAUDE.md
 @database/CLAUDE.md
@@ -15,42 +29,23 @@ Then, examine the current Claude instructions:
 @zoroark/CLAUDE.md
 </claude_instructions>
 
-Analyze the chat history and instructions to identify areas that could be improved. Look for:
-- Inconsistencies in Claude's responses
-- Misunderstandings of user requests
-- Areas where Claude could provide more detailed or accurate information
-- Opportunities to enhance Claude's ability to handle specific types of queries or tasks
+Identify moments where:
+- The agent made a wrong assumption that better instructions would have prevented
+- The agent needed human correction that a principle could have avoided
+- The agent didn't know something that should be documented as a general rule
+- An existing instruction was unclear or misleading
 
-2. Interaction Phase:
-Present your findings and improvement ideas to the human. For each suggestion:
-a) Explain the current issue you've identified
-b) Propose a specific change or addition to the instructions
-c) Describe how this change would improve Claude's performance
+### 2. Interaction Phase
 
-Wait for feedback from the human on each suggestion before proceeding. If the human approves a change, move it to the implementation phase. If not, refine your suggestion or move on to the next idea.
+Present your findings. For each suggestion:
+a) What happened in this session (the concrete trigger)
+b) The abstract principle that would prevent this class of problem
+c) Which file it belongs in and why (usually a CLAUDE.md, but could be a command, Makefile, PR template, etc.)
 
-3. Implementation Phase:
-For each approved change:
-a) Clearly state the section of the instructions you're modifying
-b) Present the new or modified text for that section
-c) Explain how this change addresses the issue identified in the analysis phase
+Wait for human feedback before implementing.
 
-4. Output Format:
-Present your final output in the following structure:
+### 3. Implementation Phase
 
-<analysis>
-[List the issues identified and potential improvements]
-</analysis>
+For each approved change, edit the appropriate file. Place the improvement in the most relevant existing section, or create a new section if none fits.
 
-<improvements>
-[For each approved improvement:
-1. Section being modified
-2. New or modified instruction text
-3. Explanation of how this addresses the identified issue]
-</improvements>
-
-<final_instructions>
-[Present the complete, updated set of instructions for Claude, incorporating all approved changes]
-</final_instructions>
-
-Remember, your goal is to enhance Claude's performance and consistency while maintaining the core functionality and purpose of the AI assistant. Be thorough in your analysis, clear in your explanations, and precise in your implementations.
+Remember: the goal is to teach mental models that help agents derive correct behavior in novel situations — not to document facts about specific features.
