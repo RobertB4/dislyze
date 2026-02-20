@@ -4,50 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a full-stack multi-tenant SaaS application with:
-- **Backend**: Go HTTP server using Chi router, PostgreSQL, and SQLC
-- **Frontend**: SvelteKit with TypeScript, Tailwind CSS, and Svelte 5
-- **Database**: PostgreSQL
-- **Email Mock**: SendGrid mock server for development
-
-### Key Features
-- JWT authentication with refresh tokens
-- Multi-tenant architecture (tenants and users)
-- Role-based access (admin/editor)
-- User invitations and email verification
-- Password reset flow
-- Email change with verification
-- Rate limiting on auth endpoints
+Full-stack multi-tenant SaaS application: Go backends (Chi, SQLC, PostgreSQL) + SvelteKit frontends (Svelte 5, TypeScript, Tailwind).
 
 ## Architecture
 
 ```
                     ┌──────────────┐
                     │   database/  │  PostgreSQL schema + migrations (goose)
-                    │   seed.sql   │  Seed data for development
                     └──────┬───────┘
-                           │
                     ┌──────┴───────┐
-                    │   jirachi/   │  Shared Go library (auth, authz, ctx, errlib, jwt, etc.)
-                    │              │  Also has its own SQLC queries
+                    │   jirachi/   │  Shared Go library (auth, jwt, errlib, etc.)
                     └──┬───────┬───┘
-                       │       │
           ┌────────────┴─┐   ┌─┴──────────────┐
-          │lugia-backend │   │giratina-backend │  Go HTTP servers (Chi router, SQLC)
+          │lugia-backend │   │giratina-backend │  Go HTTP servers
           │  (customer)  │   │  (internal admin)│
           └──────┬───────┘   └──────┬──────────┘
-                 │                  │
                     ┌──────────────┐
                     │   zoroark/   │  Shared Svelte 5 component library
                     └──┬───────┬───┘
-                       │       │
         ┌──────────────┴─┐   ┌─┴────────────────┐
-        │lugia-frontend  │   │giratina-frontend  │  SvelteKit apps (TypeScript, Tailwind)
-        │  (customer)    │   │  (internal admin)  │
+        │lugia-frontend  │   │giratina-frontend  │  SvelteKit apps
         └────────────────┘   └───────────────────┘
 ```
-
-### Module overview
 
 | Directory | What it is | Language |
 |---|---|---|
@@ -79,127 +57,38 @@ make migrate          # Run database migrations
 make initdb           # Drop + migrate + seed (destructive)
 ```
 
+## Session startup protocol
+
+When starting a new session or resuming after context compaction:
+
+1. **Orient** — Read `PROGRESS.md` to understand what's done, in flight, and next
+2. **Verify baseline** — Run `make verify` to confirm the codebase is in a clean state before making changes
+3. **Understand the task** — Read relevant code and CLAUDE.md files before implementing
+4. **Work incrementally** — One logical change at a time, verify after each change
+
 ## General guidelines
 
-### Accuracy over speed
-We prioritize writing correct code over writing code fast. This means we want to:
-- Come up with an implementation plan before writing code
-- Correctly understand the problem before writing code
-- Proactively ask claryfing questions and communicate unknowns/risks before writing code
+- **Accuracy over speed** — understand the problem and plan before writing code. Ask clarifying questions.
+- **Verify changes work** — test happy path, edge cases, and failure modes. Fix root causes, not symptoms.
+- **Root cause over workaround** — fix the underlying cause, not the surface symptom. Flag it if the root cause fix is significantly more work.
+- **Task scope** — focus exclusively on the task at hand. Note unrelated improvements as comments, don't implement them.
+- **Comments explain WHY, not WHAT** — see `docs/conventions.md` for examples.
+- **Locality of behavior** — code that belongs together should live together. Only separate with good reason.
+- **Follow existing patterns** — study the codebase first. Use existing types, match existing interfaces, follow naming conventions.
+- **Design for concurrent access** — when introducing shared artifacts (files, configs, state), consider who reads and writes them. If multiple processes might write to the same file, externalize mutable state to a coordination system. Keep shared files read-mostly.
+- **Prefer simplicity** — simple interfaces, direct solutions, type safety, minimal dependencies.
 
-### Verify changes work
-After making a change, verify it works as expected. Think through the happy path, edge cases, and ways it could break — then test all of them. If the results aren't what you expect, analyze what's wrong and fix the root cause.
+## Key rules
 
-### Root cause over workaround
-When encountering a problem, fix the underlying cause rather than applying a workaround that masks it. If the root cause fix is significantly more work, flag this to the human — don't silently choose the shortcut. Signs you're implementing a workaround: you're suppressing a warning, pinning/overriding a transitive dependency, adding a special case to avoid a deeper issue, or skipping a check.
+### Generated code boundaries
 
-### Task scope
-- We prioritize focusing exclusively on the scope of the task at hand without making any unrelated changes
-- If we find something that is unrelated to the task at hand but we think is a good change, we add comments explaining what we want to change and why
+Files in `queries/` directories are generated by SQLC. **Never hand-edit them.** Edit SQL in `queries_pregeneration/`, run `make generate`, commit both.
 
-### How to write comments
-- The role of comments to explain WHY code was written in the way it was written.
-- Comments explaining what the code does are generally not needed, unless the logic is so complex it is hard to understand.
+### Shared resource blast radius
 
-#### Example of a good comment
-```
-	limit32, err := conversions.SafeInt32(limit)
-	if err != nil {
-		// Fallback to safe default if conversion fails
-		limit32 = 50
-	}
-```
-This is a good comment because it is not immediately obvious why the value should be set if an error occurs.
-
-#### Example of a bad comment
-```
-	// Create invitation token
-	_, err = qtx.CreateInvitationToken(ctx, &queries.CreateInvitationTokenParams{
-		TokenHash: hashedTokenStr,
-		TenantID:  rawTenantID,
-		UserID:    createdUserID,
-		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
-	})
-```
-This comment is bad because it just explains what the next function call does. This is already obvious by reading the function name.
-
-### Locality of behavior over Seperation of concerns
-Code that belongs together should be located closely together, e.g. in the same file or the same directory.
-There are valid reasons to have code that belongs together live in another directory, but we should only seperate code if there is good reason to do so.
-
-## Code Quality & Implementation Guidelines
-
-### Follow existing patterns before introducing new ones
-- **Study the codebase first**: Look at how similar problems are solved in the existing code
-- **Use existing types**: Prefer extending or using existing structs over creating new ones
-- **Match existing interfaces**: Follow established function signatures and error handling patterns
-- **Consistent naming**: Follow the naming conventions already established in the codebase
-
-### Prefer simplicity over complexity
-- **Simple interfaces**: Functions should be easy to call and understand
-- **Direct solutions**: Avoid over-engineering with complex error handling when simple approaches work
-- **Type safety**: Use proper Go types and constants for compile-time safety
-- **Minimal dependencies**: Don't add dependencies when existing code can be reused
-
-### Performance through good design
-- **Context sharing**: Use context to share data instead of repeated database calls
-- **Single responsibility**: Each function should do one thing well
-- **Avoid duplication**: Don't create new structs when existing database models can be used
-- **Efficient queries**: Combine database operations when possible
-
-### Examples of good vs. poor implementation choices
-
-#### Good: Simple, type-safe interface
-```go
-type EnterpriseFeature string
-const FeatureRBAC EnterpriseFeature = "rbac"
-
-func TenantHasFeature(ctx context.Context, feature EnterpriseFeature) bool {
-    return libctx.GetEnterpriseFeatureEnabled(ctx, string(feature))
-}
-```
-
-#### Poor: Complex interface with unnecessary dependencies
-```go
-func TenantHasFeature(ctx context.Context, db *queries.Queries, feature string) bool {
-    // Multiple DB calls, string parameters, complex error handling...
-}
-```
-
-#### Good: Use existing types
-```go
-func LoadEnterpriseFeatures(db *queries.Queries) func(http.Handler) http.Handler {
-    tenant, err := db.GetTenantByID(ctx, tenantID) // Use queries.Tenant directly
-}
-```
-
-#### Poor: Create duplicate types
-```go
-type TenantData struct { // Unnecessary duplication of queries.Tenant
-    ID   pgtype.UUID `json:"id"`
-    Name string      `json:"name"`
-    // ...
-}
-```
-
-## Generated code boundaries
-
-Files in `queries/` directories are generated by SQLC. **Never hand-edit them.**
-
-To change database queries:
-1. Edit the SQL files in `queries_pregeneration/` (in the relevant module)
-2. Run `make generate` from the repo root (or `make sqlc` from the module)
-3. Commit both the SQL source and the generated output
-
-Generated files exist in: `jirachi/queries/`, `lugia-backend/queries/`, `giratina-backend/queries/`.
-
-## Shared resource blast radius
-
-Some directories are shared across multiple modules. Changes to these have a wider blast radius than changes to a single backend or frontend:
-
-| Resource | Consumed by | Impact of changes |
+| Resource | Consumed by | Impact |
 |---|---|---|
-| `database/migrations/` | All Go modules (lugia-backend, giratina-backend, jirachi) | Schema changes affect all backends |
+| `database/migrations/` | All Go modules | Schema changes affect all backends |
 | `jirachi/` | lugia-backend, giratina-backend | Library changes affect both backends |
 | `zoroark/` | lugia-frontend, giratina-frontend | Component changes affect both frontends |
 | `database/seed.sql` | Local dev setup | Seed changes can break local dev for all modules |
@@ -208,26 +97,29 @@ When changing a shared resource, verify all consumers still work by running `mak
 
 ## Definition of Done
 
-A task is complete when:
-
 1. **Code works**: The feature/fix functions as intended
-2. **Verification passes**: `make verify` passes from the repo root
-3. **Scope is clean**: No unrelated changes in the diff
-4. **Generated code is correct**: If queries changed, `make generate` was run (not hand-edited)
-5. **Self-reviewed**: `/review` was run and issues addressed
+2. **Each change verified**: After every discrete change, verify it works (run the relevant tool, check the output, confirm the behavior). Do not batch multiple changes and verify once at the end.
+3. **Full verification passes**: `make verify` passes from the repo root
+4. **Scope is clean**: No unrelated changes in the diff
+5. **Generated code is correct**: If queries changed, `make generate` was run (not hand-edited)
+6. **Self-reviewed**: `/review` was run and issues addressed
 
 ## Escalation protocol
 
-Stop and ask the human when:
+**Stop and ask** when: ambiguous requirements, shared resource changes you're unsure about, security decisions, destructive operations, scope creep, or you're blocked after two attempts.
 
-- **Ambiguous requirements**: The task can be interpreted in multiple valid ways
-- **Shared resource changes**: You need to modify `database/migrations/`, `jirachi/`, or `zoroark/` and you're unsure of the impact
-- **Security decisions**: Authentication, authorization, or data access changes
-- **Destructive operations**: Database migrations that drop columns/tables, deleting files, force-pushing
-- **Scope creep**: You discover the task requires significantly more work than expected
-- **Blocked**: You've tried two approaches and both failed
+**Don't ask** when: the task is well-defined, you're following existing patterns, or the change is contained to a single module.
 
-Do NOT ask when:
-- The task is well-defined and the approach is clear
-- You're following an existing pattern in the codebase
-- The change is contained to a single module
+## Deeper documentation
+
+| Document | What it covers |
+|---|---|
+| `docs/conventions.md` | Detailed coding conventions with examples |
+| `docs/harness/implementation-plan.md` | Harness engineering roadmap and tier system |
+| `PROGRESS.md` | Current state: what's done, in flight, and next |
+| `lugia-backend/CLAUDE.md` | Customer backend: handlers, middleware, enterprise features |
+| `giratina-backend/CLAUDE.md` | Admin backend: handlers, tenant management |
+| `lugia-frontend/CLAUDE.md` | Customer frontend: routes, components, fetch patterns |
+| `giratina-frontend/CLAUDE.md` | Admin frontend: routes, components |
+| `jirachi/CLAUDE.md` | Shared Go library: packages, key rules |
+| `zoroark/CLAUDE.md` | Shared UI library: components, build process |
