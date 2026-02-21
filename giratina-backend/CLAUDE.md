@@ -20,9 +20,7 @@ make sqlc         # Generate SQL queries from queries_pregeneration/*.sql
 - `features/`: HTTP request handlers organized by domain (e.g. customers, subscriptions)
 - `lib/`: Core utilities
   - `config/`: Environment configuration
-  - `db/`: Database connection and migrations
-  - `middleware/`: HTTP middleware (to be added as needed)
-  - `responder/`: Standardized HTTP responses (to be added as needed)
+  - `db/`: Database connection and setup
 - `queries/`: SQLC-generated database queries
 - `queries_pregeneration/`: SQL source files for SQLC
 

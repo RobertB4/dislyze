@@ -10,6 +10,7 @@ This file tracks stable project state (what's been done, known issues). Task coo
 - **Harness Tier 1** — 15 quick wins: Makefile targets, CI PR triggers, PR template, deny rules, CLAUDE.md knowledge layer, /review, /selfimprove, /session-review commands
 - **CI fixes** — Go 1.24.13 (govulncheck), eslint 9→10 (npm audit), gosec #nosec annotations, svelte-check type imports
 - **Branch protection** — GitHub ruleset on main: require PRs, squash merge only, no force push, no deletion
+- **Harness Tier 2 (partial)** — Session management (2.1-2.3): startup protocol, PROGRESS.md, CLAUDE.md table-of-contents refactor. Structural tests (2.4-2.5): generated code boundary check, CLAUDE.md reference validation. New commands: /peer-review, /bigpicture. Updated /review with process checklist, /selfimprove to cover command improvements.
 
 ## Roadmap
 

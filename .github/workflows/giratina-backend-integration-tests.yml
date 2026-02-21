@@ -2,6 +2,7 @@ name: Giratina Backend Integration Tests
 
 on:
   push:
+    branches: [main]
     paths:
       - 'giratina-backend/**'
       - 'database/**'

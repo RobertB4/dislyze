@@ -34,6 +34,7 @@ Identify moments where:
 - The agent needed human correction that a principle could have avoided
 - The agent didn't know something that should be documented as a general rule
 - An existing instruction was unclear or misleading
+- A command (e.g., `/review`, `/peer-review`, `/session-review`) missed something it should have caught — commands are living documents and should evolve based on what we learn
 
 ### 2. Interaction Phase
 

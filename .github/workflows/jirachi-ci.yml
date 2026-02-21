@@ -2,6 +2,7 @@ name: Jirachi CI
 
 on:
   push:
+    branches: [main]
     paths:
       - "jirachi/**"
       - "database/**"

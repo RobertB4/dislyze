@@ -206,30 +206,29 @@ These retroactive scores won't be perfectly accurate, but they establish the "be
 
 | # | Item | Source | Effort | What it enables |
 |---|---|---|---|---|
-| 2.4 | Enterprise feature flag sync test | #10 | ~30 min | Go constants and DB rows must match — agents can't add a feature flag in only one place |
-| 2.5 | Generated code boundary test | #10 | ~30 min | Fails if generated files are hand-edited (detected via header comments or file patterns) |
-| 2.6 | CLAUDE.md reference validation test | #24 | ~30 min | File paths and Makefile targets referenced in CLAUDE.md must exist |
+| 2.4 | Generated code boundary test | #10 | ~30 min | Fails if generated files are hand-edited (detected via header comments or file patterns) |
+| 2.5 | CLAUDE.md reference validation test | #24 | ~30 min | File paths and Makefile targets referenced in CLAUDE.md must exist |
 
 ### Observability
 
 | # | Item | Source | Effort | What it enables |
 |---|---|---|---|---|
-| 2.7 | Preserve Go test JSON output in CI | #23 | ~15 min | Per-test timing and pass/fail data captured as artifact |
-| 2.8 | Add code coverage to Go test commands | #23 | ~15 min | Coverage percentage tracked per CI run |
-| 2.9 | Add Playwright JUnit XML reporter | #23 | ~10 min | E2E test results captured in machine-readable format |
+| 2.6 | Preserve Go test JSON output in CI | #23 | ~15 min | Per-test timing and pass/fail data captured as artifact |
+| 2.7 | Add code coverage to Go test commands | #23 | ~15 min | Coverage percentage tracked per CI run |
+| 2.8 | Add Playwright JUnit XML reporter | #23 | ~10 min | E2E test results captured in machine-readable format |
 
 ### Tooling
 
 | # | Item | Source | Effort | What it enables |
 |---|---|---|---|---|
-| 2.10 | `make setup` bootstrap command | #2, #17, #20, multiple articles | ~1-2 hours | Agents can self-provision from a fresh clone. Multiple articles flag "wasted tokens on env setup" as a top failure mode. |
-| 2.11 | `make test-unit-single TEST=<name>` | #20 | ~15 min | Agents can re-run individual failing tests |
+| 2.9 | `make setup` bootstrap command | #2, #17, #20, multiple articles | ~1-2 hours | Agents can self-provision from a fresh clone. Multiple articles flag "wasted tokens on env setup" as a top failure mode. |
+| 2.10 | `make test-unit-single TEST=<name>` | #20 | ~15 min | Agents can re-run individual failing tests |
 
 ### Scheduled automation
 
 | # | Item | Source | Effort | What it enables |
 |---|---|---|---|---|
-| 2.12 | Weekly cleanup scan workflow | #24 | ~30 min | Catches entropy between pushes: deadcode, govulncheck, npm audit |
+| 2.11 | Weekly cleanup scan workflow | #24 | ~30 min | Catches entropy between pushes: deadcode, govulncheck, npm audit |
 
 ### Tier 2 exit criteria
 - Session startup protocol defined and followed
@@ -261,6 +260,7 @@ These retroactive scores won't be perfectly accurate, but they establish the "be
 | 3.9 | Version pinning (`.tool-versions`) | #17 | ~15 min | Reproducible tool versions across environments |
 | 3.10 | Educational linter error messages | #9, OpenAI article, Substack article | ~1-2 hours | Linter failures double as instructional context for the agent's next attempt. Phase 1: document common fixes in CLAUDE.md. Phase 2: custom lint rules with teaching messages. |
 | 3.11 | "Build to delete" modularity principle | Phil Schmid article | ~15 min | Document in CLAUDE.md: harness infrastructure should be modular enough to replace as models improve. Avoid over-engineering control flow — each new model release renders yesterday's logic obsolete. |
+| 3.12 | Enterprise feature flag consolidation | #10 | ~1-2 hours | Currently 4 places define features (jirachi struct, lugia constants, ctx switch, zoroark TS type). Refactor so locations 2-3 derive from the jirachi struct (e.g., reflection), then add a sync test for Go↔TS. Eliminates silent drift where a new feature added to the struct is missed in a switch statement. |
 
 ### Tier 3 exit criteria
 - Items shipped based on priority determined by metric data

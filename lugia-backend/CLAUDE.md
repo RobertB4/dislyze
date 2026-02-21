@@ -14,10 +14,9 @@ make sqlc             # Generate SQL queries from queries_pregeneration/*.sql
 ## Architecture
 - `features/`: HTTP request handlers (e.g. auth, users)
 - `lib/`: Core utilities
-  - `middleware/`: Auth and authorization middleware
-  - `responder/`: Standardized HTTP responses
+  - `middleware/`: Auth, authorization, enterprise features, IP whitelist middleware
   - `iputils/`: IP validation, CIDR handling, and client IP extraction
-  - etc...
+  - `authz/`: Enterprise feature constants and helpers
 - `queries/`: SQLC-generated database queries
 - `queries_pregeneration/`: SQL source files for SQLC
 
