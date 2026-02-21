@@ -26,13 +26,9 @@ Use this mental model:
 - **2**: Human had to correct something multiple times
 - **1**: Significant problems throughout
 
-### 4. Present for review
+### 4. Write the entry
 
-Show the scores and rationale in a table. Wait for human feedback before writing.
-
-### 5. Write the entry
-
-After human approval, append a new entry to the `sessions` array in `docs/harness/metrics/sessions.js`. Follow the exact format of existing entries.
+Append a new entry to the `sessions` array in `docs/harness/metrics/sessions.js`. Follow the exact format of existing entries. Present the scores and rationale alongside the entry.
 
 The `notes` field should capture:
 - What was done (brief)
