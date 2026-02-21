@@ -44,6 +44,7 @@ For every changed file, evaluate:
 - [ ] **Blast radius**: If shared resources changed (jirachi, zoroark, database), are all consumers considered?
 - [ ] **Tests**: If behavior changed, are tests added or updated?
 - [ ] **Scope creep**: Are there unrelated changes bundled in?
+- [ ] **Anything else**: If something feels off but isn't covered above, flag it. This checklist is not exhaustive — use your judgement.
 
 ### 5. Verify
 
