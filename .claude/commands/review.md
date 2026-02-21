@@ -37,4 +37,6 @@ Summarize findings:
 - **Clean**: "Self-review passed, ready to commit."
 - **Issues found**: List each issue with file and line. Fix before committing.
 
+Evaluate every checklist item honestly. If an item doesn't apply, say why. If it's not done, flag it as an action item. Never mark something as checked with a qualifying note — either it passes or it doesn't.
+
 Do NOT commit. Report your findings and wait for instructions.

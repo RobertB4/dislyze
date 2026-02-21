@@ -71,6 +71,7 @@ When starting a new session or resuming after context compaction:
 ## General guidelines
 
 - **Accuracy over speed** — understand the problem and plan before writing code. Ask clarifying questions.
+- **Verify before explaining** — when asked about existing behavior, read the code/config first. Don't reason from memory or plans — the implementation may differ.
 - **Verify changes work** — test happy path, edge cases, and failure modes. Fix root causes, not symptoms.
 - **Root cause over workaround** — fix the underlying cause, not the surface symptom. Flag it if the root cause fix is significantly more work.
 - **Task scope** — focus exclusively on the task at hand. Note unrelated improvements as comments, don't implement them.
@@ -114,6 +115,8 @@ When changing a shared resource, verify all consumers still work by running `mak
 **Don't ask** when: the task is well-defined, you're following existing patterns, or the change is contained to a single module.
 
 ## Deeper documentation
+
+This root file is read every session — keep it concise. Detailed information belongs in deeper docs, read on-demand when working on the relevant module or task. When adding documentation, consider when agents need it, not just where it logically belongs.
 
 | Document | What it covers |
 |---|---|
