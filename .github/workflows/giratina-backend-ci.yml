@@ -2,6 +2,7 @@ name: Giratina Backend CI
 
 on:
   push:
+    branches: [main]
     paths:
       - "giratina-backend/**"
       - "database/**"
