@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-REPO_ROOT="/Users/robert/Documents/dislyze"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 # --- Parse input ---
 INPUT=$(cat)
