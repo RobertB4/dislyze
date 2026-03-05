@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Badge } from "@dislyze/zoroark";
-	import Layout from "$components/Layout.svelte";
+	import Badge from "@dislyze/zoroark/Badge";
+	import Layout from "$giratina/components/Layout.svelte";
 	import type { PageData } from "./$types";
 
 	let { data: pageData }: { data: PageData } = $props();

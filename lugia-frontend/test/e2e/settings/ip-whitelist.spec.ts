@@ -1,7 +1,7 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
-import { resetAndSeedDatabase, pool } from "../setup/helpers";
-import { TestUsersData } from "../setup/seed";
-import { logInAs, logOut } from "../setup/auth";
+import { resetAndSeedDatabase, pool } from "$lugia-test/e2e/setup/helpers";
+import { TestUsersData } from "$lugia-test/e2e/setup/seed";
+import { logInAs, logOut } from "$lugia-test/e2e/setup/auth";
 
 const IP_WHITELIST_URL = "/settings/ip-whitelist";
 const EMERGENCY_DEACTIVATE_URL = "/settings/ip-whitelist/emergency-deactivate";

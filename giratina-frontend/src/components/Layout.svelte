@@ -3,10 +3,12 @@
 	generics="PromisesMap extends Record<string, Promise<any>> = Record<string, Promise<any>>"
 >
 	import { page } from "$app/state";
-	import { EmptyAvatar, toast, safeGoto } from "@dislyze/zoroark";
+	import EmptyAvatar from "@dislyze/zoroark/EmptyAvatar";
+	import { toast } from "@dislyze/zoroark/toast";
+	import { safeGoto } from "@dislyze/zoroark/routing";
 	import { slide, fade } from "svelte/transition";
 	import type { Snippet } from "svelte";
-	import type { Me } from "@dislyze/zoroark";
+	import type { Me } from "@dislyze/zoroark/meCache";
 	import { resolve } from "$app/paths";
 
 	let isMobileNavigationOpen = $state(false);

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Button, Alert } from "@dislyze/zoroark";
+	import Alert from "@dislyze/zoroark/Alert";
+	import Button from "@dislyze/zoroark/Button";
 	import type { PageData } from "./$types";
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";

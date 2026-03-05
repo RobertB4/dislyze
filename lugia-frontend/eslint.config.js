@@ -5,6 +5,7 @@ import svelte from 'eslint-plugin-svelte';
 import globals from 'globals';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript-eslint';
+import dislyze from '../scripts/eslint-plugin-dislyze.js';
 const gitignorePath = fileURLToPath(new URL('../.gitignore', import.meta.url));
 
 export default ts.config(
@@ -19,7 +20,9 @@ export default ts.config(
 			'tailwind.config.js',
 			'playwright.config.js',
 			'*.config.js',
-			'*.config.ts'
+			'*.config.ts',
+			'test/**/*.config.js',
+			'test/**/*.config.ts'
 		],
 		extends: [ts.configs.disableTypeChecked],
 		rules: {}
@@ -75,6 +78,21 @@ export default ts.config(
 				...globals.browser,
 				...globals.node
 			}
+		}
+	},
+	{
+		files: ['src/**/*.ts', 'src/**/*.svelte'],
+		plugins: { dislyze },
+		rules: {
+			'dislyze/enforce-absolute-imports': ['error', { service: 'lugia' }],
+		}
+	},
+	{
+		files: ['test/**/*.ts'],
+		extends: [ts.configs.disableTypeChecked],
+		plugins: { dislyze },
+		rules: {
+			'dislyze/enforce-absolute-imports': ['error', { service: 'lugia' }],
 		}
 	}
 );

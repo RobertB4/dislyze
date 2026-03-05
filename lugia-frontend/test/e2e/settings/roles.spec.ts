@@ -4,9 +4,9 @@ import {
 	disableRBACForTenant,
 	enableRBACForTenant,
 	resetAndSeedDatabase
-} from "../setup/helpers";
-import { TestUsersData } from "../setup/seed";
-import { logInAs, logOut } from "../setup/auth";
+} from "$lugia-test/e2e/setup/helpers";
+import { TestUsersData } from "$lugia-test/e2e/setup/seed";
+import { logInAs, logOut } from "$lugia-test/e2e/setup/auth";
 
 test.describe("Settings - Roles Page", () => {
 	const rolesPageURL = "/settings/roles";

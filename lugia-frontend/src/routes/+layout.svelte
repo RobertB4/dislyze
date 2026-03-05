@@ -1,7 +1,7 @@
 <script lang="ts">
-	import "../app.css";
-	import { ToastContainer } from "@dislyze/zoroark";
-	import { meCache } from "@dislyze/zoroark";
+	import "$lugia/app.css";
+	import ToastContainer from "@dislyze/zoroark/ToastContainer";
+	import { meCache } from "@dislyze/zoroark/meCache";
 	import type { LayoutData } from "./$types";
 	import type { Snippet } from "svelte";
 

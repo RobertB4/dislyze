@@ -1,6 +1,6 @@
 import type { PageLoad } from "./$types";
-import { loadFunctionFetch } from "$lib/fetch";
-import { type EnterpriseFeatures as BaseEnterpriseFeatures } from "@dislyze/zoroark";
+import { loadFunctionFetch } from "$giratina/lib/fetch";
+import { type EnterpriseFeatures as BaseEnterpriseFeatures } from "@dislyze/zoroark/meCache";
 
 // Extended type for giratina internal app - includes SSO data not exposed to public apps
 export type EnterpriseFeatures = BaseEnterpriseFeatures & {

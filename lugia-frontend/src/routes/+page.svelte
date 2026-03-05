@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Layout from "$components/Layout.svelte";
+	import Layout from "$lugia/components/Layout.svelte";
 	import type { PageData } from "./$types";
 
 	const { data: pageData }: { data: PageData } = $props();

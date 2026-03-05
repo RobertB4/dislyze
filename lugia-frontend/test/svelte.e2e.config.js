@@ -8,7 +8,8 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		alias: {
-			$components: "src/components"
+			$lugia: "src",
+			"$lugia-test": "test"
 		},
 		// For E2E testing, disabling CSRF origin checking can simplify requests
 		// between containers or from test runners that might not send standard browser origins.

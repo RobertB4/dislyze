@@ -17,10 +17,23 @@
 		"lint": "prettier --check . && eslint ."
 	},
 	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"svelte": "./dist/index.js"
-		},
+		"./Alert": { "types": "./dist/Alert.svelte.d.ts", "svelte": "./dist/Alert.svelte" },
+		"./Badge": { "types": "./dist/Badge.svelte.d.ts", "svelte": "./dist/Badge.svelte" },
+		"./Button": { "types": "./dist/Button.svelte.d.ts", "svelte": "./dist/Button.svelte" },
+		"./EmptyAvatar": { "types": "./dist/EmptyAvatar.svelte.d.ts", "svelte": "./dist/EmptyAvatar.svelte" },
+		"./Input": { "types": "./dist/Input.svelte.d.ts", "svelte": "./dist/Input.svelte" },
+		"./InteractivePill": { "types": "./dist/InteractivePill.svelte.d.ts", "svelte": "./dist/InteractivePill.svelte" },
+		"./Select": { "types": "./dist/Select.svelte.d.ts", "svelte": "./dist/Select.svelte" },
+		"./Slideover": { "types": "./dist/Slideover.svelte.d.ts", "svelte": "./dist/Slideover.svelte" },
+		"./Spinner": { "types": "./dist/Spinner.svelte.d.ts", "svelte": "./dist/Spinner.svelte" },
+		"./Toast": { "types": "./dist/Toast/Toast.svelte.d.ts", "svelte": "./dist/Toast/Toast.svelte" },
+		"./ToastContainer": { "types": "./dist/Toast/ToastContainer.svelte.d.ts", "svelte": "./dist/Toast/ToastContainer.svelte" },
+		"./Tooltip": { "types": "./dist/Tooltip.svelte.d.ts", "svelte": "./dist/Tooltip.svelte" },
+		"./toast": { "types": "./dist/Toast/toast.d.ts", "default": "./dist/Toast/toast.js" },
+		"./errors": { "types": "./dist/utils/errors.d.ts", "default": "./dist/utils/errors.js" },
+		"./routing": { "types": "./dist/utils/routing.d.ts", "default": "./dist/utils/routing.js" },
+		"./meCache": { "types": "./dist/utils/meCache.d.ts", "default": "./dist/utils/meCache.js" },
+		"./assertNever": { "types": "./dist/utils/assertNever.d.ts", "default": "./dist/utils/assertNever.js" },
 		"./styles.css": "./dist/app.css"
 	},
 	"files": [
@@ -63,6 +76,5 @@
 		"**/*.css"
 	],
 	"main": "./dist/index.js",
-	"types": "./dist/index.d.ts",
-	"svelte": "./dist/index.js"
+	"types": "./dist/index.d.ts"
 }

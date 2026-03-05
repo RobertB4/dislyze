@@ -1,19 +1,21 @@
 <script lang="ts">
-	import { Button, Badge, toast } from "@dislyze/zoroark";
-	import Layout from "$components/Layout.svelte";
-	import SettingsTabs from "../SettingsTabs.svelte";
-	import Skeleton from "./Skeleton.svelte";
-	import AddIPModal from "./AddIPModal.svelte";
-	import EditLabelModal from "./EditLabelModal.svelte";
-	import DeleteConfirmModal from "./DeleteConfirmModal.svelte";
-	import ActivationWarningModal from "./ActivationWarningModal.svelte";
-	import DeactivationWarningModal from "./DeactivationWarningModal.svelte";
+	import Badge from "@dislyze/zoroark/Badge";
+	import Button from "@dislyze/zoroark/Button";
+	import { toast } from "@dislyze/zoroark/toast";
+	import Layout from "$lugia/components/Layout.svelte";
+	import SettingsTabs from "$lugia/routes/settings/SettingsTabs.svelte";
+	import Skeleton from "$lugia/routes/settings/ip-whitelist/Skeleton.svelte";
+	import AddIPModal from "$lugia/routes/settings/ip-whitelist/AddIPModal.svelte";
+	import EditLabelModal from "$lugia/routes/settings/ip-whitelist/EditLabelModal.svelte";
+	import DeleteConfirmModal from "$lugia/routes/settings/ip-whitelist/DeleteConfirmModal.svelte";
+	import ActivationWarningModal from "$lugia/routes/settings/ip-whitelist/ActivationWarningModal.svelte";
+	import DeactivationWarningModal from "$lugia/routes/settings/ip-whitelist/DeactivationWarningModal.svelte";
 	import type { PageData } from "./$types";
-	import { hasPermission } from "$lib/authz";
-	import { mutationFetch } from "$lib/fetch";
+	import { hasPermission } from "$lugia/lib/authz";
+	import { mutationFetch } from "$lugia/lib/fetch";
 	import { invalidate } from "$app/navigation";
-	import { forceUpdateMeCache } from "@dislyze/zoroark";
-	import type { IPWhitelistRule } from "./+page";
+	import { forceUpdateMeCache } from "@dislyze/zoroark/meCache";
+	import type { IPWhitelistRule } from "$lugia/routes/settings/ip-whitelist/+page";
 
 	let { data: pageData }: { data: PageData } = $props();
 

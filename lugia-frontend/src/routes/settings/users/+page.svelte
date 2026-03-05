@@ -1,25 +1,23 @@
 <script lang="ts">
-	import {
-		Button,
-		Slideover,
-		Input,
-		toast,
-		Badge,
-		Alert,
-		Spinner,
-		Tooltip
-	} from "@dislyze/zoroark";
-	import Layout from "$components/Layout.svelte";
-	import SettingsTabs from "../SettingsTabs.svelte";
+	import Alert from "@dislyze/zoroark/Alert";
+	import Badge from "@dislyze/zoroark/Badge";
+	import Button from "@dislyze/zoroark/Button";
+	import Input from "@dislyze/zoroark/Input";
+	import Slideover from "@dislyze/zoroark/Slideover";
+	import Spinner from "@dislyze/zoroark/Spinner";
+	import Tooltip from "@dislyze/zoroark/Tooltip";
+	import { toast } from "@dislyze/zoroark/toast";
+	import Layout from "$lugia/components/Layout.svelte";
+	import SettingsTabs from "$lugia/routes/settings/SettingsTabs.svelte";
 	import type { PageData } from "./$types";
 	import { createForm } from "felte";
 	import { invalidate } from "$app/navigation";
-	import { mutationFetch } from "$lib/fetch";
-	import Skeleton from "./Skeleton.svelte";
-	import type { User } from "./+page";
-	import { hasPermission } from "$lib/authz";
+	import { mutationFetch } from "$lugia/lib/fetch";
+	import Skeleton from "$lugia/routes/settings/users/Skeleton.svelte";
+	import type { User } from "$lugia/routes/settings/users/+page";
+	import { hasPermission } from "$lugia/lib/authz";
 	import { goto } from "$app/navigation";
-	import RoleCard from "./RoleCard.svelte";
+	import RoleCard from "$lugia/routes/settings/users/RoleCard.svelte";
 	import { SvelteURLSearchParams } from "svelte/reactivity";
 	import { resolve } from "$app/paths";
 

@@ -1,8 +1,8 @@
 import type { LayoutLoad } from "./$types";
 import { redirect, error as svelteKitError } from "@sveltejs/kit";
-import { forceUpdateMeCache, meCache, type Me } from "@dislyze/zoroark";
+import { forceUpdateMeCache, meCache, type Me } from "@dislyze/zoroark/meCache";
 import { get } from "svelte/store";
-import { loadFunctionFetch } from "$lib/fetch";
+import { loadFunctionFetch } from "$giratina/lib/fetch";
 
 export const ssr = false;
 export const prerender = false;

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { resetAndSeedDatabase } from "../setup/helpers";
-import { TestUsersData } from "../setup/seed";
-import { logInAs } from "../setup/auth";
+import { resetAndSeedDatabase } from "$lugia-test/e2e/setup/helpers";
+import { TestUsersData } from "$lugia-test/e2e/setup/seed";
+import { logInAs } from "$lugia-test/e2e/setup/auth";
 
 test.describe("Settings - Users Page", () => {
 	const usersPageURL = "/settings/users";

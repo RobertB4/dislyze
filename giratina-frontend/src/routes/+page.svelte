@@ -1,20 +1,18 @@
 <script lang="ts">
-	import Layout from "$components/Layout.svelte";
-	import {
-		Badge,
-		Tooltip,
-		Slideover,
-		Input,
-		InteractivePill,
-		Alert,
-		Button,
-		toast
-	} from "@dislyze/zoroark";
+	import Layout from "$giratina/components/Layout.svelte";
+	import Alert from "@dislyze/zoroark/Alert";
+	import Badge from "@dislyze/zoroark/Badge";
+	import Button from "@dislyze/zoroark/Button";
+	import Input from "@dislyze/zoroark/Input";
+	import InteractivePill from "@dislyze/zoroark/InteractivePill";
+	import Slideover from "@dislyze/zoroark/Slideover";
+	import Tooltip from "@dislyze/zoroark/Tooltip";
+	import { toast } from "@dislyze/zoroark/toast";
 	import type { PageData } from "./$types";
 	import { createForm } from "felte";
 	import { invalidate } from "$app/navigation";
-	import { mutationFetch } from "$lib/fetch";
-	import type { Tenant, EnterpriseFeatures } from "./+page";
+	import { mutationFetch } from "$giratina/lib/fetch";
+	import type { Tenant, EnterpriseFeatures } from "$giratina/routes/+page";
 	import { resolve } from "$app/paths";
 
 	let { data: pageData }: { data: PageData } = $props();

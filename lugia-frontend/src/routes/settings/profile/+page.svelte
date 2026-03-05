@@ -1,12 +1,14 @@
 <script lang="ts">
-	import Layout from "$components/Layout.svelte";
-	import { Button, Input, toast } from "@dislyze/zoroark";
-	import SettingsTabs from "../SettingsTabs.svelte";
+	import Layout from "$lugia/components/Layout.svelte";
+	import Button from "@dislyze/zoroark/Button";
+	import Input from "@dislyze/zoroark/Input";
+	import { toast } from "@dislyze/zoroark/toast";
+	import { forceUpdateMeCache } from "@dislyze/zoroark/meCache";
+	import SettingsTabs from "$lugia/routes/settings/SettingsTabs.svelte";
 	import type { PageData } from "./$types";
 	import { createForm } from "felte";
-	import { mutationFetch } from "$lib/fetch";
-	import { forceUpdateMeCache } from "@dislyze/zoroark";
-	import { hasPermission } from "$lib/authz";
+	import { mutationFetch } from "$lugia/lib/fetch";
+	import { hasPermission } from "$lugia/lib/authz";
 	import { invalidate } from "$app/navigation";
 	import { page } from "$app/state";
 

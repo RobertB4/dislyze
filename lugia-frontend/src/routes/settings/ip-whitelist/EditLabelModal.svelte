@@ -1,9 +1,11 @@
 <script lang="ts">
-	import { Slideover, Input, toast } from "@dislyze/zoroark";
+	import Input from "@dislyze/zoroark/Input";
+	import Slideover from "@dislyze/zoroark/Slideover";
+	import { toast } from "@dislyze/zoroark/toast";
 	import { createForm } from "felte";
 	import { invalidate } from "$app/navigation";
-	import { mutationFetch } from "$lib/fetch";
-	import type { IPWhitelistRule } from "./+page";
+	import { mutationFetch } from "$lugia/lib/fetch";
+	import type { IPWhitelistRule } from "$lugia/routes/settings/ip-whitelist/+page";
 
 	let {
 		onClose,

@@ -1,8 +1,10 @@
 <script lang="ts">
-	import { Slideover, toast, Alert } from "@dislyze/zoroark";
+	import Alert from "@dislyze/zoroark/Alert";
+	import Slideover from "@dislyze/zoroark/Slideover";
+	import { toast } from "@dislyze/zoroark/toast";
+	import { forceUpdateMeCache } from "@dislyze/zoroark/meCache";
 	import { invalidate } from "$app/navigation";
-	import { mutationFetch } from "$lib/fetch";
-	import { forceUpdateMeCache } from "@dislyze/zoroark";
+	import { mutationFetch } from "$lugia/lib/fetch";
 
 	let {
 		onClose,

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { resetAndSeedDatabase } from "../setup/helpers";
-import { TestUsersData, TestInvitationTokensData } from "../setup/seed";
+import { resetAndSeedDatabase } from "$lugia-test/e2e/setup/helpers";
+import { TestUsersData, TestInvitationTokensData } from "$lugia-test/e2e/setup/seed";
 
 // Use data from seed structures instead of hardcoded values
 const VALID_TOKEN = TestInvitationTokensData.enterprise_11_valid.token;

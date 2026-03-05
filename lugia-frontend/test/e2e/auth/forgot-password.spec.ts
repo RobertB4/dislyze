@@ -1,6 +1,6 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
-import { resetAndSeedDatabase } from "../setup/helpers";
-import { TestUsersData } from "../setup/seed";
+import { resetAndSeedDatabase } from "$lugia-test/e2e/setup/helpers";
+import { TestUsersData } from "$lugia-test/e2e/setup/seed";
 
 const FORGOT_PASSWORD_URL = "/auth/forgot-password";
 const RESET_PASSWORD_URL = "/auth/reset-password";

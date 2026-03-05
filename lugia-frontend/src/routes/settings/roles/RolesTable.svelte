@@ -1,13 +1,19 @@
 <script lang="ts">
-	import { Button, Tooltip, Slideover, Input, Alert, Badge, toast } from "@dislyze/zoroark";
-	import SettingsTabs from "../SettingsTabs.svelte";
-	import PermissionSelector from "./PermissionSelector.svelte";
-	import type { PermissionInfo, RoleInfo } from "./+page";
-	import { type Me } from "@dislyze/zoroark";
-	import { hasPermission } from "$lib/authz";
+	import Alert from "@dislyze/zoroark/Alert";
+	import Badge from "@dislyze/zoroark/Badge";
+	import Button from "@dislyze/zoroark/Button";
+	import Input from "@dislyze/zoroark/Input";
+	import Slideover from "@dislyze/zoroark/Slideover";
+	import Tooltip from "@dislyze/zoroark/Tooltip";
+	import { toast } from "@dislyze/zoroark/toast";
+	import { type Me } from "@dislyze/zoroark/meCache";
+	import SettingsTabs from "$lugia/routes/settings/SettingsTabs.svelte";
+	import PermissionSelector from "$lugia/routes/settings/roles/PermissionSelector.svelte";
+	import type { PermissionInfo, RoleInfo } from "$lugia/routes/settings/roles/+page";
+	import { hasPermission } from "$lugia/lib/authz";
 	import { createForm } from "felte";
 	import { invalidate } from "$app/navigation";
-	import { mutationFetch } from "$lib/fetch";
+	import { mutationFetch } from "$lugia/lib/fetch";
 
 	let {
 		me,
