@@ -66,7 +66,7 @@ test.describe("Auth - Login Page", () => {
 		await expect(page).toHaveURL(loginURL);
 	});
 
-	test("should allow successful login with correct credentials", async ({ page, baseURL }) => {
+	test("should allow successful login with correct credentials", async ({ page }) => {
 		await page.locator("#email").fill(TestUsersData.enterprise_1.email);
 		await page.locator("#password").fill(TestUsersData.enterprise_1.plainTextPassword);
 		await page.getByTestId("login-submit-button").click();

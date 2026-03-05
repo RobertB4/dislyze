@@ -241,7 +241,6 @@ test.describe("Settings - Roles Page", () => {
 
 	// Role editing tests
 	test.describe("Role Editing", () => {
-		let customRoleId: string;
 		let customRoleName: string;
 
 		test.beforeEach(async ({ page }) => {
