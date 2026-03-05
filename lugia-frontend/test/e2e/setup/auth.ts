@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import type { TestUser } from "./seed";
+import type { TestUser } from "$lugia-test/e2e/setup/seed";
 
 /**
  * Helper function to login as a specific user

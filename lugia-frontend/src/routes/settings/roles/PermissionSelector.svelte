@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { InteractivePill } from "@dislyze/zoroark";
-	import type { PermissionInfo } from "./+page";
+	import InteractivePill from "@dislyze/zoroark/InteractivePill";
+	import type { PermissionInfo } from "$lugia/routes/settings/roles/+page";
 	import { SvelteMap } from "svelte/reactivity";
 
 	let {

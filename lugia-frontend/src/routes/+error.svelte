@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/state";
-	import { safeGoto } from "@dislyze/zoroark";
-	import { Button } from "@dislyze/zoroark";
+	import Button from "@dislyze/zoroark/Button";
+	import { safeGoto } from "@dislyze/zoroark/routing";
 
 	async function handleReturnToLogin() {
 		try {

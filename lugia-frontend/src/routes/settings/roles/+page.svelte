@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { Button } from "@dislyze/zoroark";
-	import Layout from "$components/Layout.svelte";
-	import Skeleton from "./Skeleton.svelte";
-	import RolesTable from "./RolesTable.svelte";
+	import Button from "@dislyze/zoroark/Button";
+	import Layout from "$lugia/components/Layout.svelte";
+	import Skeleton from "$lugia/routes/settings/roles/Skeleton.svelte";
+	import RolesTable from "$lugia/routes/settings/roles/RolesTable.svelte";
 	import type { PageData } from "./$types";
-	import { hasPermission } from "$lib/authz";
+	import { hasPermission } from "$lugia/lib/authz";
 
 	let { data: pageData }: { data: PageData } = $props();
 

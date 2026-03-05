@@ -42,3 +42,5 @@ test-results
 
 # keycloak executable
 keycloak-mock/keycloak*
+
+.playwright-cli

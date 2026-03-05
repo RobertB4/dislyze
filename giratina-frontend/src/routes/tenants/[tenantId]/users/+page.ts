@@ -1,5 +1,5 @@
 import type { PageLoad } from "./$types";
-import { loadFunctionFetch } from "$lib/fetch";
+import { loadFunctionFetch } from "$giratina/lib/fetch";
 
 export interface User {
 	id: string;

@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { toast, Button, Input, KnownError, safeGoto } from "@dislyze/zoroark";
+	import Button from "@dislyze/zoroark/Button";
+	import Input from "@dislyze/zoroark/Input";
+	import { toast } from "@dislyze/zoroark/toast";
+	import { KnownError } from "@dislyze/zoroark/errors";
+	import { safeGoto } from "@dislyze/zoroark/routing";
 	import { createForm } from "felte";
 	import { resolve } from "$app/paths";
 

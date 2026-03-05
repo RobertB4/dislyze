@@ -24,7 +24,6 @@ For every changed file, check:
 - [ ] **Shared resources**: If `jirachi/`, `zoroark/`, or `database/` changed, were all consumers verified?
 - [ ] **Generated code regenerated**: If `queries_pregeneration/` changed, was `make generate` run and output committed?
 - [ ] **PROGRESS.md**: If project state changed (feature completed, known issue fixed, roadmap shifted), is `PROGRESS.md` updated?
-- [ ] **Implementation plan**: If harness items were completed or new items discovered, is `docs/harness/implementation-plan.md` updated?
 - [ ] **PR ready**: Is the PR description drafted following `.github/PULL_REQUEST_TEMPLATE.md`?
 
 ### 4. Run verification
@@ -34,6 +33,7 @@ Run `make verify` from the repo root to confirm lint + typecheck + unit tests pa
 ### 5. Report
 
 Summarize findings:
+
 - **Clean**: "Self-review passed, ready to commit."
 - **Issues found**: List each issue with file and line. Fix before committing.
 

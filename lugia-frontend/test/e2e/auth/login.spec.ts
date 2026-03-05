@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { resetAndSeedDatabase } from "../setup/helpers";
-import { TestUsersData } from "../setup/seed";
+import { resetAndSeedDatabase } from "$lugia-test/e2e/setup/helpers";
+import { TestUsersData } from "$lugia-test/e2e/setup/seed";
 
 test.describe("Auth - Login Page", () => {
 	const loginURL = "/auth/login";
@@ -66,7 +66,7 @@ test.describe("Auth - Login Page", () => {
 		await expect(page).toHaveURL(loginURL);
 	});
 
-	test("should allow successful login with correct credentials", async ({ page, baseURL }) => {
+	test("should allow successful login with correct credentials", async ({ page }) => {
 		await page.locator("#email").fill(TestUsersData.enterprise_1.email);
 		await page.locator("#password").fill(TestUsersData.enterprise_1.plainTextPassword);
 		await page.getByTestId("login-submit-button").click();

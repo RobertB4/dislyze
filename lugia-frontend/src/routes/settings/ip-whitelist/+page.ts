@@ -1,5 +1,5 @@
 import type { PageLoad } from "./$types";
-import { loadFunctionFetch } from "$lib/fetch";
+import { loadFunctionFetch } from "$lugia/lib/fetch";
 
 export type IPWhitelistRule = {
 	id: string;

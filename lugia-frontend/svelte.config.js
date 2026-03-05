@@ -18,7 +18,8 @@ const config = {
 			fallback: "app.html"
 		}),
 		alias: {
-			$components: "src/components"
+			$lugia: "src",
+			"$lugia-test": "test"
 		},
 		csp: {
 			mode: "hash",

@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { toast, Button, Input } from "@dislyze/zoroark";
+	import Button from "@dislyze/zoroark/Button";
+	import Input from "@dislyze/zoroark/Input";
+	import { toast } from "@dislyze/zoroark/toast";
 	import { createForm } from "felte";
 	import { resolve } from "$app/paths";
 

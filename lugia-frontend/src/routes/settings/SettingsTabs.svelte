@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/state";
-	import type { Me } from "@dislyze/zoroark";
-	import { hasFeature, hasPermission } from "$lib/authz";
+	import type { Me } from "@dislyze/zoroark/meCache";
+	import { hasFeature, hasPermission } from "$lugia/lib/authz";
 	import { resolve } from "$app/paths";
 
 	let { me }: { me: Me } = $props();

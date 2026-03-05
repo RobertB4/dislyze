@@ -1,4 +1,4 @@
-import type { Me, EnterpriseFeatures } from "@dislyze/zoroark";
+import type { Me, EnterpriseFeatures } from "@dislyze/zoroark/meCache";
 
 export function hasPermission(
 	me: Me,

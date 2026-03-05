@@ -1,79 +1,13 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
-import { resetAndSeedDatabase, pool } from "../setup/helpers";
-import { TestUsersData } from "../setup/seed";
-import { logInAs, logOut } from "../setup/auth";
+import { resetAndSeedDatabase } from "$lugia-test/e2e/setup/helpers";
+import { TestUsersData } from "$lugia-test/e2e/setup/seed";
+import { logInAs, logOut } from "$lugia-test/e2e/setup/auth";
 
 const IP_WHITELIST_URL = "/settings/ip-whitelist";
 const EMERGENCY_DEACTIVATE_URL = "/settings/ip-whitelist/emergency-deactivate";
 const MOCK_SENDGRID_API_URL = "http://mock-sendgrid:27000/json";
 const MOCK_SENDGRID_API_KEY = "e2e_fake_sendgrid_key";
 
-// Local helper functions for IP whitelist testing
-
-/**
- * Adds an IP whitelist rule directly to the database
- */
-async function addIPWhitelistRule(
-	tenantId: string,
-	ipAddress: string,
-	label?: string,
-	createdBy = "system"
-): Promise<string> {
-	const client = await pool.connect();
-	try {
-		const result = await client.query(
-			`INSERT INTO tenant_ip_whitelist (tenant_id, ip_address, label, created_by) 
-			 VALUES ($1, $2, $3, $4) 
-			 RETURNING id`,
-			[tenantId, ipAddress, label || null, createdBy]
-		);
-		return result.rows[0].id;
-	} finally {
-		client.release();
-	}
-}
-
-/**
- * Activates IP whitelist for a tenant by updating enterprise_features
- */
-async function activateIPWhitelist(tenantId: string): Promise<void> {
-	const client = await pool.connect();
-	try {
-		await client.query(
-			`UPDATE tenants 
-			 SET enterprise_features = jsonb_set(
-				 enterprise_features, 
-				 '{ip_whitelist,active}', 
-				 'true'::jsonb
-			 ) 
-			 WHERE id = $1`,
-			[tenantId]
-		);
-	} finally {
-		client.release();
-	}
-}
-
-/**
- * Deactivates IP whitelist for a tenant by updating enterprise_features
- */
-async function deactivateIPWhitelist(tenantId: string): Promise<void> {
-	const client = await pool.connect();
-	try {
-		await client.query(
-			`UPDATE tenants 
-			 SET enterprise_features = jsonb_set(
-				 enterprise_features, 
-				 '{ip_whitelist,active}', 
-				 'false'::jsonb
-			 ) 
-			 WHERE id = $1`,
-			[tenantId]
-		);
-	} finally {
-		client.release();
-	}
-}
 
 /**
  * Extracts emergency deactivation token from mock SendGrid emails
@@ -133,7 +67,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		});
 	});
 
-	test("Add valid IPv4 address", async ({ page, request }) => {
+	test("Add valid IPv4 address", async ({ page }) => {
 		// Use the IP from beforeEach header
 		const testIP = "192.168.1.100";
 
@@ -178,7 +112,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		await expect(firstRow.locator("code")).toContainText(testIP);
 	});
 
-	test("Add valid IPv6 address", async ({ page, request }) => {
+	test("Add valid IPv6 address", async ({ page }) => {
 		const testIPv6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334";
 		const normalizedIPv6 = "2001:db8:85a3::8a2e:370:7334/128"; // Backend normalizes and adds /128
 
@@ -221,7 +155,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		).toBeVisible();
 	});
 
-	test("Add valid IPv4 CIDR", async ({ page, request }) => {
+	test("Add valid IPv4 CIDR", async ({ page }) => {
 		const testCIDR = "192.168.1.0/24";
 
 		// Login as enterprise admin
@@ -258,7 +192,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		).toBeVisible();
 	});
 
-	test("Add valid IPv6 CIDR", async ({ page, request }) => {
+	test("Add valid IPv6 CIDR", async ({ page }) => {
 		const testIPv6CIDR = "2001:db8::/32";
 
 		// Override with IPv6 for this specific test
@@ -300,7 +234,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		).toBeVisible();
 	});
 
-	test("Reject invalid IPv4 format", async ({ page, request }) => {
+	test("Reject invalid IPv4 format", async ({ page }) => {
 		const invalidIPv4 = "999.999.999.999";
 
 		// Login as enterprise admin
@@ -324,7 +258,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		);
 	});
 
-	test("Reject invalid IPv6 format", async ({ page, request }) => {
+	test("Reject invalid IPv6 format", async ({ page }) => {
 		const invalidIPv6 = "2001:invalid:format"; // Invalid characters and format
 
 		// Login as enterprise admin
@@ -348,7 +282,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		);
 	});
 
-	test("Reject invalid CIDR notation", async ({ page, request }) => {
+	test("Reject invalid CIDR notation", async ({ page }) => {
 		const invalidCIDR = "192.168.1.0/99"; // /99 is invalid for IPv4 (max is /32)
 
 		// Login as enterprise admin
@@ -370,7 +304,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		await expect(page.getByTestId("ip_address-error")).toContainText("IPv4のCIDR範囲は0-32です");
 	});
 
-	test("Reject empty IP address", async ({ page, request }) => {
+	test("Reject empty IP address", async ({ page }) => {
 		// Login as enterprise admin
 		await logInAs(page, TestUsersData.enterprise_1);
 		await page.goto(IP_WHITELIST_URL);
@@ -389,7 +323,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		await expect(page.getByTestId("ip_address-error")).toContainText("IPアドレスは必須です");
 	});
 
-	test("Admin can access IP whitelist settings", async ({ page, request }) => {
+	test("Admin can access IP whitelist settings", async ({ page }) => {
 		// Login as enterprise admin (has all permissions including ip_whitelist.view and ip_whitelist.edit)
 		await logInAs(page, TestUsersData.enterprise_1);
 
@@ -405,7 +339,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		await expect(page.getByTestId("toggle-activation-button")).toBeVisible();
 	});
 
-	test("Editor cannot access IP whitelist page", async ({ page, request }) => {
+	test("Editor cannot access IP whitelist page", async ({ page }) => {
 		// Login as enterprise editor (has no ip_whitelist permissions)
 		await logInAs(page, TestUsersData.enterprise_2);
 
@@ -416,7 +350,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		await expect(page.getByTestId("error-message")).toContainText("権限がありません。");
 	});
 
-	test("User with view-only permission can see page but not edit", async ({ page, request }) => {
+	test("User with view-only permission can see page but not edit", async ({ page }) => {
 		// First, login as admin to create a role with only ip_whitelist.view permission
 		await logInAs(page, TestUsersData.enterprise_1);
 
@@ -475,7 +409,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		await expect(page.getByTestId("toggle-activation-button")).not.toBeVisible();
 	});
 
-	test("Multi-tenant isolation verification", async ({ page, request }) => {
+	test("Multi-tenant isolation verification", async ({ page }) => {
 		// Login as enterprise tenant 1 admin and add an IP rule
 		await logInAs(page, TestUsersData.enterprise_1);
 		await page.goto(IP_WHITELIST_URL);
@@ -542,7 +476,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		await expect(enterpriseIPLocator).not.toBeVisible();
 	});
 
-	test("Add IP with custom label", async ({ page, request }) => {
+	test("Add IP with custom label", async ({ page }) => {
 		const testIP = "172.16.0.1";
 		const customLabel = "カスタムラベルテスト";
 
@@ -578,7 +512,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		await expect(ipRow.locator("td").nth(1)).toContainText(customLabel);
 	});
 
-	test("Add IP without label", async ({ page, request }) => {
+	test("Add IP without label", async ({ page }) => {
 		const testIP = "172.16.0.2";
 
 		// Login as enterprise admin
@@ -613,7 +547,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		await expect(ipRow.locator("td").nth(1)).toContainText("");
 	});
 
-	test("Edit existing IP label", async ({ page, request }) => {
+	test("Edit existing IP label", async ({ page }) => {
 		const testIP = "172.16.0.3";
 		const initialLabel = "初期ラベル";
 		const updatedLabel = "更新されたラベル";
@@ -679,7 +613,7 @@ test.describe("IP Whitelist E2E Tests", () => {
 		await expect(ipRow.locator("td").nth(1)).toContainText(updatedLabel);
 	});
 
-	test("Clear IP label (set to empty)", async ({ page, request }) => {
+	test("Clear IP label (set to empty)", async ({ page }) => {
 		const testIP = "172.16.0.4";
 		const initialLabel = "削除予定ラベル";
 

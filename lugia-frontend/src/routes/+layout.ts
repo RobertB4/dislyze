@@ -1,7 +1,7 @@
 import type { LayoutLoad } from "./$types";
-import { loadFunctionFetch } from "$lib/fetch";
+import { loadFunctionFetch } from "$lugia/lib/fetch";
 import { redirect, error as svelteKitError } from "@sveltejs/kit";
-import { forceUpdateMeCache, meCache, type Me } from "@dislyze/zoroark";
+import { forceUpdateMeCache, meCache, type Me } from "@dislyze/zoroark/meCache";
 import { get } from "svelte/store";
 
 export const ssr = false;
