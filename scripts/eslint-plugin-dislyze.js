@@ -23,6 +23,8 @@ const plugin = {
 						'Use {{alias}} instead of relative import "{{source}}".',
 					noLibAlias:
 						"Use {{alias}}/lib/... instead of $lib/. The $lib alias is banned to enforce one canonical import path per file.",
+					noZoroarkBarrel:
+						'Use deep imports like "@dislyze/zoroark/Button" instead of barrel import "@dislyze/zoroark". Each component/utility has its own subpath.',
 				},
 			},
 			create(context) {
@@ -57,6 +59,13 @@ const plugin = {
 							node: node.source,
 							messageId: "noLibAlias",
 							data: { alias: `$${service}` },
+						});
+					}
+
+					if (source === "@dislyze/zoroark") {
+						context.report({
+							node: node.source,
+							messageId: "noZoroarkBarrel",
 						});
 					}
 				}

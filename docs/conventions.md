@@ -7,6 +7,7 @@ Detailed conventions and examples for this codebase. The root CLAUDE.md contains
 The role of comments is to explain WHY code was written the way it was. Comments explaining what the code does are generally not needed, unless the logic is so complex it is hard to understand.
 
 ### Example of a good comment
+
 ```go
 limit32, err := conversions.SafeInt32(limit)
 if err != nil {
@@ -14,9 +15,11 @@ if err != nil {
     limit32 = 50
 }
 ```
+
 This is a good comment because it is not immediately obvious why the value should be set if an error occurs.
 
 ### Example of a bad comment
+
 ```go
 // Create invitation token
 _, err = qtx.CreateInvitationToken(ctx, &queries.CreateInvitationTokenParams{
@@ -26,11 +29,13 @@ _, err = qtx.CreateInvitationToken(ctx, &queries.CreateInvitationTokenParams{
     ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 })
 ```
+
 This comment is bad because it just explains what the next function call does. This is already obvious by reading the function name.
 
 ## Code quality examples
 
 ### Good: Simple, type-safe interface
+
 ```go
 type EnterpriseFeature string
 const FeatureRBAC EnterpriseFeature = "rbac"
@@ -41,6 +46,7 @@ func TenantHasFeature(ctx context.Context, feature EnterpriseFeature) bool {
 ```
 
 ### Poor: Complex interface with unnecessary dependencies
+
 ```go
 func TenantHasFeature(ctx context.Context, db *queries.Queries, feature string) bool {
     // Multiple DB calls, string parameters, complex error handling...
@@ -48,6 +54,7 @@ func TenantHasFeature(ctx context.Context, db *queries.Queries, feature string) 
 ```
 
 ### Good: Use existing types
+
 ```go
 func LoadEnterpriseFeatures(db *queries.Queries) func(http.Handler) http.Handler {
     tenant, err := db.GetTenantByID(ctx, tenantID) // Use queries.Tenant directly
@@ -55,6 +62,7 @@ func LoadEnterpriseFeatures(db *queries.Queries) func(http.Handler) http.Handler
 ```
 
 ### Good: Share data via context instead of repeated DB calls
+
 ```go
 // Middleware loads tenant once, stores in context
 func LoadTenant(db *queries.Queries) func(http.Handler) http.Handler {
@@ -72,6 +80,7 @@ func HandleSomething(w http.ResponseWriter, r *http.Request) {
 ```
 
 ### Poor: Repeated DB calls for the same data
+
 ```go
 func HandleSomething(w http.ResponseWriter, r *http.Request) {
     tenant, _ := db.GetTenantByID(ctx, tenantID) // Already loaded by middleware
@@ -79,6 +88,7 @@ func HandleSomething(w http.ResponseWriter, r *http.Request) {
 ```
 
 ### Poor: Create duplicate types
+
 ```go
 type TenantData struct { // Unnecessary duplication of queries.Tenant
     ID   pgtype.UUID `json:"id"`

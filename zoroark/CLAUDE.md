@@ -19,6 +19,24 @@ Alert, Badge, Button, EmptyAvatar, Input, InteractivePill, Select, Slideover, Sp
 
 Plus `utils/` for shared utility functions.
 
+## Import convention
+
+Consumers use **deep imports** — one import per component/utility. The barrel import (`@dislyze/zoroark`) is removed and banned by ESLint.
+
+```typescript
+// Svelte components — default imports
+import Button from "@dislyze/zoroark/Button";
+import Alert from "@dislyze/zoroark/Alert";
+
+// Utilities — named imports
+import { toast } from "@dislyze/zoroark/toast";
+import { KnownError } from "@dislyze/zoroark/errors";
+import { safeGoto } from "@dislyze/zoroark/routing";
+import { meCache, forceUpdateMeCache, type Me } from "@dislyze/zoroark/meCache";
+```
+
+When adding a new component or utility, add a corresponding subpath export in `package.json` `exports`.
+
 ## Key rules
 
 - **This is a shared library.** Both frontends import it. Test changes against both consumers.

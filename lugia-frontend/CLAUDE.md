@@ -20,6 +20,27 @@ npm run lint          # ESLint and Prettier
 
 ## Code Patterns and Conventions
 
+### Import conventions
+
+Every file has one canonical import path. Relative imports, `$lib/`, and zoroark barrel imports are banned (enforced by ESLint).
+
+```typescript
+// Source files: use $lugia/ prefix
+import { mutationFetch } from "$lugia/lib/fetch";
+import Layout from "$lugia/components/Layout.svelte";
+
+// Test files: use $lugia-test/ prefix
+import { resetAndSeedDatabase } from "$lugia-test/e2e/setup/helpers";
+
+// Zoroark: use deep imports (one per component/utility)
+import Button from "@dislyze/zoroark/Button";
+import { toast } from "@dislyze/zoroark/toast";
+import { type Me } from "@dislyze/zoroark/meCache";
+
+// Exception: ./$types is SvelteKit magic — cannot be aliased
+import type { PageData } from "./$types";
+```
+
 ### Frontend API Calls
 ```typescript
 // For load functions (GET)
