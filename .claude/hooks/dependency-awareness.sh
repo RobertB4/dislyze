@@ -226,4 +226,4 @@ else
   ')
 fi
 
-jq -n --arg message "$OUTPUT" '{"result": $message}'
+jq -n --arg message "$OUTPUT" '{hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $message}}'
