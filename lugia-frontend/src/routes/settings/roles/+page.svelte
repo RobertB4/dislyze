@@ -6,20 +6,14 @@
 	import RolesTable from "$lugia/routes/settings/roles/RolesTable.svelte";
 	import type { PageData } from "./$types";
 	import { hasPermission } from "$lugia/lib/authz";
+	import { handleLoadError } from "$lugia/lib/fetch";
 
 	let { data: pageData }: { data: PageData } = $props();
 
 	let isCreateSlideoverOpen = $state(false);
 </script>
 
-<Layout
-	me={pageData.me}
-	pageTitle="ロール管理"
-	promises={{
-		rolesResponse: pageData.rolesPromise,
-		permissionsResponse: pageData.permissionsPromise
-	}}
->
+<Layout me={pageData.me} pageTitle="ロール管理">
 	{#snippet buttons()}
 		{#if hasPermission(pageData.me, "roles.edit")}
 			<Button
@@ -33,14 +27,13 @@
 		{/if}
 	{/snippet}
 
-	{#snippet skeleton()}
-		<Skeleton />
-	{/snippet}
-
-	{#snippet children({ rolesResponse, permissionsResponse })}
-		{@const { roles } = rolesResponse}
-		{@const { permissions } = permissionsResponse}
-
-		<RolesTable me={pageData.me} {roles} {permissions} bind:isCreateSlideoverOpen />
+	{#snippet children(_)}
+		{#await Promise.all([pageData.rolesPromise, pageData.permissionsPromise])}
+			<Skeleton />
+		{:then [{ roles }, { permissions }]}
+			<RolesTable me={pageData.me} {roles} {permissions} bind:isCreateSlideoverOpen />
+		{:catch e}
+			{handleLoadError(e)}
+		{/await}
 	{/snippet}
 </Layout>

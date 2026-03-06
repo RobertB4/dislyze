@@ -63,5 +63,14 @@ initdb:
 devcontainer:
 	docker exec -it $$(docker ps -qf "label=devcontainer.local_folder=$$(pwd)") bash
 
+# claude: start a new claude code session
+# claudec: claude --continue
+# clauder: claude --resume
 claude:
 	docker exec -it $$(docker ps -qf "label=devcontainer.local_folder=$$(pwd)") claude --dangerously-skip-permissions
+
+claudec:
+	docker exec -it $$(docker ps -qf "label=devcontainer.local_folder=$$(pwd)") claude --dangerously-skip-permissions --continue
+
+clauder:
+	docker exec -it $$(docker ps -qf "label=devcontainer.local_folder=$$(pwd)") claude --dangerously-skip-permissions --resume
