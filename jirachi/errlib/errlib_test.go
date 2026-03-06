@@ -1,8 +1,10 @@
 package errlib
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"testing"
 
@@ -111,15 +113,23 @@ func TestAppErrorError(t *testing.T) {
 	}
 }
 
-func TestAppErrorImplementsErrorInterface(t *testing.T) {
-	var err error = &AppError{
-		Message:    "test",
-		StatusCode: 400,
-		File:       "test.go",
-		Line:       1,
+func TestAppErrorErrorDelimiterStructure(t *testing.T) {
+	appErr := &AppError{
+		OriginalError: errors.New("db error"),
+		Message:       "something broke",
+		StatusCode:    500,
+		File:          "handler.go",
+		Line:          42,
 	}
 
-	assert.NotEmpty(t, err.Error())
+	result := appErr.Error()
+	parts := strings.Split(result, " | ")
+
+	assert.Len(t, parts, 4, "expected 4 parts separated by ' | '")
+	assert.True(t, strings.HasPrefix(parts[0], "AppError:"), "first part should start with AppError:")
+	assert.True(t, strings.HasPrefix(parts[1], "UserMessage:"), "second part should be UserMessage")
+	assert.True(t, strings.HasPrefix(parts[2], "StatusCode:"), "third part should be StatusCode")
+	assert.True(t, strings.HasPrefix(parts[3], "OriginalError:"), "fourth part should be OriginalError")
 }
 
 func TestAppErrorUnwrap(t *testing.T) {
@@ -134,6 +144,24 @@ func TestAppErrorUnwrap(t *testing.T) {
 		appErr := &AppError{}
 
 		assert.Nil(t, appErr.Unwrap())
+	})
+
+	t.Run("traverses unwrap chain with errors.Is", func(t *testing.T) {
+		sentinel := errors.New("not found")
+		appErr := New(sentinel, 404, "not found")
+		wrapped := fmt.Errorf("handler failed: %w", appErr)
+
+		assert.True(t, errors.Is(wrapped, sentinel))
+	})
+
+	t.Run("extracts AppError with errors.As", func(t *testing.T) {
+		appErr := New(errors.New("db error"), 503, "service down")
+		wrapped := fmt.Errorf("handler: %w", appErr)
+
+		var target *AppError
+		assert.True(t, errors.As(wrapped, &target))
+		assert.Equal(t, 503, target.StatusCode)
+		assert.Equal(t, "service down", target.Message)
 	})
 }
 
@@ -180,58 +208,20 @@ func TestNew(t *testing.T) {
 	})
 }
 
-func TestIs(t *testing.T) {
-	t.Run("matches same error", func(t *testing.T) {
-		sentinel := errors.New("sentinel")
-		assert.True(t, Is(sentinel, sentinel))
+func TestLogError(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	log.SetFlags(0)
+	t.Cleanup(func() {
+		log.SetOutput(nil)
+		log.SetFlags(log.LstdFlags)
 	})
 
-	t.Run("matches wrapped error", func(t *testing.T) {
-		sentinel := errors.New("sentinel")
-		wrapped := fmt.Errorf("context: %w", sentinel)
-		assert.True(t, Is(wrapped, sentinel))
-	})
+	appErr := New(errors.New("db timeout"), 500, "internal error")
+	LogError(appErr)
 
-	t.Run("does not match different error", func(t *testing.T) {
-		err1 := errors.New("error one")
-		err2 := errors.New("error two")
-		assert.False(t, Is(err1, err2))
-	})
-
-	t.Run("traverses AppError unwrap chain", func(t *testing.T) {
-		sentinel := errors.New("not found")
-		appErr := New(sentinel, 404, "not found")
-		// Wrap the AppError in another error
-		wrapped := fmt.Errorf("handler failed: %w", appErr)
-
-		assert.True(t, Is(wrapped, sentinel))
-	})
-}
-
-func TestAs(t *testing.T) {
-	t.Run("extracts AppError from direct value", func(t *testing.T) {
-		appErr := New(errors.New("db error"), 500, "internal error")
-
-		var target *AppError
-		assert.True(t, As(appErr, &target))
-		assert.Equal(t, 500, target.StatusCode)
-		assert.Equal(t, "internal error", target.Message)
-	})
-
-	t.Run("extracts AppError from wrapped error", func(t *testing.T) {
-		appErr := New(errors.New("db error"), 503, "service down")
-		wrapped := fmt.Errorf("handler: %w", appErr)
-
-		var target *AppError
-		assert.True(t, As(wrapped, &target))
-		assert.Equal(t, 503, target.StatusCode)
-		assert.Equal(t, "service down", target.Message)
-	})
-
-	t.Run("returns false for non-AppError", func(t *testing.T) {
-		plainErr := errors.New("plain error")
-
-		var target *AppError
-		assert.False(t, As(plainErr, &target))
-	})
+	output := buf.String()
+	assert.Contains(t, output, "db timeout")
+	assert.Contains(t, output, "internal error")
+	assert.Contains(t, output, "500")
 }
