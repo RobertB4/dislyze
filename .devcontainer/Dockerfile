@@ -12,12 +12,14 @@ RUN curl -fsSL https://packages.adoptium.net/artifactory/api/gpg/key/public \
     && echo "deb https://packages.adoptium.net/artifactory/deb bookworm main" \
         > /etc/apt/sources.list.d/adoptium.list
 
-# System deps + Java 21 (for keycloak mock)
+# System deps + Java 21 (for keycloak mock) + Chromium (for playwright-cli)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git jq ca-certificates curl gnupg make sudo unzip \
     postgresql-client \
     temurin-21-jre \
-    && rm -rf /var/lib/apt/lists/*
+    chromium \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /opt/google/chrome && ln -sf /usr/bin/chromium /opt/google/chrome/chrome
 
 # GitHub CLI
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
@@ -45,6 +47,9 @@ RUN mkdir -p /workspace && chown node:node /workspace \
 
 # Switch to node user
 USER node
+
+# Playwright CLI (browser automation for agents)
+RUN npm install -g @playwright/cli@latest
 
 # Claude Code (native installer)
 RUN curl -fsSL https://claude.ai/install.sh | bash
