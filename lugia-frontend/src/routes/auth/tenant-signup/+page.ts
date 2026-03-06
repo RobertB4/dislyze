@@ -10,7 +10,9 @@ export function load({ url }: Parameters<PageLoad>[0]) {
 
 	if (token) {
 		try {
-			const base64 = token.split(".")[1];
+			// JWT uses base64url encoding (RFC 7515), but atob() requires standard base64.
+			// Convert base64url → base64 before decoding.
+			const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
 			const binaryString = atob(base64);
 			const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
 			const jsonPayload = new TextDecoder().decode(bytes);

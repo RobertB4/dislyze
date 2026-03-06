@@ -40,13 +40,31 @@ Pick ONE gap. State what you're going to test and why.
 Before writing a single line of test code:
 
 1. Read the CLAUDE.md for the module you're testing — it contains test commands, patterns, and conventions
-2. Read the FULL implementation of the code you're going to test — understand what it does, what it calls, what can fail
+2. Read the FULL implementation of the code you're going to test (see test-type-specific guidance below)
 3. Understand how this code interacts with the rest of the codebase — what calls it, what it depends on, what assumptions it makes
 4. Read existing tests in the same module — learn the patterns, the setup, the assertions
 5. Read the test setup/helper files (`test/integration/setup/`, `test/e2e/setup/`) — understand what utilities and seed data are available
 6. Think about what can go wrong. What are the edge cases? What happens with invalid input? What about unauthorized access? What about missing data?
 
 If there is anything you can't determine from reading the code alone — domain knowledge, business rules, intended behavior that isn't obvious — add a TODO comment in the test file explaining the knowledge gap. We will fill these in later.
+
+### What "read the full implementation" means per test type
+
+**Unit tests (Go):**
+- Read the function under test — its signature, input types, return types, branching logic
+- Read existing `_test.go` files in the same package for patterns (table-driven tests, assertion style)
+
+**Integration tests (Go backend):**
+- Read the **handler** implementation in `features/`
+- Read the **router configuration** in `main.go` to verify the exact endpoint path and HTTP method
+- Read the **middleware chain** to understand what auth/authz/feature checks are applied
+- Read `test/integration/setup/helpers.go` and `seed.go` for available test utilities and seed data
+- Read `test/CLAUDE.md` if it exists — it contains module-specific testing conventions
+
+**E2E tests (Playwright frontend):**
+- Read the **Svelte page component** (`+page.svelte`) and its loader (`+page.ts`/`+page.server.ts`). Inventory all `data-testid` attributes, form element IDs, conditional rendering, and error states. Never guess selectors — they must match the actual DOM.
+- Read the **backend code for all API endpoints called on the page** — understand what responses, errors, and status codes are possible
+- Read `test/e2e/setup/helpers.ts`, `auth.ts`, and `seed.ts` for available test utilities
 
 ## Phase 4: Design test cases
 
@@ -74,6 +92,8 @@ After writing, run ONLY your new tests first to iterate quickly:
 - **E2E tests (frontend)**: `npm run test-e2e -- --grep="test title pattern"` from the frontend directory (runs in Docker, grep filters by test title)
 
 If tests fail, fix them. Iterate until they pass.
+
+**Tests must be executed and passing before committing. No exceptions.** If the test runner fails for environmental reasons, stop and tell the user — do not commit unverified tests.
 
 Then run `make verify` from the repo root to ensure nothing else is broken.
 
