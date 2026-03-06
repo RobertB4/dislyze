@@ -2,15 +2,15 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [tailwindcss()],
-  build: {
-    outDir: "dist",
-    emptyOutDir: false,
-    rollupOptions: {
-      input: "src/app.css",
-      output: {
-        assetFileNames: "app.css",
-      },
-    },
-  },
+	plugins: [tailwindcss()],
+	build: {
+		outDir: "dist",
+		emptyOutDir: false,
+		rollupOptions: {
+			input: "src/app.css",
+			output: {
+				assetFileNames: "app.css"
+			}
+		}
+	}
 });

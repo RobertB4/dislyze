@@ -37,7 +37,7 @@ export default ts.config(
 			'@typescript-eslint/no-unsafe-assignment': 'off',
 			'@typescript-eslint/no-explicit-any': 'off',
 			'@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-
+			'func-style': ['error', 'declaration'],
 		},
 	},
 
@@ -45,15 +45,17 @@ export default ts.config(
 	prettier,
 	...svelte.configs.prettier,
 	{
-		files: ['**/*.svelte', 'src/**/*.svelte.ts', 'src/**/*.svelte.js'], 
+		files: ['**/*.svelte', 'src/**/*.svelte.ts', 'src/**/*.svelte.js'],
 		languageOptions: {
 			parserOptions: {
 				projectService: true, // For type-aware linting in <script lang="ts">
 				extraFileExtensions: ['.svelte'],
-				parser: ts.parser, 
+				parser: ts.parser,
 			}
 		},
-		rules: {}
+		rules: {
+			'func-style': ['error', 'declaration'],
+		}
 	},
 	{
 		// Global rule overrides

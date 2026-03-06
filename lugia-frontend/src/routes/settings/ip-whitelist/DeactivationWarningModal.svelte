@@ -14,7 +14,7 @@
 
 	let isSubmitting = $state(false);
 
-	const handleDeactivate = async () => {
+	async function handleDeactivate() {
 		isSubmitting = true;
 
 		const { success } = await mutationFetch(`/api/ip-whitelist/deactivate`, {
@@ -29,11 +29,11 @@
 		}
 
 		isSubmitting = false;
-	};
+	}
 
-	const handleClose = () => {
+	function handleClose() {
 		onClose();
-	};
+	}
 </script>
 
 <Slideover

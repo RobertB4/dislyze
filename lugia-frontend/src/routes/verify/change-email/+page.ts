@@ -1,7 +1,7 @@
 import { error, redirect } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ url, fetch }) => {
+export async function load({ url, fetch }: Parameters<PageLoad>[0]) {
 	const token = url.searchParams.get("token");
 
 	if (!token) {
@@ -39,4 +39,4 @@ export const load: PageLoad = async ({ url, fetch }) => {
 			verificationFailed: true
 		};
 	}
-};
+}

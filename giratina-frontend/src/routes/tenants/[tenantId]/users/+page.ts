@@ -12,7 +12,7 @@ export interface GetUsersByTenantResponse {
 	users: User[];
 }
 
-export const load: PageLoad = ({ fetch, params }) => {
+export function load({ fetch, params }: Parameters<PageLoad>[0]) {
 	const { tenantId } = params;
 
 	const usersPromise = loadFunctionFetch(fetch, `/api/tenants/${tenantId}/users`)
@@ -23,4 +23,4 @@ export const load: PageLoad = ({ fetch, params }) => {
 		usersPromise,
 		tenantId
 	};
-};
+}

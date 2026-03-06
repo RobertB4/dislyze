@@ -1,8 +1,7 @@
-import type { PageLoad } from "./$types";
 import type { PageData } from "$lugia/routes/types";
 
-export const load: PageLoad<PageData> = () => {
+export function load(): PageData {
 	return {
 		message: "hi"
 	};
-};
+}

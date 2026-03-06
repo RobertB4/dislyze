@@ -1,6 +1,6 @@
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = ({ url }) => {
+export function load({ url }: Parameters<PageLoad>[0]) {
 	const error = url.searchParams.get("error");
 	const email = url.searchParams.get("email");
 
@@ -8,4 +8,4 @@ export const load: PageLoad = ({ url }) => {
 		error,
 		email
 	};
-};
+}

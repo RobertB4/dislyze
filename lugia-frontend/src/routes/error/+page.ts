@@ -1,7 +1,7 @@
 import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = ({ url }) => {
+export function load({ url }: Parameters<PageLoad>[0]) {
 	const status = parseInt(url.searchParams.get("status") || "500", 10);
 	const message = url.searchParams.get("message") || "処理中に予期せぬエラーが発生しました。";
 
@@ -10,4 +10,4 @@ export const load: PageLoad = ({ url }) => {
 	}
 
 	throw error(status, message);
-};
+}

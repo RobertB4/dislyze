@@ -20,7 +20,7 @@
 	let tooltipStyles = $state("");
 	let arrowStyles = $state("");
 
-	const updateTooltipPosition = () => {
+	function updateTooltipPosition() {
 		if (!triggerElement) return;
 
 		const rect = triggerElement.getBoundingClientRect();
@@ -76,12 +76,12 @@
 				arrowLeft = rect.left + rect.width / 2;
 				arrowStyles = `top: ${arrowTop}px; left: ${arrowLeft}px; transform: translate(-50%, -50%) rotate(45deg);`;
 		}
-	};
+	}
 
-	const handleMouseEnter = () => {
+	function handleMouseEnter() {
 		showTooltip = true;
 		updateTooltipPosition();
-	};
+	}
 </script>
 
 <div

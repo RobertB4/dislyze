@@ -25,7 +25,7 @@ export interface GetTenantsResponse {
 	tenants: Tenant[];
 }
 
-export const load: PageLoad = async ({ fetch, parent }) => {
+export async function load({ fetch, parent }: Parameters<PageLoad>[0]) {
 	const { me } = await parent();
 	const tenantsPromise = loadFunctionFetch(fetch, "/api/tenants").then(
 		(res) => res.json() as Promise<GetTenantsResponse>
@@ -35,4 +35,4 @@ export const load: PageLoad = async ({ fetch, parent }) => {
 		me,
 		tenantsPromise
 	};
-};
+}

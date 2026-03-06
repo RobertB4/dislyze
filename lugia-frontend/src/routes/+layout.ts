@@ -19,7 +19,7 @@ function isRedirect(error: unknown): error is import("@sveltejs/kit").Redirect {
 	);
 }
 
-export const load: LayoutLoad = async ({ fetch, url }) => {
+export async function load({ fetch, url }: Parameters<LayoutLoad>[0]) {
 	// This page only gets opened when the user is locked out due to their ip not being in the whitelist.
 	// If we call /api/me down below, it will return 403 because of this.
 	// Therefore, we need to skip the /api/me call for this page.
@@ -154,4 +154,4 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 		}
 	}
 	return { me };
-};
+}

@@ -1,6 +1,6 @@
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = ({ url }) => {
+export function load({ url }: Parameters<PageLoad>[0]) {
 	const token = url.searchParams.get("token") ?? "";
 
 	let email = "";
@@ -31,4 +31,4 @@ export const load: PageLoad = ({ url }) => {
 		userName,
 		ssoEnabled
 	};
-};
+}

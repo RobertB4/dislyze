@@ -19,7 +19,7 @@ function isRedirect(error: unknown): error is import("@sveltejs/kit").Redirect {
 	);
 }
 
-export const load: LayoutLoad = async ({ fetch, url }) => {
+export async function load({ fetch, url }: Parameters<LayoutLoad>[0]) {
 	if (!get(forceUpdateMeCache)) {
 		if (typeof window !== "undefined") {
 			if (get(meCache)) {
@@ -113,4 +113,4 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 		}
 	}
 	return { me };
-};
+}

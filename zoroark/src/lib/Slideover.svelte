@@ -37,12 +37,12 @@
 		document.body.style.overflow = "visible";
 	});
 
-	const handleClose = () => {
+	function handleClose() {
 		if (loading) {
 			return;
 		}
 		onClose();
-	};
+	}
 </script>
 
 <div

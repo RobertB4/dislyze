@@ -23,9 +23,9 @@
 		sso: "SSO認証"
 	};
 
-	const isFeatureEditable = (featureKey: string): boolean => {
+	function isFeatureEditable(featureKey: string): boolean {
 		return featureKey !== "sso";
-	};
+	}
 
 	interface UpdateTenantRequestBody {
 		name: string;
@@ -85,18 +85,18 @@
 		}
 	});
 
-	const handleEditTenant = (tenant: Tenant) => {
+	function handleEditTenant(tenant: Tenant) {
 		setEditFormInitialValues({
 			name: tenant.name,
 			enterprise_features: tenant.enterprise_features
 		});
 		editingTenant = tenant;
-	};
+	}
 
-	const handleEditClose = () => {
+	function handleEditClose() {
 		editingTenant = null;
 		editReset();
-	};
+	}
 
 	const {
 		form: inviteForm,
@@ -205,27 +205,27 @@
 		}
 	});
 
-	const handleInviteOpen = () => {
+	function handleInviteOpen() {
 		isInviteSlideoverOpen = true;
 		generatedInviteUrl = null;
 		inviteReset();
-	};
+	}
 
-	const handleInviteClose = () => {
+	function handleInviteClose() {
 		isInviteSlideoverOpen = false;
 		generatedInviteUrl = null;
 		inviteReset();
-	};
+	}
 
-	const addAllowedDomain = () => {
+	function addAllowedDomain() {
 		addInviteField("allowed_domains", { value: "" });
-	};
+	}
 
-	const removeAllowedDomain = (index: number) => {
+	function removeAllowedDomain(index: number) {
 		if ($inviteData.allowed_domains.length > 1) {
 			unsetInviteField(`allowed_domains.${index}`);
 		}
-	};
+	}
 
 	const isInviteFormValid = $derived(() => {
 		const emailValid = $inviteData.email?.trim() !== "";
@@ -240,7 +240,7 @@
 		return emailValid && metadataUrlValid && hasAtLeastOneDomain;
 	});
 
-	const copyToClipboard = async () => {
+	async function copyToClipboard() {
 		if (generatedInviteUrl) {
 			try {
 				await navigator.clipboard.writeText(generatedInviteUrl);
@@ -250,7 +250,7 @@
 				toast.show("コピーに失敗しました。", "error");
 			}
 		}
-	};
+	}
 
 	const {
 		form: loginForm,
@@ -280,15 +280,15 @@
 		}
 	});
 
-	const handleLoginOpen = (tenant: Tenant) => {
+	function handleLoginOpen(tenant: Tenant) {
 		loginTenant = tenant;
 		loginReset();
-	};
+	}
 
-	const handleLoginClose = () => {
+	function handleLoginClose() {
 		loginTenant = null;
 		loginReset();
-	};
+	}
 </script>
 
 <Layout
