@@ -15,9 +15,19 @@ For every changed file, check:
 - [ ] **Conventions**: Does the code follow the patterns in the relevant CLAUDE.md?
 - [ ] **Error handling**: Are errors handled consistently with the rest of the codebase?
 - [ ] **Security**: No secrets, no SQL injection, no XSS, no command injection?
-- [ ] **Tests**: If behavior changed, are tests updated?
+- [ ] **Tests**: If behavior changed, are tests updated? If new tests were added, evaluate test quality (see step 2b).
 - [ ] **Comments**: Comments explain WHY, not WHAT. No unnecessary comments added.
 - [ ] **Anything else**: If something feels off but isn't covered above, flag it. This checklist is not exhaustive — use your judgement.
+
+### 2b. Test quality review (if diff contains test files)
+
+If the diff adds or modifies test files, read the implementation code being tested to understand its intent and behavior. Then evaluate:
+
+- [ ] **Real behavior**: Does each test verify actual behavior, or is it tautological (testing that the code returns what you told it to return)?
+- [ ] **Would it catch a bug?**: If the implementation had a real bug, would this test fail? If not, the test has no value.
+- [ ] **Edge cases**: Are error paths, boundary conditions, and invalid inputs covered — not just the happy path?
+- [ ] **No mocks**: Tests use real dependencies, not mocks or stubs.
+- [ ] **Behavior over implementation**: Would these tests survive an internal refactor without breaking?
 
 ### 3. Process checklist
 
