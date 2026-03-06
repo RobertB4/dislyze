@@ -13,7 +13,7 @@
 	import DeactivationWarningModal from "$lugia/routes/settings/ip-whitelist/DeactivationWarningModal.svelte";
 	import type { PageData } from "./$types";
 	import { hasPermission } from "$lugia/lib/authz";
-	import { mutationFetch } from "$lugia/lib/fetch";
+	import { mutationFetch, handleLoadError } from "$lugia/lib/fetch";
 	import { invalidate } from "$app/navigation";
 	import { forceUpdateMeCache } from "@dislyze/zoroark/meCache";
 	import type { IPWhitelistRule } from "$lugia/routes/settings/ip-whitelist/+page";
@@ -61,13 +61,7 @@
 	}
 </script>
 
-<Layout
-	me={pageData.me}
-	pageTitle="IPアドレス制限"
-	promises={{
-		ipWhitelistResponse: pageData.ipWhitelistPromise
-	}}
->
+<Layout me={pageData.me} pageTitle="IPアドレス制限">
 	{#snippet buttons()}
 		{#if hasPermission(pageData.me, "ip_whitelist.edit")}
 			<Button
@@ -81,12 +75,9 @@
 		{/if}
 	{/snippet}
 
-	{#snippet skeleton()}
+	{#await pageData.ipWhitelistPromise}
 		<Skeleton />
-	{/snippet}
-
-	{#snippet children({ ipWhitelistResponse })}
-		{@const ipRules = ipWhitelistResponse}
+	{:then ipRules}
 		{@const isActive = pageData.me.enterprise_features.ip_whitelist.active}
 
 		<SettingsTabs me={pageData.me} />
@@ -261,5 +252,7 @@
 		{#if isDeactivationModalOpen}
 			<DeactivationWarningModal onClose={() => (isDeactivationModalOpen = false)} />
 		{/if}
-	{/snippet}
+	{:catch e}
+		{handleLoadError(e)}
+	{/await}
 </Layout>
