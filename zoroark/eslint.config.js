@@ -56,7 +56,15 @@ export default ts.config(
 			}
 		},
 		rules: {
-			"func-style": ["error", "declaration"]
+			"func-style": ["error", "declaration"],
+			"no-restricted-syntax": [
+				"error",
+				{
+					selector: 'CallExpression[callee.name="$effect"]',
+					message:
+						"Stop and reconsider your approach - $effect is banned. Think big picture, zoom out and make sure you are trying to solve the right problem. In most cases, $effect can be replaced by e.g. derived state or event handlers."
+				}
+			]
 		}
 	},
 	{

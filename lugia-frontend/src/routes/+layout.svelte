@@ -7,6 +7,7 @@
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
+	// eslint-disable-next-line no-restricted-syntax
 	$effect(() => {
 		if (data.me) {
 			meCache.set(data.me);
