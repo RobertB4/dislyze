@@ -1,3 +1,4 @@
+// Feature doc: docs/features/ip-whitelisting.md
 package ip_whitelist
 
 import (

@@ -1,3 +1,4 @@
+// Feature doc: docs/features/rbac.md
 package roles
 
 import (

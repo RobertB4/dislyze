@@ -1,3 +1,4 @@
+// Feature doc: docs/features/tenant-onboarding.md
 import type { PageLoad } from "./$types";
 
 export function load({ url }: Parameters<PageLoad>[0]) {

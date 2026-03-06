@@ -1,3 +1,4 @@
+// Feature doc: docs/features/user-management.md
 import type { PageLoad } from "./$types";
 import { loadFunctionFetch } from "$giratina/lib/fetch";
 

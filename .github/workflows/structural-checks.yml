@@ -1,0 +1,38 @@
+name: Structural Checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.md"
+      - "scripts/**"
+      - "docs/**"
+      - "lugia-backend/features/**"
+      - "giratina-backend/features/**"
+      - "lugia-frontend/src/routes/**"
+      - "giratina-frontend/src/routes/**"
+      - ".github/workflows/structural-checks.yml"
+  pull_request:
+    paths:
+      - "**/*.md"
+      - "scripts/**"
+      - "docs/**"
+      - "lugia-backend/features/**"
+      - "giratina-backend/features/**"
+      - "lugia-frontend/src/routes/**"
+      - "giratina-frontend/src/routes/**"
+      - ".github/workflows/structural-checks.yml"
+
+jobs:
+  structural-checks:
+    name: Verify structural integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify CLAUDE.md references
+        run: make verify-claude-refs
+
+      - name: Verify feature doc references
+        run: make verify-feature-docs

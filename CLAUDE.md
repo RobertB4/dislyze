@@ -118,14 +118,14 @@ When changing a shared resource, verify all consumers still work by running `mak
 
 This root file is read every session — keep it concise. Detailed information belongs in deeper docs, read on-demand when working on the relevant module or task. When adding documentation, consider when agents need it, not just where it logically belongs.
 
-| Document                      | What it covers                                              |
-| ----------------------------- | ----------------------------------------------------------- |
-| `docs/conventions.md`         | Detailed coding conventions with examples                   |
-| `PROGRESS.md`                 | Current state: what's done, in flight, and next             |
-| `database/CLAUDE.md`          | Schema migrations, seed data, goose conventions             |
-| `lugia-backend/CLAUDE.md`     | Customer backend: handlers, middleware, enterprise features |
-| `giratina-backend/CLAUDE.md`  | Admin backend: handlers, tenant management                  |
-| `lugia-frontend/CLAUDE.md`    | Customer frontend: routes, components, fetch patterns       |
-| `giratina-frontend/CLAUDE.md` | Admin frontend: routes, components                          |
-| `jirachi/CLAUDE.md`           | Shared Go library: packages, key rules                      |
-| `zoroark/CLAUDE.md`           | Shared UI library: components, build process                |
+| Document                      | What it covers                                                         |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| `docs/features/`              | Per-feature docs: design intent, interactions, non-obvious constraints |
+| `docs/conventions.md`         | Detailed coding conventions with examples                              |
+| `database/CLAUDE.md`          | Schema migrations, seed data, goose conventions                        |
+| `lugia-backend/CLAUDE.md`     | Customer backend: handlers, middleware, enterprise features            |
+| `giratina-backend/CLAUDE.md`  | Admin backend: handlers, tenant management                             |
+| `lugia-frontend/CLAUDE.md`    | Customer frontend: routes, components, fetch patterns                  |
+| `giratina-frontend/CLAUDE.md` | Admin frontend: routes, components                                     |
+| `jirachi/CLAUDE.md`           | Shared Go library: packages, key rules                                 |
+| `zoroark/CLAUDE.md`           | Shared UI library: components, build process                           |

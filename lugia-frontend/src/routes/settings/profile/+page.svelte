@@ -1,3 +1,4 @@
+<!-- Feature doc: docs/features/profile-management.md -->
 <script lang="ts">
 	import Layout from "$lugia/components/Layout.svelte";
 	import Button from "@dislyze/zoroark/Button";

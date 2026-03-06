@@ -1,3 +1,4 @@
+// Feature doc: docs/features/ip-whitelisting.md
 import type { PageLoad } from "./$types";
 import { loadFunctionFetch } from "$lugia/lib/fetch";
 

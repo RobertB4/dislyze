@@ -1,3 +1,4 @@
+<!-- Feature doc: docs/features/tenant-onboarding.md -->
 <script lang="ts">
 	import Button from "@dislyze/zoroark/Button";
 	import Input from "@dislyze/zoroark/Input";

@@ -1,3 +1,4 @@
+<!-- Feature doc: docs/features/authentication.md -->
 <script lang="ts">
 	import Layout from "$lugia/components/Layout.svelte";
 	import type { PageData } from "./$types";

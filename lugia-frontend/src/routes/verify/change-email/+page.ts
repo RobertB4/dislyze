@@ -1,3 +1,4 @@
+// Feature doc: docs/features/profile-management.md
 import { error, redirect } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 

@@ -27,7 +27,8 @@ for claude_file in $claude_files; do
         | tr -d '`' \
         | grep -E '/' \
         | grep -E '\.(md|sql|json|js|ts|go|yaml|yml|toml|sh|svelte)$|/$' \
-        | grep -vE '^(make |http|npm |cd |go |docker |git )' \
+        | grep -vE '^(make |http|npm |cd |go |docker |git |\$)' \
+        | grep -vE '^(dist|build|node_modules|\.svelte-kit)/' \
         | grep -vE '\*|<|>|\(|\)|=' \
         | sort -u || true)
 

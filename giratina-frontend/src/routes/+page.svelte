@@ -1,3 +1,4 @@
+<!-- Feature doc: docs/features/tenant-onboarding.md, docs/features/tenant-impersonation.md -->
 <script lang="ts">
 	import Layout from "$giratina/components/Layout.svelte";
 	import Alert from "@dislyze/zoroark/Alert";

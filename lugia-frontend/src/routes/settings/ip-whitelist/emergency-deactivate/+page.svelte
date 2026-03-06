@@ -1,3 +1,4 @@
+<!-- Feature doc: docs/features/ip-whitelisting.md -->
 <script lang="ts">
 	import type { PageData } from "./$types";
 

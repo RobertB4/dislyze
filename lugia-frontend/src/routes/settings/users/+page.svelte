@@ -1,3 +1,4 @@
+<!-- Feature doc: docs/features/user-management.md -->
 <script lang="ts">
 	import Alert from "@dislyze/zoroark/Alert";
 	import Badge from "@dislyze/zoroark/Badge";
