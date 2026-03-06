@@ -70,7 +70,7 @@ initdb:
 	PGPASSWORD=postgres psql -U postgres -h localhost -p 5432 -d dislyze -f ./database/drop.sql && make migrate && make seed
 
 devcontainer:
-	docker exec -it $$(docker ps -qf "label=devcontainer.local_folder=/Users/robert/Documents/dislyze") bash
+	docker exec -it $$(docker ps -qf "label=devcontainer.local_folder=$$(pwd)") bash
 
 claude:
-	docker exec -it $$(docker ps -qf "label=devcontainer.local_folder=/Users/robert/Documents/dislyze") claude --dangerously-skip-permissions
+	docker exec -it $$(docker ps -qf "label=devcontainer.local_folder=$$(pwd)") claude --dangerously-skip-permissions
