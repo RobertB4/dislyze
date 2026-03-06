@@ -29,6 +29,9 @@ import (
 )
 
 func (h *AuthHandler) SSOACS(w http.ResponseWriter, r *http.Request) {
+	// Limit request body to 1MB to prevent memory exhaustion from oversized SAML responses
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
 	if err := r.ParseForm(); err != nil {
 		appErr := errlib.New(err, http.StatusBadRequest, "Invalid form data")
 		responder.RespondWithError(w, appErr)
@@ -363,7 +366,9 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 	}
 
 	go func() {
-		cleanupCtx := context.Background()
+		// Use a dedicated context with timeout — the request context is cancelled after the response is sent
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 		if err := h.queries.DeleteExpiredSSORequests(cleanupCtx); err != nil {
 			errlib.LogError(fmt.Errorf("failed to delete expired SSO requests: %w", err))
 		}

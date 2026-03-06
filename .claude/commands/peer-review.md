@@ -42,9 +42,19 @@ For every changed file, evaluate:
 - [ ] **Generated code**: Are `queries/` changes made via SQLC, not hand-edited?
 - [ ] **Security**: No secrets, no injection (SQL, XSS, command), no SSRF, no auth bypass?
 - [ ] **Blast radius**: If shared resources changed (jirachi, zoroark, database), are all consumers considered?
-- [ ] **Tests**: If behavior changed, are tests added or updated?
+- [ ] **Tests**: If behavior changed, are tests added or updated? If new tests were added, evaluate test quality (see step 4b).
 - [ ] **Scope creep**: Are there unrelated changes bundled in?
 - [ ] **Anything else**: If something feels off but isn't covered above, flag it. This checklist is not exhaustive — use your judgement.
+
+### 4b. Test quality review (if diff contains test files)
+
+If the diff adds or modifies test files, read the implementation code being tested to understand its intent and behavior. Then evaluate:
+
+- [ ] **Real behavior**: Does each test verify actual behavior, or is it tautological (testing that the code returns what you told it to return)?
+- [ ] **Would it catch a bug?**: If the implementation had a real bug, would this test fail? If not, the test has no value.
+- [ ] **Edge cases**: Are error paths, boundary conditions, and invalid inputs covered — not just the happy path?
+- [ ] **No mocks**: Tests use real dependencies, not mocks or stubs.
+- [ ] **Behavior over implementation**: Would these tests survive an internal refactor without breaking?
 
 ### 5. Verify
 
