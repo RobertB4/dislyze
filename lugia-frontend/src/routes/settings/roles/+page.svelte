@@ -27,13 +27,11 @@
 		{/if}
 	{/snippet}
 
-	{#snippet children(_)}
-		{#await Promise.all([pageData.rolesPromise, pageData.permissionsPromise])}
-			<Skeleton />
-		{:then [{ roles }, { permissions }]}
-			<RolesTable me={pageData.me} {roles} {permissions} bind:isCreateSlideoverOpen />
-		{:catch e}
-			{handleLoadError(e)}
-		{/await}
-	{/snippet}
+	{#await Promise.all([pageData.rolesPromise, pageData.permissionsPromise])}
+		<Skeleton />
+	{:then [{ roles }, { permissions }]}
+		<RolesTable me={pageData.me} {roles} {permissions} bind:isCreateSlideoverOpen />
+	{:catch e}
+		{handleLoadError(e)}
+	{/await}
 </Layout>
