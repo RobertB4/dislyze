@@ -1,3 +1,4 @@
+// Feature doc: docs/features/authentication.md
 package users
 
 import (

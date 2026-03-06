@@ -1,3 +1,4 @@
+// Feature doc: docs/features/tenant-onboarding.md, docs/features/tenant-impersonation.md
 package tenants
 
 import (

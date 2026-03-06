@@ -1,3 +1,4 @@
+// Feature doc: docs/features/rbac.md, docs/features/ip-whitelisting.md
 package tenants
 
 import (

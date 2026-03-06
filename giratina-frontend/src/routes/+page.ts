@@ -1,3 +1,4 @@
+// Feature doc: docs/features/tenant-onboarding.md, docs/features/tenant-impersonation.md
 import type { PageLoad } from "./$types";
 import { loadFunctionFetch } from "$giratina/lib/fetch";
 import { type EnterpriseFeatures as BaseEnterpriseFeatures } from "@dislyze/zoroark/meCache";

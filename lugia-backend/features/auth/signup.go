@@ -1,3 +1,4 @@
+// Feature doc: docs/features/authentication.md, docs/features/tenant-onboarding.md
 package auth
 
 import (

@@ -1,3 +1,4 @@
+// Feature doc: docs/features/ip-whitelisting.md
 import { redirect } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 

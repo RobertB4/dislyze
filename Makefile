@@ -1,6 +1,6 @@
 verify: verify-go verify-frontend verify-structural
 
-verify-structural: verify-generated-code verify-claude-refs
+verify-structural: verify-generated-code verify-claude-refs verify-feature-docs
 
 verify-go:
 	cd lugia-backend && make lint
@@ -35,6 +35,9 @@ verify-generated-code:
 
 verify-claude-refs:
 	@./scripts/verify-claude-refs.sh
+
+verify-feature-docs:
+	@./scripts/verify-feature-docs.sh
 
 generate:
 	cd lugia-backend && make sqlc

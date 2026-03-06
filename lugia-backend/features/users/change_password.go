@@ -1,3 +1,4 @@
+// Feature doc: docs/features/profile-management.md
 package users
 
 import (

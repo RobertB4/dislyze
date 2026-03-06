@@ -1,3 +1,4 @@
+// Feature doc: docs/features/authentication.md
 import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 

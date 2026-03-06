@@ -1,3 +1,4 @@
+<!-- Feature doc: docs/features/rbac.md -->
 <script lang="ts">
 	import Button from "@dislyze/zoroark/Button";
 	import Layout from "$lugia/components/Layout.svelte";

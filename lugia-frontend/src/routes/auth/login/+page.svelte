@@ -1,3 +1,4 @@
+<!-- Feature doc: docs/features/authentication.md -->
 <script lang="ts">
 	import Alert from "@dislyze/zoroark/Alert";
 	import Button from "@dislyze/zoroark/Button";

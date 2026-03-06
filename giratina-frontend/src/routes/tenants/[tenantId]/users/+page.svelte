@@ -1,3 +1,4 @@
+<!-- Feature doc: docs/features/user-management.md -->
 <script lang="ts">
 	import Badge from "@dislyze/zoroark/Badge";
 	import Layout from "$giratina/components/Layout.svelte";

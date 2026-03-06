@@ -1,3 +1,4 @@
+<!-- Feature doc: docs/features/profile-management.md -->
 <script lang="ts">
 	import Alert from "@dislyze/zoroark/Alert";
 	import Button from "@dislyze/zoroark/Button";

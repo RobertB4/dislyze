@@ -1,3 +1,4 @@
+<!-- Feature doc: docs/features/ip-whitelisting.md -->
 <script lang="ts">
 	import Badge from "@dislyze/zoroark/Badge";
 	import Button from "@dislyze/zoroark/Button";
