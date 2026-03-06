@@ -98,10 +98,11 @@ test.describe("Auth - Tenant Signup Page", () => {
 
 	test.describe("Form display with valid token", () => {
 		test("should display form with pre-filled data from token", async ({ page }) => {
+			// Use Japanese text to exercise base64url decoding (regression test for atob() bug)
 			const token = createTenantSignupToken({
 				email: "newcompany@example.com",
-				company_name: "Test Company",
-				user_name: "Test User"
+				company_name: "テスト株式会社",
+				user_name: "山田太郎"
 			});
 
 			await page.goto(`${tenantSignupURL}?token=${encodeURIComponent(token)}`);
@@ -115,9 +116,9 @@ test.describe("Auth - Tenant Signup Page", () => {
 			await expect(emailField).toHaveValue("newcompany@example.com");
 			await expect(emailField).toBeDisabled();
 
-			// Company name and user name should be pre-filled
-			await expect(page.locator("#company_name")).toHaveValue("Test Company");
-			await expect(page.locator("#user_name")).toHaveValue("Test User");
+			// Company name and user name should be pre-filled with Japanese text
+			await expect(page.locator("#company_name")).toHaveValue("テスト株式会社");
+			await expect(page.locator("#user_name")).toHaveValue("山田太郎");
 
 			// Password fields should be visible and empty
 			await expect(page.locator("#password")).toBeVisible();
@@ -129,8 +130,8 @@ test.describe("Auth - Tenant Signup Page", () => {
 		test("should hide password fields when SSO is enabled in token", async ({ page }) => {
 			const token = createTenantSignupToken({
 				email: "ssonew@sso.test",
-				company_name: "SSO Company",
-				user_name: "SSO User",
+				company_name: "SSO企業株式会社",
+				user_name: "佐藤花子",
 				sso: {
 					enabled: true,
 					idp_metadata_url: "http://mock-keycloak:27001/realms/test-realm/protocol/saml/descriptor",
@@ -142,8 +143,8 @@ test.describe("Auth - Tenant Signup Page", () => {
 
 			await expect(page.getByTestId("signup-form")).toBeVisible();
 			await expect(page.locator("#email")).toHaveValue("ssonew@sso.test");
-			await expect(page.locator("#company_name")).toHaveValue("SSO Company");
-			await expect(page.locator("#user_name")).toHaveValue("SSO User");
+			await expect(page.locator("#company_name")).toHaveValue("SSO企業株式会社");
+			await expect(page.locator("#user_name")).toHaveValue("佐藤花子");
 
 			// Password fields should not be visible for SSO
 			await expect(page.locator("#password")).not.toBeVisible();
@@ -213,8 +214,8 @@ test.describe("Auth - Tenant Signup Page", () => {
 			const uniqueEmail = `tenant_signup_${Date.now()}@example.com`;
 			const token = createTenantSignupToken({
 				email: uniqueEmail,
-				company_name: "New Test Company",
-				user_name: "New User"
+				company_name: "新規テスト株式会社",
+				user_name: "田中一郎"
 			});
 
 			await page.goto(`${tenantSignupURL}?token=${encodeURIComponent(token)}`);
@@ -240,8 +241,8 @@ test.describe("Auth - Tenant Signup Page", () => {
 		test("should show error toast when email already exists", async ({ page }) => {
 			const token = createTenantSignupToken({
 				email: TestUsersData.enterprise_1.email,
-				company_name: "Duplicate Company",
-				user_name: "Duplicate User"
+				company_name: "重複テスト企業",
+				user_name: "重複ユーザー"
 			});
 
 			await page.goto(`${tenantSignupURL}?token=${encodeURIComponent(token)}`);
@@ -261,8 +262,8 @@ test.describe("Auth - Tenant Signup Page", () => {
 			const uniqueEmail = `expired_tenant_${Date.now()}@example.com`;
 			const token = createExpiredTenantSignupToken({
 				email: uniqueEmail,
-				company_name: "Expired Company",
-				user_name: "Expired User"
+				company_name: "期限切れ企業",
+				user_name: "期限切れユーザー"
 			});
 
 			await page.goto(`${tenantSignupURL}?token=${encodeURIComponent(token)}`);
@@ -271,8 +272,8 @@ test.describe("Auth - Tenant Signup Page", () => {
 			// so the form still displays with an expired token
 			await expect(page.getByTestId("signup-form")).toBeVisible();
 
-			await page.locator("#company_name").fill("Expired Company");
-			await page.locator("#user_name").fill("Expired User");
+			await page.locator("#company_name").fill("期限切れ企業");
+			await page.locator("#user_name").fill("期限切れユーザー");
 			await page.locator("#password").fill("validPassword123");
 			await page.locator("#password_confirm").fill("validPassword123");
 
@@ -289,8 +290,8 @@ test.describe("Auth - Tenant Signup Page", () => {
 			const now = Math.floor(Date.now() / 1000);
 			const payload = {
 				email: `wrongsig_${Date.now()}@example.com`,
-				company_name: "Forged Company",
-				user_name: "Forged User",
+				company_name: "偽造企業",
+				user_name: "偽造ユーザー",
 				iat: now,
 				exp: now + 48 * 60 * 60
 			};
@@ -309,8 +310,8 @@ test.describe("Auth - Tenant Signup Page", () => {
 			// Frontend can still decode the payload, so form displays
 			await expect(page.getByTestId("signup-form")).toBeVisible();
 
-			await page.locator("#company_name").fill("Forged Company");
-			await page.locator("#user_name").fill("Forged User");
+			await page.locator("#company_name").fill("偽造企業");
+			await page.locator("#user_name").fill("偽造ユーザー");
 			await page.locator("#password").fill("validPassword123");
 			await page.locator("#password_confirm").fill("validPassword123");
 
