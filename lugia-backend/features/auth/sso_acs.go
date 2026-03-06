@@ -365,8 +365,7 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 		return nil, fmt.Errorf("failed to commit transaction: %w", err), ""
 	}
 
-	go func() {
-		// Use a dedicated context with timeout — the request context is cancelled after the response is sent
+	go func() { // #nosec G118 -- intentional: cleanup runs after response is sent, request context would be cancelled
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := h.queries.DeleteExpiredSSORequests(cleanupCtx); err != nil {
