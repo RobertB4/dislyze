@@ -8,7 +8,7 @@ cd "$SCRIPT_DIR" # Ensure we are in lugia-frontend/test
 
 CI_MODE=false
 UI_MODE=false
-
+GREP_PATTERN=""
 
 for arg in "$@"
 do
@@ -19,6 +19,10 @@ do
         ;;
         --ui)
         UI_MODE=true
+        shift
+        ;;
+        --grep=*)
+        GREP_PATTERN="${arg#--grep=}"
         shift
         ;;
     esac
@@ -173,6 +177,11 @@ if [ "$UI_MODE" = true ]; then
   PLAYWRIGHT_COMMAND_ARGS="$PLAYWRIGHT_COMMAND_ARGS --ui --ui-host 0.0.0.0 --ui-port 8080"
   # Ensure xvfb-run prefix is active for UI mode
   COMMAND_PREFIX="xvfb-run --auto-servernum --server-args='-screen 0 1280x1024x24' "
+fi
+
+if [ -n "$GREP_PATTERN" ]; then
+  PLAYWRIGHT_COMMAND_ARGS="$PLAYWRIGHT_COMMAND_ARGS --grep \"$GREP_PATTERN\""
+  echo "Filtering tests with grep pattern: $GREP_PATTERN"
 fi
 
 COMMAND_TO_RUN="${COMMAND_PREFIX}${PLAYWRIGHT_COMMAND_BASE} ${PLAYWRIGHT_COMMAND_ARGS}"
