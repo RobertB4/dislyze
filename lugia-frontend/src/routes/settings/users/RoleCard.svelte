@@ -16,16 +16,16 @@
 		"data-testid"?: string;
 	} = $props();
 
-	const handleClick = () => {
+	function handleClick() {
 		onclick?.();
-	};
+	}
 
-	const handleKeydown = (event: KeyboardEvent) => {
+	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === "Enter" || event.key === " ") {
 			event.preventDefault();
 			onclick?.();
 		}
-	};
+	}
 </script>
 
 <div

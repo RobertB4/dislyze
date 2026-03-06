@@ -1,7 +1,7 @@
 import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ url, fetch }) => {
+export async function load({ url, fetch }: Parameters<PageLoad>[0]) {
 	const token = url.searchParams.get("token");
 
 	if (!token) {
@@ -66,4 +66,4 @@ export const load: PageLoad = async ({ url, fetch }) => {
 			"サーバーとの通信中に問題が発生しました。お手数ですが、時間をおいて再度お試しください。"
 		);
 	}
-};
+}

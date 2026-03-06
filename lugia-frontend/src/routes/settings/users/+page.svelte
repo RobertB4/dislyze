@@ -199,27 +199,27 @@
 		}
 	});
 
-	const handleClose = () => {
+	function handleClose() {
 		isSlideoverOpen = false;
 		reset();
-	};
+	}
 
-	const handleDeleteModalClose = () => {
+	function handleDeleteModalClose() {
 		userToDelete = null;
 		resetDelete();
-	};
+	}
 
-	const handleEditModalOpen = (user: User) => {
+	function handleEditModalOpen(user: User) {
 		setEditFormInitialValues({ roleIds: user.roles.map((role) => role.id) });
 		userToEdit = user;
-	};
+	}
 
-	const handleEditModalClose = () => {
+	function handleEditModalClose() {
 		userToEdit = null;
 		resetEditForm();
-	};
+	}
 
-	const handleResendInvite = async (userId: string) => {
+	async function handleResendInvite(userId: string) {
 		const { success } = await mutationFetch(`/api/users/${userId}/resend-invite`, {
 			method: "POST",
 			headers: {
@@ -230,11 +230,11 @@
 		if (success) {
 			toast.show("招待メールを送信しました。", "success");
 		}
-	};
+	}
 
-	const handleDeleteUser = (user: { id: string; name: string; email: string }) => {
+	function handleDeleteUser(user: { id: string; name: string; email: string }) {
 		userToDelete = user;
-	};
+	}
 
 	const statusMap: Record<string, { label: string; color: "green" | "yellow" | "red" }> = {
 		active: {

@@ -51,10 +51,10 @@
 		}
 	});
 
-	const handleClose = () => {
+	function handleClose() {
 		reset();
 		onClose();
-	};
+	}
 </script>
 
 <form use:form class="space-y-6 p-1 flex flex-col h-full" data-testid="edit-label-form">

@@ -1,6 +1,6 @@
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = ({ url }) => {
+export function load({ url }: Parameters<PageLoad>[0]) {
 	const redirectTo = url.searchParams.get("redirect");
 	const message = url.searchParams.get("message");
 
@@ -23,4 +23,4 @@ export const load: PageLoad = ({ url }) => {
 		redirectTo: validatedRedirect,
 		message
 	};
-};
+}

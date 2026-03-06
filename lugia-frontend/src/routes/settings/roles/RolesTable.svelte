@@ -91,10 +91,10 @@
 		}
 	});
 
-	const handleCreateClose = () => {
+	function handleCreateClose() {
 		isCreateSlideoverOpen = false;
 		reset();
-	};
+	}
 
 	const {
 		form: editForm,
@@ -147,7 +147,7 @@
 		}
 	});
 
-	const handleEditModalOpen = (role: RoleInfo) => {
+	function handleEditModalOpen(role: RoleInfo) {
 		const rolePermissionIds = role.permissions.map((p) => p.id);
 		setEditFormInitialValues({
 			name: role.name,
@@ -156,21 +156,21 @@
 			hasPermission: null
 		});
 		editingRole = role;
-	};
+	}
 
-	const handleEditClose = () => {
+	function handleEditClose() {
 		editingRole = null;
 		editReset();
-	};
+	}
 
-	const handleDeleteRole = (role: RoleInfo) => {
+	function handleDeleteRole(role: RoleInfo) {
 		roleToDelete = role;
-	};
+	}
 
-	const handleDeleteModalClose = () => {
+	function handleDeleteModalClose() {
 		roleToDelete = null;
 		deleteReset();
-	};
+	}
 
 	const {
 		form: deleteForm,

@@ -12,7 +12,7 @@ function isRedirect(error: unknown): error is import("@sveltejs/kit").Redirect {
 	);
 }
 
-export const load: PageLoad = async ({ url, fetch }) => {
+export async function load({ url, fetch }: Parameters<PageLoad>[0]) {
 	const token = url.searchParams.get("token");
 
 	if (!token) {
@@ -44,4 +44,4 @@ export const load: PageLoad = async ({ url, fetch }) => {
 			error: "予期せぬエラーが発生しました。"
 		};
 	}
-};
+}

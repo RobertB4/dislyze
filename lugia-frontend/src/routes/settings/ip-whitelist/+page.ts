@@ -11,7 +11,7 @@ export type IPWhitelistRule = {
 
 export type GetIPWhitelistResponse = IPWhitelistRule[];
 
-export const load: PageLoad = ({ fetch }) => {
+export function load({ fetch }: Parameters<PageLoad>[0]) {
 	const ipWhitelistPromise: Promise<GetIPWhitelistResponse> = loadFunctionFetch(
 		fetch,
 		`/api/ip-whitelist`
@@ -20,4 +20,4 @@ export const load: PageLoad = ({ fetch }) => {
 	return {
 		ipWhitelistPromise
 	};
-};
+}

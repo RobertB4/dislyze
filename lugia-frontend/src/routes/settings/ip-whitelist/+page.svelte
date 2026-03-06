@@ -26,7 +26,7 @@
 	let whitelistRuleToDelete = $state<IPWhitelistRule | null>(null);
 	let warningUserIP = $state<string | null>(null);
 
-	const handleActivate = async () => {
+	async function handleActivate() {
 		const { success, response } = await mutationFetch(`/api/ip-whitelist/activate`, {
 			method: "POST",
 			headers: {
@@ -53,11 +53,11 @@
 				toast.show("IPアドレス制限を有効にしました", "success");
 			}
 		}
-	};
+	}
 
-	const handleDeactivate = () => {
+	function handleDeactivate() {
 		isDeactivationModalOpen = true;
-	};
+	}
 </script>
 
 <Layout

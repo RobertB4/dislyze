@@ -12,5 +12,6 @@ export async function safeGoto(url: string, options?: Parameters<typeof goto>[1]
 		activeElement.blur?.();
 	}
 
+	// eslint-disable-next-line svelte/no-navigation-without-resolve -- shared utility; callers are responsible for resolve()
 	await goto(url, options);
 }

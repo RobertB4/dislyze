@@ -1,6 +1,6 @@
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = ({ url }) => {
+export function load({ url }: Parameters<PageLoad>[0]) {
 	const token = url.searchParams.get("token");
 	const inviterName = url.searchParams.get("inviter_name");
 	const invitedEmail = url.searchParams.get("invited_email");
@@ -10,4 +10,4 @@ export const load: PageLoad = ({ url }) => {
 		inviterName,
 		invitedEmail
 	};
-};
+}

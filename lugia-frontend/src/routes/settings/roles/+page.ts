@@ -31,7 +31,7 @@ export type GetPermissionsResponse = {
 	permissions: PermissionInfo[];
 };
 
-export const load: PageLoad = ({ fetch }) => {
+export function load({ fetch }: Parameters<PageLoad>[0]) {
 	const rolesPromise: Promise<GetRolesResponse> = loadFunctionFetch(fetch, `/api/roles`).then(
 		(res) => res.json()
 	);
@@ -45,4 +45,4 @@ export const load: PageLoad = ({ fetch }) => {
 		rolesPromise,
 		permissionsPromise
 	};
-};
+}
