@@ -5,7 +5,6 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 REPO_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
 COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.yml"
 
-# Parse arguments
 TARGET="${1:-}"
 SESSION_ID="$(date +%s)-$(head -c 4 /dev/urandom | xxd -p)"
 BRANCH="test-scout/${SESSION_ID}"
@@ -67,15 +66,15 @@ git -C "${REPO_ROOT}" worktree add "${WORKTREE}" --detach main -q
 echo "Creating repo archive..."
 git -C "${WORKTREE}" archive --format=tar HEAD -o "${REPO_TAR}"
 
-# 3. Run compose (blocks until agent exits)
-echo ""
-echo "=== Starting Agent ==="
-echo ""
-
+# 3. Start environment
 export REPO_TAR
 export CLAUDE_CODE_OAUTH_TOKEN
 export AGENT_TARGET="${TARGET}"
 export AGENT_MODEL="${AGENT_MODEL:-opus}"
+
+echo ""
+echo "=== Starting Agent ==="
+echo ""
 
 set +e
 docker compose -p "${COMPOSE_PROJECT}" -f "${COMPOSE_FILE}" up \
@@ -90,7 +89,7 @@ if [ $AGENT_EXIT -ne 0 ]; then
     exit $AGENT_EXIT
 fi
 
-# 5. Extract patches from stopped container
+# 4. Extract patches from container
 AGENT_CONTAINER=$(docker compose -p "${COMPOSE_PROJECT}" -f "${COMPOSE_FILE}" ps -aq agent)
 
 if [ -z "${AGENT_CONTAINER}" ]; then
@@ -111,11 +110,11 @@ fi
 echo ""
 echo "=== ${PATCH_COUNT} patch(es) found ==="
 
-# 6. Apply patches to worktree
+# 5. Apply patches to worktree
 cd "${WORKTREE}"
 git am "${PATCHES_DIR}"/*.patch -q
 
-# 7. Push and create PR
+# 6. Push and create PR
 echo "Pushing to ${BRANCH}..."
 git push origin "HEAD:refs/heads/${BRANCH}" -q
 
