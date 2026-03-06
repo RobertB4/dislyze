@@ -20,12 +20,15 @@ import (
 	"lugia/features/users"
 	"lugia/lib/config"
 	"lugia/lib/db"
+	"lugia/lib/humautil"
 	"lugia/lib/middleware"
 	"lugia/queries"
 
 	jirachi_auth "dislyze/jirachi/auth"
 	"dislyze/jirachi/ratelimit"
 
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -90,6 +93,8 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 			r.Use(middleware.LoadTenantAndUserContext(queries))
 			r.Use(middleware.IPWhitelistMiddleware(queries))
 
+			humaConfig := humautil.NewConfig("Lugia API", "1.0.0")
+
 			r.Get("/me", usersHandler.GetMe)
 			r.Post("/me/change-name", usersHandler.UpdateMe)
 			r.Post("/me/change-password", usersHandler.ChangePassword)
@@ -97,7 +102,9 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 			r.Get("/me/verify-change-email", usersHandler.VerifyChangeEmail)
 
 			r.Route("/users", func(r chi.Router) {
-				r.With(middleware.RequireUsersView(queries)).Get("/", usersHandler.GetUsers)
+				usersViewAPI := humachi.New(r.With(middleware.RequireUsersView(queries)), humaConfig)
+				huma.Register(usersViewAPI, users.GetUsersOp, usersHandler.GetUsers)
+
 				r.With(middleware.RequireUsersView(queries)).Get("/roles", rolesHandler.GetRoles)
 				r.With(middleware.RequireUsersEdit(queries)).Post("/invite", usersHandler.InviteUser)
 				r.With(middleware.RequireUsersEdit(queries)).Post("/{userID}/resend-invite", usersHandler.ResendInvite)

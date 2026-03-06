@@ -42,15 +42,39 @@ import type { PageData } from "./$types";
 ```
 
 ### Frontend API Calls
-```typescript
-// For load functions (GET)
-const data = await loadFunctionFetch<Type>('/api/endpoint');
 
-// For mutations (POST/PUT/DELETE)
+**For load functions — migrated endpoints (in OpenAPI spec):**
+Use the typed `openapi-fetch` client. Types are auto-inferred from the URL — no manual type annotations.
+```typescript
+import { createLoadClient } from "$lugia/lib/api";
+
+export function load({ fetch }: Parameters<PageLoad>[0]) {
+  const api = createLoadClient(fetch);
+  // URL, query params, and response type are all auto-typed from the schema
+  const usersPromise = api.GET("/users", {
+    params: { query: { page: 1, limit: 50 } }
+  }).then(({ data }) => data!);
+  return { usersPromise };
+}
+```
+`data!` is safe: middleware in `createLoadClient` throws on all error statuses before openapi-fetch returns. See `src/lib/api.ts` for details.
+
+**For load functions — non-migrated endpoints (not yet in OpenAPI spec):**
+```typescript
+const rolesPromise: Promise<GetRolesResponse> = loadFunctionFetch(fetch, '/api/roles').then((res) => res.json());
+```
+
+**For mutations (POST/PUT/DELETE):**
+```typescript
 const {response, success} = await mutationFetch('/api/endpoint', {
   method: 'POST',
   body: JSON.stringify(data)
 });
+```
+
+**For types — import directly from schema:**
+```typescript
+import type { UserInfo, GetUsersResponse } from "$lugia/schema";
 ```
 
 ### Frontend Format

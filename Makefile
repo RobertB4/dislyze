@@ -31,6 +31,8 @@ generate:
 	cd lugia-backend && make sqlc
 	cd giratina-backend && make sqlc
 	cd jirachi && make sqlc
+	cd lugia-backend && go run ./cmd/openapi
+	cd lugia-frontend && npx openapi-typescript ../lugia-backend/openapi.json --root-types --root-types-no-schema-prefix -o src/schema.ts
 
 dev:
 	make -j6 dev-lugia-backend dev-lugia-frontend dev-giratina-backend dev-giratina-frontend dev-sendgrid-mock dev-keycloak-mock

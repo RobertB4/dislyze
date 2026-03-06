@@ -23,11 +23,11 @@ type ClientEnterpriseFeatures struct {
 }
 
 type MeResponse struct {
-	TenantName         string                    `json:"tenant_name"`
-	UserID             string                    `json:"user_id"`
-	Email              string                    `json:"email"`
-	UserName           string                    `json:"user_name"`
-	Permissions        []string                  `json:"permissions"`
+	TenantName         string                   `json:"tenant_name"`
+	UserID             string                   `json:"user_id"`
+	Email              string                   `json:"email"`
+	UserName           string                   `json:"user_name"`
+	Permissions        []string                 `json:"permissions"`
 	EnterpriseFeatures ClientEnterpriseFeatures `json:"enterprise_features"`
 }
 
@@ -83,10 +83,10 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 	}
 
 	response := &MeResponse{
-		TenantName: tenant.Name,
-		UserID:     user.ID.String(),
-		Email:      user.Email,
-		UserName:   user.Name,
+		TenantName:  tenant.Name,
+		UserID:      user.ID.String(),
+		Email:       user.Email,
+		UserName:    user.Name,
 		Permissions: permissionsRes,
 		EnterpriseFeatures: ClientEnterpriseFeatures{
 			RBAC:        enterpriseFeatures.RBAC,

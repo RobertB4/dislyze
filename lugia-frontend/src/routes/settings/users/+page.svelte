@@ -15,7 +15,7 @@
 	import { invalidate } from "$app/navigation";
 	import { mutationFetch, handleLoadError } from "$lugia/lib/fetch";
 	import Skeleton from "$lugia/routes/settings/users/Skeleton.svelte";
-	import type { User } from "$lugia/routes/settings/users/+page";
+	import type { UserInfo } from "$lugia/schema";
 	import { hasPermission } from "$lugia/lib/authz";
 	import { goto } from "$app/navigation";
 	import RoleCard from "$lugia/routes/settings/users/RoleCard.svelte";
@@ -26,7 +26,7 @@
 
 	let isSlideoverOpen = $state(false);
 	let userToDelete = $state<{ id: string; name: string; email: string } | null>(null);
-	let userToEdit = $state<User | null>(null);
+	let userToEdit = $state<UserInfo | null>(null);
 
 	let searchTimeout: number | undefined;
 	let isSearching = $state(false);
@@ -210,7 +210,7 @@
 		resetDelete();
 	}
 
-	function handleEditModalOpen(user: User) {
+	function handleEditModalOpen(user: UserInfo) {
 		setEditFormInitialValues({ roleIds: user.roles.map((role) => role.id) });
 		userToEdit = user;
 	}
