@@ -29,7 +29,9 @@
 
 		if (success) {
 			forceUpdateMeCache.set(true);
-			await invalidate((u) => u.pathname.includes("/api/ip-whitelist"));
+			await invalidate(
+				(u) => u.pathname.includes("/api/ip-whitelist") || u.pathname.includes("/api/me")
+			);
 			toast.show("IPアドレス制限を有効にしました", "success");
 			onClose();
 		}

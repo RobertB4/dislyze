@@ -13,7 +13,7 @@
 	import type { PageData } from "./$types";
 	import { createForm } from "felte";
 	import { invalidate } from "$app/navigation";
-	import { mutationFetch } from "$lugia/lib/fetch";
+	import { mutationFetch, handleLoadError } from "$lugia/lib/fetch";
 	import Skeleton from "$lugia/routes/settings/users/Skeleton.svelte";
 	import type { User } from "$lugia/routes/settings/users/+page";
 	import { hasPermission } from "$lugia/lib/authz";
@@ -265,14 +265,7 @@
 	}
 </script>
 
-<Layout
-	me={pageData.me}
-	pageTitle="ユーザー管理"
-	promises={{
-		usersResponse: pageData.usersPromise,
-		rolesResponse: pageData.rolesPromise
-	}}
->
+<Layout me={pageData.me} pageTitle="ユーザー管理">
 	{#snippet buttons()}
 		{#if hasPermission(pageData.me, "users.edit")}
 			<Button
@@ -286,14 +279,9 @@
 		{/if}
 	{/snippet}
 
-	{#snippet skeleton()}
+	{#await Promise.all([pageData.usersPromise, pageData.rolesPromise])}
 		<Skeleton />
-	{/snippet}
-
-	{#snippet children({ usersResponse, rolesResponse })}
-		{@const { users, pagination } = usersResponse}
-		{@const { roles } = rolesResponse}
-
+	{:then [{ users, pagination }, { roles }]}
 		<SettingsTabs me={pageData.me} />
 
 		<!-- Search bar -->
@@ -702,5 +690,7 @@
 				</div>
 			</div>
 		{/if}
-	{/snippet}
+	{:catch e}
+		{handleLoadError(e)}
+	{/await}
 </Layout>

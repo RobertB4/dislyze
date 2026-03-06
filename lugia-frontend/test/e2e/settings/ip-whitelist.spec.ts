@@ -736,13 +736,15 @@ test.describe("IP Whitelist E2E Tests", () => {
 });
 
 test.describe("Activation/Deactivation Workflows", () => {
-	test.beforeEach(async () => {
-		// Reset database for each activation/deactivation test
+	test.beforeEach(async ({ page }) => {
 		await resetAndSeedDatabase();
+		await page.setExtraHTTPHeaders({
+			"X-Real-IP": "192.168.1.100"
+		});
 	});
 
 	test("Safe activation (current IP in whitelist)", async ({ page }) => {
-		const currentIPRange = "172.18.0.0/16"; // CIDR range that covers Docker network IPs
+		const currentIPRange = "192.168.1.0/24"; // CIDR range that covers the X-Real-IP test header
 
 		// Login as enterprise admin
 		await logInAs(page, TestUsersData.enterprise_1);
@@ -756,7 +758,7 @@ test.describe("Activation/Deactivation Workflows", () => {
 		await expect(page.getByTestId("add-ip-slideover-panel")).toBeVisible();
 
 		await page.getByTestId("ip-address-input").fill(currentIPRange);
-		await page.getByTestId("label-input").fill("Docker Network Range");
+		await page.getByTestId("label-input").fill("Test Network Range");
 
 		// Wait for create API calls
 		const createResponsePromise = page.waitForResponse("/api/ip-whitelist/create");
@@ -786,7 +788,7 @@ test.describe("Activation/Deactivation Workflows", () => {
 	});
 
 	test("Unsafe activation warning (current IP not in whitelist)", async ({ page }) => {
-		const otherIPRange = "10.0.0.0/24"; // Different IP range that won't include Docker network
+		const otherIPRange = "10.0.0.0/24"; // Different IP range that won't include the test IP
 
 		// Login as enterprise admin
 		await logInAs(page, TestUsersData.enterprise_1);
@@ -822,7 +824,7 @@ test.describe("Activation/Deactivation Workflows", () => {
 		await expect(page.getByTestId("activation-warning-slideover-panel")).toBeVisible();
 
 		// Verify warning modal shows current IP that will be blocked
-		await expect(page.getByTestId("activation-warning-alert")).toContainText("172.18.0.");
+		await expect(page.getByTestId("activation-warning-alert")).toContainText("192.168.1.100");
 
 		// Verify warning message content
 		await expect(page.getByTestId("activation-warning-alert")).toContainText(
@@ -837,7 +839,7 @@ test.describe("Activation/Deactivation Workflows", () => {
 	});
 
 	test("Force activation despite warning", async ({ page }) => {
-		const otherIPRange = "10.0.0.0/24"; // Different IP range that won't include Docker network
+		const otherIPRange = "10.0.0.0/24"; // Different IP range that won't include the test IP
 
 		// Login as enterprise admin
 		await logInAs(page, TestUsersData.enterprise_1);
@@ -881,7 +883,7 @@ test.describe("Activation/Deactivation Workflows", () => {
 	});
 
 	test("Cancel unsafe activation", async ({ page }) => {
-		const otherIPRange = "10.0.0.0/24"; // Different IP range that won't include Docker network
+		const otherIPRange = "10.0.0.0/24"; // Different IP range that won't include the test IP
 
 		// Login as enterprise admin
 		await logInAs(page, TestUsersData.enterprise_1);
@@ -930,7 +932,7 @@ test.describe("Activation/Deactivation Workflows", () => {
 	});
 
 	test("Safe deactivation", async ({ page }) => {
-		const currentIPRange = "172.18.0.0/16"; // CIDR range that covers Docker network IPs
+		const currentIPRange = "192.168.1.0/24"; // CIDR range that covers the X-Real-IP test header
 
 		// Login as enterprise admin
 		await logInAs(page, TestUsersData.enterprise_1);
@@ -941,7 +943,7 @@ test.describe("Activation/Deactivation Workflows", () => {
 		await expect(page.getByTestId("add-ip-slideover-panel")).toBeVisible();
 
 		await page.getByTestId("ip-address-input").fill(currentIPRange);
-		await page.getByTestId("label-input").fill("Docker Network Range");
+		await page.getByTestId("label-input").fill("Test Network Range");
 
 		// Wait for create API calls
 		const createResponsePromise = page.waitForResponse("/api/ip-whitelist/create");
@@ -982,7 +984,7 @@ test.describe("Activation/Deactivation Workflows", () => {
 	});
 
 	test("Deactivation confirmation modal", async ({ page }) => {
-		const currentIPRange = "172.18.0.0/16"; // CIDR range that covers Docker network IPs
+		const currentIPRange = "192.168.1.0/24"; // CIDR range that covers the X-Real-IP test header
 
 		// Login as enterprise admin
 		await logInAs(page, TestUsersData.enterprise_1);
@@ -993,7 +995,7 @@ test.describe("Activation/Deactivation Workflows", () => {
 		await expect(page.getByTestId("add-ip-slideover-panel")).toBeVisible();
 
 		await page.getByTestId("ip-address-input").fill(currentIPRange);
-		await page.getByTestId("label-input").fill("Docker Network Range");
+		await page.getByTestId("label-input").fill("Test Network Range");
 
 		// Wait for create API calls
 		const createResponsePromise = page.waitForResponse("/api/ip-whitelist/create");
@@ -1039,7 +1041,7 @@ test.describe("Activation/Deactivation Workflows", () => {
 	});
 
 	test("Cancel deactivation", async ({ page }) => {
-		const currentIPRange = "172.18.0.0/16"; // CIDR range that covers Docker network IPs
+		const currentIPRange = "192.168.1.0/24"; // CIDR range that covers the X-Real-IP test header
 
 		// Login as enterprise admin
 		await logInAs(page, TestUsersData.enterprise_1);
@@ -1050,7 +1052,7 @@ test.describe("Activation/Deactivation Workflows", () => {
 		await expect(page.getByTestId("add-ip-slideover-panel")).toBeVisible();
 
 		await page.getByTestId("ip-address-input").fill(currentIPRange);
-		await page.getByTestId("label-input").fill("Docker Network Range");
+		await page.getByTestId("label-input").fill("Test Network Range");
 
 		// Wait for create API calls
 		const createResponsePromise = page.waitForResponse("/api/ip-whitelist/create");
@@ -1093,7 +1095,7 @@ test.describe("Activation/Deactivation Workflows", () => {
 	});
 
 	test("Status badge updates correctly", async ({ page }) => {
-		const currentIPRange = "172.18.0.0/16"; // CIDR range that covers Docker network IPs
+		const currentIPRange = "192.168.1.0/24"; // CIDR range that covers the X-Real-IP test header
 
 		// Login as enterprise admin
 		await logInAs(page, TestUsersData.enterprise_1);
@@ -1108,7 +1110,7 @@ test.describe("Activation/Deactivation Workflows", () => {
 		await expect(page.getByTestId("add-ip-slideover-panel")).toBeVisible();
 
 		await page.getByTestId("ip-address-input").fill(currentIPRange);
-		await page.getByTestId("label-input").fill("Docker Network Range");
+		await page.getByTestId("label-input").fill("Test Network Range");
 
 		// Wait for create API calls
 		const createResponsePromise = page.waitForResponse("/api/ip-whitelist/create");
@@ -1152,8 +1154,11 @@ test.describe("Activation/Deactivation Workflows", () => {
 
 // IP Deletion Safety Tests (3 tests)
 test.describe("IP Deletion Safety", () => {
-	test.beforeEach(async () => {
+	test.beforeEach(async ({ page }) => {
 		await resetAndSeedDatabase();
+		await page.setExtraHTTPHeaders({
+			"X-Real-IP": "192.168.1.100"
+		});
 	});
 
 	test("Delete IP when whitelist inactive", async ({ page }) => {
@@ -1225,7 +1230,7 @@ test.describe("IP Deletion Safety", () => {
 	});
 
 	test("Prevent deletion of current IP when active", async ({ page }) => {
-		const currentIPRange = "172.18.0.0/16"; // CIDR range that covers Docker network IPs
+		const currentIPRange = "192.168.1.0/24"; // CIDR range that covers the X-Real-IP test header
 
 		// Login as enterprise admin
 		await logInAs(page, TestUsersData.enterprise_1);
@@ -1236,7 +1241,7 @@ test.describe("IP Deletion Safety", () => {
 		await expect(page.getByTestId("add-ip-slideover-panel")).toBeVisible();
 
 		await page.getByTestId("ip-address-input").fill(currentIPRange);
-		await page.getByTestId("label-input").fill("Current Docker Network");
+		await page.getByTestId("label-input").fill("Current Test Network");
 
 		// Wait for create API calls
 		const createResponsePromise = page.waitForResponse("/api/ip-whitelist/create");
@@ -1289,7 +1294,7 @@ test.describe("IP Deletion Safety", () => {
 		const ipRows2 = page.getByTestId("ip-whitelist-table-body").locator("tr");
 		const firstRow2 = ipRows2.first();
 		await expect(firstRow2.getByTestId(/ip-address-/)).toContainText(currentIPRange);
-		await expect(firstRow2.getByTestId(/ip-label-/)).toContainText("Current Docker Network");
+		await expect(firstRow2.getByTestId(/ip-label-/)).toContainText("Current Test Network");
 
 		// Verify IP whitelist remains active
 		await expect(page.getByTestId("status-badge")).toContainText("有効");
@@ -1384,12 +1389,15 @@ test.describe("IP Deletion Safety", () => {
 
 // Emergency Deactivation Tests (3 tests)
 test.describe("Emergency Deactivation", () => {
-	test.beforeEach(async () => {
+	test.beforeEach(async ({ page }) => {
 		await resetAndSeedDatabase();
+		await page.setExtraHTTPHeaders({
+			"X-Real-IP": "192.168.1.100"
+		});
 	});
 
 	test("Emergency deactivation email and token flow", async ({ page, request }) => {
-		const otherIPRange = "10.0.0.0/24"; // Different IP range that won't include Docker network
+		const otherIPRange = "10.0.0.0/24"; // Different IP range that won't include the test IP
 
 		// Login as enterprise admin
 		await logInAs(page, TestUsersData.enterprise_1);

@@ -3,6 +3,7 @@
 	import Badge from "@dislyze/zoroark/Badge";
 	import Layout from "$giratina/components/Layout.svelte";
 	import type { PageData } from "./$types";
+	import { handleLoadError } from "$giratina/lib/fetch";
 
 	let { data: pageData }: { data: PageData } = $props();
 
@@ -22,14 +23,8 @@
 	};
 </script>
 
-<Layout
-	me={pageData.me}
-	pageTitle="ユーザー一覧"
-	promises={{
-		usersResponse: pageData.usersPromise
-	}}
->
-	{#snippet skeleton()}
+<Layout me={pageData.me} pageTitle="ユーザー一覧">
+	{#await pageData.usersPromise}
 		<div class="animate-pulse">
 			<div class="mt-8 flow-root">
 				<div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -53,11 +48,7 @@
 				</div>
 			</div>
 		</div>
-	{/snippet}
-
-	{#snippet children({ usersResponse })}
-		{@const { users } = usersResponse}
-
+	{:then { users }}
 		<div class="mt-8 flow-root">
 			{#if users.length === 0}
 				<div class="text-center py-12" data-testid="no-users-message">
@@ -128,5 +119,7 @@
 				</div>
 			{/if}
 		</div>
-	{/snippet}
+	{:catch e}
+		{handleLoadError(e)}
+	{/await}
 </Layout>

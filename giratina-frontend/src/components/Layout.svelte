@@ -1,11 +1,7 @@
-<script
-	lang="ts"
-	generics="PromisesMap extends Record<string, Promise<any>> = Record<string, Promise<any>>"
->
+<script lang="ts">
 	import { page } from "$app/state";
 	import EmptyAvatar from "@dislyze/zoroark/EmptyAvatar";
 	import { toast } from "@dislyze/zoroark/toast";
-	import { safeGoto } from "@dislyze/zoroark/routing";
 	import { slide, fade } from "svelte/transition";
 	import type { Snippet } from "svelte";
 	import type { Me } from "@dislyze/zoroark/meCache";
@@ -13,20 +9,14 @@
 
 	let isMobileNavigationOpen = $state(false);
 
-	type ResolvedObject<T extends Record<string, Promise<any>>> = {
-		[K in keyof T]: T[K] extends Promise<infer U> ? U : never;
-	};
-
 	type LayoutProps = {
 		me: Me;
 		pageTitle: string;
-		promises?: PromisesMap;
 		buttons?: Snippet;
-		children: Snippet<[ResolvedObject<PromisesMap>]>;
-		skeleton?: Snippet;
+		children: Snippet;
 	};
 
-	let { me, pageTitle, promises, buttons, children, skeleton }: LayoutProps = $props();
+	let { me, pageTitle, buttons, children }: LayoutProps = $props();
 
 	function toggleMobileNavigation() {
 		isMobileNavigationOpen = !isMobileNavigationOpen;
@@ -49,67 +39,6 @@
 			toast.showError("ログアウト中にエラーが発生しました。");
 		}
 	}
-
-	const getResolvedPromises = $derived(async () => {
-		try {
-			if (!promises || Object.keys(promises).length === 0) {
-				return {} as ResolvedObject<PromisesMap>;
-			}
-			const keys = Object.keys(promises);
-			const promiseValues = Object.values(promises);
-
-			const results = await Promise.all(promiseValues);
-
-			const resolvedObject: Record<string, any> = {};
-			keys.forEach((key, index) => {
-				resolvedObject[key] = results[index];
-			});
-			return resolvedObject as ResolvedObject<PromisesMap>;
-		} catch (e) {
-			console.error("Error resolving promises in Layout:", e);
-			let status = 500;
-			let message = "処理中に予期せぬエラーが発生しました。";
-
-			const err = e as {
-				status?: number;
-				message?: string;
-				body?: { message?: string };
-				location?: string;
-			};
-
-			if (err.status) {
-				status = err.status;
-			}
-
-			if (err.message) {
-				message = err.message;
-			}
-
-			if (err.body?.message) {
-				message = err.body.message;
-			}
-
-			if (e instanceof Error) {
-				message = e.message;
-			}
-
-			if (err.location) {
-				Promise.resolve().then(() => {
-					safeGoto(err.location!);
-				});
-				return {} as ResolvedObject<PromisesMap>;
-			}
-
-			// Use a microtask to ensure navigation happens after the current processing cycle
-			Promise.resolve().then(() => {
-				safeGoto(`/error?status=${status}&message=${encodeURIComponent(message)}`);
-			});
-
-			// Return an empty object. The navigation should ideally prevent children from rendering
-			// or attempting to use potentially incomplete data.
-			return {} as ResolvedObject<PromisesMap>;
-		}
-	});
 </script>
 
 {#if isMobileNavigationOpen}
@@ -353,11 +282,7 @@
 			</div>
 		</div>
 		<div class="py-6 px-4 sm:px-6 md:px-8">
-			{#await getResolvedPromises()}
-				{@render skeleton?.()}
-			{:then resolvedData}
-				{@render children(resolvedData)}
-			{/await}
+			{@render children()}
 		</div>
 	</main>
 </div>

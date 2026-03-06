@@ -19,6 +19,7 @@
     "source=dislyze-sendgrid-nm,target=/workspace/sendgrid-mock/node_modules,type=volume"
   ],
   "postCreateCommand": ".devcontainer/setup.sh",
+  "postStartCommand": "sed -i '/.credsStore./d' ~/.docker/config.json # VS Code injects a credsStore that breaks docker pull outside its terminal",
   "forwardPorts": [3000, 3001, 4000, 4001, 5432, 7000, 7001],
   "customizations": {
     "vscode": {

@@ -12,7 +12,7 @@
 	import type { PageData } from "./$types";
 	import { createForm } from "felte";
 	import { invalidate } from "$app/navigation";
-	import { mutationFetch } from "$giratina/lib/fetch";
+	import { mutationFetch, handleLoadError } from "$giratina/lib/fetch";
 	import type { Tenant, EnterpriseFeatures } from "$giratina/routes/+page";
 	import { resolve } from "$app/paths";
 
@@ -292,13 +292,7 @@
 	}
 </script>
 
-<Layout
-	me={pageData.me}
-	pageTitle="テナント一覧"
-	promises={{
-		tenantsResponse: pageData.tenantsPromise
-	}}
->
+<Layout me={pageData.me} pageTitle="テナント一覧">
 	{#snippet buttons()}
 		<Button
 			type="button"
@@ -310,7 +304,7 @@
 		</Button>
 	{/snippet}
 
-	{#snippet skeleton()}
+	{#await pageData.tenantsPromise}
 		<div class="animate-pulse">
 			<div class="mt-8 flow-root">
 				<div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -334,11 +328,7 @@
 				</div>
 			</div>
 		</div>
-	{/snippet}
-
-	{#snippet children({ tenantsResponse })}
-		{@const { tenants } = tenantsResponse}
-
+	{:then { tenants }}
 		{#if isInviteSlideoverOpen}
 			<form
 				use:inviteForm
@@ -789,5 +779,7 @@
 				</div>
 			{/if}
 		</div>
-	{/snippet}
+	{:catch e}
+		{handleLoadError(e)}
+	{/await}
 </Layout>

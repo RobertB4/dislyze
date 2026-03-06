@@ -1,12 +1,12 @@
-import prettier from 'eslint-config-prettier';
-import js from '@eslint/js';
-import { includeIgnoreFile } from '@eslint/compat';
-import svelte from 'eslint-plugin-svelte';
-import globals from 'globals';
-import { fileURLToPath } from 'node:url';
-import ts from 'typescript-eslint';
-import dislyze from '../scripts/eslint-plugin-dislyze.js';
-const gitignorePath = fileURLToPath(new URL('../.gitignore', import.meta.url));
+import prettier from "eslint-config-prettier";
+import js from "@eslint/js";
+import { includeIgnoreFile } from "@eslint/compat";
+import svelte from "eslint-plugin-svelte";
+import globals from "globals";
+import { fileURLToPath } from "node:url";
+import ts from "typescript-eslint";
+import dislyze from "../scripts/eslint-plugin-dislyze.js";
+const gitignorePath = fileURLToPath(new URL("../.gitignore", import.meta.url));
 
 export default ts.config(
 	includeIgnoreFile(gitignorePath),
@@ -14,61 +14,69 @@ export default ts.config(
 	...ts.configs.recommendedTypeChecked,
 	{
 		files: [
-			'eslint.config.js',
-			'vite.config.js',
-			'svelte.config.js',
-			'tailwind.config.js',
-			'*.config.js',
-			'*.config.ts'
+			"eslint.config.js",
+			"vite.config.js",
+			"svelte.config.js",
+			"tailwind.config.js",
+			"*.config.js",
+			"*.config.ts"
 		],
 		extends: [ts.configs.disableTypeChecked],
 		rules: {}
 	},
 	{
-		files: ['src/**/*.ts'],
+		files: ["src/**/*.ts"],
 		languageOptions: {
 			parser: ts.parser,
 			parserOptions: {
 				project: true,
-				tsconfigRootDir: import.meta.dirname,
-			},
+				tsconfigRootDir: import.meta.dirname
+			}
 		},
 		rules: {
-			'@typescript-eslint/no-unsafe-assignment': 'off',
-			'@typescript-eslint/no-explicit-any': 'off',
-			'@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-			'func-style': ['error', 'declaration'],
-		},
+			"@typescript-eslint/no-unsafe-assignment": "off",
+			"@typescript-eslint/no-explicit-any": "off",
+			"@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+			"func-style": ["error", "declaration"]
+		}
 	},
 
 	...svelte.configs.recommended,
 	prettier,
 	...svelte.configs.prettier,
 	{
-		files: ['**/*.svelte', 'src/**/*.svelte.ts', 'src/**/*.svelte.js'],
+		files: ["**/*.svelte", "src/**/*.svelte.ts", "src/**/*.svelte.js"],
 		languageOptions: {
 			parserOptions: {
 				projectService: true, // For type-aware linting in <script lang="ts">
-				extraFileExtensions: ['.svelte'],
-				parser: ts.parser,
+				extraFileExtensions: [".svelte"],
+				parser: ts.parser
 			}
 		},
 		rules: {
-			'func-style': ['error', 'declaration'],
+			"func-style": ["error", "declaration"],
+			"no-restricted-syntax": [
+				"error",
+				{
+					selector: 'CallExpression[callee.name="$effect"]',
+					message:
+						"Stop and reconsider your approach - $effect is banned. Think big picture, zoom out and make sure you are trying to solve the right problem. In most cases, $effect can be replaced by e.g. derived state or event handlers."
+				}
+			]
 		}
 	},
 	{
 		// Global rule overrides
 		rules: {
-			'@typescript-eslint/only-throw-error': 'off',
-			'@typescript-eslint/no-floating-promises': 'off',
-			'@typescript-eslint/no-unsafe-assignment': 'off',
-			'@typescript-eslint/no-unsafe-member-access': 'off',
-			'@typescript-eslint/no-explicit-any': 'off',
-			'@typescript-eslint/no-unsafe-call': 'off',
-			'@typescript-eslint/no-unsafe-argument': 'off',
-			'@typescript-eslint/no-redundant-type-constituents': 'off',
-			'@typescript-eslint/no-unsafe-return': 'off',
+			"@typescript-eslint/only-throw-error": "off",
+			"@typescript-eslint/no-floating-promises": "off",
+			"@typescript-eslint/no-unsafe-assignment": "off",
+			"@typescript-eslint/no-unsafe-member-access": "off",
+			"@typescript-eslint/no-explicit-any": "off",
+			"@typescript-eslint/no-unsafe-call": "off",
+			"@typescript-eslint/no-unsafe-argument": "off",
+			"@typescript-eslint/no-redundant-type-constituents": "off",
+			"@typescript-eslint/no-unsafe-return": "off"
 		}
 	},
 	{
@@ -80,10 +88,10 @@ export default ts.config(
 		}
 	},
 	{
-		files: ['src/**/*.ts', 'src/**/*.svelte'],
+		files: ["src/**/*.ts", "src/**/*.svelte"],
 		plugins: { dislyze },
 		rules: {
-			'dislyze/enforce-absolute-imports': ['error', { service: 'giratina' }],
+			"dislyze/enforce-absolute-imports": ["error", { service: "giratina" }]
 		}
 	}
 );
