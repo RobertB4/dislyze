@@ -277,11 +277,7 @@ func TestLoginUserStatus_Integration(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
 			// Verify no auth cookies are set
-			cookies := resp.Cookies()
-			for _, cookie := range cookies {
-				assert.NotEqual(t, "dislyze_access_token", cookie.Name, "Access token should not be set for %s user", tt.loginUserKey)
-				assert.NotEqual(t, "dislyze_refresh_token", cookie.Name, "Refresh token should not be set for %s user", tt.loginUserKey)
-			}
+			assert.Empty(t, resp.Cookies(), "Expected no cookies for failed login of %s user", tt.loginUserKey)
 
 			// Verify error message
 			bodyBytes, err := io.ReadAll(resp.Body)
@@ -322,11 +318,7 @@ func TestLoginSSOOnlyTenant_Integration(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
 	// Verify no auth cookies are set
-	cookies := resp.Cookies()
-	for _, cookie := range cookies {
-		assert.NotEqual(t, "dislyze_access_token", cookie.Name, "Access token should not be set for SSO user")
-		assert.NotEqual(t, "dislyze_refresh_token", cookie.Name, "Refresh token should not be set for SSO user")
-	}
+	assert.Empty(t, resp.Cookies(), "Expected no cookies for SSO-only tenant login attempt")
 
 	// Verify correct error message
 	bodyBytes, err := io.ReadAll(resp.Body)
@@ -338,6 +330,9 @@ func TestLoginSSOOnlyTenant_Integration(t *testing.T) {
 	assert.Equal(t, "このアカウントはSSO専用です。SSOでログインしてください。", errResp.Error)
 }
 
+// TestLoginErrorMessages_Integration verifies that wrong-password and non-existent-email
+// return the same error message, preventing user enumeration. TestLogin covers the status
+// codes; this test adds error body validation.
 func TestLoginErrorMessages_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	setup.ResetAndSeedDB(t, pool)
@@ -400,6 +395,8 @@ func TestLoginErrorMessages_Integration(t *testing.T) {
 	}
 }
 
+// TestLoginInvalidRequestBody_Integration tests body-format edge cases (malformed JSON,
+// empty body, whitespace-only fields) beyond what TestLogin covers with missing fields.
 func TestLoginInvalidRequestBody_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	setup.ResetAndSeedDB(t, pool)
@@ -452,11 +449,7 @@ func TestLoginInvalidRequestBody_Integration(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
 			// No auth cookies should be set on failure
-			cookies := resp.Cookies()
-			for _, cookie := range cookies {
-				assert.NotEqual(t, "dislyze_access_token", cookie.Name, "Access token should not be set on invalid request")
-				assert.NotEqual(t, "dislyze_refresh_token", cookie.Name, "Refresh token should not be set on invalid request")
-			}
+			assert.Empty(t, resp.Cookies(), "Expected no cookies for invalid request body")
 		})
 	}
 }
@@ -497,7 +490,7 @@ func TestLoginRefreshTokenCreation_Integration(t *testing.T) {
 	err = pool.QueryRow(context.Background(),
 		"SELECT COUNT(*) FROM refresh_tokens WHERE user_id = $1", testUser.UserID).Scan(&afterCount)
 	require.NoError(t, err)
-	assert.Greater(t, afterCount, 0, "Successful login should create a refresh token in the database")
+	assert.Greater(t, afterCount, beforeCount, "Successful login should create a refresh token in the database")
 }
 
 func TestLoginFailedDoesNotCreateRefreshToken_Integration(t *testing.T) {
@@ -539,7 +532,7 @@ func TestLoginFailedDoesNotCreateRefreshToken_Integration(t *testing.T) {
 	assert.Equal(t, beforeCount, afterCount, "Failed login should not create a refresh token")
 }
 
-func TestLoginCrossTenant_Integration(t *testing.T) {
+func TestLoginMultipleTenants_Integration(t *testing.T) {
 	pool := setup.InitDB(t)
 	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
@@ -593,11 +586,15 @@ func TestLoginCrossTenant_Integration(t *testing.T) {
 					accessTokenFound = true
 					assert.NotEmpty(t, cookie.Value)
 					assert.True(t, cookie.HttpOnly)
+					assert.True(t, cookie.Secure)
+					assert.Equal(t, http.SameSiteStrictMode, cookie.SameSite)
 					assert.Equal(t, "/", cookie.Path)
 				case "dislyze_refresh_token":
 					refreshTokenFound = true
 					assert.NotEmpty(t, cookie.Value)
 					assert.True(t, cookie.HttpOnly)
+					assert.True(t, cookie.Secure)
+					assert.Equal(t, http.SameSiteStrictMode, cookie.SameSite)
 					assert.Equal(t, "/", cookie.Path)
 					assert.Equal(t, 7*24*60*60, cookie.MaxAge, "Refresh token should expire in 7 days")
 				}
