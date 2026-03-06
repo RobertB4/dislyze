@@ -87,6 +87,21 @@ test.describe("Auth - Tenant Signup Page", () => {
 			await expect(page.getByTestId("signup-form")).not.toBeVisible();
 		});
 
+		test("should show error state when token has empty email", async ({ page }) => {
+			// Valid JWT that decodes successfully, but email is empty.
+			// The page guard (showForm = token && email) treats this as an error.
+			const token = createTenantSignupToken({
+				email: "",
+				company_name: "空メール企業",
+				user_name: "空メールユーザー"
+			});
+
+			await page.goto(`${tenantSignupURL}?token=${encodeURIComponent(token)}`);
+
+			await expect(page.getByTestId("error-state")).toBeVisible();
+			await expect(page.getByTestId("signup-form")).not.toBeVisible();
+		});
+
 		test("should navigate to login page from error state", async ({ page }) => {
 			await page.goto(tenantSignupURL);
 
@@ -236,6 +251,9 @@ test.describe("Auth - Tenant Signup Page", () => {
 
 			const expectedHomePageURL = baseURL && baseURL.endsWith("/") ? baseURL : `${baseURL}/`;
 			await expect(page).toHaveURL(expectedHomePageURL, { timeout: 15000 });
+
+			// No error toast should have appeared
+			await expect(page.locator('[data-testid^="toast-"]')).not.toBeVisible({ timeout: 2000 });
 		});
 
 		test("should show error toast when email already exists", async ({ page }) => {
