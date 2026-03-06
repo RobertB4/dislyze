@@ -109,8 +109,16 @@ extract_stem() {
 REL_PATH="${FILE_PATH#"$REPO_ROOT/"}"
 OUTPUT=""
 
+# Function names that are expected to repeat (framework conventions)
+IGNORE_NAMES="load"
+
 while IFS= read -r func_name; do
   [[ -z "$func_name" ]] && continue
+
+  # Skip conventional names that repeat by design
+  if echo "$IGNORE_NAMES" | grep -qwF "$func_name"; then
+    continue
+  fi
 
   # 1. Exact match: search for this exact function name declared elsewhere
   EXACT_MATCHES=$(grep -rn -E "(function|func)[[:space:]]+(\([^)]*\)[[:space:]]+)?${func_name}[[:space:]]*\(" \
