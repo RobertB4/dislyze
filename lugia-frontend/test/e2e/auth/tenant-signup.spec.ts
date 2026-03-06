@@ -252,8 +252,10 @@ test.describe("Auth - Tenant Signup Page", () => {
 			const expectedHomePageURL = baseURL && baseURL.endsWith("/") ? baseURL : `${baseURL}/`;
 			await expect(page).toHaveURL(expectedHomePageURL, { timeout: 15000 });
 
-			// No error toast should have appeared
-			await expect(page.locator('[data-testid^="toast-"]')).not.toBeVisible({ timeout: 2000 });
+			// No error toast should have appeared (success toast is expected)
+			await expect(page.locator('[data-testid="toast-0"] .bg-red-600')).not.toBeVisible({
+				timeout: 2000
+			});
 		});
 
 		test("should show error toast when email already exists", async ({ page }) => {
