@@ -58,12 +58,16 @@ echo "=== Starting Claude Code Agent ==="
 echo "Model: ${AGENT_MODEL:-opus}"
 echo "Target: ${AGENT_TARGET:-<roaming>}"
 
-claude -p "$PROMPT" \
+SCOUT_JSON=$(claude -p "$PROMPT" \
     --dangerously-skip-permissions \
     --model "${AGENT_MODEL:-opus}" \
-    --max-turns "${AGENT_MAX_TURNS:-50}"
+    --max-turns "${AGENT_MAX_TURNS:-50}" \
+    --output-format json)
 
-echo "=== Agent Finished ==="
+SCOUT_SESSION_ID=$(echo "$SCOUT_JSON" | jq -r '.session_id')
+echo "$SCOUT_JSON" | jq -r '.result'
+
+echo "=== Scout Finished (session: ${SCOUT_SESSION_ID}) ==="
 
 # Commit any remaining uncommitted changes (e.g. go.work.sum from dep downloads)
 git add -A
@@ -77,7 +81,74 @@ if [ "$(git rev-parse HEAD)" = "$(git rev-parse baseline)" ]; then
     exit 0
 fi
 
-# Create patches for ALL commits since baseline
+# --- Review loop (max 2 iterations) ---
+
+REVIEW_PROMPT_FILE="/workspace/.claude/commands/agent-review.md"
+if [ ! -f "$REVIEW_PROMPT_FILE" ]; then
+    echo "ERROR: $REVIEW_PROMPT_FILE not found"
+    exit 1
+fi
+REVIEW_PROMPT=$(cat "$REVIEW_PROMPT_FILE")
+
+MAX_REVIEW_ITERATIONS="${AGENT_MAX_REVIEW_ITERATIONS:-2}"
+REVIEW_PASSED=false
+
+for i in $(seq 1 "$MAX_REVIEW_ITERATIONS"); do
+    echo ""
+    echo "=== Review iteration $i/$MAX_REVIEW_ITERATIONS ==="
+
+    REVIEW_OUTPUT=$(claude -p "$REVIEW_PROMPT" \
+        --dangerously-skip-permissions \
+        --model "${AGENT_MODEL:-opus}" \
+        --max-turns "${AGENT_MAX_TURNS:-50}")
+
+    echo "$REVIEW_OUTPUT"
+
+    if echo "$REVIEW_OUTPUT" | grep -qi "review passed"; then
+        echo ""
+        echo "=== Review Passed ==="
+        REVIEW_PASSED=true
+        break
+    fi
+
+    if [ "$i" -eq "$MAX_REVIEW_ITERATIONS" ]; then
+        echo ""
+        echo "=== Review failed after $MAX_REVIEW_ITERATIONS iterations. Discarding changes. ==="
+        break
+    fi
+
+    # Feed findings back to scout for fixes (resume scout's session for full context)
+    echo ""
+    echo "=== Fixing review issues (iteration $i) ==="
+
+    claude -p "The review of your test changes found these issues. Fix them and verify the tests still pass:
+
+${REVIEW_OUTPUT}" \
+        --dangerously-skip-permissions \
+        --model "${AGENT_MODEL:-opus}" \
+        --max-turns "${AGENT_MAX_TURNS:-50}" \
+        --resume "${SCOUT_SESSION_ID}"
+
+    # Commit fixes
+    git add -A
+    if ! git diff --cached --quiet; then
+        git commit -q -m "test-scout: review fixes (iteration $i)"
+    fi
+done
+
+if [ "$REVIEW_PASSED" != "true" ]; then
+    echo "REVIEW_FAILED"
+    exit 1
+fi
+
+# --- Create patches ---
+
+# Commit any final uncommitted changes
+git add -A
+if ! git diff --cached --quiet; then
+    git commit -q -m "test-scout: final changes"
+fi
+
 mkdir -p /workspace/patches
 git format-patch baseline -o /workspace/patches/ -q
 

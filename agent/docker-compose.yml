@@ -10,6 +10,7 @@ services:
       - AGENT_TARGET
       - AGENT_MODEL
       - AGENT_MAX_TURNS
+      - AGENT_MAX_REVIEW_ITERATIONS
     volumes:
       - ${REPO_TAR:?REPO_TAR must be set}:/tmp/repo.tar:ro
       - dind-certs-client:/certs/client:ro
