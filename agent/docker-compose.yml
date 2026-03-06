@@ -1,0 +1,53 @@
+services:
+  agent:
+    build: .
+    environment:
+      - CLAUDE_CODE_OAUTH_TOKEN
+      - DOCKER_HOST=tcp://dind:2376
+      - DOCKER_TLS_CERTDIR=/certs
+      - DOCKER_CERT_PATH=/certs/client
+      - DOCKER_TLS_VERIFY=1
+      - AGENT_TARGET
+      - AGENT_MODEL
+      - AGENT_MAX_TURNS
+      - AGENT_MAX_REVIEW_ITERATIONS
+    volumes:
+      - ${REPO_TAR:?REPO_TAR must be set}:/tmp/repo.tar:ro
+      - dind-certs-client:/certs/client:ro
+    depends_on:
+      dind:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+          cpus: '2'
+    networks:
+      - agent-net
+
+  dind:
+    image: docker:dind
+    privileged: true
+    hostname: dind
+    environment:
+      - DOCKER_TLS_CERTDIR=/certs
+    volumes:
+      - dind-certs-ca:/certs/ca
+      - dind-certs-client:/certs/client
+      - dind-storage:/var/lib/docker
+    healthcheck:
+      test: ["CMD", "docker", "info"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - agent-net
+
+volumes:
+  dind-certs-ca:
+  dind-certs-client:
+  dind-storage:
+
+networks:
+  agent-net:
+    driver: bridge
