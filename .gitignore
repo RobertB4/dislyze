@@ -44,3 +44,4 @@ test-results
 keycloak-mock/keycloak*
 
 .playwright-cli
+settings.local.json

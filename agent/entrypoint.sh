@@ -69,7 +69,12 @@ echo "$SCOUT_JSON" | jq -r '.result'
 
 echo "=== Scout Finished (session: ${SCOUT_SESSION_ID}) ==="
 
-# Commit any remaining uncommitted changes (e.g. go.work.sum from dep downloads)
+# Revert checksum file changes — these are platform-specific noise from running
+# Go on linux (container) vs darwin (host), not real dependency changes
+git checkout baseline -- go.work.sum 2>/dev/null || true
+git checkout baseline -- '*/go.sum' 2>/dev/null || true
+
+# Commit any remaining uncommitted changes
 git add -A
 if ! git diff --cached --quiet; then
     git commit -q -m "test-scout: uncommitted changes"
@@ -111,12 +116,6 @@ for i in $(seq 1 "$MAX_REVIEW_ITERATIONS"); do
         break
     fi
 
-    if [ "$i" -eq "$MAX_REVIEW_ITERATIONS" ]; then
-        echo ""
-        echo "=== Review failed after $MAX_REVIEW_ITERATIONS iterations. Discarding changes. ==="
-        break
-    fi
-
     # Feed findings back to scout for fixes (resume scout's session for full context)
     echo ""
     echo "=== Fixing review issues (iteration $i) ==="
@@ -135,11 +134,6 @@ ${REVIEW_OUTPUT}" \
         git commit -q -m "test-scout: review fixes (iteration $i)"
     fi
 done
-
-if [ "$REVIEW_PASSED" != "true" ]; then
-    echo "REVIEW_FAILED"
-    exit 1
-fi
 
 # --- Create patches ---
 

@@ -63,8 +63,14 @@ dev-keycloak-mock:
 	cd keycloak-mock && ./start.sh
 
 migrate: 
-	goose --dir ./database/migrations postgres postgresql://postgres:password@localhost:5432/dislyze up
+	goose --dir ./database/migrations postgres postgresql://postgres:postgres@localhost:5432/dislyze up
 seed:
-	psql -U postgres -h localhost -p 5432 -d dislyze -f ./database/seed.sql
+	PGPASSWORD=postgres psql -U postgres -h localhost -p 5432 -d dislyze -f ./database/seed.sql
 initdb:
-	psql -U postgres -h localhost -p 5432 -d dislyze -f ./database/drop.sql && make migrate && make seed
+	PGPASSWORD=postgres psql -U postgres -h localhost -p 5432 -d dislyze -f ./database/drop.sql && make migrate && make seed
+
+devcontainer:
+	docker exec -it $$(docker ps -qf "label=devcontainer.local_folder=$$(pwd)") bash
+
+claude:
+	docker exec -it $$(docker ps -qf "label=devcontainer.local_folder=$$(pwd)") claude --dangerously-skip-permissions

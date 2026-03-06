@@ -56,9 +56,11 @@ Run `make verify` from the repo root to confirm lint + typecheck + unit tests pa
 
 ### 6. Report
 
+Only block on issues that genuinely matter — incorrect behavior, bugs, security problems, or tests that provide no value (tautological). Do NOT block on style nits, minor naming preferences, or "nice to have" improvements.
+
 Summarize findings:
 
-- **Pass**: "Review passed. Ready to merge."
-- **Issues found**: List each issue with file and line.
+- **Pass**: "Review passed. Ready to merge." (use this if there are no blocking issues, even if you have minor suggestions)
+- **Issues found**: List each blocking issue with file and line.
 
 Do NOT fix issues yourself. Report only.
