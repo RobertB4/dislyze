@@ -61,7 +61,6 @@ echo "Target: ${AGENT_TARGET:-<roaming>}"
 SCOUT_JSON=$(claude -p "$PROMPT" \
     --dangerously-skip-permissions \
     --model "${AGENT_MODEL:-opus}" \
-    --max-turns "${AGENT_MAX_TURNS:-50}" \
     --output-format json)
 
 SCOUT_SESSION_ID=$(echo "$SCOUT_JSON" | jq -r '.session_id')
@@ -104,8 +103,7 @@ for i in $(seq 1 "$MAX_REVIEW_ITERATIONS"); do
 
     REVIEW_OUTPUT=$(claude -p "$REVIEW_PROMPT" \
         --dangerously-skip-permissions \
-        --model "${AGENT_MODEL:-opus}" \
-        --max-turns "${AGENT_MAX_TURNS:-50}")
+        --model "${AGENT_MODEL:-opus}"
 
     echo "$REVIEW_OUTPUT"
 
@@ -125,7 +123,6 @@ for i in $(seq 1 "$MAX_REVIEW_ITERATIONS"); do
 ${REVIEW_OUTPUT}" \
         --dangerously-skip-permissions \
         --model "${AGENT_MODEL:-opus}" \
-        --max-turns "${AGENT_MAX_TURNS:-50}" \
         --resume "${SCOUT_SESSION_ID}"
 
     # Commit fixes
