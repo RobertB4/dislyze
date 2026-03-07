@@ -14,11 +14,6 @@
             "$ref": "#/components/schemas/SSO"
           }
         },
-        "required": [
-          "rbac",
-          "ip_whitelist",
-          "sso"
-        ],
         "type": "object"
       },
       "ErrorDetail": {
@@ -128,9 +123,7 @@
           }
         },
         "required": [
-          "email",
-          "company_name",
-          "user_name"
+          "email"
         ],
         "type": "object"
       },
@@ -222,10 +215,6 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "enabled",
-          "active"
-        ],
         "type": "object"
       },
       "LoginRequestBody": {
@@ -293,9 +282,6 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "enabled"
-        ],
         "type": "object"
       },
       "SSO": {
@@ -323,12 +309,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "enabled",
-          "idp_metadata_url",
-          "attribute_mapping",
-          "allowed_domains"
-        ],
         "type": "object"
       },
       "SSOConfig": {

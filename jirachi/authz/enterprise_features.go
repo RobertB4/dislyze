@@ -1,24 +1,24 @@
 package authz
 
 type EnterpriseFeatures struct {
-	RBAC        RBAC        `json:"rbac"`
-	IPWhitelist IPWhitelist `json:"ip_whitelist"`
-	SSO         SSO         `json:"sso"`
+	RBAC        RBAC        `json:"rbac,omitempty"`
+	IPWhitelist IPWhitelist `json:"ip_whitelist,omitempty"`
+	SSO         SSO         `json:"sso,omitempty"`
 }
 
 type RBAC struct {
-	Enabled bool `json:"enabled"`
+	Enabled bool `json:"enabled,omitempty"`
 }
 
 type IPWhitelist struct {
-	Enabled                  bool `json:"enabled"` // Internal: Feature available to tenant
-	Active                   bool `json:"active"`  // User-controlled: Whether whitelist actively enforces
+	Enabled                  bool `json:"enabled,omitempty"`                       // Internal: Feature available to tenant
+	Active                   bool `json:"active,omitempty"`                        // User-controlled: Whether whitelist actively enforces
 	AllowInternalAdminBypass bool `json:"allow_internal_admin_bypass,omitempty"`
 }
 
 type SSO struct {
-	Enabled          bool              `json:"enabled"`
-	IdpMetadataURL   string            `json:"idp_metadata_url"`
-	AttributeMapping map[string]string `json:"attribute_mapping"`
-	AllowedDomains   []string          `json:"allowed_domains"`
+	Enabled          bool              `json:"enabled,omitempty"`
+	IdpMetadataURL   string            `json:"idp_metadata_url,omitempty"`
+	AttributeMapping map[string]string `json:"attribute_mapping,omitempty"`
+	AllowedDomains   []string          `json:"allowed_domains,omitempty"`
 }

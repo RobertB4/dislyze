@@ -534,7 +534,7 @@
 													? () =>
 															($editData.enterprise_features[
 																featureKey as keyof EnterpriseFeatures
-															].enabled = false)
+															]!.enabled = false)
 													: undefined}
 												variant={editable ? "orange" : "gray"}
 												class={!editable ? "opacity-50" : ""}
@@ -548,7 +548,7 @@
 													? () =>
 															($editData.enterprise_features[
 																featureKey as keyof EnterpriseFeatures
-															].enabled = true)
+															]!.enabled = true)
 													: undefined}
 												variant={editable ? "orange" : "gray"}
 												class={!editable ? "opacity-50" : ""}

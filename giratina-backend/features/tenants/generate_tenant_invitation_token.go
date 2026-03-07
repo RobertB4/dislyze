@@ -25,8 +25,8 @@ type SSOConfig struct {
 
 type GenerateTenantInvitationTokenRequest struct {
 	Email       string     `json:"email"`
-	CompanyName string     `json:"company_name"`
-	UserName    string     `json:"user_name"`
+	CompanyName string     `json:"company_name,omitempty"`
+	UserName    string     `json:"user_name,omitempty"`
 	SSO         *SSOConfig `json:"sso,omitempty"`
 }
 
@@ -80,14 +80,10 @@ type TenantInvitationClaims struct {
 	jwt.RegisteredClaims
 }
 
-// TODO: Remove SkipValidateBody once request struct fields have correct
-// omitempty tags (company_name, user_name are optional but huma marks them
-// required). See PROGRESS.md "SkipValidateBody workarounds".
 var GenerateTokenOp = huma.Operation{
-	OperationID:      "generate-tenant-invitation-token",
-	Method:           http.MethodPost,
-	Path:             "/tenants/generate-token",
-	SkipValidateBody: true,
+	OperationID: "generate-tenant-invitation-token",
+	Method:      http.MethodPost,
+	Path:        "/tenants/generate-token",
 }
 
 type GenerateTokenInput struct {

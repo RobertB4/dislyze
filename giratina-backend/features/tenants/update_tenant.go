@@ -16,15 +16,10 @@ import (
 	"dislyze/jirachi/errlib"
 )
 
-// TODO: Remove SkipValidateBody once authz.EnterpriseFeatures fields have
-// correct omitempty/pointer tags. Currently huma's schema marks ip_whitelist,
-// sso, and their sub-fields as required — rejecting valid requests that only
-// set rbac. See PROGRESS.md "SkipValidateBody workarounds".
 var UpdateTenantOp = huma.Operation{
-	OperationID:      "update-tenant",
-	Method:           http.MethodPost,
-	Path:             "/tenants/{id}/update",
-	SkipValidateBody: true,
+	OperationID: "update-tenant",
+	Method:      http.MethodPost,
+	Path:        "/tenants/{id}/update",
 }
 
 type UpdateTenantInput struct {

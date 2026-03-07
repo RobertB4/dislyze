@@ -100,6 +100,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tenants/{tenantID}/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Log in to a tenant */
+        get: operations["log-in-to-tenant"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tenants/{tenantID}/users": {
         parameters: {
             query?: never;
@@ -121,9 +138,9 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         EnterpriseFeatures: {
-            ip_whitelist: components["schemas"]["IPWhitelist"];
-            rbac: components["schemas"]["RBAC"];
-            sso: components["schemas"]["SSO"];
+            ip_whitelist?: components["schemas"]["IPWhitelist"];
+            rbac?: components["schemas"]["RBAC"];
+            sso?: components["schemas"]["SSO"];
         };
         ErrorDetail: {
             /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */
@@ -179,10 +196,10 @@ export interface components {
              * @example https://example.com/schemas/GenerateTenantInvitationTokenRequest.json
              */
             readonly $schema?: string;
-            company_name: string;
+            company_name?: string;
             email: string;
             sso?: components["schemas"]["SSOConfig"];
-            user_name: string;
+            user_name?: string;
         };
         GenerateTenantInvitationTokenResponse: {
             /**
@@ -212,9 +229,9 @@ export interface components {
             users: components["schemas"]["UserInfo"][] | null;
         };
         IPWhitelist: {
-            active: boolean;
+            active?: boolean;
             allow_internal_admin_bypass?: boolean;
-            enabled: boolean;
+            enabled?: boolean;
         };
         LoginRequestBody: {
             /**
@@ -239,15 +256,15 @@ export interface components {
             user_name: string;
         };
         RBAC: {
-            enabled: boolean;
+            enabled?: boolean;
         };
         SSO: {
-            allowed_domains: string[] | null;
-            attribute_mapping: {
+            allowed_domains?: string[] | null;
+            attribute_mapping?: {
                 [key: string]: string;
             };
-            enabled: boolean;
-            idp_metadata_url: string;
+            enabled?: boolean;
+            idp_metadata_url?: string;
         };
         SSOConfig: {
             allowed_domains: string[] | null;
@@ -454,6 +471,36 @@ export interface operations {
             /** @description No Content */
             204: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "log-in-to-tenant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Found */
+            302: {
+                headers: {
+                    Location?: string;
                     [name: string]: unknown;
                 };
                 content?: never;

@@ -431,10 +431,6 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "enabled",
-          "active"
-        ],
         "type": "object"
       },
       "IPWhitelistRule": {
@@ -640,9 +636,6 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "enabled"
-        ],
         "type": "object"
       },
       "ResetPasswordRequestBody": {
