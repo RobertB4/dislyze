@@ -61,7 +61,7 @@ func (h *UsersHandler) GetUsers(ctx context.Context, input *GetUsersInput) (*Get
 	tenantID := libctx.GetTenantID(ctx)
 
 	limit := input.Limit
-	offset := int32(input.Page-1) * input.Limit
+	offset := limit * int32(input.Page-1) // #nosec G115 -- Page is validated by huma (minimum:1)
 
 	paginationParams := pagination.QueryParams{
 		Page:   input.Page,
