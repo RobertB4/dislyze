@@ -52,25 +52,25 @@ func (h *AuthHandler) verifyResetToken(ctx context.Context, req VerifyResetToken
 	tokenRecord, err := h.queries.GetPasswordResetTokenByHash(ctx, hashedTokenStr)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return "", errlib.NewErrorWithDetail(err, http.StatusBadRequest, fmt.Sprintf("VerifyResetToken: Token hash not found: %s", hashedTokenStr))
+			return "", errlib.NewError(fmt.Errorf("VerifyResetToken: token hash not found: %s: %w", hashedTokenStr, err), http.StatusBadRequest)
 		}
-		return "", errlib.NewErrorWithDetail(err, http.StatusInternalServerError, fmt.Sprintf("VerifyResetToken: Failed to query password reset token by hash %s", hashedTokenStr))
+		return "", errlib.NewError(fmt.Errorf("VerifyResetToken: failed to query password reset token by hash %s: %w", hashedTokenStr, err), http.StatusInternalServerError)
 	}
 
 	if tokenRecord.UsedAt.Valid {
-		return "", errlib.NewErrorWithDetail(fmt.Errorf("VerifyResetToken: Token ID %s already used at %v", tokenRecord.ID, tokenRecord.UsedAt.Time), http.StatusBadRequest, "Token already used")
+		return "", errlib.NewError(fmt.Errorf("VerifyResetToken: token ID %s already used at %v", tokenRecord.ID, tokenRecord.UsedAt.Time), http.StatusBadRequest)
 	}
 
 	if time.Now().After(tokenRecord.ExpiresAt.Time) {
-		return "", errlib.NewErrorWithDetail(fmt.Errorf("VerifyResetToken: Token ID %s expired at %v", tokenRecord.ID, tokenRecord.ExpiresAt.Time), http.StatusBadRequest, "Token expired")
+		return "", errlib.NewError(fmt.Errorf("VerifyResetToken: token ID %s expired at %v", tokenRecord.ID, tokenRecord.ExpiresAt.Time), http.StatusBadRequest)
 	}
 
 	user, err := h.queries.GetUserByID(ctx, tokenRecord.UserID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return "", errlib.NewErrorWithDetail(err, http.StatusInternalServerError, fmt.Sprintf("VerifyResetToken: User ID %s for valid token %s not found", tokenRecord.UserID, tokenRecord.ID))
+			return "", errlib.NewError(fmt.Errorf("VerifyResetToken: user ID %s for valid token %s not found: %w", tokenRecord.UserID, tokenRecord.ID, err), http.StatusInternalServerError)
 		}
-		return "", errlib.NewErrorWithDetail(err, http.StatusInternalServerError, fmt.Sprintf("VerifyResetToken: Failed to get user email for user ID %s", tokenRecord.UserID))
+		return "", errlib.NewError(fmt.Errorf("VerifyResetToken: failed to get user email for user ID %s: %w", tokenRecord.UserID, err), http.StatusInternalServerError)
 	}
 
 	return user.Email, nil

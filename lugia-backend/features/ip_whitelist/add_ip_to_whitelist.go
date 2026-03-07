@@ -68,7 +68,7 @@ func (h *IPWhitelistHandler) addIPToWhitelist(ctx context.Context, req AddIPToWh
 		return errlib.NewError(err, http.StatusInternalServerError)
 	}
 	if exists {
-		return errlib.NewError(nil, http.StatusBadRequest)
+		return errlib.NewError(fmt.Errorf("AddIPToWhitelist: IP %s already exists for tenant", prefix), http.StatusBadRequest)
 	}
 
 	var label pgtype.Text
