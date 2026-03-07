@@ -15,7 +15,6 @@ import (
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"lugia/lib/humautil"
 	"lugia/queries"
 )
 
@@ -60,20 +59,13 @@ func (r *ChangePasswordRequestBody) Validate() error {
 
 func (h *UsersHandler) ChangePassword(ctx context.Context, input *ChangePasswordInput) (*struct{}, error) {
 	if err := input.Body.Validate(); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("change password validation failed: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("change password validation failed: %w", err), http.StatusBadRequest)
 	}
 
 	userID := libctx.GetUserID(ctx)
 	err := h.changePassword(ctx, userID, input.Body)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return nil, nil
 }
@@ -83,23 +75,23 @@ func (h *UsersHandler) changePassword(ctx context.Context, userID pgtype.UUID, r
 	user, err := h.q.GetUserByID(ctx, userID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return errlib.New(fmt.Errorf("ChangePassword: user not found %s: %w", userID.String(), err), http.StatusNotFound, "")
+			return errlib.NewError(fmt.Errorf("ChangePassword: user not found %s: %w", userID.String(), err), http.StatusNotFound)
 		}
-		return errlib.New(fmt.Errorf("ChangePassword: failed to get user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangePassword: failed to get user %s: %w", userID.String(), err), http.StatusInternalServerError)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.CurrentPassword)); err != nil {
-		return errlib.New(fmt.Errorf("ChangePassword: current password verification failed for user %s: %w", userID.String(), err), http.StatusBadRequest, "現在のパスワードが正しくありません。")
+		return errlib.NewErrorWithDetail(fmt.Errorf("ChangePassword: current password verification failed for user %s: %w", userID.String(), err), http.StatusBadRequest, "現在のパスワードが正しくありません。")
 	}
 
 	newPasswordHash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return errlib.New(fmt.Errorf("ChangePassword: failed to hash new password for user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangePassword: failed to hash new password for user %s: %w", userID.String(), err), http.StatusInternalServerError)
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		return errlib.New(fmt.Errorf("ChangePassword: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangePassword: failed to begin transaction: %w", err), http.StatusInternalServerError)
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -112,15 +104,15 @@ func (h *UsersHandler) changePassword(ctx context.Context, userID pgtype.UUID, r
 		PasswordHash: string(newPasswordHash),
 		ID:           userID,
 	}); err != nil {
-		return errlib.New(fmt.Errorf("ChangePassword: failed to update password for user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangePassword: failed to update password for user %s: %w", userID.String(), err), http.StatusInternalServerError)
 	}
 
 	if err := qtx.DeleteRefreshTokensByUserID(ctx, userID); err != nil {
-		return errlib.New(fmt.Errorf("ChangePassword: failed to invalidate refresh tokens for user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangePassword: failed to invalidate refresh tokens for user %s: %w", userID.String(), err), http.StatusInternalServerError)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return errlib.New(fmt.Errorf("ChangePassword: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangePassword: failed to commit transaction: %w", err), http.StatusInternalServerError)
 	}
 
 	return nil

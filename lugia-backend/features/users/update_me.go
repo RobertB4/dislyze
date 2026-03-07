@@ -11,7 +11,6 @@ import (
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"lugia/lib/humautil"
 	"lugia/queries"
 )
 
@@ -39,19 +38,12 @@ func (r *UpdateMeRequestBody) Validate() error {
 
 func (h *UsersHandler) UpdateMe(ctx context.Context, input *UpdateMeInput) (*struct{}, error) {
 	if err := input.Body.Validate(); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("update me validation failed: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("update me validation failed: %w", err), http.StatusBadRequest)
 	}
 
 	err := h.updateMe(ctx, input.Body)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return nil, nil
 }
@@ -63,7 +55,7 @@ func (h *UsersHandler) updateMe(ctx context.Context, req UpdateMeRequestBody) er
 		Name: req.Name,
 		ID:   userID,
 	}); err != nil {
-		return errlib.New(fmt.Errorf("UpdateMe: failed to update user name for user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("UpdateMe: failed to update user name for user %s: %w", userID.String(), err), http.StatusInternalServerError)
 	}
 
 	return nil

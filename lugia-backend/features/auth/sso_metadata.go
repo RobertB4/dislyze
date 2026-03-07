@@ -19,7 +19,7 @@ import (
 func (h *AuthHandler) SSOMetadata(w http.ResponseWriter, r *http.Request) {
 	metadata, err := h.generateSPMetadata()
 	if err != nil {
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
+		appErr := errlib.NewError(err, http.StatusInternalServerError)
 		responder.RespondWithError(w, appErr)
 		return
 	}
@@ -27,7 +27,7 @@ func (h *AuthHandler) SSOMetadata(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
 	_, err = w.Write(metadata)
 	if err != nil {
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
+		appErr := errlib.NewError(err, http.StatusInternalServerError)
 		responder.RespondWithError(w, appErr)
 		return
 	}

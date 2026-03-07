@@ -13,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"dislyze/jirachi/authz"
-	"giratina/lib/humautil"
+	"dislyze/jirachi/errlib"
 )
 
 // TODO: Remove SkipValidateBody once authz.EnterpriseFeatures fields have
@@ -49,11 +49,11 @@ func (r *UpdateTenantRequestBody) Validate() error {
 func (h *TenantsHandler) UpdateTenant(ctx context.Context, input *UpdateTenantInput) (*struct{}, error) {
 	var tenantID pgtype.UUID
 	if err := tenantID.Scan(input.ID); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("invalid tenant ID format: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("invalid tenant ID format: %w", err), http.StatusBadRequest)
 	}
 
 	if err := input.Body.Validate(); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("update tenant validation failed: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("update tenant validation failed: %w", err), http.StatusBadRequest)
 	}
 
 	if err := h.updateTenant(ctx, &tenantID, &input.Body); err != nil {
@@ -66,7 +66,7 @@ func (h *TenantsHandler) UpdateTenant(ctx context.Context, input *UpdateTenantIn
 func (h *TenantsHandler) updateTenant(ctx context.Context, tenantID *pgtype.UUID, requestBody *UpdateTenantRequestBody) error {
 	enterpriseFeaturesJSON, err := json.Marshal(requestBody.EnterpriseFeatures)
 	if err != nil {
-		return humautil.NewError(fmt.Errorf("failed to marshal enterprise features: %w", err), http.StatusInternalServerError)
+		return errlib.NewError(fmt.Errorf("failed to marshal enterprise features: %w", err), http.StatusInternalServerError)
 	}
 
 	err = h.queries.UpdateTenant(ctx, &queries.UpdateTenantParams{
@@ -75,7 +75,7 @@ func (h *TenantsHandler) updateTenant(ctx context.Context, tenantID *pgtype.UUID
 		ID:                 *tenantID,
 	})
 	if err != nil {
-		return humautil.NewError(fmt.Errorf("failed to update tenant: %w", err), http.StatusInternalServerError)
+		return errlib.NewError(fmt.Errorf("failed to update tenant: %w", err), http.StatusInternalServerError)
 	}
 
 	return nil

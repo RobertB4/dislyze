@@ -17,7 +17,6 @@ import (
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/jwt"
 	"dislyze/jirachi/logger"
-	"lugia/lib/humautil"
 	"lugia/lib/middleware"
 	"lugia/queries"
 )
@@ -55,11 +54,11 @@ func (h *AuthHandler) Login(ctx context.Context, input *LoginInput) (*struct{}, 
 	w := middleware.GetResponseWriter(ctx)
 
 	if !h.rateLimiter.Allow(r.RemoteAddr, r) {
-		return nil, humautil.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for login"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
+		return nil, errlib.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for login"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
 	}
 
 	if err := input.Body.Validate(); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("login validation failed: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("login validation failed: %w", err), http.StatusBadRequest)
 	}
 
 	tokenPair, userID, err := h.login(ctx, &input.Body, r)
@@ -74,7 +73,7 @@ func (h *AuthHandler) Login(ctx context.Context, input *LoginInput) (*struct{}, 
 			Success:   false,
 			Error:     err.Error(),
 		})
-		return nil, humautil.NewErrorWithDetail(err, http.StatusUnauthorized, err.Error())
+		return nil, errlib.NewErrorWithDetail(err, http.StatusUnauthorized, err.Error())
 	}
 
 	http.SetCookie(w, &http.Cookie{

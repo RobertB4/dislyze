@@ -10,7 +10,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	libctx "dislyze/jirachi/ctx"
-	"lugia/lib/humautil"
+	"dislyze/jirachi/errlib"
 	"lugia/lib/middleware"
 	"lugia/queries"
 )
@@ -27,12 +27,12 @@ func (h *IPWhitelistHandler) DeactivateWhitelist(ctx context.Context, input *Dea
 	r := middleware.GetHTTPRequest(ctx)
 
 	if !h.rateLimiter.Allow(libctx.GetUserID(ctx).String(), r) {
-		return nil, humautil.NewError(fmt.Errorf("rate limit exceeded for deactivate whitelist"), http.StatusTooManyRequests)
+		return nil, errlib.NewError(fmt.Errorf("rate limit exceeded for deactivate whitelist"), http.StatusTooManyRequests)
 	}
 
 	err := h.deactivateWhitelist(ctx)
 	if err != nil {
-		return nil, humautil.NewError(fmt.Errorf("DeactivateWhitelist: %w", err), http.StatusInternalServerError)
+		return nil, errlib.NewError(fmt.Errorf("DeactivateWhitelist: %w", err), http.StatusInternalServerError)
 	}
 
 	return nil, nil

@@ -10,7 +10,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"dislyze/jirachi/authz"
-	"giratina/lib/humautil"
+	"dislyze/jirachi/errlib"
 )
 
 type TenantResponse struct {
@@ -50,7 +50,7 @@ func (h *TenantsHandler) GetTenants(ctx context.Context, input *GetTenantsInput)
 func (h *TenantsHandler) getTenants(ctx context.Context) ([]TenantResponse, error) {
 	dbTenants, err := h.queries.GetTenants(ctx)
 	if err != nil {
-		return nil, humautil.NewError(fmt.Errorf("GetTenants: failed to get tenants: %w", err), http.StatusInternalServerError)
+		return nil, errlib.NewError(fmt.Errorf("GetTenants: failed to get tenants: %w", err), http.StatusInternalServerError)
 	}
 
 	tenants := make([]TenantResponse, len(dbTenants))
@@ -59,7 +59,7 @@ func (h *TenantsHandler) getTenants(ctx context.Context) ([]TenantResponse, erro
 		enterpriseFeatures := authz.EnterpriseFeatures{}
 		if len(tenant.EnterpriseFeatures) > 0 {
 			if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
-				return nil, humautil.NewError(fmt.Errorf("GetTenants: failed to unmarshal features config for tenant %s: %w", tenant.ID.String(), err), http.StatusInternalServerError)
+				return nil, errlib.NewError(fmt.Errorf("GetTenants: failed to unmarshal features config for tenant %s: %w", tenant.ID.String(), err), http.StatusInternalServerError)
 			}
 		}
 

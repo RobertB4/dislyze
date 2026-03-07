@@ -19,7 +19,6 @@ import (
 	"dislyze/jirachi/errlib"
 	jirachijwt "dislyze/jirachi/jwt"
 	"dislyze/jirachi/logger"
-	"lugia/lib/humautil"
 	"lugia/lib/middleware"
 	"lugia/queries"
 )
@@ -103,12 +102,12 @@ func (h *AuthHandler) TenantSignup(ctx context.Context, input *TenantSignupInput
 	w := middleware.GetResponseWriter(ctx)
 
 	if !h.rateLimiter.Allow(r.RemoteAddr, r) {
-		return nil, humautil.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for tenant signup"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
+		return nil, errlib.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for tenant signup"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
 	}
 
 	tokenString := input.Token
 	if tokenString == "" {
-		return nil, humautil.NewErrorWithDetail(fmt.Errorf("tenant signup token is empty"), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
+		return nil, errlib.NewErrorWithDetail(fmt.Errorf("tenant signup token is empty"), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
 	}
 
 	decodedToken, urlErr := url.QueryUnescape(tokenString)
@@ -123,44 +122,44 @@ func (h *AuthHandler) TenantSignup(ctx context.Context, input *TenantSignupInput
 		return []byte(h.env.CreateTenantJwtSecret), nil
 	})
 	if err != nil {
-		return nil, humautil.NewErrorWithDetail(fmt.Errorf("tenant signup token parse failed: %w", err), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
+		return nil, errlib.NewErrorWithDetail(fmt.Errorf("tenant signup token parse failed: %w", err), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
 	}
 
 	claims, ok := token.Claims.(*CreateTenantTokenClaims)
 	if !ok || !token.Valid {
-		return nil, humautil.NewErrorWithDetail(fmt.Errorf("tenant signup token claims invalid"), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
+		return nil, errlib.NewErrorWithDetail(fmt.Errorf("tenant signup token claims invalid"), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
 	}
 
 	if strings.TrimSpace(claims.Email) == "" {
-		return nil, humautil.NewErrorWithDetail(fmt.Errorf("tenant signup token has empty email"), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
+		return nil, errlib.NewErrorWithDetail(fmt.Errorf("tenant signup token has empty email"), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
 	}
 
 	exists, err := h.queries.ExistsUserWithEmail(ctx, claims.Email)
 	if err != nil {
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, errlib.NewError(err, http.StatusInternalServerError)
 	}
 	if exists {
-		return nil, humautil.NewErrorWithDetail(fmt.Errorf("tenant signup attempted with existing email"), http.StatusBadRequest, "このメールアドレスは既に使用されています。")
+		return nil, errlib.NewErrorWithDetail(fmt.Errorf("tenant signup attempted with existing email"), http.StatusBadRequest, "このメールアドレスは既に使用されています。")
 	}
 
 	if claims.SSO != nil && claims.SSO.Enabled {
 		if err := input.Body.ValidateSSOSignup(); err != nil {
-			return nil, humautil.NewError(fmt.Errorf("tenant signup SSO validation failed: %w", err), http.StatusBadRequest)
+			return nil, errlib.NewError(fmt.Errorf("tenant signup SSO validation failed: %w", err), http.StatusBadRequest)
 		}
 
 		if err := h.ssoTenantSignup(ctx, &input.Body, claims); err != nil {
-			return nil, humautil.NewError(err, http.StatusInternalServerError)
+			return nil, errlib.NewError(err, http.StatusInternalServerError)
 		}
 		return nil, nil
 	}
 
 	if err := input.Body.ValidatePasswordSignup(); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("tenant signup password validation failed: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("tenant signup password validation failed: %w", err), http.StatusBadRequest)
 	}
 
 	tokenPair, err := h.passwordTenantSignup(ctx, &input.Body, claims, r)
 	if err != nil {
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, errlib.NewError(err, http.StatusInternalServerError)
 	}
 
 	http.SetCookie(w, &http.Cookie{

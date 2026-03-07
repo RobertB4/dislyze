@@ -9,7 +9,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	libctx "dislyze/jirachi/ctx"
-	"lugia/lib/humautil"
+	"dislyze/jirachi/errlib"
 )
 
 var GetIPWhitelistOp = huma.Operation{
@@ -41,7 +41,7 @@ func (h *IPWhitelistHandler) GetIPWhitelist(ctx context.Context, input *GetIPWhi
 
 	ipRules, err := h.q.GetTenantIPWhitelist(ctx, tenantID)
 	if err != nil {
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, errlib.NewError(err, http.StatusInternalServerError)
 	}
 
 	rules := make([]IPWhitelistRule, len(ipRules))

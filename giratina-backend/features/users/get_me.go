@@ -12,7 +12,6 @@ import (
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 
-	"giratina/lib/humautil"
 )
 
 var GetMeOp = huma.Operation{
@@ -50,17 +49,17 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 	user, err := h.queries.GetUserByID(ctx, userID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return nil, humautil.NewError(fmt.Errorf("GetMe: user not found %s: %w", userID.String(), err), http.StatusUnauthorized)
+			return nil, errlib.NewError(fmt.Errorf("GetMe: user not found %s: %w", userID.String(), err), http.StatusUnauthorized)
 		}
-		return nil, humautil.NewError(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err), http.StatusInternalServerError)
+		return nil, errlib.NewError(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err), http.StatusInternalServerError)
 	}
 
 	tenant, err := h.queries.GetTenantByID(ctx, tenantID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return nil, humautil.NewError(fmt.Errorf("GetMe: tenant not found %s for user %s: %w", tenantID.String(), userID.String(), err), http.StatusUnauthorized)
+			return nil, errlib.NewError(fmt.Errorf("GetMe: tenant not found %s for user %s: %w", tenantID.String(), userID.String(), err), http.StatusUnauthorized)
 		}
-		return nil, humautil.NewError(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError)
+		return nil, errlib.NewError(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError)
 	}
 
 	response := &MeResponse{

@@ -13,7 +13,6 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"dislyze/jirachi/errlib"
-	"giratina/lib/humautil"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -101,7 +100,7 @@ type GenerateTokenOutput struct {
 
 func (h *TenantsHandler) GenerateTenantInvitationToken(ctx context.Context, input *GenerateTokenInput) (*GenerateTokenOutput, error) {
 	if err := input.Body.Validate(); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("tenant invitation validation failed: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("tenant invitation validation failed: %w", err), http.StatusBadRequest)
 	}
 
 	response, err := h.generateTenantInvitationToken(ctx, &input.Body)
@@ -116,11 +115,11 @@ func (h *TenantsHandler) generateTenantInvitationToken(ctx context.Context, req 
 	_, err := h.queries.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errlib.Is(err, pgx.ErrNoRows) {
-			return nil, humautil.NewError(fmt.Errorf("failed to check user existence: %w", err), http.StatusInternalServerError)
+			return nil, errlib.NewError(fmt.Errorf("failed to check user existence: %w", err), http.StatusInternalServerError)
 		}
 		// ErrNoRows means user doesn't exist, which is what we want - continue
 	} else {
-		return nil, humautil.NewErrorWithDetail(fmt.Errorf("GenerateTenantInvitationToken: email already in use"), http.StatusBadRequest, "このメールアドレスは既に使用されています。")
+		return nil, errlib.NewErrorWithDetail(fmt.Errorf("GenerateTenantInvitationToken: email already in use"), http.StatusBadRequest, "このメールアドレスは既に使用されています。")
 	}
 
 	now := time.Now()
@@ -138,7 +137,7 @@ func (h *TenantsHandler) generateTenantInvitationToken(ctx context.Context, req 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(h.env.CreateTenantJwtSecret))
 	if err != nil {
-		return nil, humautil.NewError(fmt.Errorf("failed to sign JWT token: %w", err), http.StatusInternalServerError)
+		return nil, errlib.NewError(fmt.Errorf("failed to sign JWT token: %w", err), http.StatusInternalServerError)
 	}
 
 	inviteURL := fmt.Sprintf("%s/auth/tenant-signup?token=%s", h.env.LugiaFrontendUrl, tokenString)

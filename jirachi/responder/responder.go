@@ -9,35 +9,28 @@ import (
 )
 
 func RespondWithError(w http.ResponseWriter, err error) {
-	var ae *errlib.AppError
+	var ae *errlib.APIError
 	if !stdErrors.As(err, &ae) {
-		loggedAppError := errlib.New(err, http.StatusInternalServerError, err.Error())
-		errlib.LogError(loggedAppError)
-	} else {
+		// Plain error — log it and create a generic 500 APIError
 		errlib.LogError(err)
+		ae = &errlib.APIError{Status: http.StatusInternalServerError}
 	}
+	// APIError created by NewError/NewErrorWithDetail was already logged at creation time
 
 	responseStatusCode := http.StatusInternalServerError
-	var responseUserMessage string
-
-	if stdErrors.As(err, &ae) {
-		if ae.StatusCode >= 100 && ae.StatusCode <= 599 {
-			responseStatusCode = ae.StatusCode
-		}
-		if ae.Message != "" {
-			responseUserMessage = ae.Message
-		}
+	if ae.Status >= 100 && ae.Status <= 599 {
+		responseStatusCode = ae.Status
 	}
 
-	if responseUserMessage != "" {
+	if ae.Detail != "" {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	}
 
 	w.WriteHeader(responseStatusCode)
 
-	if responseUserMessage != "" {
-		if err := json.NewEncoder(w).Encode(map[string]string{"error": responseUserMessage}); err != nil {
-			errlib.LogError(errlib.New(err, http.StatusInternalServerError, "failed to encode error response"))
+	if ae.Detail != "" {
+		if err := json.NewEncoder(w).Encode(map[string]string{"error": ae.Detail}); err != nil {
+			errlib.LogError(err)
 		}
 	}
 }
@@ -47,12 +40,7 @@ func RespondWithJSON(w http.ResponseWriter, statusCode int, payload any) {
 	w.WriteHeader(statusCode)
 	if payload != nil {
 		if err := json.NewEncoder(w).Encode(payload); err != nil {
-
-			encodingErr := errlib.New(err, http.StatusInternalServerError, "")
-			errlib.LogError(encodingErr)
-			// At this point, headers (including status) have likely been sent.
-			// If the original status was a success one, we can't reliably change it.
-			// This http.Error is a best effort to inform the client if the response stream is still writable.
+			errlib.LogError(err)
 			if statusCode < 400 {
 				http.Error(w, "", http.StatusInternalServerError)
 			}

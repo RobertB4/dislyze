@@ -22,7 +22,6 @@ import (
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/sendgridlib"
-	"lugia/lib/humautil"
 	"lugia/lib/middleware"
 	"lugia/queries"
 )
@@ -41,24 +40,17 @@ func (h *UsersHandler) ResendInvite(ctx context.Context, input *ResendInviteInpu
 	r := middleware.GetHTTPRequest(ctx)
 
 	if !h.resendInviteRateLimiter.Allow(input.UserID, r) {
-		return nil, humautil.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for resend invite"), http.StatusTooManyRequests, "招待メールの再送信は、ユーザーごとに5分間に1回のみ可能です。しばらくしてから再度お試しください。")
+		return nil, errlib.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for resend invite"), http.StatusTooManyRequests, "招待メールの再送信は、ユーザーごとに5分間に1回のみ可能です。しばらくしてから再度お試しください。")
 	}
 
 	var targetUserID pgtype.UUID
 	if err := targetUserID.Scan(input.UserID); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("invalid user ID format for resend invite: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("invalid user ID format for resend invite: %w", err), http.StatusBadRequest)
 	}
 
 	err := h.resendInvite(ctx, targetUserID)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return nil, nil
 }
@@ -68,7 +60,7 @@ func (h *UsersHandler) resendInvite(ctx context.Context, targetUserID pgtype.UUI
 
 	tenant, err := h.q.GetTenantByID(ctx, invokerTenantID)
 	if err != nil {
-		return errlib.New(fmt.Errorf("ResendInvite: failed to get tenant: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: failed to get tenant: %w", err), http.StatusInternalServerError)
 	}
 
 	if tenant.AuthMethod == "sso" {
@@ -84,31 +76,31 @@ func (h *UsersHandler) resendPasswordInvite(ctx context.Context, targetUserID pg
 
 	invokerDBUser, err := h.q.GetUserByID(ctx, invokerUserID)
 	if err != nil {
-		return errlib.New(fmt.Errorf("ResendInvite: failed to get invoker's user details for UserID %s: %w", invokerUserID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: failed to get invoker's user details for UserID %s: %w", invokerUserID.String(), err), http.StatusInternalServerError)
 	}
 	if invokerDBUser == nil {
-		return errlib.New(fmt.Errorf("ResendInvite: invoker user not found for UserID %s", invokerUserID.String()), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: invoker user not found for UserID %s", invokerUserID.String()), http.StatusInternalServerError)
 	}
 
 	targetDBUser, err := h.q.GetUserByID(ctx, targetUserID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return errlib.New(fmt.Errorf("ResendInvite: target user with ID %s not found: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
+			return errlib.NewError(fmt.Errorf("ResendInvite: target user with ID %s not found: %w", targetUserID.String(), err), http.StatusInternalServerError)
 		}
-		return errlib.New(fmt.Errorf("ResendInvite: failed to get target user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: failed to get target user %s: %w", targetUserID.String(), err), http.StatusInternalServerError)
 	}
 
 	if invokerTenantID != targetDBUser.TenantID {
-		return errlib.New(fmt.Errorf("ResendInvite: invoker %s (tenant %s) attempting to resend invite for user %s (tenant %s) in different tenant", invokerUserID.String(), invokerTenantID.String(), targetUserID.String(), targetDBUser.TenantID.String()), http.StatusForbidden, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: invoker %s (tenant %s) attempting to resend invite for user %s (tenant %s) in different tenant", invokerUserID.String(), invokerTenantID.String(), targetUserID.String(), targetDBUser.TenantID.String()), http.StatusForbidden)
 	}
 
 	if targetDBUser.Status != "pending_verification" {
-		return errlib.New(fmt.Errorf("ResendInvite: target user %s status is '%s', expected 'pending_verification'", targetUserID.String(), targetDBUser.Status), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: target user %s status is '%s', expected 'pending_verification'", targetUserID.String(), targetDBUser.Status), http.StatusInternalServerError)
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		return errlib.New(fmt.Errorf("ResendInvite: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: failed to begin transaction: %w", err), http.StatusInternalServerError)
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -121,12 +113,12 @@ func (h *UsersHandler) resendPasswordInvite(ctx context.Context, targetUserID pg
 		UserID:   targetUserID,
 		TenantID: targetDBUser.TenantID,
 	}); err != nil {
-		return errlib.New(fmt.Errorf("ResendInvite: failed to delete existing invitation tokens for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: failed to delete existing invitation tokens for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError)
 	}
 
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
-		return errlib.New(fmt.Errorf("ResendInvite: failed to generate random bytes for invitation token: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: failed to generate random bytes for invitation token: %w", err), http.StatusInternalServerError)
 	}
 	plaintextToken := base64.URLEncoding.EncodeToString(tokenBytes)
 	hash := sha256.Sum256([]byte(plaintextToken))
@@ -140,7 +132,7 @@ func (h *UsersHandler) resendPasswordInvite(ctx context.Context, targetUserID pg
 		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 	if err != nil {
-		return errlib.New(fmt.Errorf("ResendInvite: CreateInvitationToken failed for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: CreateInvitationToken failed for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError)
 	}
 
 	subject := fmt.Sprintf("%sさんから%s様へのdislyzeへのご招待", invokerDBUser.Name, targetDBUser.Name)
@@ -170,7 +162,7 @@ func (h *UsersHandler) resendPasswordInvite(ctx context.Context, targetUserID pg
 
 	bodyBytes, err := json.Marshal(sgMailBody)
 	if err != nil {
-		return errlib.New(fmt.Errorf("ResendInvite: failed to marshal SendGrid request body for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: failed to marshal SendGrid request body for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError)
 	}
 
 	sendgridRequest := sendgrid.GetRequest(h.env.SendgridAPIKey, "/v3/mail/send", h.env.SendgridAPIUrl)
@@ -178,15 +170,15 @@ func (h *UsersHandler) resendPasswordInvite(ctx context.Context, targetUserID pg
 	sendgridRequest.Body = bodyBytes
 	sgResponse, err := sendgrid.API(sendgridRequest)
 	if err != nil {
-		return errlib.New(fmt.Errorf("ResendInvite: SendGrid API call failed for user %s: %w.", targetUserID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: SendGrid API call failed for user %s: %w.", targetUserID.String(), err), http.StatusInternalServerError)
 	}
 
 	if sgResponse.StatusCode < 200 || sgResponse.StatusCode >= 300 {
-		return errlib.New(fmt.Errorf("ResendInvite: SendGrid API returned error status code %d for user %s. Body: %s.", sgResponse.StatusCode, targetUserID.String(), sgResponse.Body), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: SendGrid API returned error status code %d for user %s. Body: %s.", sgResponse.StatusCode, targetUserID.String(), sgResponse.Body), http.StatusInternalServerError)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return errlib.New(fmt.Errorf("ResendInvite: failed to commit transaction for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: failed to commit transaction for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError)
 	}
 
 	return nil
@@ -198,35 +190,35 @@ func (h *UsersHandler) resendSSOInvite(ctx context.Context, targetUserID pgtype.
 
 	var enterpriseFeatures authz.EnterpriseFeatures
 	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
-		return errlib.New(fmt.Errorf("ResendInvite: failed to parse enterprise features: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: failed to parse enterprise features: %w", err), http.StatusInternalServerError)
 	}
 
 	if !enterpriseFeatures.SSO.Enabled {
-		return errlib.New(fmt.Errorf("ResendInvite: SSO not enabled for tenant"), http.StatusBadRequest, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: SSO not enabled for tenant"), http.StatusBadRequest)
 	}
 
 	invokerDBUser, err := h.q.GetUserByID(ctx, invokerUserID)
 	if err != nil {
-		return errlib.New(fmt.Errorf("ResendInvite: failed to get invoker's user details for UserID %s: %w", invokerUserID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: failed to get invoker's user details for UserID %s: %w", invokerUserID.String(), err), http.StatusInternalServerError)
 	}
 	if invokerDBUser == nil {
-		return errlib.New(fmt.Errorf("ResendInvite: invoker user not found for UserID %s", invokerUserID.String()), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: invoker user not found for UserID %s", invokerUserID.String()), http.StatusInternalServerError)
 	}
 
 	targetDBUser, err := h.q.GetUserByID(ctx, targetUserID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return errlib.New(fmt.Errorf("ResendInvite: target user with ID %s not found: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
+			return errlib.NewError(fmt.Errorf("ResendInvite: target user with ID %s not found: %w", targetUserID.String(), err), http.StatusInternalServerError)
 		}
-		return errlib.New(fmt.Errorf("ResendInvite: failed to get target user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: failed to get target user %s: %w", targetUserID.String(), err), http.StatusInternalServerError)
 	}
 
 	if invokerTenantID != targetDBUser.TenantID {
-		return errlib.New(fmt.Errorf("ResendInvite: invoker %s (tenant %s) attempting to resend invite for user %s (tenant %s) in different tenant", invokerUserID.String(), invokerTenantID.String(), targetUserID.String(), targetDBUser.TenantID.String()), http.StatusForbidden, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: invoker %s (tenant %s) attempting to resend invite for user %s (tenant %s) in different tenant", invokerUserID.String(), invokerTenantID.String(), targetUserID.String(), targetDBUser.TenantID.String()), http.StatusForbidden)
 	}
 
 	if targetDBUser.Status != "pending_verification" {
-		return errlib.New(fmt.Errorf("ResendInvite: target user %s status is '%s', expected 'pending_verification'", targetUserID.String(), targetDBUser.Status), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: target user %s status is '%s', expected 'pending_verification'", targetUserID.String(), targetDBUser.Status), http.StatusInternalServerError)
 	}
 
 	subject := fmt.Sprintf("%sさんから%s様へのdislyzeへのご招待", invokerDBUser.Name, targetDBUser.Name)
@@ -254,7 +246,7 @@ func (h *UsersHandler) resendSSOInvite(ctx context.Context, targetUserID pgtype.
 
 	bodyBytes, err := json.Marshal(sgMailBody)
 	if err != nil {
-		return errlib.New(fmt.Errorf("ResendInvite: failed to marshal SendGrid request body for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: failed to marshal SendGrid request body for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError)
 	}
 
 	sendgridRequest := sendgrid.GetRequest(h.env.SendgridAPIKey, "/v3/mail/send", h.env.SendgridAPIUrl)
@@ -262,11 +254,11 @@ func (h *UsersHandler) resendSSOInvite(ctx context.Context, targetUserID pgtype.
 	sendgridRequest.Body = bodyBytes
 	sgResponse, err := sendgrid.API(sendgridRequest)
 	if err != nil {
-		return errlib.New(fmt.Errorf("ResendInvite: SendGrid API call failed for user %s: %w.", targetUserID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: SendGrid API call failed for user %s: %w.", targetUserID.String(), err), http.StatusInternalServerError)
 	}
 
 	if sgResponse.StatusCode < 200 || sgResponse.StatusCode >= 300 {
-		return errlib.New(fmt.Errorf("ResendInvite: SendGrid API returned error status code %d for user %s. Body: %s.", sgResponse.StatusCode, targetUserID.String(), sgResponse.Body), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ResendInvite: SendGrid API returned error status code %d for user %s. Body: %s.", sgResponse.StatusCode, targetUserID.String(), sgResponse.Body), http.StatusInternalServerError)
 	}
 
 	return nil

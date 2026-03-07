@@ -239,6 +239,6 @@ func (m *AuthMiddleware) handleAuthError(w http.ResponseWriter, r *http.Request,
 
 	w.WriteHeader(http.StatusUnauthorized)
 	if encodeErr := json.NewEncoder(w).Encode(map[string]string{}); encodeErr != nil {
-		errlib.LogError(errlib.New(encodeErr, http.StatusInternalServerError, "failed to encode empty JSON response in handleAuthError"))
+		errlib.LogError(fmt.Errorf("failed to encode empty JSON response in handleAuthError: %w", encodeErr))
 	}
 }

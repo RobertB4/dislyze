@@ -12,7 +12,6 @@ import (
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"lugia/lib/humautil"
 	"lugia/queries"
 )
 
@@ -40,20 +39,13 @@ func (r *ChangeTenantNameRequestBody) Validate() error {
 
 func (h *UsersHandler) ChangeTenantName(ctx context.Context, input *ChangeTenantNameInput) (*struct{}, error) {
 	if err := input.Body.Validate(); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("change tenant name validation failed: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("change tenant name validation failed: %w", err), http.StatusBadRequest)
 	}
 
 	tenantID := libctx.GetTenantID(ctx)
 	err := h.changeTenantName(ctx, tenantID, input.Body)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return nil, nil
 }
@@ -63,7 +55,7 @@ func (h *UsersHandler) changeTenantName(ctx context.Context, tenantID pgtype.UUI
 		Name: req.Name,
 		ID:   tenantID,
 	}); err != nil {
-		return errlib.New(fmt.Errorf("ChangeTenantName: failed to update tenant name for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangeTenantName: failed to update tenant name for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError)
 	}
 
 	return nil

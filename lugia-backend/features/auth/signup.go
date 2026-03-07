@@ -16,7 +16,6 @@ import (
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/jwt"
 	"lugia/lib/authz"
-	"lugia/lib/humautil"
 	"lugia/lib/middleware"
 	"lugia/queries"
 )
@@ -72,24 +71,24 @@ func (h *AuthHandler) Signup(ctx context.Context, input *SignupInput) (*struct{}
 	w := middleware.GetResponseWriter(ctx)
 
 	if !h.rateLimiter.Allow(r.RemoteAddr, r) {
-		return nil, humautil.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for signup"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
+		return nil, errlib.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for signup"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
 	}
 
 	if err := input.Body.Validate(); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("signup validation failed: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("signup validation failed: %w", err), http.StatusBadRequest)
 	}
 
 	exists, err := h.queries.ExistsUserWithEmail(ctx, input.Body.Email)
 	if err != nil {
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, errlib.NewError(err, http.StatusInternalServerError)
 	}
 	if exists {
-		return nil, humautil.NewErrorWithDetail(fmt.Errorf("signup attempted with existing email"), http.StatusBadRequest, "このメールアドレスは既に使用されています。")
+		return nil, errlib.NewErrorWithDetail(fmt.Errorf("signup attempted with existing email"), http.StatusBadRequest, "このメールアドレスは既に使用されています。")
 	}
 
 	tokenPair, err := h.signup(ctx, &input.Body, r)
 	if err != nil {
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, errlib.NewError(err, http.StatusInternalServerError)
 	}
 
 	http.SetCookie(w, &http.Cookie{

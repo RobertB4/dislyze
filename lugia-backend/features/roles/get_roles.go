@@ -12,7 +12,6 @@ import (
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"lugia/lib/humautil"
 )
 
 var GetRolesOp = huma.Operation{
@@ -59,14 +58,7 @@ func (h *RolesHandler) GetRoles(ctx context.Context, input *GetRolesInput) (*Get
 
 	response, err := h.getRoles(ctx, tenantID)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return &GetRolesOutput{Body: *response}, nil
 }
@@ -80,7 +72,7 @@ func (h *RolesHandler) getRoles(ctx context.Context, tenantID pgtype.UUID) (*Get
 			}
 			return response, nil
 		}
-		return nil, errlib.New(fmt.Errorf("GetRoles: failed to get roles with permissions: %w", err), http.StatusInternalServerError, "")
+		return nil, errlib.NewError(fmt.Errorf("GetRoles: failed to get roles with permissions: %w", err), http.StatusInternalServerError)
 	}
 
 	var roleOrder []string
