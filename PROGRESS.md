@@ -29,10 +29,12 @@
 
 ## Follow-up items (separate PRs)
 
-### Inline legacy fetch and update CLAUDE.md
-- `loadFunctionFetch` is only used in `+layout.ts` in each frontend — inline it and remove the file
-- `handleLoadError` similarly only used in `{:catch}` blocks — inline or simplify
-- Update CLAUDE.md files in both frontends: remove references to `loadFunctionFetch`/`mutationFetch`, document `createLoadClient`/`createMutationClient` as the only API patterns
+### ~~Inline legacy fetch and update CLAUDE.md~~ ✅
+- Moved `loadFunctionFetch` into `+layout.ts` as a local function in both frontends (only consumer)
+- Removed dead `mutationFetch` from both `fetch.ts` files (no callers — replaced by `createMutationClient`)
+- `fetch.ts` now only exports `handleLoadError` (still used by page components for `{:catch}` blocks)
+- Updated CLAUDE.md in both frontends: removed legacy fetch references, documented `createLoadClient`/`createMutationClient` as the only API patterns
+- Updated JSDoc comments in both `api.ts` files to remove legacy references
 
 ### CI for code generation
 - Add a CI step that runs `make generate` (SQLC) and `go run ./cmd/openapi` (OpenAPI specs) and fails if the output differs from what's committed

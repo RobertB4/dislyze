@@ -7,7 +7,7 @@ import { KnownError } from "@dislyze/zoroark/errors";
 /**
  * Creates a typed API client for use in SvelteKit load functions.
  * Must receive SvelteKit's load-function fetch for invalidate() tracking.
- * Error handling mirrors loadFunctionFetch: throws SvelteKit errors/redirects.
+ * Error handling: throws SvelteKit errors for 4xx/5xx, redirects to login on 401.
  *
  * Usage:
  *   const api = createLoadClient(fetch);
@@ -91,7 +91,7 @@ export function createLoadClient(loadEventFetch: typeof fetch) {
 
 /**
  * Creates a typed API client for use in Svelte components for mutations.
- * Error handling mirrors mutationFetch: toast on error, redirect on 401.
+ * Error handling: shows toast on error, redirects to login on 401.
  * Does NOT throw — callers check `!error` to decide next steps.
  *
  * Usage:
