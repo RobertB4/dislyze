@@ -302,6 +302,22 @@ export interface components {
     headers: never;
     pathItems: never;
 }
+export type EnterpriseFeatures = components['schemas']['EnterpriseFeatures'];
+export type ErrorDetail = components['schemas']['ErrorDetail'];
+export type ErrorModel = components['schemas']['ErrorModel'];
+export type GenerateTenantInvitationTokenRequest = components['schemas']['GenerateTenantInvitationTokenRequest'];
+export type GenerateTenantInvitationTokenResponse = components['schemas']['GenerateTenantInvitationTokenResponse'];
+export type GetTenantsResponse = components['schemas']['GetTenantsResponse'];
+export type GetUsersByTenantResponse = components['schemas']['GetUsersByTenantResponse'];
+export type IpWhitelist = components['schemas']['IPWhitelist'];
+export type LoginRequestBody = components['schemas']['LoginRequestBody'];
+export type MeResponse = components['schemas']['MeResponse'];
+export type Rbac = components['schemas']['RBAC'];
+export type Sso = components['schemas']['SSO'];
+export type SsoConfig = components['schemas']['SSOConfig'];
+export type TenantResponse = components['schemas']['TenantResponse'];
+export type UpdateTenantRequestBody = components['schemas']['UpdateTenantRequestBody'];
+export type UserInfo = components['schemas']['UserInfo'];
 export type $defs = Record<string, never>;
 export interface operations {
     login: {
@@ -548,8 +564,3 @@ export interface operations {
         };
     };
 }
-
-// Convenience type aliases for component schemas
-export type Tenant = components["schemas"]["TenantResponse"];
-export type EnterpriseFeatures = components["schemas"]["EnterpriseFeatures"];
-export type UserInfo = components["schemas"]["UserInfo"];

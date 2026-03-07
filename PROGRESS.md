@@ -36,9 +36,11 @@
 - Updated CLAUDE.md in both frontends: removed legacy fetch references, documented `createLoadClient`/`createMutationClient` as the only API patterns
 - Updated JSDoc comments in both `api.ts` files to remove legacy references
 
-### CI for code generation
-- Add a CI step that runs `make generate` (SQLC) and `go run ./cmd/openapi` (OpenAPI specs) and fails if the output differs from what's committed
-- Catches cases where someone changes types/queries but forgets to regenerate
+### ~~CI for code generation~~ ✅
+- Added `.github/workflows/verify-codegen.yml` — runs `make generate` (SQLC + OpenAPI + TypeScript schemas) and fails if output differs from committed
+- Triggers on changes to migrations, queries_pregeneration, features, cmd/openapi, sqlc.yaml
+- Fixed schema.ts files: now use `--root-types --root-types-no-schema-prefix` from `make generate` instead of manual convenience aliases
+- Updated giratina-frontend `+page.svelte` to import `TenantResponse as Tenant` (matches auto-generated root type name)
 
 ### ~~Consolidate error handling: humautil → jirachi/errlib~~ ✅
 - Removed `errlib.New` / `errlib.AppError` — replaced with `errlib.NewError` / `errlib.NewErrorWithDetail`
