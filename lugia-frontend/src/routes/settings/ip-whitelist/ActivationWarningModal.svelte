@@ -4,7 +4,7 @@
 	import { toast } from "@dislyze/zoroark/toast";
 	import { forceUpdateMeCache } from "@dislyze/zoroark/meCache";
 	import { invalidate } from "$app/navigation";
-	import { mutationFetch } from "$lugia/lib/fetch";
+	import { createMutationClient } from "$lugia/lib/api";
 
 	let {
 		onClose,
@@ -19,15 +19,12 @@
 	async function handleActivate() {
 		isSubmitting = true;
 
-		const { success } = await mutationFetch(`/api/ip-whitelist/activate`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify({ force: true })
+		const api = createMutationClient();
+		const { error } = await api.POST("/ip-whitelist/activate", {
+			body: { force: true }
 		});
 
-		if (success) {
+		if (!error) {
 			forceUpdateMeCache.set(true);
 			await invalidate(
 				(u) => u.pathname.includes("/api/ip-whitelist") || u.pathname.includes("/api/me")

@@ -8,7 +8,7 @@
 	import SettingsTabs from "$lugia/routes/settings/SettingsTabs.svelte";
 	import type { PageData } from "./$types";
 	import { createForm } from "felte";
-	import { mutationFetch } from "$lugia/lib/fetch";
+	import { createMutationClient } from "$lugia/lib/api";
 	import { hasPermission } from "$lugia/lib/authz";
 	import { invalidate } from "$app/navigation";
 	import { page } from "$app/state";
@@ -41,15 +41,12 @@
 			return errs;
 		},
 		onSubmit: async (values) => {
-			const { success } = await mutationFetch(`/api/me/change-name`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({ name: values.name })
+			const api = createMutationClient();
+			const { error } = await api.POST("/me/change-name", {
+				body: { name: values.name }
 			});
 
-			if (success) {
+			if (!error) {
 				// Force the layout to refresh meCache with fresh data
 				// Needed to ensure the updated name is reflected in the UI
 				// see +layout.ts for more details
@@ -97,19 +94,16 @@
 			return errs;
 		},
 		onSubmit: async (values) => {
-			const { success } = await mutationFetch(`/api/me/change-password`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
+			const api = createMutationClient();
+			const { error } = await api.POST("/me/change-password", {
+				body: {
 					current_password: values.currentPassword,
 					new_password: values.newPassword,
 					new_password_confirm: values.confirmPassword
-				})
+				}
 			});
 
-			if (success) {
+			if (!error) {
 				passwordReset();
 				toast.show("パスワードを更新しました。", "success");
 			}
@@ -141,17 +135,12 @@
 			return errs;
 		},
 		onSubmit: async (values) => {
-			const { success } = await mutationFetch(`/api/me/change-email`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					new_email: values.newEmail
-				})
+			const api = createMutationClient();
+			const { error } = await api.POST("/me/change-email", {
+				body: { new_email: values.newEmail }
 			});
 
-			if (success) {
+			if (!error) {
 				emailReset();
 				toast.show("確認メールを送信しました。メールをご確認ください。", "success");
 			}
@@ -178,17 +167,12 @@
 			return errs;
 		},
 		onSubmit: async (values) => {
-			const { success } = await mutationFetch(`/api/tenant/change-name`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					name: values.tenantName
-				})
+			const api = createMutationClient();
+			const { error } = await api.POST("/tenant/change-name", {
+				body: { name: values.tenantName }
 			});
 
-			if (success) {
+			if (!error) {
 				// Force the layout to refresh meCache with fresh data
 				// Needed to ensure the updated tenant name is reflected in the UI
 				forceUpdateMeCache.set(true);

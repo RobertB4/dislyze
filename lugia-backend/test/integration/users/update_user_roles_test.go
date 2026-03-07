@@ -10,21 +10,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestUpdateUserRoles_Integration(t *testing.T) {
-	// Helper function to create a UUID from string
-	mustParseUUID := func(s string) pgtype.UUID {
-		var uuid pgtype.UUID
-		err := uuid.Scan(s)
-		if err != nil {
-			t.Fatalf("Failed to parse UUID %s: %v", s, err)
-		}
-		return uuid
-	}
-
 	pool := setup.InitDB(t)
 	setup.ResetAndSeedDB(t, pool)
 	defer setup.CloseDB(pool)
@@ -45,7 +34,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 		{
 			name:           "unauthenticated request gets 401",
 			targetUserKey:  "enterprise_2",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}},
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}},
 			expectedStatus: http.StatusUnauthorized,
 			expectUnauth:   true,
 		},
@@ -53,14 +42,14 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			name:           "user without users.update permission gets 403 forbidden",
 			loginUserKey:   "enterprise_2",
 			targetUserKey:  "enterprise_11",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}},
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}},
 			expectedStatus: http.StatusForbidden,
 		},
 		{
 			name:           "user from different tenant gets 403 forbidden",
 			loginUserKey:   "smb_1",        // SMB tenant
 			targetUserKey:  "enterprise_2", // Enterprise tenant
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}},
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}},
 			expectedStatus: http.StatusForbidden,
 		},
 
@@ -69,21 +58,21 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			name:                 "invalid userID format gets 400",
 			loginUserKey:         "enterprise_1",
 			targetUserIDOverride: "not-a-uuid",
-			requestBody:          users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}},
+			requestBody:          users.UpdateUserRolesRequestBody{RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}},
 			expectedStatus:       http.StatusBadRequest,
 		},
 		{
 			name:           "empty role gets 400",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{}},
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{}},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "invalid role value gets 400",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{}},
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{}},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -110,28 +99,28 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			name:                 "non-existent user gets 404",
 			loginUserKey:         "enterprise_1",
 			targetUserIDOverride: "00000000-0000-0000-0000-000000000000", // Valid UUID that doesn't exist
-			requestBody:          users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}},
+			requestBody:          users.UpdateUserRolesRequestBody{RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}},
 			expectedStatus:       http.StatusNotFound,
 		},
 		{
 			name:           "user trying to update own role gets 400",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_1", // Same user
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")}},
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "invalid role IDs get 400",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("00000000-0000-0000-0000-000000000000")}}, // Non-existent role
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"00000000-0000-0000-0000-000000000000"}}, // Non-existent role
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "roles from different tenant get 400",
 			loginUserKey:   "enterprise_1",                                                                                                  // Enterprise admin
 			targetUserKey:  "enterprise_2",                                                                                                  // Enterprise user
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")}}, // SMB admin role
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"}}, // SMB admin role
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -150,14 +139,14 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			name:           "duplicate role IDs get 400",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}}, // Same role twice
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}}, // Same role twice
 			expectedStatus: http.StatusBadRequest,                                                                                                                                                  // Validation correctly rejects duplicates
 		},
 		{
 			name:           "mixed valid and invalid role IDs get 400",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), mustParseUUID("00000000-0000-0000-0000-000000000000")}}, // Valid + invalid
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "00000000-0000-0000-0000-000000000000"}}, // Valid + invalid
 			expectedStatus: http.StatusBadRequest,
 		},
 
@@ -166,7 +155,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			name:           "user with users.update permission successfully updates roles",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")}},
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}},
 			expectedStatus: http.StatusOK,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
@@ -175,7 +164,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			name:           "successfully replaces existing roles",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2", // Was updated to admin in previous test
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")}},
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}},
 			expectedStatus: http.StatusOK,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
@@ -184,7 +173,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			name:           "successfully assigns multiple roles",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2",
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), mustParseUUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")}},
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}},
 			expectedStatus: http.StatusOK,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
@@ -193,7 +182,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			name:           "successfully sets same roles (no changes needed)",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2", // Should have both roles from previous test
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), mustParseUUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")}},
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}},
 			expectedStatus: http.StatusOK,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
@@ -202,7 +191,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			name:           "successfully removes some roles (partial update)",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2", // Should have both roles, remove one
-			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []pgtype.UUID{mustParseUUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")}},
+			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}},
 			expectedStatus: http.StatusOK,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},

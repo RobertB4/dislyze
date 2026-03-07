@@ -3,18 +3,28 @@ package users
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
 	"lugia/queries"
 )
+
+var ChangeTenantNameOp = huma.Operation{
+	OperationID: "change-tenant-name",
+	Method:      http.MethodPost,
+	Path:        "/tenant/change-name",
+}
+
+type ChangeTenantNameInput struct {
+	Body ChangeTenantNameRequestBody
+}
 
 type ChangeTenantNameRequestBody struct {
 	Name string `json:"name"`
@@ -28,35 +38,24 @@ func (r *ChangeTenantNameRequestBody) Validate() error {
 	return nil
 }
 
-func (h *UsersHandler) ChangeTenantName(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (h *UsersHandler) ChangeTenantName(ctx context.Context, input *ChangeTenantNameInput) (*struct{}, error) {
+	if err := input.Body.Validate(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("change tenant name validation failed: %w", err), http.StatusBadRequest)
+	}
+
 	tenantID := libctx.GetTenantID(ctx)
-
-	var req ChangeTenantNameRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(fmt.Errorf("ChangeTenantName: failed to decode request: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			errlib.LogError(fmt.Errorf("ChangeTenantName: failed to close request body: %w", err))
-		}
-	}()
-
-	if err := req.Validate(); err != nil {
-		appErr := errlib.New(fmt.Errorf("ChangeTenantName: validation failed: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	err := h.changeTenantName(ctx, tenantID, req)
+	err := h.changeTenantName(ctx, tenantID, input.Body)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
-
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *UsersHandler) changeTenantName(ctx context.Context, tenantID pgtype.UUID, req ChangeTenantNameRequestBody) error {

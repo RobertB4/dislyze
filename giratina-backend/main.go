@@ -19,11 +19,15 @@ import (
 	"giratina/features/auth"
 	"giratina/lib/config"
 	"giratina/lib/db"
+	"giratina/lib/humautil"
+	"giratina/lib/middleware"
 	"giratina/queries"
 
 	jirachi_auth "dislyze/jirachi/auth"
 	"dislyze/jirachi/ratelimit"
 
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -63,30 +67,25 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	})
 
 	r.Route("/api", func(r chi.Router) {
-		r.Route("/auth", func(r chi.Router) {
-			r.Post("/login", authHandler.Login)
-			r.Post("/logout", authHandler.Logout)
-		})
+		// Huma route registrations below are mirrored in giratina-backend/cmd/openapi/main.go
+		// for OpenAPI spec generation. When adding or removing endpoints, update both files.
+		humaConfig := humautil.NewConfig("Giratina API", "1.0.0")
+
+		// /auth endpoints — public, only need StoreHTTPRequest for cookie/rate-limit access
+		authAPI := humachi.New(r.With(middleware.StoreHTTPRequest), humaConfig)
+		huma.Register(authAPI, auth.LoginOp, authHandler.Login)
+		huma.Register(authAPI, auth.LogoutOp, authHandler.Logout)
 
 		r.Group(func(r chi.Router) {
 			r.Use(jirachiAuthMiddleware.Authenticate)
 
-			r.Get("/me", usersHandler.GetMe)
-
-			r.Route("/tenants", func(r chi.Router) {
-				r.Get("/", tenantsHandler.GetTenants)
-				r.Post("/{id}/update", tenantsHandler.UpdateTenant)
-				r.Get("/{tenantID}/login", tenantsHandler.LogInToTenant)
-				r.Post("/generate-token", tenantsHandler.GenerateTenantInvitationToken)
-				r.Get("/{tenantID}/users", tenantsHandler.GetUsersByTenant)
-			})
-
-			r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-				if _, err := w.Write([]byte(`{"message": "protected users endpoint"}`)); err != nil {
-					log.Printf("Error writing users response: %v", err)
-				}
-			})
+			api := humachi.New(r.With(middleware.StoreHTTPRequest), humaConfig)
+			huma.Register(api, users.GetMeOp, usersHandler.GetMe)
+			huma.Register(api, tenants.GetTenantsOp, tenantsHandler.GetTenants)
+			huma.Register(api, tenants.UpdateTenantOp, tenantsHandler.UpdateTenant)
+			huma.Register(api, tenants.GenerateTokenOp, tenantsHandler.GenerateTenantInvitationToken)
+			huma.Register(api, tenants.GetUsersByTenantOp, tenantsHandler.GetUsersByTenant)
+			huma.Register(api, tenants.LogInToTenantOp, tenantsHandler.LogInToTenant)
 		})
 
 	})

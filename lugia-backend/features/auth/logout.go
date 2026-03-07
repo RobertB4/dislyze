@@ -5,13 +5,27 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/danielgtaylor/huma/v2"
+
 	"dislyze/jirachi/jwt"
 	"dislyze/jirachi/logger"
+	"lugia/lib/middleware"
 )
 
-func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+var LogoutOp = huma.Operation{
+	OperationID: "logout",
+	Method:      http.MethodPost,
+	Path:        "/auth/logout",
+}
+
+type LogoutInput struct{}
+
+func (h *AuthHandler) Logout(ctx context.Context, input *LogoutInput) (*struct{}, error) {
+	r := middleware.GetHTTPRequest(ctx)
+	w := middleware.GetResponseWriter(ctx)
+
 	// Try to revoke the refresh token before clearing cookies
-	h.revokeRefreshToken(r.Context(), r)
+	h.revokeRefreshToken(ctx, r)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "dislyze_access_token",
@@ -33,7 +47,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 	})
 
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *AuthHandler) revokeRefreshToken(ctx context.Context, r *http.Request) {

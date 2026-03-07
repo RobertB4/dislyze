@@ -64,7 +64,20 @@ export function load({ fetch }: Parameters<PageLoad>[0]) {
 const rolesPromise: Promise<GetRolesResponse> = loadFunctionFetch(fetch, '/api/roles').then((res) => res.json());
 ```
 
-**For mutations (POST/PUT/DELETE):**
+**For mutations — migrated endpoints (in OpenAPI spec):**
+```typescript
+import { createMutationClient } from "$lugia/lib/api";
+
+const api = createMutationClient();
+const { data, error, response } = await api.POST("/users/invite", {
+  body: { email: "...", name: "...", role_ids: ["..."] }
+});
+if (!error) {
+  // success — error handling (toast, 401 redirect) is in middleware
+}
+```
+
+**For mutations — non-migrated endpoints:**
 ```typescript
 const {response, success} = await mutationFetch('/api/endpoint', {
   method: 'POST',

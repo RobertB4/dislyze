@@ -9,13 +9,23 @@ import (
 	"net/http"
 	"strings"
 
-	"dislyze/jirachi/authz"
-	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
-
-	"github.com/go-chi/chi/v5"
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5/pgtype"
+
+	"dislyze/jirachi/authz"
+	"giratina/lib/humautil"
 )
+
+var UpdateTenantOp = huma.Operation{
+	OperationID: "update-tenant",
+	Method:      http.MethodPost,
+	Path:        "/tenants/{id}/update",
+}
+
+type UpdateTenantInput struct {
+	ID   string `path:"id"`
+	Body UpdateTenantRequestBody
+}
 
 type UpdateTenantRequestBody struct {
 	Name               string                   `json:"name"`
@@ -31,48 +41,27 @@ func (r *UpdateTenantRequestBody) Validate() error {
 	return nil
 }
 
-type UpdateTenantResponse struct {
-	Message string `json:"message"`
-}
-
-func (h *TenantsHandler) UpdateTenant(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	tenantIDStr := chi.URLParam(r, "id")
-	if tenantIDStr == "" {
-		responder.RespondWithError(w, errlib.New(fmt.Errorf("tenant ID is required"), http.StatusBadRequest, ""))
-		return
-	}
-
+func (h *TenantsHandler) UpdateTenant(ctx context.Context, input *UpdateTenantInput) (*struct{}, error) {
 	var tenantID pgtype.UUID
-	if err := tenantID.Scan(tenantIDStr); err != nil {
-		responder.RespondWithError(w, errlib.New(fmt.Errorf("invalid tenant ID format"), http.StatusBadRequest, ""))
-		return
+	if err := tenantID.Scan(input.ID); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("invalid tenant ID format: %w", err), http.StatusBadRequest)
 	}
 
-	var requestBody UpdateTenantRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		responder.RespondWithError(w, errlib.New(fmt.Errorf("invalid request body: %w", err), http.StatusBadRequest, ""))
-		return
+	if err := input.Body.Validate(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("update tenant validation failed: %w", err), http.StatusBadRequest)
 	}
 
-	if err := requestBody.Validate(); err != nil {
-		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
-		return
+	if err := h.updateTenant(ctx, &tenantID, &input.Body); err != nil {
+		return nil, err
 	}
 
-	if err := h.updateTenant(ctx, &tenantID, &requestBody); err != nil {
-		responder.RespondWithError(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *TenantsHandler) updateTenant(ctx context.Context, tenantID *pgtype.UUID, requestBody *UpdateTenantRequestBody) error {
 	enterpriseFeaturesJSON, err := json.Marshal(requestBody.EnterpriseFeatures)
 	if err != nil {
-		return errlib.New(fmt.Errorf("failed to marshal enterprise features: %w", err), http.StatusInternalServerError, "")
+		return humautil.NewError(fmt.Errorf("failed to marshal enterprise features: %w", err), http.StatusInternalServerError)
 	}
 
 	err = h.queries.UpdateTenant(ctx, &queries.UpdateTenantParams{
@@ -81,7 +70,7 @@ func (h *TenantsHandler) updateTenant(ctx context.Context, tenantID *pgtype.UUID
 		ID:                 *tenantID,
 	})
 	if err != nil {
-		return errlib.New(fmt.Errorf("failed to update tenant: %w", err), http.StatusInternalServerError, "")
+		return humautil.NewError(fmt.Errorf("failed to update tenant: %w", err), http.StatusInternalServerError)
 	}
 
 	return nil

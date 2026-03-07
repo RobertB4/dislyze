@@ -1,27 +1,6 @@
 // Feature doc: docs/features/user-management.md
 import type { PageLoad } from "./$types";
-import { loadFunctionFetch } from "$lugia/lib/fetch";
 import { createLoadClient } from "$lugia/lib/api";
-
-// Not yet in OpenAPI spec — will be replaced when roles endpoints are migrated
-export type Permission = {
-	id: string;
-	resource: string;
-	action: string;
-	description: string;
-};
-
-export type RoleInfo = {
-	id: string;
-	name: string;
-	description: string;
-	is_default: boolean;
-	permissions: Permission[];
-};
-
-export type GetRolesResponse = {
-	roles: RoleInfo[];
-};
 
 export function load({ fetch, url }: Parameters<PageLoad>[0]) {
 	const searchParams = url.searchParams;
@@ -37,9 +16,7 @@ export function load({ fetch, url }: Parameters<PageLoad>[0]) {
 		})
 		.then(({ data }) => data!);
 
-	const rolesPromise: Promise<GetRolesResponse> = loadFunctionFetch(fetch, `/api/users/roles`).then(
-		(res) => res.json()
-	);
+	const rolesPromise = api.GET("/users/roles").then(({ data }) => data!);
 
 	return {
 		usersPromise,

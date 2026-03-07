@@ -9,11 +9,11 @@
 	import { type Me } from "@dislyze/zoroark/meCache";
 	import SettingsTabs from "$lugia/routes/settings/SettingsTabs.svelte";
 	import PermissionSelector from "$lugia/routes/settings/roles/PermissionSelector.svelte";
-	import type { PermissionInfo, RoleInfo } from "$lugia/routes/settings/roles/+page";
+	import type { Permission, RoleInfo } from "$lugia/schema";
 	import { hasPermission } from "$lugia/lib/authz";
 	import { createForm } from "felte";
 	import { invalidate } from "$app/navigation";
-	import { mutationFetch } from "$lugia/lib/fetch";
+	import { createMutationClient } from "$lugia/lib/api";
 
 	let {
 		me,
@@ -23,7 +23,7 @@
 	}: {
 		me: Me;
 		roles: RoleInfo[];
-		permissions: PermissionInfo[];
+		permissions: Permission[];
 		isCreateSlideoverOpen: boolean;
 	} = $props();
 
@@ -70,19 +70,16 @@
 			return errs;
 		},
 		onSubmit: async (values) => {
-			const { success } = await mutationFetch(`/api/roles/create`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
+			const api = createMutationClient();
+			const { error } = await api.POST("/roles/create", {
+				body: {
 					name: values.name,
 					description: values.description,
 					permission_ids: values.permission_ids
-				})
+				}
 			});
 
-			if (success) {
+			if (!error) {
 				await invalidate((u) => u.pathname === "/api/roles");
 				reset();
 				toast.show("ロールを作成しました。", "success");
@@ -129,16 +126,17 @@
 		onSubmit: async (values) => {
 			if (!editingRole) return;
 
-			const { success } = await mutationFetch(`/api/roles/${editingRole.id}/update`, {
-				method: "POST",
-				body: JSON.stringify({
+			const api = createMutationClient();
+			const { error } = await api.POST("/roles/{roleID}/update", {
+				params: { path: { roleID: editingRole.id } },
+				body: {
 					name: values.name,
 					description: values.description,
 					permission_ids: values.permission_ids
-				})
+				}
 			});
 
-			if (success) {
+			if (!error) {
 				await invalidate((u) => u.pathname === "/api/roles");
 				editReset();
 				toast.show("ロールを更新しました。", "success");
@@ -194,11 +192,12 @@
 		onSubmit: async () => {
 			if (!roleToDelete) return;
 
-			const { success } = await mutationFetch(`/api/roles/${roleToDelete.id}/delete`, {
-				method: "POST"
+			const api = createMutationClient();
+			const { error } = await api.POST("/roles/{roleID}/delete", {
+				params: { path: { roleID: roleToDelete.id } }
 			});
 
-			if (success) {
+			if (!error) {
 				await invalidate((u) => u.pathname === "/api/roles");
 				deleteReset();
 				toast.show("ロールを削除しました。", "success");

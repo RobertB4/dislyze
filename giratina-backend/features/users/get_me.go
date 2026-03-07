@@ -6,12 +6,20 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+
+	"giratina/lib/humautil"
 )
+
+var GetMeOp = huma.Operation{
+	OperationID: "get-me",
+	Method:      http.MethodGet,
+	Path:        "/me",
+}
 
 type MeResponse struct {
 	TenantName string `json:"tenant_name"`
@@ -20,16 +28,19 @@ type MeResponse struct {
 	UserName   string `json:"user_name"`
 }
 
-func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+type GetMeInput struct{}
 
+type GetMeOutput struct {
+	Body MeResponse
+}
+
+func (h *UsersHandler) GetMe(ctx context.Context, input *GetMeInput) (*GetMeOutput, error) {
 	response, err := h.getMe(ctx)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		return nil, err
 	}
 
-	responder.RespondWithJSON(w, http.StatusOK, response)
+	return &GetMeOutput{Body: *response}, nil
 }
 
 func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
@@ -39,17 +50,17 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 	user, err := h.queries.GetUserByID(ctx, userID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return nil, errlib.New(fmt.Errorf("GetMe: user not found %s: %w", userID.String(), err), http.StatusUnauthorized, "")
+			return nil, humautil.NewError(fmt.Errorf("GetMe: user not found %s: %w", userID.String(), err), http.StatusUnauthorized)
 		}
-		return nil, errlib.New(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
+		return nil, humautil.NewError(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err), http.StatusInternalServerError)
 	}
 
 	tenant, err := h.queries.GetTenantByID(ctx, tenantID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return nil, errlib.New(fmt.Errorf("GetMe: tenant not found %s for user %s: %w", tenantID.String(), userID.String(), err), http.StatusUnauthorized, "")
+			return nil, humautil.NewError(fmt.Errorf("GetMe: tenant not found %s for user %s: %w", tenantID.String(), userID.String(), err), http.StatusUnauthorized)
 		}
-		return nil, errlib.New(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
+		return nil, humautil.NewError(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError)
 	}
 
 	response := &MeResponse{

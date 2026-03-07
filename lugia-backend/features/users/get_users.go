@@ -71,7 +71,14 @@ func (h *UsersHandler) GetUsers(ctx context.Context, input *GetUsersInput) (*Get
 
 	response, err := h.getUsers(ctx, tenantID, paginationParams, input.Search)
 	if err != nil {
-		return nil, humautil.MapError(err)
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
 	return &GetUsersOutput{Body: *response}, nil
 }

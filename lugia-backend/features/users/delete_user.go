@@ -7,30 +7,36 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
+	"lugia/lib/middleware"
 )
 
-func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+var DeleteUserOp = huma.Operation{
+	OperationID: "delete-user",
+	Method:      http.MethodPost,
+	Path:        "/users/{userID}/delete",
+}
 
-	targetUserIDStr := r.PathValue("userID")
+type DeleteUserInput struct {
+	UserID string `path:"userID"`
+}
 
-	if !h.deleteUserRateLimiter.Allow(targetUserIDStr, r) {
-		appErr := errlib.New(fmt.Errorf("rate limit exceeded for user %s delete", targetUserIDStr), http.StatusTooManyRequests, "ユーザー削除の操作は制限されています。しばらくしてから再度お試しください。")
-		responder.RespondWithError(w, appErr)
-		return
+func (h *UsersHandler) DeleteUser(ctx context.Context, input *DeleteUserInput) (*struct{}, error) {
+	r := middleware.GetHTTPRequest(ctx)
+
+	if !h.deleteUserRateLimiter.Allow(input.UserID, r) {
+		return nil, humautil.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for delete user"), http.StatusTooManyRequests, "ユーザー削除の操作は制限されています。しばらくしてから再度お試しください。")
 	}
 
 	var targetUserID pgtype.UUID
-	if err := targetUserID.Scan(targetUserIDStr); err != nil {
-		appErr := errlib.New(fmt.Errorf("DeleteUser: invalid target userID format '%s': %w", targetUserIDStr, err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+	if err := targetUserID.Scan(input.UserID); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("invalid user ID format for delete user: %w", err), http.StatusBadRequest)
 	}
 
 	invokerUserID := libctx.GetUserID(ctx)
@@ -38,11 +44,16 @@ func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	err := h.deleteUser(ctx, targetUserID, invokerUserID, invokerTenantID)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
-
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *UsersHandler) deleteUser(ctx context.Context, targetUserID, invokerUserID, invokerTenantID pgtype.UUID) error {

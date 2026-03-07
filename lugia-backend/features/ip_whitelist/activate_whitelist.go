@@ -9,21 +9,32 @@ import (
 	"net/http"
 	"time"
 
-	jirachiAuthz "dislyze/jirachi/authz"
-	libctx "dislyze/jirachi/ctx"
-	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
-	"dislyze/jirachi/sendgridlib"
-	"dislyze/jirachi/utils"
-	"lugia/lib/iputils"
-	"lugia/queries"
-
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/golang-jwt/jwt/v5"
-
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sendgrid/sendgrid-go"
+
+	jirachiAuthz "dislyze/jirachi/authz"
+	libctx "dislyze/jirachi/ctx"
+	"dislyze/jirachi/errlib"
+	"dislyze/jirachi/sendgridlib"
+	"dislyze/jirachi/utils"
+	"lugia/lib/humautil"
+	"lugia/lib/iputils"
+	"lugia/lib/middleware"
+	"lugia/queries"
 )
+
+var ActivateWhitelistOp = huma.Operation{
+	OperationID: "activate-whitelist",
+	Method:      http.MethodPost,
+	Path:        "/ip-whitelist/activate",
+}
+
+type ActivateWhitelistInput struct {
+	Body ActivateWhitelistRequestBody
+}
 
 type ActivateWhitelistRequestBody struct {
 	Force bool `json:"force,omitempty"`
@@ -33,42 +44,34 @@ type ActivateWhitelistResponse struct {
 	UserIP string `json:"user_ip,omitempty"`
 }
 
-func (h *IPWhitelistHandler) ActivateWhitelist(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+type ActivateWhitelistOutput struct {
+	Body ActivateWhitelistResponse
+}
+
+func (h *IPWhitelistHandler) ActivateWhitelist(ctx context.Context, input *ActivateWhitelistInput) (*ActivateWhitelistOutput, error) {
+	r := middleware.GetHTTPRequest(ctx)
 
 	if !h.rateLimiter.Allow(libctx.GetUserID(ctx).String(), r) {
-		appErr := errlib.New(fmt.Errorf("ActivateWhitelist: rate limit exceeded"), http.StatusTooManyRequests, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewError(fmt.Errorf("rate limit exceeded for activate whitelist"), http.StatusTooManyRequests)
 	}
 
-	var req ActivateWhitelistRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(fmt.Errorf("ActivateWhitelist: failed to decode request: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			errlib.LogError(fmt.Errorf("ActivateWhitelist: failed to close request body: %w", err))
-		}
-	}()
-
-	userIP, err := h.activateWhitelist(ctx, req, r)
+	userIP, err := h.activateWhitelist(ctx, input.Body, r)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
 
 	if userIP != "" {
-		response := ActivateWhitelistResponse{
-			UserIP: userIP,
-		}
-		responder.RespondWithJSON(w, http.StatusOK, response)
-		return
+		return &ActivateWhitelistOutput{Body: ActivateWhitelistResponse{UserIP: userIP}}, nil
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *IPWhitelistHandler) activateWhitelist(ctx context.Context, req ActivateWhitelistRequestBody, r *http.Request) (string, error) {

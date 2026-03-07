@@ -5,15 +5,15 @@
 	import { toast } from "@dislyze/zoroark/toast";
 	import { createForm } from "felte";
 	import { invalidate } from "$app/navigation";
-	import { mutationFetch } from "$lugia/lib/fetch";
-	import type { IPWhitelistRule } from "$lugia/routes/settings/ip-whitelist/+page";
+	import { createMutationClient } from "$lugia/lib/api";
+	import type { IpWhitelistRule } from "$lugia/schema";
 
 	let {
 		onClose,
 		rule
 	}: {
 		onClose: () => void;
-		rule: IPWhitelistRule;
+		rule: IpWhitelistRule;
 	} = $props();
 
 	const { form, data, errors, isSubmitting, reset } = createForm({
@@ -34,11 +34,12 @@
 			return errs;
 		},
 		onSubmit: async () => {
-			const { success } = await mutationFetch(`/api/ip-whitelist/${rule.id}/delete`, {
-				method: "POST"
+			const api = createMutationClient();
+			const { error } = await api.POST("/ip-whitelist/{id}/delete", {
+				params: { path: { id: rule.id } }
 			});
 
-			if (success) {
+			if (!error) {
 				await invalidate((u) => u.pathname.includes("/api/ip-whitelist"));
 				toast.show("IPアドレスを削除しました", "success");
 				handleClose();

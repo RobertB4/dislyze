@@ -4,15 +4,15 @@
 	import { toast } from "@dislyze/zoroark/toast";
 	import { createForm } from "felte";
 	import { invalidate } from "$app/navigation";
-	import { mutationFetch } from "$lugia/lib/fetch";
-	import type { IPWhitelistRule } from "$lugia/routes/settings/ip-whitelist/+page";
+	import { createMutationClient } from "$lugia/lib/api";
+	import type { IpWhitelistRule } from "$lugia/schema";
 
 	let {
 		onClose,
 		rule
 	}: {
 		onClose: () => void;
-		rule: IPWhitelistRule;
+		rule: IpWhitelistRule;
 	} = $props();
 
 	const { form, data, errors, isSubmitting, reset } = createForm({
@@ -31,19 +31,13 @@
 			return errs;
 		},
 		onSubmit: async (values) => {
-			const payload = {
-				label: values.label || null
-			};
-
-			const { success } = await mutationFetch(`/api/ip-whitelist/${rule.id}/label/update`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify(payload)
+			const api = createMutationClient();
+			const { error } = await api.POST("/ip-whitelist/{id}/label/update", {
+				params: { path: { id: rule.id } },
+				body: { label: values.label || null }
 			});
 
-			if (success) {
+			if (!error) {
 				toast.show("説明を更新しました", "success");
 				handleClose();
 				await invalidate((u) => u.pathname.includes("/api/ip-whitelist"));

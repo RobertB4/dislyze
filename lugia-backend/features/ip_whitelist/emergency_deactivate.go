@@ -9,40 +9,52 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5"
+
 	jirachiAuthz "dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
+	"lugia/lib/middleware"
 	"lugia/queries"
-
-	"github.com/golang-jwt/jwt/v5"
-
-	"github.com/jackc/pgx/v5"
 )
 
-func (h *IPWhitelistHandler) EmergencyDeactivate(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+var EmergencyDeactivateOp = huma.Operation{
+	OperationID: "emergency-deactivate",
+	Method:      http.MethodPost,
+	Path:        "/ip-whitelist/emergency-deactivate",
+}
+
+type EmergencyDeactivateInput struct {
+	Token string `query:"token"`
+}
+
+func (h *IPWhitelistHandler) EmergencyDeactivate(ctx context.Context, input *EmergencyDeactivateInput) (*struct{}, error) {
+	r := middleware.GetHTTPRequest(ctx)
 
 	if !h.rateLimiter.Allow(libctx.GetUserID(ctx).String(), r) {
-		appErr := errlib.New(fmt.Errorf("EmergencyDeactivate: rate limit exceeded"), http.StatusTooManyRequests, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewError(fmt.Errorf("rate limit exceeded for emergency deactivate"), http.StatusTooManyRequests)
 	}
 
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		appErr := errlib.New(fmt.Errorf("EmergencyDeactivate: token query parameter is required"), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+	if input.Token == "" {
+		return nil, humautil.NewError(fmt.Errorf("emergency deactivate token is empty"), http.StatusBadRequest)
 	}
 
-	err := h.emergencyDeactivate(ctx, token)
+	err := h.emergencyDeactivate(ctx, input.Token)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *IPWhitelistHandler) emergencyDeactivate(ctx context.Context, token string) error {

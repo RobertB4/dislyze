@@ -7,29 +7,35 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/danielgtaylor/huma/v2"
+
 	libctx "dislyze/jirachi/ctx"
-	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
+	"lugia/lib/middleware"
 	"lugia/queries"
 )
 
-func (h *IPWhitelistHandler) DeactivateWhitelist(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+var DeactivateWhitelistOp = huma.Operation{
+	OperationID: "deactivate-whitelist",
+	Method:      http.MethodPost,
+	Path:        "/ip-whitelist/deactivate",
+}
+
+type DeactivateWhitelistInput struct{}
+
+func (h *IPWhitelistHandler) DeactivateWhitelist(ctx context.Context, input *DeactivateWhitelistInput) (*struct{}, error) {
+	r := middleware.GetHTTPRequest(ctx)
 
 	if !h.rateLimiter.Allow(libctx.GetUserID(ctx).String(), r) {
-		appErr := errlib.New(fmt.Errorf("DeactivateWhitelist: rate limit exceeded"), http.StatusTooManyRequests, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewError(fmt.Errorf("rate limit exceeded for deactivate whitelist"), http.StatusTooManyRequests)
 	}
 
 	err := h.deactivateWhitelist(ctx)
 	if err != nil {
-		appErr := errlib.New(fmt.Errorf("DeactivateWhitelist: %w", err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewError(fmt.Errorf("DeactivateWhitelist: %w", err), http.StatusInternalServerError)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *IPWhitelistHandler) deactivateWhitelist(ctx context.Context) error {

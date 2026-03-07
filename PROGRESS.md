@@ -1,176 +1,78 @@
 # Progress: End-to-End Type Safety with Huma
 
-## Goal
-Achieve true end-to-end type safety between Go backend and SvelteKit frontend by introducing huma (typed HTTP framework) and OpenAPI-based TypeScript codegen.
+## Branch: `introduce-openapi`
 
-## Branch: `svelte-improvements`
+## Completed
 
-## What's Done
+### Backend: Huma migration
+- All lugia-backend handlers migrated from Chi-style to huma
+- All giratina-backend handlers migrated from Chi-style to huma (including LogInToTenant redirect via `Location` header)
+- `lib/humautil/humautil.go` in both backends:
+  - `NewError(err, status)` — logs internally, returns generic error to client
+  - `NewErrorWithDetail(err, status, detail)` — logs internally, returns specific user-facing message
+  - `huma.NewError` override logs huma's validation details server-side
+- `lib/middleware/store_request.go` in both backends — stores `*http.Request` / `http.ResponseWriter` in context for handlers needing cookie/rate-limit access
+- `cmd/openapi/main.go` in both backends — offline OpenAPI spec generation
+- OpenAPI specs committed as `openapi.json`
 
-### 1. Backend: Huma integrated into lugia-backend
-- **Dependency**: `github.com/danielgtaylor/huma/v2 v2.36.0` (Go 1.24 compatible; v2.37+ needs Go 1.25 — upgrade when we move to Go 1.25+, API is identical)
-- **One endpoint migrated**: `GET /api/users` (GetUsers) — fully typed with huma
+### Frontend: Typed API clients
+- Both frontends use `openapi-fetch` with generated TypeScript schemas (`src/schema.ts`)
+- `createLoadClient(fetch)` for SvelteKit load functions (throws on errors, `data!` is safe)
+- `createMutationClient()` for mutations (toast on error, check `!error` for success)
+- `+layout.ts` kept as-is in both frontends (complex auth logic uses legacy `loadFunctionFetch`)
+- `handleLoadError` from legacy fetch still used in `{:catch}` blocks
 
-**`lib/humautil/humautil.go`** — Shared huma utilities:
-- `NewConfig(title, version)` — Creates huma config with custom error format (`{"error": "message"}` matching existing frontend contract) and docs/spec serving disabled
-- `APIError` — Implements `huma.StatusError`, serializes to `{"error": "msg"}` with `omitempty` so empty errors → `{}` (frontend shows generic toast)
-- `MapError(err)` — Converts `errlib.AppError` → huma error, preserves logging via `errlib.LogError`
+### Error handling architecture
+- Every error is logged server-side (restored guarantee from old `responder.RespondWithError`)
+- `huma.NewError` override ensures all errors (including huma's own validation) use `{"error": "message"}` format matching frontend expectation
+- Huma validation errors logged via `log.Printf` in the override for debugging frontend/backend validation mismatches
 
-**`features/users/get_users.go`** — Pattern for migrated endpoints:
-- Exported `var GetUsersOp = huma.Operation{...}` — operation definition used by both main.go and cmd/openapi
-- `GetUsersInput` struct with `query` tags + validation (`default`, `minimum`, `maximum`, `maxLength`)
-- `GetUsersOutput` struct with `Body` field (huma convention)
-- `GetUsers(ctx, *GetUsersInput) (*GetUsersOutput, error)` handler — pure business logic, no `w`/`r`
-- Use `nullable:"false"` tag on Go slice fields that are always initialized (prevents `| null` in generated TS types)
+## Follow-up items (separate PRs)
 
-**`main.go`** — Route registration pattern:
-- One shared `humaConfig` created in the authenticated group
-- Per-middleware-group API instances share the same config (→ same `*OpenAPI` spec via shared pointer)
-- Example: `humachi.New(r.With(middleware.RequireUsersView(queries)), humaConfig)`
-- Huma endpoints registered inside Chi route groups (path is relative to group)
-- Non-huma Chi endpoints coexist on the same router
+### Inline legacy fetch and update CLAUDE.md
+- `loadFunctionFetch` is only used in `+layout.ts` in each frontend — inline it and remove the file
+- `handleLoadError` similarly only used in `{:catch}` blocks — inline or simplify
+- Update CLAUDE.md files in both frontends: remove references to `loadFunctionFetch`/`mutationFetch`, document `createLoadClient`/`createMutationClient` as the only API patterns
 
-**`cmd/openapi/main.go`** — Spec generation script:
-- Creates a Chi router mirroring main.go's `/api` route group structure
-- Imports operation vars + types from feature packages
-- Registers with no-op handlers (types matter, handlers don't)
-- Writes `openapi.json` to lugia-backend directory
-- Uses `config.OpenAPI` (shared pointer) to get the full spec
+### CI for code generation
+- Add a CI step that runs `make generate` (SQLC) and `go run ./cmd/openapi` (OpenAPI specs) and fails if the output differs from what's committed
+- Catches cases where someone changes types/queries but forgets to regenerate
 
-### 2. Frontend: Typed API client with openapi-fetch
+### Rename humautil package files
+- `lib/humautil/humautil.go` — the filename is redundant with the package name. Split into `errors.go` (NewError, NewErrorWithDetail, APIError) + `config.go` (NewConfig) or similar
+- Cosmetic, but improves discoverability
 
-**`lugia-frontend/src/schema.ts`** — Generated TypeScript types:
-- Generated by `openapi-typescript` with `--root-types --root-types-no-schema-prefix` flags
-- Flat type exports at root level: `export type UserInfo = components['schemas']['UserInfo']`
-- Import types directly: `import type { UserInfo, GetUsersResponse } from "$lugia/schema"`
+### Rename StoreHTTPRequest middleware
+- `StoreHTTPRequest` doesn't communicate *where* it stores the request (context)
+- Rename to something like `InjectRawHTTP` or `StoreHTTPInContext` for clarity
+- Update all references in both backends
 
-**`lugia-frontend/src/lib/api.ts`** — Typed API client factory:
-- `createLoadClient(fetch)` — creates an `openapi-fetch` client for use in SvelteKit load functions
-- Must receive SvelteKit's load-function `fetch` for `invalidate()` tracking
-- Middleware replicates `loadFunctionFetch` error handling: 401→logout+redirect, 403/404/5xx→SvelteKit errors, network errors→503
-- All endpoints in the spec are authenticated, so `credentials: "include"` is hardcoded
+### SSO endpoints — not migrating to huma
+- `SSOLogin`, `SSOACS`, `SSOMetadata` in lugia-backend remain Chi-style handlers
+- Reason: they handle non-JSON payloads (SAML form-encoded POST, XML metadata) that don't fit huma's JSON-centric model
+- This is intentional, not tech debt
 
-**`lugia-frontend/src/routes/settings/users/+page.ts`** — Migrated load function:
-- Uses `api.GET("/users", { params: { query: { page, limit, search } } })` — URL, params, response all auto-typed
-- Non-migrated endpoints (e.g., `/api/users/roles`) still use `loadFunctionFetch`
-- Components import types directly from `$lugia/schema` (e.g., `import type { UserInfo } from "$lugia/schema"`)
+### Unify validation on huma
 
-**Dependencies added**:
-- `openapi-typescript` (devDependency) — generates TypeScript types from OpenAPI spec
-- `openapi-fetch` — typed fetch client, 6kb runtime, uses `paths` type from schema.ts
+### Problem
+We use a mix of huma struct tags and custom `Validate()` methods. This split confuses agents — they see a huma codebase and naturally reach for huma tags, but some validation lives in `Validate()`. Two systems for the same concern.
 
-### 3. Codegen pipeline
+### Decision
+Embrace huma validation fully:
+- **Huma tags** for the ~90-95% standard cases: `required`, `minimum`, `maximum`, `maxLength`, `default`, etc.
+- **Huma Resolvers** for the ~5-10% complex cases: cross-field validation (e.g., passwords must match)
+- **Remove all `Validate()` methods** — no custom validation pattern
+- Tags handle binding (`query`, `path`, `header`), defaults, and validation in one place
+- Agents do the right thing by default without special instructions
 
-**`Makefile`** — `make generate` includes:
-- SQLC generation (existing)
-- `go run ./cmd/openapi` (OpenAPI spec generation)
-- `npx openapi-typescript ... --root-types --root-types-no-schema-prefix -o src/schema.ts` (TS type generation)
+### Fix nullable slices in OpenAPI spec
+- Go nil slices serialize to `null` in JSON, so the OpenAPI spec generates `T[] | null` for slice fields
+- This forces frontend code to use `?? []` defensively (e.g. `data!.tenants ?? []`)
+- Fix: ensure Go handlers always return initialized slices (not nil), or use appropriate huma tags
+- Address during the validation unification pass since it touches the same struct definitions
 
-## Key Architecture Decisions
-
-### Backend
-1. **Shared config = shared spec**: All `humachi.New()` calls use the same `huma.Config`. The `OpenAPI` field is a pointer, so all API instances contribute to one spec.
-2. **Operations defined in feature packages**: `var GetUsersOp` lives next to the handler. Both main.go and cmd/openapi import it. No duplication, no drift.
-3. **Offline spec generation (not runtime)**: The spec is generated by `cmd/openapi` and committed. No spec/docs served at runtime.
-4. **Keep existing Validate() pattern**: Huma struct tag validation is opt-in. Complex validation stays in `.Validate()` methods. Struct tags handle simple constraints.
-5. **Chi middleware preserved**: Per-route middleware applied via `r.With()` on Chi sub-routers. Huma API created on the middleware-wrapped router.
-6. **Error format backward-compatible**: Custom `huma.NewError` override produces `{"error": "message"}` matching existing frontend contract.
-7. **Generated files committed**: Same convention as SQLC output.
-
-### Frontend
-8. **`openapi-fetch` for migrated endpoints**: Typed URLs, query params, and auto-inferred response types. No manual type annotations needed for API calls.
-9. **`loadFunctionFetch` for non-migrated endpoints**: Stays unchanged during transition. Used for endpoints not yet in the OpenAPI spec. Will shrink as endpoints migrate.
-10. **`mutationFetch` unchanged**: Mutations keep the existing `{ response, success }` pattern. When mutation endpoints are migrated to huma, request bodies can be typed with `satisfies` — no infrastructure change needed.
-11. **Factory pattern for load client**: `createLoadClient(fetch)` receives SvelteKit's per-request `fetch` for `invalidate()` tracking. Cannot be a singleton.
-12. **`data!` assertion**: openapi-fetch returns `{ data, error, response }` as a discriminated union. Since middleware throws on all error statuses, `data` is always defined on success. TypeScript can't infer this, so `data!` is used — safe and correct.
-13. **Direct schema imports**: With `--root-types`, types are exported flat from schema.ts. Components import directly: `import type { UserInfo } from "$lugia/schema"`. No re-export intermediaries needed.
-
-## What's Left to Migrate
-
-### Backend endpoints (by phase)
-**Phase 1 — Simple reads** (no query params, no cookies):
-- `GET /api/me` (GetMe) — deprioritized (used irregularly)
-- `GET /api/roles` (GetRoles)
-- `GET /api/roles/permissions` (GetPermissions)
-
-**Phase 2 — Mutations** (~15 endpoints):
-- `POST /api/me/change-name`, `POST /api/me/change-password`, `POST /api/me/change-email`
-- `GET /api/me/verify-change-email`
-- `POST /api/roles/create`, `POST /api/roles/{roleID}/update`, `POST /api/roles/{roleID}/delete`
-- `POST /api/users/invite`, `POST /api/users/{userID}/resend-invite`, `POST /api/users/{userID}/roles`, `POST /api/users/{userID}/delete`
-- `POST /api/ip-whitelist/create`, etc.
-- `POST /api/tenant/change-name`
-
-**Phase 3 — Auth endpoints** (hardest — cookies, rate limiting, raw HTTP access):
-- Consider keeping as plain Chi handlers (escape hatch). Auth endpoints are security-sensitive and most return no typed body.
-
-### Frontend
-- As each backend endpoint is migrated, switch the frontend from `loadFunctionFetch` to `createLoadClient` + `api.GET()`/`api.POST()`
-- Manual types (Permission, RoleInfo, GetRolesResponse, IPWhitelistRule, etc.) will be replaced by schema imports as their backend endpoints are migrated
-- For mutations: add `satisfies` with schema types for request body typing when available
-
-### Giratina (later)
-- Same migration for giratina-backend/giratina-frontend
-- `humautil` package could move to jirachi if both backends need it
-
-## How to Add a New Huma Endpoint (Full E2E)
-
-### Backend
-
-1. In the feature package (e.g., `features/roles/get_roles.go`):
-   ```go
-   var GetRolesOp = huma.Operation{
-       OperationID: "get-roles",
-       Method:      http.MethodGet,
-       Path:        "/roles",
-   }
-   type GetRolesInput struct { /* query/path params with huma tags */ }
-   type GetRolesOutput struct { Body GetRolesResponse }
-   func (h *Handler) GetRoles(ctx context.Context, input *GetRolesInput) (*GetRolesOutput, error) { ... }
-   ```
-   - Use `nullable:"false"` on slice fields that are always initialized
-
-2. In `main.go`, register on the appropriate middleware-wrapped API:
-   ```go
-   huma.Register(rolesViewAPI, roles.GetRolesOp, rolesHandler.GetRoles)
-   ```
-
-3. In `cmd/openapi/main.go`, register with no-op handler:
-   ```go
-   huma.Register(api, roles.GetRolesOp, func(_ context.Context, _ *roles.GetRolesInput) (*roles.GetRolesOutput, error) {
-       return nil, nil
-   })
-   ```
-
-### Generate
-
-4. Run `make generate` → updates `openapi.json` + `schema.ts` (with flat type exports)
-
-### Frontend
-
-5. In the `+page.ts` load function, switch from `loadFunctionFetch` to `createLoadClient`:
-   ```typescript
-   import { createLoadClient } from "$lugia/lib/api";
-
-   export function load({ fetch }: Parameters<PageLoad>[0]) {
-       const api = createLoadClient(fetch);
-       const rolesPromise = api.GET("/roles").then(({ data }) => data!);
-       return { rolesPromise };
-   }
-   ```
-
-6. In components, import types directly from schema:
-   ```typescript
-   import type { RoleInfo } from "$lugia/schema";
-   ```
-
-7. Remove manual type definitions that are now in the schema
-
-## How to Verify
-
-```bash
-cd lugia-backend && go build ./... && make test-unit     # Backend compiles + tests pass
-cd lugia-backend && go run ./cmd/openapi                 # Spec generates
-make generate                                            # Full codegen pipeline
-make verify                                              # Lint + typecheck + test everything
-```
+### Scope
+- lugia-backend: Replace all `Validate()` methods with huma tags + Resolvers where needed
+- giratina-backend: Same
+- Update CLAUDE.md files to document the convention
+- Regenerate OpenAPI specs and frontend TypeScript schemas

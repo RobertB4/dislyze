@@ -7,14 +7,21 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 
 	"dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
 	"lugia/queries"
 )
+
+var GetMeOp = huma.Operation{
+	OperationID: "get-me",
+	Method:      http.MethodGet,
+	Path:        "/me",
+}
 
 // ClientEnterpriseFeatures contains only the enterprise features safe to expose to clients
 type ClientEnterpriseFeatures struct {
@@ -27,20 +34,29 @@ type MeResponse struct {
 	UserID             string                   `json:"user_id"`
 	Email              string                   `json:"email"`
 	UserName           string                   `json:"user_name"`
-	Permissions        []string                 `json:"permissions"`
+	Permissions        []string                 `json:"permissions" nullable:"false"`
 	EnterpriseFeatures ClientEnterpriseFeatures `json:"enterprise_features"`
 }
 
-func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+type GetMeInput struct{}
 
+type GetMeOutput struct {
+	Body MeResponse
+}
+
+func (h *UsersHandler) GetMe(ctx context.Context, input *GetMeInput) (*GetMeOutput, error) {
 	response, err := h.getMe(ctx)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
-
-	responder.RespondWithJSON(w, http.StatusOK, response)
+	return &GetMeOutput{Body: *response}, nil
 }
 
 func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {

@@ -13,13 +13,31 @@ import (
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/jwt"
 	"dislyze/jirachi/logger"
-	"dislyze/jirachi/responder"
+	"giratina/lib/middleware"
 	"giratina/queries"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+var LogInToTenantOp = huma.Operation{
+	OperationID: "log-in-to-tenant",
+	Method:      http.MethodGet,
+	Path:        "/tenants/{tenantID}/login",
+	Summary:     "Log in to a tenant",
+	Tags:        []string{"tenants"},
+	DefaultStatus: http.StatusFound,
+}
+
+type LogInToTenantInput struct {
+	TenantID string `path:"tenantID"`
+}
+
+type LogInToTenantOutput struct {
+	Status   int
+	Location string `header:"Location"`
+}
 
 func (h *TenantsHandler) getCookieDomain() string {
 	if h.env.LugiaFrontendUrl == "" {
@@ -45,22 +63,16 @@ func (h *TenantsHandler) getCookieDomain() string {
 	return ""
 }
 
-func (h *TenantsHandler) LogInToTenant(w http.ResponseWriter, r *http.Request) {
-	tenantIDStr := chi.URLParam(r, "tenantID")
-	if tenantIDStr == "" {
-		appErr := errlib.New(fmt.Errorf("tenant ID is required"), http.StatusBadRequest, "Tenant ID is required")
-		responder.RespondWithError(w, appErr)
-		return
-	}
+func (h *TenantsHandler) LogInToTenant(ctx context.Context, input *LogInToTenantInput) (*LogInToTenantOutput, error) {
+	r := middleware.GetHTTPRequest(ctx)
+	w := middleware.GetResponseWriter(ctx)
 
 	var tenantID pgtype.UUID
-	if err := tenantID.Scan(tenantIDStr); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "Invalid tenant ID format")
-		responder.RespondWithError(w, appErr)
-		return
+	if err := tenantID.Scan(input.TenantID); err != nil {
+		return nil, errlib.New(err, http.StatusBadRequest, "Invalid tenant ID format")
 	}
 
-	tokenPair, userID, err := h.logInToTenant(r.Context(), tenantID, r)
+	tokenPair, userID, err := h.logInToTenant(ctx, tenantID, r)
 	if err != nil {
 		logger.LogAuthEvent(logger.AuthEvent{
 			EventType: "tenant_login",
@@ -72,9 +84,7 @@ func (h *TenantsHandler) LogInToTenant(w http.ResponseWriter, r *http.Request) {
 			Success:   false,
 			Error:     err.Error(),
 		})
-		appErr := errlib.New(err, http.StatusUnauthorized, err.Error())
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, errlib.New(err, http.StatusUnauthorized, err.Error())
 	}
 
 	cookieDomain := h.getCookieDomain()
@@ -111,7 +121,10 @@ func (h *TenantsHandler) LogInToTenant(w http.ResponseWriter, r *http.Request) {
 		Success:   true,
 	})
 
-	http.Redirect(w, r, h.env.LugiaFrontendUrl, http.StatusFound)
+	return &LogInToTenantOutput{
+		Status:   http.StatusFound,
+		Location: h.env.LugiaFrontendUrl,
+	}, nil
 }
 
 func (h *TenantsHandler) logInToTenant(ctx context.Context, tenantID pgtype.UUID, r *http.Request) (*jwt.TokenPair, string, error) {

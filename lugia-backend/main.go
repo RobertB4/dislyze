@@ -73,71 +73,81 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	})
 
 	r.Route("/api", func(r chi.Router) {
+		// SSO auth endpoints (chi-style, not migrated to huma)
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/signup", authHandler.Signup)
-			r.Post("/login", authHandler.Login)
-			r.Post("/logout", authHandler.Logout)
-			r.Post("/accept-invite", authHandler.AcceptInvite)
-			r.Post("/tenant-signup", authHandler.TenantSignup)
-			r.Post("/forgot-password", authHandler.ForgotPassword)
-			r.Post("/verify-reset-token", authHandler.VerifyResetToken)
-			r.Post("/reset-password", authHandler.ResetPassword)
-
 			r.Post("/sso/login", authHandler.SSOLogin)
 			r.Post("/sso/acs", authHandler.SSOACS)
 			r.Get("/sso/metadata", authHandler.SSOMetadata)
 		})
 
-		r.Group(func(r chi.Router) {
-			r.Use(jirachiAuthMiddleware.Authenticate)
-			r.Use(middleware.LoadTenantAndUserContext(queries))
-			r.Use(middleware.IPWhitelistMiddleware(queries))
+		// Huma route registrations below are mirrored in lugia-backend/cmd/openapi/main.go
+		// for OpenAPI spec generation. When adding or removing endpoints, update both files.
+		humaConfig := humautil.NewConfig("Lugia API", "1.0.0")
 
-			humaConfig := humautil.NewConfig("Lugia API", "1.0.0")
+		// /auth endpoints — public, only need StoreHTTPRequest for cookie/rate-limit access
+		authAPI := humachi.New(r.With(middleware.StoreHTTPRequest), humaConfig)
+		huma.Register(authAPI, auth.SignupOp, authHandler.Signup)
+		huma.Register(authAPI, auth.LoginOp, authHandler.Login)
+		huma.Register(authAPI, auth.LogoutOp, authHandler.Logout)
+		huma.Register(authAPI, auth.AcceptInviteOp, authHandler.AcceptInvite)
+		huma.Register(authAPI, auth.TenantSignupOp, authHandler.TenantSignup)
+		huma.Register(authAPI, auth.ForgotPasswordOp, authHandler.ForgotPassword)
+		huma.Register(authAPI, auth.VerifyResetTokenOp, authHandler.VerifyResetToken)
+		huma.Register(authAPI, auth.ResetPasswordOp, authHandler.ResetPassword)
 
-			r.Get("/me", usersHandler.GetMe)
-			r.Post("/me/change-name", usersHandler.UpdateMe)
-			r.Post("/me/change-password", usersHandler.ChangePassword)
-			r.Post("/me/change-email", usersHandler.ChangeEmail)
-			r.Get("/me/verify-change-email", usersHandler.VerifyChangeEmail)
+		// Authenticated huma endpoints — all registered at the /api level
+		// to avoid chi sub-router path duplication.
+		authenticatedMiddleware := chi.Chain(
+			jirachiAuthMiddleware.Authenticate,
+			middleware.LoadTenantAndUserContext(queries),
+			middleware.IPWhitelistMiddleware(queries),
+			middleware.StoreHTTPRequest,
+		)
 
-			r.Route("/users", func(r chi.Router) {
-				usersViewAPI := humachi.New(r.With(middleware.RequireUsersView(queries)), humaConfig)
-				huma.Register(usersViewAPI, users.GetUsersOp, usersHandler.GetUsers)
+		// /me endpoints — authenticated, no extra permission middleware
+		meAPI := humachi.New(r.With(authenticatedMiddleware...), humaConfig)
+		huma.Register(meAPI, users.GetMeOp, usersHandler.GetMe)
+		huma.Register(meAPI, users.UpdateMeOp, usersHandler.UpdateMe)
+		huma.Register(meAPI, users.ChangePasswordOp, usersHandler.ChangePassword)
+		huma.Register(meAPI, users.ChangeEmailOp, usersHandler.ChangeEmail)
+		huma.Register(meAPI, users.VerifyChangeEmailOp, usersHandler.VerifyChangeEmail)
 
-				r.With(middleware.RequireUsersView(queries)).Get("/roles", rolesHandler.GetRoles)
-				r.With(middleware.RequireUsersEdit(queries)).Post("/invite", usersHandler.InviteUser)
-				r.With(middleware.RequireUsersEdit(queries)).Post("/{userID}/resend-invite", usersHandler.ResendInvite)
-				r.With(middleware.RequireUsersEdit(queries)).Post("/{userID}/roles", usersHandler.UpdateUserRoles)
-				r.With(middleware.RequireUsersEdit(queries)).Post("/{userID}/delete", usersHandler.DeleteUser)
-			})
+		// /tenant endpoints
+		tenantEditAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireTenantEdit(queries))...), humaConfig)
+		huma.Register(tenantEditAPI, users.ChangeTenantNameOp, usersHandler.ChangeTenantName)
 
-			r.Route("/roles", func(r chi.Router) {
-				r.Use(middleware.RequireRBAC())
+		// /users endpoints
+		usersViewAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireUsersView(queries))...), humaConfig)
+		huma.Register(usersViewAPI, users.GetUsersOp, usersHandler.GetUsers)
+		huma.Register(usersViewAPI, roles.GetUsersRolesOp, rolesHandler.GetRoles)
 
-				r.With(middleware.RequireRolesView(queries)).Get("/", rolesHandler.GetRoles)
-				r.With(middleware.RequireRolesView(queries)).Get("/permissions", rolesHandler.GetPermissions)
-				r.With(middleware.RequireRolesEdit(queries)).Post("/create", rolesHandler.CreateRole)
-				r.With(middleware.RequireRolesEdit(queries)).Post("/{roleID}/update", rolesHandler.UpdateRole)
-				r.With(middleware.RequireRolesEdit(queries)).Post("/{roleID}/delete", rolesHandler.DeleteRole)
-			})
+		usersEditAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireUsersEdit(queries))...), humaConfig)
+		huma.Register(usersEditAPI, users.InviteUserOp, usersHandler.InviteUser)
+		huma.Register(usersEditAPI, users.ResendInviteOp, usersHandler.ResendInvite)
+		huma.Register(usersEditAPI, users.UpdateUserRolesOp, usersHandler.UpdateUserRoles)
+		huma.Register(usersEditAPI, users.DeleteUserOp, usersHandler.DeleteUser)
 
-			r.Route("/tenant", func(r chi.Router) {
-				r.With(middleware.RequireTenantEdit(queries)).Post("/change-name", usersHandler.ChangeTenantName)
-			})
+		// /roles endpoints
+		rolesViewAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireRBAC(), middleware.RequireRolesView(queries))...), humaConfig)
+		huma.Register(rolesViewAPI, roles.GetRolesOp, rolesHandler.GetRoles)
+		huma.Register(rolesViewAPI, roles.GetPermissionsOp, rolesHandler.GetPermissions)
 
-			r.Route("/ip-whitelist", func(r chi.Router) {
-				r.Use(middleware.RequireIPWhitelist())
+		rolesEditAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireRBAC(), middleware.RequireRolesEdit(queries))...), humaConfig)
+		huma.Register(rolesEditAPI, roles.CreateRoleOp, rolesHandler.CreateRole)
+		huma.Register(rolesEditAPI, roles.UpdateRoleOp, rolesHandler.UpdateRole)
+		huma.Register(rolesEditAPI, roles.DeleteRoleOp, rolesHandler.DeleteRole)
 
-				r.With(middleware.RequireIPWhitelistView(queries)).Get("/", ipWhitelistHandler.GetIPWhitelist)
-				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/create", ipWhitelistHandler.AddIPToWhitelist)
-				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/{id}/label/update", ipWhitelistHandler.UpdateIPLabel)
-				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/{id}/delete", ipWhitelistHandler.DeleteIP)
-				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/activate", ipWhitelistHandler.ActivateWhitelist)
-				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/deactivate", ipWhitelistHandler.DeactivateWhitelist)
-				r.With(middleware.RequireIPWhitelistEdit(queries)).Post("/emergency-deactivate", ipWhitelistHandler.EmergencyDeactivate)
-			})
-		})
+		// /ip-whitelist endpoints
+		ipViewAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireIPWhitelist(), middleware.RequireIPWhitelistView(queries))...), humaConfig)
+		huma.Register(ipViewAPI, ip_whitelist.GetIPWhitelistOp, ipWhitelistHandler.GetIPWhitelist)
+
+		ipEditAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireIPWhitelist(), middleware.RequireIPWhitelistEdit(queries))...), humaConfig)
+		huma.Register(ipEditAPI, ip_whitelist.AddIPOp, ipWhitelistHandler.AddIPToWhitelist)
+		huma.Register(ipEditAPI, ip_whitelist.UpdateIPLabelOp, ipWhitelistHandler.UpdateIPLabel)
+		huma.Register(ipEditAPI, ip_whitelist.DeleteIPOp, ipWhitelistHandler.DeleteIP)
+		huma.Register(ipEditAPI, ip_whitelist.ActivateWhitelistOp, ipWhitelistHandler.ActivateWhitelist)
+		huma.Register(ipEditAPI, ip_whitelist.DeactivateWhitelistOp, ipWhitelistHandler.DeactivateWhitelist)
+		huma.Register(ipEditAPI, ip_whitelist.EmergencyDeactivateOp, ipWhitelistHandler.EmergencyDeactivate)
 	})
 
 	// Conditionally serve frontend static files - not used on localhost

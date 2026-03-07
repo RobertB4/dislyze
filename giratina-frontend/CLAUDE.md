@@ -26,7 +26,7 @@ Every file has one canonical import path. Relative imports, `$lib/`, and zoroark
 
 ```typescript
 // Source files: use $giratina/ prefix
-import { mutationFetch } from "$giratina/lib/fetch";
+import { createLoadClient, createMutationClient } from "$giratina/lib/api";
 import Layout from "$giratina/components/Layout.svelte";
 
 // Zoroark: use deep imports (one per component/utility)
@@ -39,16 +39,25 @@ import type { PageData } from "./$types";
 ```
 
 ### Frontend API Calls
-```typescript
-// For load functions (GET)
-const data = await loadFunctionFetch<Type>('/api/endpoint');
 
-// For mutations (POST/PUT/DELETE)
-const {response, success} = await mutationFetch('/api/endpoint', {
-  method: 'POST',
-  body: JSON.stringify(data)
+Typed API clients generated from OpenAPI spec (`src/schema.ts`). Types are auto-generated — never hand-edit `schema.ts`.
+
+```typescript
+// For load functions (SvelteKit load) — must pass SvelteKit's fetch
+const api = createLoadClient(fetch);
+const { data } = await api.GET("/tenants");
+// data! is safe because middleware throws on all errors before returning
+
+// For mutations (Svelte components) — no fetch needed
+const api = createMutationClient();
+const { data, error } = await api.POST("/tenants/{id}/update", {
+  params: { path: { id: tenantId } },
+  body: { name: "...", enterprise_features: ... }
 });
+if (!error) { /* success */ }
 ```
+
+Legacy `loadFunctionFetch`/`mutationFetch` from `$giratina/lib/fetch` still used in `+layout.ts` (complex auth logic) and `handleLoadError` for `{:catch}` blocks.
 
 ### Frontend Format
 Follow the format specified in @giratina-frontend/.prettierrc

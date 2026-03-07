@@ -2,18 +2,29 @@
 package ip_whitelist
 
 import (
-	"encoding/json"
+	"context"
 	"net/http"
 	"net/netip"
 
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/jackc/pgx/v5/pgtype"
+
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
 	"lugia/lib/iputils"
 	"lugia/queries"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
+
+var AddIPOp = huma.Operation{
+	OperationID: "add-ip-to-whitelist",
+	Method:      http.MethodPost,
+	Path:        "/ip-whitelist/create",
+}
+
+type AddIPInput struct {
+	Body AddIPToWhitelistRequest
+}
 
 type AddIPToWhitelistRequest struct {
 	IPAddress string  `json:"ip_address"`
@@ -37,35 +48,41 @@ func (r *AddIPToWhitelistRequest) Validate() error {
 	return nil
 }
 
-func (h *IPWhitelistHandler) AddIPToWhitelist(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (h *IPWhitelistHandler) AddIPToWhitelist(ctx context.Context, input *AddIPInput) (*struct{}, error) {
+	if err := input.Body.Validate(); err != nil {
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusBadRequest)
+	}
+
+	err := h.addIPToWhitelist(ctx, input.Body)
+	if err != nil {
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
+	}
+	return nil, nil
+}
+
+func (h *IPWhitelistHandler) addIPToWhitelist(ctx context.Context, req AddIPToWhitelistRequest) error {
 	tenantID := libctx.GetTenantID(ctx)
 	userID := libctx.GetUserID(ctx)
 
-	var req AddIPToWhitelistRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	if err := req.Validate(); err != nil {
-		responder.RespondWithError(w, err)
-		return
-	}
-
 	normalizedCIDR, err := iputils.ValidateCIDR(req.IPAddress)
 	if err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(err, http.StatusBadRequest, "")
 	}
 
 	prefix, err := netip.ParsePrefix(normalizedCIDR)
 	if err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(err, http.StatusBadRequest, "")
 	}
 
 	exists, err := h.q.CheckIPExists(ctx, &queries.CheckIPExistsParams{
@@ -73,14 +90,10 @@ func (h *IPWhitelistHandler) AddIPToWhitelist(w http.ResponseWriter, r *http.Req
 		IpAddress: prefix,
 	})
 	if err != nil {
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(err, http.StatusInternalServerError, "")
 	}
 	if exists {
-		appErr := errlib.New(nil, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(nil, http.StatusBadRequest, "")
 	}
 
 	var label pgtype.Text
@@ -95,10 +108,8 @@ func (h *IPWhitelistHandler) AddIPToWhitelist(w http.ResponseWriter, r *http.Req
 		CreatedBy: userID,
 	})
 	if err != nil {
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(err, http.StatusInternalServerError, "")
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil
 }

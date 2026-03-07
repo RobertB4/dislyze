@@ -3,21 +3,33 @@ package users
 
 import (
 	"context"
-	"encoding/json"
+	"database/sql"
 	"fmt"
 	"net/http"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
 	"lugia/queries"
 )
 
+var UpdateUserRolesOp = huma.Operation{
+	OperationID: "update-user-roles",
+	Method:      http.MethodPost,
+	Path:        "/users/{userID}/roles",
+}
+
+type UpdateUserRolesInput struct {
+	UserID string `path:"userID"`
+	Body   UpdateUserRolesRequestBody
+}
+
 type UpdateUserRolesRequestBody struct {
-	RoleIDs []pgtype.UUID `json:"role_ids"`
+	RoleIDs []string `json:"role_ids"`
 }
 
 func (r *UpdateUserRolesRequestBody) Validate() error {
@@ -25,6 +37,16 @@ func (r *UpdateUserRolesRequestBody) Validate() error {
 		return fmt.Errorf("users need at least one role")
 	}
 	return nil
+}
+
+func parseUUIDs(ids []string) ([]pgtype.UUID, error) {
+	result := make([]pgtype.UUID, len(ids))
+	for i, id := range ids {
+		if err := result[i].Scan(id); err != nil {
+			return nil, fmt.Errorf("invalid UUID %q: %w", id, err)
+		}
+	}
+	return result, nil
 }
 
 // difference returns elements that are in slice1 but not in slice2
@@ -43,42 +65,35 @@ func difference(slice1, slice2 []pgtype.UUID) []pgtype.UUID {
 	return result
 }
 
-func (h *UsersHandler) UpdateUserRoles(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	userIDStr := r.PathValue("userID")
-	if userIDStr == "" {
-		responder.RespondWithError(w, errlib.New(fmt.Errorf("user ID is required"), http.StatusBadRequest, ""))
-		return
-	}
-
+func (h *UsersHandler) UpdateUserRoles(ctx context.Context, input *UpdateUserRolesInput) (*struct{}, error) {
 	var targetUserID pgtype.UUID
-	if err := targetUserID.Scan(userIDStr); err != nil {
-		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserRoles: invalid target userID format '%s': %w", userIDStr, err), http.StatusBadRequest, ""))
-		return
+	if err := targetUserID.Scan(input.UserID); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("invalid user ID format for update roles: %w", err), http.StatusBadRequest)
 	}
 
-	var req UpdateUserRolesRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserRoles: failed to decode request: %w", err), http.StatusBadRequest, ""))
-		return
-	}
-	defer r.Body.Close()
-
-	if err := req.Validate(); err != nil {
-		responder.RespondWithError(w, errlib.New(fmt.Errorf("UpdateUserRoles: validation failed: %w", err), http.StatusBadRequest, ""))
-		return
+	if err := input.Body.Validate(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("update user roles validation failed: %w", err), http.StatusBadRequest)
 	}
 
-	err := h.updateUserRoles(ctx, targetUserID, req)
+	roleIDs, err := parseUUIDs(input.Body.RoleIDs)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		return nil, humautil.NewError(fmt.Errorf("invalid role ID format: %w", err), http.StatusBadRequest)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	if err := h.updateUserRoles(ctx, targetUserID, roleIDs); err != nil {
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
+	}
+	return nil, nil
 }
 
-func (h *UsersHandler) updateUserRoles(ctx context.Context, targetUserID pgtype.UUID, req UpdateUserRolesRequestBody) error {
+func (h *UsersHandler) updateUserRoles(ctx context.Context, targetUserID pgtype.UUID, roleIDs []pgtype.UUID) error {
 	requestingUserID := libctx.GetUserID(ctx)
 	requestingTenantID := libctx.GetTenantID(ctx)
 
@@ -99,13 +114,13 @@ func (h *UsersHandler) updateUserRoles(ctx context.Context, targetUserID pgtype.
 	}
 
 	validRoleIDs, err := h.q.ValidateRolesBelongToTenant(ctx, &queries.ValidateRolesBelongToTenantParams{
-		Column1:  req.RoleIDs,
+		Column1:  roleIDs,
 		TenantID: requestingTenantID,
 	})
 	if err != nil {
 		return errlib.New(fmt.Errorf("UpdateUserRoles: failed to validate roles belong to tenant: %w", err), http.StatusInternalServerError, "")
 	}
-	if len(validRoleIDs) != len(req.RoleIDs) {
+	if len(validRoleIDs) != len(roleIDs) {
 		return errlib.New(fmt.Errorf("UpdateUserRoles: some roles don't belong to tenant"), http.StatusBadRequest, "")
 	}
 
@@ -117,15 +132,19 @@ func (h *UsersHandler) updateUserRoles(ctx context.Context, targetUserID pgtype.
 		return errlib.New(fmt.Errorf("UpdateUserRoles: failed to get current user roles: %w", err), http.StatusInternalServerError, "")
 	}
 
-	toAdd := difference(req.RoleIDs, currentRoleIDs)
-	toRemove := difference(currentRoleIDs, req.RoleIDs)
+	toAdd := difference(roleIDs, currentRoleIDs)
+	toRemove := difference(currentRoleIDs, roleIDs)
 
 	if len(toRemove) > 0 || len(toAdd) > 0 {
 		tx, err := h.dbConn.Begin(ctx)
 		if err != nil {
 			return errlib.New(fmt.Errorf("UpdateUserRoles: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
 		}
-		defer tx.Rollback(ctx)
+		defer func() {
+			if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
+				errlib.LogError(fmt.Errorf("UpdateUserRoles: failed to rollback transaction: %w", rbErr))
+			}
+		}()
 
 		qtx := h.q.WithTx(tx)
 

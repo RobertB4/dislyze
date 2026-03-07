@@ -3,18 +3,19 @@ package tenants
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/jackc/pgx/v5"
+
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"giratina/lib/humautil"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jackc/pgx/v5"
 )
 
 type SSOConfig struct {
@@ -80,46 +81,42 @@ type TenantInvitationClaims struct {
 	jwt.RegisteredClaims
 }
 
-func (h *TenantsHandler) GenerateTenantInvitationToken(w http.ResponseWriter, r *http.Request) {
-	var req GenerateTenantInvitationTokenRequest
+var GenerateTokenOp = huma.Operation{
+	OperationID: "generate-tenant-invitation-token",
+	Method:      http.MethodPost,
+	Path:        "/tenants/generate-token",
+}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+type GenerateTokenInput struct {
+	Body GenerateTenantInvitationTokenRequest
+}
+
+type GenerateTokenOutput struct {
+	Body GenerateTenantInvitationTokenResponse
+}
+
+func (h *TenantsHandler) GenerateTenantInvitationToken(ctx context.Context, input *GenerateTokenInput) (*GenerateTokenOutput, error) {
+	if err := input.Body.Validate(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("tenant invitation validation failed: %w", err), http.StatusBadRequest)
 	}
 
-	if err := req.Validate(); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	response, err := h.generateTenantInvitationToken(r.Context(), &req)
+	response, err := h.generateTenantInvitationToken(ctx, &input.Body)
 	if err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, err.Error())
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, err
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
+	return &GenerateTokenOutput{Body: *response}, nil
 }
 
 func (h *TenantsHandler) generateTenantInvitationToken(ctx context.Context, req *GenerateTenantInvitationTokenRequest) (*GenerateTenantInvitationTokenResponse, error) {
 	_, err := h.queries.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errlib.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("failed to check user existence: %w", err)
+			return nil, humautil.NewError(fmt.Errorf("failed to check user existence: %w", err), http.StatusInternalServerError)
 		}
 		// ErrNoRows means user doesn't exist, which is what we want - continue
 	} else {
-		return nil, fmt.Errorf("このメールアドレスは既に使用されています。")
+		return nil, humautil.NewErrorWithDetail(fmt.Errorf("GenerateTenantInvitationToken: email already in use"), http.StatusBadRequest, "このメールアドレスは既に使用されています。")
 	}
 
 	now := time.Now()
@@ -137,12 +134,12 @@ func (h *TenantsHandler) generateTenantInvitationToken(ctx context.Context, req 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(h.env.CreateTenantJwtSecret))
 	if err != nil {
-		return nil, fmt.Errorf("failed to sign JWT token: %w", err)
+		return nil, humautil.NewError(fmt.Errorf("failed to sign JWT token: %w", err), http.StatusInternalServerError)
 	}
 
-	url := fmt.Sprintf("%s/auth/tenant-signup?token=%s", h.env.LugiaFrontendUrl, tokenString)
+	inviteURL := fmt.Sprintf("%s/auth/tenant-signup?token=%s", h.env.LugiaFrontendUrl, tokenString)
 	response := &GenerateTenantInvitationTokenResponse{
-		URL: url,
+		URL: inviteURL,
 	}
 
 	return response, nil

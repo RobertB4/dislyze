@@ -1,6 +1,6 @@
 <script lang="ts">
 	import InteractivePill from "@dislyze/zoroark/InteractivePill";
-	import type { PermissionInfo } from "$lugia/routes/settings/roles/+page";
+	import type { Permission } from "$lugia/schema";
 	import { SvelteMap } from "svelte/reactivity";
 
 	let {
@@ -11,7 +11,7 @@
 		"data-testid": dataTestid
 	}: {
 		permissionIds: string[];
-		availablePermissions: PermissionInfo[];
+		availablePermissions: Permission[];
 		setFields: (
 			key: "permission_ids" | "name" | "description" | "hasPermission" | `permission_ids.${number}`,
 			value: any
@@ -77,7 +77,7 @@
 
 	// Group permissions by resource for better UI organization
 	let groupedPermissions = $derived(() => {
-		const groups = new SvelteMap<string, PermissionInfo[]>();
+		const groups = new SvelteMap<string, Permission[]>();
 
 		availablePermissions.forEach((permission) => {
 			if (!groups.has(permission.resource)) {

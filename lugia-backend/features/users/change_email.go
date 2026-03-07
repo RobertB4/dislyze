@@ -13,16 +13,28 @@ import (
 	"strings"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sendgrid/sendgrid-go"
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
 	"dislyze/jirachi/sendgridlib"
+	"lugia/lib/humautil"
+	"lugia/lib/middleware"
 	"lugia/queries"
 )
+
+var ChangeEmailOp = huma.Operation{
+	OperationID: "change-email",
+	Method:      http.MethodPost,
+	Path:        "/me/change-email",
+}
+
+type ChangeEmailInput struct {
+	Body ChangeEmailRequestBody
+}
 
 type ChangeEmailRequestBody struct {
 	NewEmail string `json:"new_email"`
@@ -39,35 +51,26 @@ func (r *ChangeEmailRequestBody) Validate() error {
 	return nil
 }
 
-func (h *UsersHandler) ChangeEmail(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (h *UsersHandler) ChangeEmail(ctx context.Context, input *ChangeEmailInput) (*struct{}, error) {
+	if err := input.Body.Validate(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("change email validation failed: %w", err), http.StatusBadRequest)
+	}
+
 	userID := libctx.GetUserID(ctx)
+	r := middleware.GetHTTPRequest(ctx)
 
-	var req ChangeEmailRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(fmt.Errorf("ChangeEmail: failed to decode request: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			errlib.LogError(fmt.Errorf("ChangeEmail: failed to close request body: %w", err))
-		}
-	}()
-
-	if err := req.Validate(); err != nil {
-		appErr := errlib.New(fmt.Errorf("ChangeEmail: validation failed: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	err := h.changeEmail(ctx, userID, req, r)
+	err := h.changeEmail(ctx, userID, input.Body, r)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
-
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *UsersHandler) changeEmail(ctx context.Context, userID pgtype.UUID, req ChangeEmailRequestBody, r *http.Request) error {

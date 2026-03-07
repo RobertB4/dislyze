@@ -1,6 +1,8 @@
 import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "$lugia/schema";
 import { redirect, error as svelteKitError } from "@sveltejs/kit";
+import { toast } from "@dislyze/zoroark/toast";
+import { KnownError } from "@dislyze/zoroark/errors";
 
 /**
  * Creates a typed API client for use in SvelteKit load functions.
@@ -83,6 +85,76 @@ export function createLoadClient(loadEventFetch: typeof fetch) {
 				503,
 				"ネットワーク接続に問題があるか、サーバーが応答しませんでした。接続を確認し、再度お試しください。"
 			);
+		}
+	};
+
+	client.use(errorHandler);
+	return client;
+}
+
+/**
+ * Creates a typed API client for use in Svelte components for mutations.
+ * Error handling mirrors mutationFetch: toast on error, redirect on 401.
+ * Does NOT throw — callers check `success` to decide next steps.
+ *
+ * Usage:
+ *   const api = createMutationClient();
+ *   const { data, response, success } = await api.POST("/users/invite", {
+ *     body: { email: "...", name: "...", role_ids: ["..."] }
+ *   });
+ */
+export function createMutationClient() {
+	const client = createClient<paths>({
+		baseUrl: "/api",
+		credentials: "include"
+	});
+
+	const errorHandler: Middleware = {
+		async onResponse({ response }) {
+			if (response.status === 401) {
+				try {
+					const logoutResponse = await fetch(`/api/auth/logout`, {
+						method: "POST",
+						credentials: "include"
+					});
+					if (!logoutResponse.ok) {
+						console.error(
+							`api: Logout attempt failed with status ${logoutResponse.status}. Body: ${await logoutResponse.text()}`
+						);
+					}
+				} catch (logoutAttemptError) {
+					toast.showError();
+					throw new Error(`api: Logout attempt network error: ${logoutAttemptError as string}`, {
+						cause: logoutAttemptError
+					});
+				}
+				window.location.href = "/auth/login";
+				return;
+			}
+
+			if (response.status >= 400) {
+				if (response.headers.get("content-type")?.includes("json")) {
+					try {
+						const cloned = response.clone();
+						const body = (await cloned.json()) as { error?: string };
+						if (body && typeof body.error === "string" && body.error !== "") {
+							toast.showError(new KnownError(body.error));
+						} else {
+							toast.showError();
+						}
+					} catch {
+						toast.showError();
+					}
+				} else {
+					toast.showError();
+				}
+			}
+		},
+
+		onError({ error }) {
+			console.error(`api: Network error:`, error);
+			toast.showError();
+			throw new Error(`api: Network error: ${String(error)}`, { cause: error });
 		}
 	};
 

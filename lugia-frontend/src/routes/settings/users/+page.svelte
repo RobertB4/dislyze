@@ -13,7 +13,8 @@
 	import type { PageData } from "./$types";
 	import { createForm } from "felte";
 	import { invalidate } from "$app/navigation";
-	import { mutationFetch, handleLoadError } from "$lugia/lib/fetch";
+	import { handleLoadError } from "$lugia/lib/fetch";
+	import { createMutationClient } from "$lugia/lib/api";
 	import Skeleton from "$lugia/routes/settings/users/Skeleton.svelte";
 	import type { UserInfo } from "$lugia/schema";
 	import { hasPermission } from "$lugia/lib/authz";
@@ -46,7 +47,7 @@
 			replaceState: false,
 			invalidate: [
 				(url: URL) => {
-					return url.pathname === "/api.users";
+					return url.pathname === "/api/users";
 				}
 			]
 		});
@@ -104,19 +105,16 @@
 			return errs;
 		},
 		onSubmit: async (values) => {
-			const { success } = await mutationFetch(`/api/users/invite`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
+			const api = createMutationClient();
+			const { error } = await api.POST("/users/invite", {
+				body: {
 					email: values.email,
 					name: values.name,
 					role_ids: values.roleIds
-				})
+				}
 			});
 
-			if (success) {
+			if (!error) {
 				await invalidate((u) => u.pathname === "/api/users");
 				reset();
 				toast.show("ユーザーを招待しました。", "success");
@@ -149,11 +147,12 @@
 		onSubmit: async () => {
 			if (!userToDelete) return;
 
-			const { success } = await mutationFetch(`/api/users/${userToDelete.id}/delete`, {
-				method: "POST"
+			const api = createMutationClient();
+			const { error } = await api.POST("/users/{userID}/delete", {
+				params: { path: { userID: userToDelete.id } }
 			});
 
-			if (success) {
+			if (!error) {
 				await invalidate((u) => u.pathname === "/api/users");
 				resetDelete();
 				toast.show("ユーザーを削除しました。", "success");
@@ -183,15 +182,13 @@
 		onSubmit: async (values) => {
 			if (!userToEdit) return;
 
-			const { success } = await mutationFetch(`/api/users/${userToEdit.id}/roles`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({ role_ids: values.roleIds })
+			const api = createMutationClient();
+			const { error } = await api.POST("/users/{userID}/roles", {
+				params: { path: { userID: userToEdit.id } },
+				body: { role_ids: values.roleIds }
 			});
 
-			if (success) {
+			if (!error) {
 				await invalidate((u) => u.pathname === "/api/users");
 				toast.show("ユーザーのロールを更新しました。", "success");
 				userToEdit = null;
@@ -221,14 +218,12 @@
 	}
 
 	async function handleResendInvite(userId: string) {
-		const { success } = await mutationFetch(`/api/users/${userId}/resend-invite`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			}
+		const api = createMutationClient();
+		const { error } = await api.POST("/users/{userID}/resend-invite", {
+			params: { path: { userID: userId } }
 		});
 
-		if (success) {
+		if (!error) {
 			toast.show("招待メールを送信しました。", "success");
 		}
 	}

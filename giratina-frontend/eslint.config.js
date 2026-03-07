@@ -10,6 +10,7 @@ const gitignorePath = fileURLToPath(new URL("../.gitignore", import.meta.url));
 
 export default ts.config(
 	includeIgnoreFile(gitignorePath),
+	{ ignores: ["src/schema.ts"] },
 	js.configs.recommended,
 	...ts.configs.recommendedTypeChecked,
 	{

@@ -2,13 +2,21 @@
 package ip_whitelist
 
 import (
+	"context"
 	"net/http"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
+
 	libctx "dislyze/jirachi/ctx"
-	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
 )
+
+var GetIPWhitelistOp = huma.Operation{
+	OperationID: "get-ip-whitelist",
+	Method:      http.MethodGet,
+	Path:        "/ip-whitelist",
+}
 
 type IPWhitelistRule struct {
 	ID        string    `json:"id"`
@@ -18,25 +26,32 @@ type IPWhitelistRule struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func (h *IPWhitelistHandler) GetIPWhitelist(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+type GetIPWhitelistInput struct{}
+
+type GetIPWhitelistResponse struct {
+	Rules []IPWhitelistRule `json:"rules" nullable:"false"`
+}
+
+type GetIPWhitelistOutput struct {
+	Body GetIPWhitelistResponse
+}
+
+func (h *IPWhitelistHandler) GetIPWhitelist(ctx context.Context, input *GetIPWhitelistInput) (*GetIPWhitelistOutput, error) {
 	tenantID := libctx.GetTenantID(ctx)
 
 	ipRules, err := h.q.GetTenantIPWhitelist(ctx, tenantID)
 	if err != nil {
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
 
-	response := make([]IPWhitelistRule, len(ipRules))
+	rules := make([]IPWhitelistRule, len(ipRules))
 	for i, rule := range ipRules {
 		var label *string
 		if rule.Label.Valid {
 			label = &rule.Label.String
 		}
 
-		response[i] = IPWhitelistRule{
+		rules[i] = IPWhitelistRule{
 			ID:        rule.ID.String(),
 			IPAddress: rule.IpAddress.String(),
 			Label:     label,
@@ -45,5 +60,5 @@ func (h *IPWhitelistHandler) GetIPWhitelist(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	responder.RespondWithJSON(w, http.StatusOK, response)
+	return &GetIPWhitelistOutput{Body: GetIPWhitelistResponse{Rules: rules}}, nil
 }

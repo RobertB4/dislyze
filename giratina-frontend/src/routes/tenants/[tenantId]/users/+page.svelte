@@ -48,7 +48,7 @@
 				</div>
 			</div>
 		</div>
-	{:then { users }}
+	{:then users}
 		<div class="mt-8 flow-root">
 			{#if users.length === 0}
 				<div class="text-center py-12" data-testid="no-users-message">

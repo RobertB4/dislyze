@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"giratina/lib/humautil"
 )
 
 type UserInfo struct {
@@ -24,33 +23,38 @@ type GetUsersByTenantResponse struct {
 	Users []UserInfo `json:"users"`
 }
 
-func (h *TenantsHandler) GetUsersByTenant(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	tenantIDStr := chi.URLParam(r, "tenantID")
+var GetUsersByTenantOp = huma.Operation{
+	OperationID: "get-users-by-tenant",
+	Method:      http.MethodGet,
+	Path:        "/tenants/{tenantID}/users",
+}
 
+type GetUsersByTenantInput struct {
+	TenantID string `path:"tenantID"`
+}
+
+type GetUsersByTenantOutput struct {
+	Body GetUsersByTenantResponse
+}
+
+func (h *TenantsHandler) GetUsersByTenant(ctx context.Context, input *GetUsersByTenantInput) (*GetUsersByTenantOutput, error) {
 	var tenantID pgtype.UUID
-	if err := tenantID.Scan(tenantIDStr); err != nil {
-		responder.RespondWithError(w, errlib.New(fmt.Errorf("GetUsersByTenant: invalid tenant ID: %w", err), http.StatusBadRequest, ""))
-		return
+	if err := tenantID.Scan(input.TenantID); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("invalid tenant ID format: %w", err), http.StatusBadRequest)
 	}
 
 	users, err := h.getUsersByTenant(ctx, tenantID)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		return nil, err
 	}
 
-	response := GetUsersByTenantResponse{
-		Users: users,
-	}
-
-	responder.RespondWithJSON(w, http.StatusOK, response)
+	return &GetUsersByTenantOutput{Body: GetUsersByTenantResponse{Users: users}}, nil
 }
 
 func (h *TenantsHandler) getUsersByTenant(ctx context.Context, tenantID pgtype.UUID) ([]UserInfo, error) {
 	dbUsers, err := h.queries.GetUsersByTenantID(ctx, tenantID)
 	if err != nil {
-		return nil, errlib.New(fmt.Errorf("GetUsersByTenant: failed to get users by tenant: %w", err), http.StatusInternalServerError, "")
+		return nil, humautil.NewError(fmt.Errorf("GetUsersByTenant: failed to get users by tenant: %w", err), http.StatusInternalServerError)
 	}
 
 	users := make([]UserInfo, len(dbUsers))
