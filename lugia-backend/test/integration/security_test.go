@@ -99,7 +99,7 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 			client := &http.Client{}
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			// Assert the exact expected status code
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "%s: got %d", tt.description, resp.StatusCode)
@@ -164,7 +164,7 @@ func TestSecurityXSSProtection_Integration(t *testing.T) {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, 204, resp.StatusCode, "Legitimate name change should succeed")
 	})
@@ -189,7 +189,7 @@ func TestSecurityXSSProtection_Integration(t *testing.T) {
 			client := &http.Client{}
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			// XSS payloads should be safely stored as text (most systems allow special chars in names)
 			// The key is that they're stored as text, not executed as scripts
@@ -221,7 +221,7 @@ func TestSecurityXSSProtection_Integration(t *testing.T) {
 
 			resp, err = client.Do(req)
 			assert.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			// XSS payloads in tenant names should also be safely stored as text
 			assert.Equal(t, 204, resp.StatusCode, "XSS payload in tenant name should be safely stored as text, got %d", resp.StatusCode)
@@ -278,7 +278,7 @@ func TestSecurityHorizontalPrivilegeEscalation_Integration(t *testing.T) {
 			client := &http.Client{}
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, tt.description)
 
@@ -321,7 +321,7 @@ func TestSecurityJWTSecurity_Integration(t *testing.T) {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, 204, resp.StatusCode, "Valid JWT should allow legitimate operations")
 	})
@@ -397,7 +397,7 @@ func TestSecurityJWTSecurity_Integration(t *testing.T) {
 			client := &http.Client{}
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, tt.description)
 		})

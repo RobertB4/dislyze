@@ -156,9 +156,10 @@ func TestGetUsers_Integration(t *testing.T) {
 						assert.NotEmpty(t, role.Description, "Role description should not be empty for user %s", u.Email)
 
 						// Verify role description matches known patterns
-						if role.Name == "管理者" {
+						switch role.Name {
+						case "管理者":
 							assert.Equal(t, "すべての機能にアクセス可能", role.Description, "Admin role description mismatch for user %s", u.Email)
-						} else if role.Name == "編集者" {
+						case "編集者":
 							assert.Equal(t, "ユーザー管理以外の編集権限", role.Description, "Editor role description mismatch for user %s", u.Email)
 						}
 					}
@@ -195,7 +196,7 @@ func TestGetUsersPagination_Integration(t *testing.T) {
 
 	firstResp, err := client.Do(firstReq)
 	assert.NoError(t, err)
-	defer firstResp.Body.Close()
+	defer func() { _ = firstResp.Body.Close() }()
 
 	var usersResponse users.GetUsersResponse
 	err = json.NewDecoder(firstResp.Body).Decode(&usersResponse)

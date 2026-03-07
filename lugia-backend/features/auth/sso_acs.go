@@ -46,7 +46,7 @@ func (h *AuthHandler) SSOACS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	callbackResponse, err, userErrorMessage := h.handleSSOCallback(r.Context(), samlResponseBase64, r)
+	callbackResponse, userErrorMessage, err := h.handleSSOCallback(r.Context(), samlResponseBase64, r)
 	if err != nil {
 		logger.LogAuthEvent(logger.AuthEvent{
 			EventType: "sso_acs_callback",
@@ -106,15 +106,15 @@ type SSOCallbackResponse struct {
 	TokenPair *jwt.TokenPair
 }
 
-func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 string, r *http.Request) (*SSOCallbackResponse, error, string) {
+func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 string, r *http.Request) (*SSOCallbackResponse, string, error) {
 	samlResponseXML, err := base64.StdEncoding.DecodeString(samlResponseBase64)
 	if err != nil {
-		return nil, fmt.Errorf("invalid SAML response encoding: %w", err), ""
+		return nil, "", fmt.Errorf("invalid SAML response encoding: %w", err)
 	}
 
 	var samlResponse saml.Response
 	if err := xml.Unmarshal(samlResponseXML, &samlResponse); err != nil {
-		return nil, fmt.Errorf("failed to parse SAML response: %w", err), ""
+		return nil, "", fmt.Errorf("failed to parse SAML response: %w", err)
 	}
 
 	requestID := samlResponse.InResponseTo
@@ -130,48 +130,48 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 			Success:   false,
 			Error:     err.Error(),
 		})
-		return nil, fmt.Errorf("invalid or expired request. request id: %s", requestID), ""
+		return nil, "", fmt.Errorf("invalid or expired request. request id: %s", requestID)
 	}
 
 	tenant, err := h.queries.GetTenantByID(ctx, ssoRequest.TenantID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant with id %s: %w", ssoRequest.TenantID, err), ""
+		return nil, "", fmt.Errorf("failed to get tenant with id %s: %w", ssoRequest.TenantID, err)
 	}
 
 	var enterpriseFeatures authz.EnterpriseFeatures
 	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
-		return nil, fmt.Errorf("failed to parse enterprise features: %w", err), ""
+		return nil, "", fmt.Errorf("failed to parse enterprise features: %w", err)
 	}
 
 	if !enterpriseFeatures.SSO.Enabled {
-		return nil, fmt.Errorf("SSO not enabled for tenant with id %s", tenant.ID), ""
+		return nil, "", fmt.Errorf("SSO not enabled for tenant with id %s", tenant.ID)
 	}
 
 	keyBlock, _ := pem.Decode([]byte(h.env.SAMLServiceProviderPrivateKey))
 	if keyBlock == nil {
-		return nil, fmt.Errorf("failed to decode SP private key"), ""
+		return nil, "", fmt.Errorf("failed to decode SP private key")
 	}
 	privateKey, err := x509.ParsePKCS8PrivateKey(keyBlock.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse SP private key: %w", err), ""
+		return nil, "", fmt.Errorf("failed to parse SP private key: %w", err)
 	}
 
 	certBlock, _ := pem.Decode([]byte(h.env.SAMLServiceProviderCertificate))
 	if certBlock == nil {
-		return nil, fmt.Errorf("failed to decode SP certificate"), ""
+		return nil, "", fmt.Errorf("failed to decode SP certificate")
 	}
 	spCert, err := x509.ParseCertificate(certBlock.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse SP certificate: %w", err), ""
+		return nil, "", fmt.Errorf("failed to parse SP certificate: %w", err)
 	}
 
 	metadataURL, err := url.Parse(enterpriseFeatures.SSO.IdpMetadataURL)
 	if err != nil {
-		return nil, fmt.Errorf("invalid IDP metadata URL: %w", err), ""
+		return nil, "", fmt.Errorf("invalid IDP metadata URL: %w", err)
 	}
 	idpMetadata, err := samlsp.FetchMetadata(ctx, http.DefaultClient, *metadataURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch IDP metadata: %w", err), ""
+		return nil, "", fmt.Errorf("failed to fetch IDP metadata: %w", err)
 	}
 
 	acsURL, _ := url.Parse(h.env.FrontendURL + "/api/auth/sso/acs")
@@ -190,11 +190,11 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 
 	assertion, err := sp.ParseResponse(r, []string{requestID})
 	if err != nil {
-		return nil, fmt.Errorf("failed to validate SAML response: %w", err), ""
+		return nil, "", fmt.Errorf("failed to validate SAML response: %w", err)
 	}
 
 	if assertion.Subject.NameID.Format != string(saml.PersistentNameIDFormat) {
-		return nil, fmt.Errorf("invalid NameID format: expected %s, got %s", saml.PersistentNameIDFormat, assertion.Subject.NameID.Format), ""
+		return nil, "", fmt.Errorf("invalid NameID format: expected %s, got %s", saml.PersistentNameIDFormat, assertion.Subject.NameID.Format)
 	}
 
 	externalSSOID := assertion.Subject.NameID.Value
@@ -203,39 +203,39 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 	lastName := extractAttribute(assertion.AttributeStatements, enterpriseFeatures.SSO.AttributeMapping["lastName"])
 
 	if email == "" {
-		return nil, fmt.Errorf("required SAML attribute email missing"), ""
+		return nil, "", fmt.Errorf("required SAML attribute email missing")
 	}
 
 	if externalSSOID == "" {
-		return nil, fmt.Errorf("required SAML attribute nameID missing"), ""
+		return nil, "", fmt.Errorf("required SAML attribute nameID missing")
 	}
 
 	emailParts := strings.Split(email, "@")
 	if len(emailParts) != 2 {
-		return nil, fmt.Errorf("invalid email format: %s", email), ""
+		return nil, "", fmt.Errorf("invalid email format: %s", email)
 	}
 	domain := emailParts[1]
 
 	if !slices.Contains(enterpriseFeatures.SSO.AllowedDomains, domain) {
-		return nil, fmt.Errorf("email domain not authorized for SSO: %s", domain), ""
+		return nil, "", fmt.Errorf("email domain not authorized for SSO: %s", domain)
 	}
 
 	user, err := h.queries.GetUserByEmail(ctx, email)
 	if err != nil {
 		if !errlib.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("failed to get user: %w", err), ""
+			return nil, "", fmt.Errorf("failed to get user: %w", err)
 		}
 
 		// User doesn't exist - create new user
 
 		viewerRole, err := h.queries.GetDefaultViewerRole(ctx, ssoRequest.TenantID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get default viewer role for tenant_id %s: %w", ssoRequest.TenantID, err), ""
+			return nil, "", fmt.Errorf("failed to get default viewer role for tenant_id %s: %w", ssoRequest.TenantID, err)
 		}
 
 		tx, err := h.dbConn.Begin(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to start transaction: %w", err), ""
+			return nil, "", fmt.Errorf("failed to start transaction: %w", err)
 		}
 		defer func() {
 			if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -260,7 +260,7 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 			ExternalSsoID:  pgtype.Text{String: externalSSOID, Valid: true},
 		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to create user: %w", err), ""
+			return nil, "", fmt.Errorf("failed to create user: %w", err)
 		}
 
 		err = qtx.AssignRoleToUser(ctx, &queries.AssignRoleToUserParams{
@@ -269,11 +269,11 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 			TenantID: ssoRequest.TenantID,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to assign default role: %w", err), ""
+			return nil, "", fmt.Errorf("failed to assign default role: %w", err)
 		}
 
 		if err := tx.Commit(ctx); err != nil {
-			return nil, fmt.Errorf("failed to commit transaction: %w", err), ""
+			return nil, "", fmt.Errorf("failed to commit transaction: %w", err)
 		}
 
 		logger.LogAuthEvent(logger.AuthEvent{
@@ -290,7 +290,7 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 		// User exists
 
 		if user.TenantID != ssoRequest.TenantID {
-			return nil, fmt.Errorf("user belongs to different tenant"), ""
+			return nil, "", fmt.Errorf("user belongs to different tenant")
 		}
 
 		if user.Status == "pending_verification" {
@@ -299,16 +299,16 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 				ID:     user.ID,
 			})
 			if err != nil {
-				return nil, fmt.Errorf("failed to activate SSO user: %w", err), ""
+				return nil, "", fmt.Errorf("failed to activate SSO user: %w", err)
 			}
 		}
 
 		if user.Status == "suspended" {
-			return nil, fmt.Errorf("account suspended"), "アカウントが停止されています。サポートにお問い合わせください。"
+			return nil, "アカウントが停止されています。サポートにお問い合わせください。", fmt.Errorf("account suspended")
 		}
 
 		if tenant.AuthMethod == "password" {
-			return nil, fmt.Errorf("user with auth_method password attempted sso login"), "このアカウントはSSOが無効です。パスワードでログインしてください。"
+			return nil, "このアカウントはSSOが無効です。パスワードでログインしてください。", fmt.Errorf("user with auth_method password attempted sso login")
 		}
 
 		if !user.ExternalSsoID.Valid || user.ExternalSsoID.String == "" {
@@ -317,14 +317,14 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 				ID:            user.ID,
 			})
 			if err != nil {
-				return nil, fmt.Errorf("failed to update external SSO ID for user_id %s : %w", user.ID, err), ""
+				return nil, "", fmt.Errorf("failed to update external SSO ID for user_id %s : %w", user.ID, err)
 			}
 		}
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to start transaction: %w", err), ""
+		return nil, "", fmt.Errorf("failed to start transaction: %w", err)
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -336,19 +336,19 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 
 	existingToken, err := qtx.GetRefreshTokenByUserID(ctx, user.ID)
 	if err != nil && !errlib.Is(err, sql.ErrNoRows) {
-		return nil, fmt.Errorf("failed to check existing refresh token for user_id %s: %w", user.ID, err), ""
+		return nil, "", fmt.Errorf("failed to check existing refresh token for user_id %s: %w", user.ID, err)
 	}
 
 	if !errlib.Is(err, sql.ErrNoRows) {
 		err = qtx.UpdateRefreshTokenUsed(ctx, existingToken.Jti)
 		if err != nil {
-			return nil, fmt.Errorf("failed to update refresh token used: %w", err), ""
+			return nil, "", fmt.Errorf("failed to update refresh token used: %w", err)
 		}
 	}
 
 	tokenPair, err := jwt.GenerateTokenPair(user.ID, tenant.ID, []byte(h.env.AuthJWTSecret))
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate token pair: %w", err), ""
+		return nil, "", fmt.Errorf("failed to generate token pair: %w", err)
 	}
 
 	_, err = qtx.CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
@@ -359,11 +359,11 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 		ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create refresh token for user_id %s: %w", user.ID, err), ""
+		return nil, "", fmt.Errorf("failed to create refresh token for user_id %s: %w", user.ID, err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err), ""
+		return nil, "", fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	go func() { // #nosec G118 -- intentional: cleanup runs after response is sent, request context would be cancelled
@@ -377,7 +377,7 @@ func (h *AuthHandler) handleSSOCallback(ctx context.Context, samlResponseBase64 
 	return &SSOCallbackResponse{
 		UserID:    user.ID.String(),
 		TokenPair: tokenPair,
-	}, nil, ""
+	}, "", nil
 }
 
 func extractAttribute(statements []saml.AttributeStatement, attributeName string) string {

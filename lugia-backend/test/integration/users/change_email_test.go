@@ -130,7 +130,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -175,7 +175,7 @@ func TestChangeEmailRateLimit_Integration(t *testing.T) {
 
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		if i == 0 {
 			// First request should succeed
@@ -238,7 +238,7 @@ func TestChangeEmailAuthentication_Integration(t *testing.T) {
 
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 		})

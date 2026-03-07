@@ -106,7 +106,7 @@ func (h *AuthHandler) ssoLogin(ctx context.Context, req *SSOLoginRequest) (*SSOL
 	tenant, err := h.queries.GetSSOTenantByDomain(ctx, []byte(domain))
 	if err != nil {
 		if errlib.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("no tenants for SSO domain %s found.", domain)
+			return nil, fmt.Errorf("no tenants for SSO domain %s found", domain)
 		}
 		return nil, fmt.Errorf("failed to find tenant by domain %s: %w", domain, err)
 	}
