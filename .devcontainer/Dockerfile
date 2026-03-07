@@ -1,7 +1,7 @@
 FROM node:20-bookworm
 
 # Go toolchain
-COPY --from=golang:1.24-bookworm /usr/local/go /usr/local/go
+COPY --from=golang:1.26-bookworm /usr/local/go /usr/local/go
 ENV PATH="/usr/local/go/bin:${PATH}"
 ENV GOPATH="/home/node/go"
 ENV PATH="${GOPATH}/bin:${PATH}"
@@ -36,7 +36,7 @@ RUN go install github.com/pressly/goose/v3/cmd/goose@latest \
     && go install github.com/air-verse/air@latest \
     && go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest \
     && curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
-        | sh -s -- -b $(go env GOPATH)/bin v2.1.6
+        | sh -s -- -b $(go env GOPATH)/bin v2.11.1
 
 # Allow node user to use sudo (required by DinD feature)
 RUN echo "node ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/node

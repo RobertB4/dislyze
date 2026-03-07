@@ -24,7 +24,7 @@ COPY lugia-frontend/ ./
 RUN npm run build
 
 # Stage 2: Build Go backend with embedded frontend
-FROM golang:1.24-alpine AS backend-builder
+FROM golang:1.26-alpine AS backend-builder
 
 # Set working directory
 WORKDIR /app

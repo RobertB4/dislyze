@@ -4,8 +4,8 @@ github.com/beevik/etree v1.5.0/go.mod h1:gPNJNaBGVZ9AwsidazFZyygnd+0pAU38N4D+Wem
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/crewjam/saml v0.5.1 h1:g+mfp0CrLuLRZCK793PgJcZeg5dS/0CDwoeAX2zcwNI=
 github.com/crewjam/saml v0.5.1/go.mod h1:r0fDkmFe5URDgPrmtH0IYokva6fac3AUdstiPhyEolQ=
-github.com/danielgtaylor/huma/v2 v2.36.0 h1:zw//FPnSoNMh6ht06URC4PLZXN2KZbJ8i7kqpyiXDTE=
-github.com/danielgtaylor/huma/v2 v2.36.0/go.mod h1:OPYyMWS1BVekd2e1CBqm4+qec46ziaoxxUcz1P3+P+I=
+github.com/danielgtaylor/huma/v2 v2.37.2 h1:Nf9vjy2sxBJFaupPlthXL/Hy2+LurfVbaKHmCMEI7xE=
+github.com/danielgtaylor/huma/v2 v2.37.2/go.mod h1:95S04G/lExFRYlBkKaBaZm9lVmxRmqX9f2CgoOZ11AM=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

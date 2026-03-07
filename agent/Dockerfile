@@ -1,7 +1,7 @@
 FROM node:20-bookworm
 
 # Copy Go toolchain from official image
-COPY --from=golang:1.24-bookworm /usr/local/go /usr/local/go
+COPY --from=golang:1.26-bookworm /usr/local/go /usr/local/go
 ENV PATH="/usr/local/go/bin:${PATH}"
 ENV GOPATH="/home/node/go"
 ENV PATH="${GOPATH}/bin:${PATH}"
