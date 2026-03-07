@@ -697,9 +697,9 @@ export interface components {
             users: components["schemas"]["UserInfo"][];
         };
         IPWhitelist: {
-            active?: boolean;
-            allow_internal_admin_bypass?: boolean;
-            enabled?: boolean;
+            active: boolean;
+            allow_internal_admin_bypass: boolean;
+            enabled: boolean;
         };
         IPWhitelistRule: {
             /** Format: date-time */
@@ -763,7 +763,7 @@ export interface components {
             resource: string;
         };
         RBAC: {
-            enabled?: boolean;
+            enabled: boolean;
         };
         ResetPasswordRequestBody: {
             /**

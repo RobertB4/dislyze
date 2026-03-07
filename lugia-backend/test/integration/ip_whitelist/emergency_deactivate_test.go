@@ -407,11 +407,7 @@ func TestEmergencyDeactivateIntegration(t *testing.T) {
 				require.NoError(t, err)
 				err = json.Unmarshal(featuresJSON, &enterpriseFeatures)
 				require.NoError(t, err)
-				entIPWhitelist, ok := enterpriseFeatures["ip_whitelist"].(map[string]interface{})
-				require.True(t, ok, "Enterprise tenant should have ip_whitelist in enterprise_features")
-				entActive, ok := entIPWhitelist["active"].(bool)
-				require.True(t, ok, "Enterprise tenant ip_whitelist should have active field")
-				assert.False(t, entActive)
+				assert.False(t, enterpriseFeatures["ip_whitelist"].(map[string]interface{})["active"].(bool))
 
 				// Verify SMB tenant remains active
 				var smbFeatures map[string]interface{}
@@ -422,11 +418,7 @@ func TestEmergencyDeactivateIntegration(t *testing.T) {
 				require.NoError(t, err)
 				err = json.Unmarshal(featuresJSON, &smbFeatures)
 				require.NoError(t, err)
-				smbIPWhitelist, ok := smbFeatures["ip_whitelist"].(map[string]interface{})
-				require.True(t, ok, "SMB tenant should have ip_whitelist in enterprise_features")
-				smbActive, ok := smbIPWhitelist["active"].(bool)
-				require.True(t, ok, "SMB tenant ip_whitelist should have active field")
-				assert.True(t, smbActive)
+				assert.True(t, smbFeatures["ip_whitelist"].(map[string]interface{})["active"].(bool))
 			},
 		},
 	}

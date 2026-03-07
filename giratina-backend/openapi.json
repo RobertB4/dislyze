@@ -14,6 +14,10 @@
             "$ref": "#/components/schemas/SSO"
           }
         },
+        "required": [
+          "rbac",
+          "ip_whitelist"
+        ],
         "type": "object"
       },
       "ErrorDetail": {
@@ -217,6 +221,11 @@
             "type": "boolean"
           }
         },
+        "required": [
+          "enabled",
+          "active",
+          "allow_internal_admin_bypass"
+        ],
         "type": "object"
       },
       "LoginRequestBody": {
@@ -286,6 +295,9 @@
             "type": "boolean"
           }
         },
+        "required": [
+          "enabled"
+        ],
         "type": "object"
       },
       "SSO": {
@@ -313,6 +325,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "enabled"
+        ],
         "type": "object"
       },
       "SSOConfig": {

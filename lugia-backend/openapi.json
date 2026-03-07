@@ -446,6 +446,11 @@
             "type": "boolean"
           }
         },
+        "required": [
+          "enabled",
+          "active",
+          "allow_internal_admin_bypass"
+        ],
         "type": "object"
       },
       "IPWhitelistRule": {
@@ -657,6 +662,9 @@
             "type": "boolean"
           }
         },
+        "required": [
+          "enabled"
+        ],
         "type": "object"
       },
       "ResetPasswordRequestBody": {

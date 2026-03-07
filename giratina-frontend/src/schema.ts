@@ -138,8 +138,8 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         EnterpriseFeatures: {
-            ip_whitelist?: components["schemas"]["IPWhitelist"];
-            rbac?: components["schemas"]["RBAC"];
+            ip_whitelist: components["schemas"]["IPWhitelist"];
+            rbac: components["schemas"]["RBAC"];
             sso?: components["schemas"]["SSO"];
         };
         ErrorDetail: {
@@ -229,9 +229,9 @@ export interface components {
             users: components["schemas"]["UserInfo"][] | null;
         };
         IPWhitelist: {
-            active?: boolean;
-            allow_internal_admin_bypass?: boolean;
-            enabled?: boolean;
+            active: boolean;
+            allow_internal_admin_bypass: boolean;
+            enabled: boolean;
         };
         LoginRequestBody: {
             /**
@@ -256,14 +256,14 @@ export interface components {
             user_name: string;
         };
         RBAC: {
-            enabled?: boolean;
+            enabled: boolean;
         };
         SSO: {
             allowed_domains?: string[] | null;
             attribute_mapping?: {
                 [key: string]: string;
             };
-            enabled?: boolean;
+            enabled: boolean;
             idp_metadata_url?: string;
         };
         SSOConfig: {
