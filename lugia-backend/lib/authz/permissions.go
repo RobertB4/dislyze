@@ -2,6 +2,7 @@ package authz
 
 import (
 	"context"
+	"fmt"
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
@@ -43,7 +44,7 @@ func UserHasPermission(ctx context.Context, db *queries.Queries, resource Resour
 		RbacEnabled: rbacEnabled,
 	})
 	if err != nil {
-		errlib.LogError(errlib.New(err, 500, "failed to check user permission"))
+		errlib.LogError(fmt.Errorf("failed to check user permission: %w", err))
 		return false
 	}
 	return hasPermission

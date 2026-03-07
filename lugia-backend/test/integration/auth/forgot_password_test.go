@@ -119,8 +119,8 @@ func TestForgotPassword(t *testing.T) {
 			}
 		}()
 
-		// Handler always returns 204 to prevent email enumeration
-		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+		// Huma validates email format (pattern:"@") before handler runs
+		assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
 	})
 
 	t.Run("TestForgotPassword_EmptyEmail", func(t *testing.T) {
@@ -140,8 +140,8 @@ func TestForgotPassword(t *testing.T) {
 			}
 		}()
 
-		// Handler always returns 204 to prevent email enumeration
-		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+		// Huma validates email (minLength:"1") before handler runs
+		assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
 	})
 
 	t.Run("TestForgotPassword_MultipleRequestsForSameUser", func(t *testing.T) {

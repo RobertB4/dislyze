@@ -20,8 +20,9 @@ import (
 	"lugia/features/users"
 	"lugia/lib/config"
 	"lugia/lib/db"
-	"lugia/lib/humautil"
 	"lugia/lib/middleware"
+
+	"dislyze/jirachi/errlib"
 	"lugia/queries"
 
 	jirachi_auth "dislyze/jirachi/auth"
@@ -82,10 +83,10 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 
 		// Huma route registrations below are mirrored in lugia-backend/cmd/openapi/main.go
 		// for OpenAPI spec generation. When adding or removing endpoints, update both files.
-		humaConfig := humautil.NewConfig("Lugia API", "1.0.0")
+		humaConfig := newHumaConfig("Lugia API", "1.0.0")
 
-		// /auth endpoints — public, only need StoreHTTPRequest for cookie/rate-limit access
-		authAPI := humachi.New(r.With(middleware.StoreHTTPRequest), humaConfig)
+		// /auth endpoints — public, only need InjectRawHTTP for cookie/rate-limit access
+		authAPI := humachi.New(r.With(middleware.InjectRawHTTP), humaConfig)
 		huma.Register(authAPI, auth.SignupOp, authHandler.Signup)
 		huma.Register(authAPI, auth.LoginOp, authHandler.Login)
 		huma.Register(authAPI, auth.LogoutOp, authHandler.Logout)
@@ -101,7 +102,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 			jirachiAuthMiddleware.Authenticate,
 			middleware.LoadTenantAndUserContext(queries),
 			middleware.IPWhitelistMiddleware(queries),
-			middleware.StoreHTTPRequest,
+			middleware.InjectRawHTTP,
 		)
 
 		// /me endpoints — authenticated, no extra permission middleware
@@ -246,4 +247,18 @@ func main() {
 		}
 	}
 	log.Printf("main: Shutdown complete")
+}
+
+func newHumaConfig(title, version string) huma.Config {
+	huma.NewError = func(status int, msg string, errs ...error) huma.StatusError {
+		if len(errs) > 0 {
+			log.Printf("huma error %d: %s (details: %v)", status, msg, errs)
+		}
+		return &errlib.APIError{Status: status, Detail: msg}
+	}
+
+	config := huma.DefaultConfig(title, version)
+	config.DocsPath = ""
+	config.OpenAPIPath = ""
+	return config
 }

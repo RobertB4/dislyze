@@ -13,7 +13,6 @@ import (
 	"dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"lugia/lib/humautil"
 	"lugia/queries"
 )
 
@@ -47,14 +46,7 @@ type GetMeOutput struct {
 func (h *UsersHandler) GetMe(ctx context.Context, input *GetMeInput) (*GetMeOutput, error) {
 	response, err := h.getMe(ctx)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return &GetMeOutput{Body: *response}, nil
 }
@@ -66,22 +58,22 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 	user, err := h.q.GetUserByID(ctx, userID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return nil, errlib.New(fmt.Errorf("GetMe: user not found %s: %w", userID.String(), err), http.StatusUnauthorized, "")
+			return nil, errlib.NewError(fmt.Errorf("GetMe: user not found %s: %w", userID.String(), err), http.StatusUnauthorized)
 		}
-		return nil, errlib.New(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
+		return nil, errlib.NewError(fmt.Errorf("GetMe: failed to get user %s: %w", userID.String(), err), http.StatusInternalServerError)
 	}
 
 	tenant, err := h.q.GetTenantByID(ctx, tenantID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return nil, errlib.New(fmt.Errorf("GetMe: tenant not found %s for user %s: %w", tenantID.String(), userID.String(), err), http.StatusUnauthorized, "")
+			return nil, errlib.NewError(fmt.Errorf("GetMe: tenant not found %s for user %s: %w", tenantID.String(), userID.String(), err), http.StatusUnauthorized)
 		}
-		return nil, errlib.New(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
+		return nil, errlib.NewError(fmt.Errorf("GetMe: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError)
 	}
 
 	var enterpriseFeatures authz.EnterpriseFeatures
 	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
-		return nil, errlib.New(fmt.Errorf("GetMe: failed to unmarshal features config for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
+		return nil, errlib.NewError(fmt.Errorf("GetMe: failed to unmarshal features config for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError)
 	}
 
 	permissionRows, err := h.q.GetUserPermissionsWithFallback(ctx, &queries.GetUserPermissionsWithFallbackParams{
@@ -90,7 +82,7 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 		RbacEnabled: enterpriseFeatures.RBAC.Enabled,
 	})
 	if err != nil {
-		return nil, errlib.New(fmt.Errorf("GetMe: failed to get user permissions for user %s: %w", userID.String(), err), http.StatusInternalServerError, "")
+		return nil, errlib.NewError(fmt.Errorf("GetMe: failed to get user permissions for user %s: %w", userID.String(), err), http.StatusInternalServerError)
 	}
 
 	permissionsRes := make([]string, len(permissionRows))

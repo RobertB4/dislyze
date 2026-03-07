@@ -3,208 +3,68 @@ package errlib
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"log"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAppErrorError(t *testing.T) {
-	tests := []struct {
-		name           string
-		appErr         *AppError
-		wantContains   []string
-		wantNotContain []string
-	}{
-		{
-			name: "all fields set",
-			appErr: &AppError{
-				OriginalError: errors.New("db connection failed"),
-				Message:       "something went wrong",
-				StatusCode:    500,
-				File:          "handler.go",
-				Line:          42,
-			},
-			wantContains: []string{
-				"AppError: handler.go:42",
-				"UserMessage: something went wrong",
-				"StatusCode: 500",
-				"OriginalError: db connection failed",
-			},
-		},
-		{
-			name: "no message no status no original error",
-			appErr: &AppError{
-				File: "handler.go",
-				Line: 10,
-			},
-			wantContains: []string{
-				"AppError: handler.go:10",
-			},
-			wantNotContain: []string{
-				"UserMessage",
-				"StatusCode",
-				"OriginalError",
-			},
-		},
-		{
-			name: "only message set",
-			appErr: &AppError{
-				Message: "bad request",
-				File:    "auth.go",
-				Line:    5,
-			},
-			wantContains: []string{
-				"AppError: auth.go:5",
-				"UserMessage: bad request",
-			},
-			wantNotContain: []string{
-				"StatusCode",
-				"OriginalError",
-			},
-		},
-		{
-			name: "only status code set",
-			appErr: &AppError{
-				StatusCode: 404,
-				File:       "users.go",
-				Line:       99,
-			},
-			wantContains: []string{
-				"AppError: users.go:99",
-				"StatusCode: 404",
-			},
-			wantNotContain: []string{
-				"UserMessage",
-				"OriginalError",
-			},
-		},
-		{
-			name: "only original error set",
-			appErr: &AppError{
-				OriginalError: errors.New("timeout"),
-				File:          "db.go",
-				Line:          1,
-			},
-			wantContains: []string{
-				"AppError: db.go:1",
-				"OriginalError: timeout",
-			},
-			wantNotContain: []string{
-				"UserMessage",
-				"StatusCode",
-			},
-		},
-	}
+func TestAPIErrorError(t *testing.T) {
+	t.Run("returns detail as error string", func(t *testing.T) {
+		ae := &APIError{Status: 400, Detail: "bad request"}
+		assert.Equal(t, "bad request", ae.Error())
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := tt.appErr.Error()
+	t.Run("returns empty string when no detail", func(t *testing.T) {
+		ae := &APIError{Status: 500}
+		assert.Equal(t, "", ae.Error())
+	})
+}
 
-			for _, want := range tt.wantContains {
-				assert.Contains(t, result, want)
-			}
-			for _, notWant := range tt.wantNotContain {
-				assert.NotContains(t, result, notWant)
-			}
+func TestAPIErrorGetStatus(t *testing.T) {
+	t.Run("returns status code", func(t *testing.T) {
+		ae := &APIError{Status: 404}
+		assert.Equal(t, 404, ae.GetStatus())
+	})
+}
+
+func TestNewError(t *testing.T) {
+	t.Run("logs error and returns APIError with status", func(t *testing.T) {
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+		log.SetFlags(0)
+		t.Cleanup(func() {
+			log.SetOutput(nil)
+			log.SetFlags(log.LstdFlags)
 		})
-	}
-}
 
-func TestAppErrorErrorDelimiterStructure(t *testing.T) {
-	appErr := &AppError{
-		OriginalError: errors.New("db error"),
-		Message:       "something broke",
-		StatusCode:    500,
-		File:          "handler.go",
-		Line:          42,
-	}
+		err := NewError(errors.New("db timeout"), 500)
 
-	result := appErr.Error()
-	parts := strings.Split(result, " | ")
-
-	assert.Len(t, parts, 4, "expected 4 parts separated by ' | '")
-	assert.True(t, strings.HasPrefix(parts[0], "AppError:"), "first part should start with AppError:")
-	assert.True(t, strings.HasPrefix(parts[1], "UserMessage:"), "second part should be UserMessage")
-	assert.True(t, strings.HasPrefix(parts[2], "StatusCode:"), "third part should be StatusCode")
-	assert.True(t, strings.HasPrefix(parts[3], "OriginalError:"), "fourth part should be OriginalError")
-}
-
-func TestAppErrorUnwrap(t *testing.T) {
-	t.Run("returns original error", func(t *testing.T) {
-		original := errors.New("original error")
-		appErr := &AppError{OriginalError: original}
-
-		assert.Equal(t, original, appErr.Unwrap())
-	})
-
-	t.Run("returns nil when no original error", func(t *testing.T) {
-		appErr := &AppError{}
-
-		assert.Nil(t, appErr.Unwrap())
-	})
-
-	t.Run("traverses unwrap chain with errors.Is", func(t *testing.T) {
-		sentinel := errors.New("not found")
-		appErr := New(sentinel, 404, "not found")
-		wrapped := fmt.Errorf("handler failed: %w", appErr)
-
-		assert.True(t, errors.Is(wrapped, sentinel))
-	})
-
-	t.Run("extracts AppError with errors.As", func(t *testing.T) {
-		appErr := New(errors.New("db error"), 503, "service down")
-		wrapped := fmt.Errorf("handler: %w", appErr)
-
-		var target *AppError
-		assert.True(t, errors.As(wrapped, &target))
-		assert.Equal(t, 503, target.StatusCode)
-		assert.Equal(t, "service down", target.Message)
+		var ae *APIError
+		assert.True(t, errors.As(err, &ae))
+		assert.Equal(t, 500, ae.GetStatus())
+		assert.Empty(t, ae.Detail)
+		assert.Contains(t, buf.String(), "db timeout")
 	})
 }
 
-func TestNew(t *testing.T) {
-	t.Run("captures caller file and line", func(t *testing.T) {
-		appErr := New(errors.New("test"), 500, "test message")
+func TestNewErrorWithDetail(t *testing.T) {
+	t.Run("logs error and returns APIError with status and detail", func(t *testing.T) {
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+		log.SetFlags(0)
+		t.Cleanup(func() {
+			log.SetOutput(nil)
+			log.SetFlags(log.LstdFlags)
+		})
 
-		assert.NotEmpty(t, appErr.File)
-		assert.NotEqual(t, "???", appErr.File)
-		assert.True(t, strings.HasSuffix(appErr.File, "errlib_test.go"),
-			"expected file to end with errlib_test.go, got %s", appErr.File)
-		assert.Greater(t, appErr.Line, 0)
-	})
+		err := NewErrorWithDetail(errors.New("duplicate email"), 409, "このメールアドレスは既に使用されています。")
 
-	t.Run("sets all fields", func(t *testing.T) {
-		original := errors.New("db error")
-		appErr := New(original, 503, "service unavailable")
-
-		assert.Equal(t, original, appErr.OriginalError)
-		assert.Equal(t, 503, appErr.StatusCode)
-		assert.Equal(t, "service unavailable", appErr.Message)
-	})
-
-	t.Run("nil original error", func(t *testing.T) {
-		appErr := New(nil, 400, "bad request")
-
-		assert.Nil(t, appErr.OriginalError)
-		assert.Equal(t, 400, appErr.StatusCode)
-		assert.Equal(t, "bad request", appErr.Message)
-	})
-
-	t.Run("empty message", func(t *testing.T) {
-		appErr := New(errors.New("err"), 500, "")
-
-		assert.Empty(t, appErr.Message)
-		assert.NotContains(t, appErr.Error(), "UserMessage")
-	})
-
-	t.Run("zero status code", func(t *testing.T) {
-		appErr := New(errors.New("err"), 0, "msg")
-
-		assert.Equal(t, 0, appErr.StatusCode)
-		assert.NotContains(t, appErr.Error(), "StatusCode")
+		var ae *APIError
+		assert.True(t, errors.As(err, &ae))
+		assert.Equal(t, 409, ae.GetStatus())
+		assert.Equal(t, "このメールアドレスは既に使用されています。", ae.Detail)
+		assert.Contains(t, buf.String(), "duplicate email")
 	})
 }
 
@@ -217,11 +77,7 @@ func TestLogError(t *testing.T) {
 		log.SetFlags(log.LstdFlags)
 	})
 
-	appErr := New(errors.New("db timeout"), 500, "internal error")
-	LogError(appErr)
+	LogError(errors.New("something broke"))
 
-	output := buf.String()
-	assert.Contains(t, output, "db timeout")
-	assert.Contains(t, output, "internal error")
-	assert.Contains(t, output, "500")
+	assert.Contains(t, buf.String(), "something broke")
 }

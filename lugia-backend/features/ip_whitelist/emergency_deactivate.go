@@ -16,7 +16,6 @@ import (
 	jirachiAuthz "dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"lugia/lib/humautil"
 	"lugia/lib/middleware"
 	"lugia/queries"
 )
@@ -35,23 +34,16 @@ func (h *IPWhitelistHandler) EmergencyDeactivate(ctx context.Context, input *Eme
 	r := middleware.GetHTTPRequest(ctx)
 
 	if !h.rateLimiter.Allow(libctx.GetUserID(ctx).String(), r) {
-		return nil, humautil.NewError(fmt.Errorf("rate limit exceeded for emergency deactivate"), http.StatusTooManyRequests)
+		return nil, errlib.NewError(fmt.Errorf("rate limit exceeded for emergency deactivate"), http.StatusTooManyRequests)
 	}
 
 	if input.Token == "" {
-		return nil, humautil.NewError(fmt.Errorf("emergency deactivate token is empty"), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("emergency deactivate token is empty"), http.StatusBadRequest)
 	}
 
 	err := h.emergencyDeactivate(ctx, input.Token)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 
 	return nil, nil
@@ -60,50 +52,50 @@ func (h *IPWhitelistHandler) EmergencyDeactivate(ctx context.Context, input *Eme
 func (h *IPWhitelistHandler) emergencyDeactivate(ctx context.Context, token string) error {
 	claims, err := ValidateEmergencyToken(token, []byte(h.env.IPWhitelistEmergencyJWTSecret))
 	if err != nil {
-		return errlib.New(fmt.Errorf("EmergencyDeactivate: invalid emergency token: %w", err), http.StatusUnauthorized, "")
+		return errlib.NewError(fmt.Errorf("EmergencyDeactivate: invalid emergency token: %w", err), http.StatusUnauthorized)
 	}
 
 	currentUserID := libctx.GetUserID(ctx)
 	if currentUserID != claims.UserID {
-		return errlib.New(fmt.Errorf("EmergencyDeactivate: token user mismatch"), http.StatusForbidden, "")
+		return errlib.NewError(fmt.Errorf("EmergencyDeactivate: token user mismatch"), http.StatusForbidden)
 	}
 
 	tokenRecord, err := h.q.GetIPWhitelistEmergencyTokenByJTI(ctx, claims.JTI)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return errlib.New(fmt.Errorf("EmergencyDeactivate: emergency token not found"), http.StatusNotFound, "")
+			return errlib.NewError(fmt.Errorf("EmergencyDeactivate: emergency token not found"), http.StatusNotFound)
 		}
-		return errlib.New(fmt.Errorf("EmergencyDeactivate: failed to get emergency token: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("EmergencyDeactivate: failed to get emergency token: %w", err), http.StatusInternalServerError)
 	}
 
 	if tokenRecord.UsedAt.Valid {
-		return errlib.New(fmt.Errorf("EmergencyDeactivate: emergency token already used"), http.StatusConflict, "")
+		return errlib.NewError(fmt.Errorf("EmergencyDeactivate: emergency token already used"), http.StatusConflict)
 	}
 
 	tenant, err := h.q.GetTenantByID(ctx, claims.TenantID)
 	if err != nil {
-		return errlib.New(fmt.Errorf("EmergencyDeactivate: failed to get tenant: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("EmergencyDeactivate: failed to get tenant: %w", err), http.StatusInternalServerError)
 	}
 
 	if len(tenant.EnterpriseFeatures) == 0 {
-		return errlib.New(fmt.Errorf("EmergencyDeactivate: tenant has no enterprise features configured"), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("EmergencyDeactivate: tenant has no enterprise features configured"), http.StatusInternalServerError)
 	}
 
 	var currentFeatures jirachiAuthz.EnterpriseFeatures
 	if err := json.Unmarshal(tenant.EnterpriseFeatures, &currentFeatures); err != nil {
-		return errlib.New(fmt.Errorf("EmergencyDeactivate: failed to parse enterprise features: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("EmergencyDeactivate: failed to parse enterprise features: %w", err), http.StatusInternalServerError)
 	}
 
 	currentFeatures.IPWhitelist.Active = false
 
 	updatedFeaturesJSON, err := json.Marshal(currentFeatures)
 	if err != nil {
-		return errlib.New(fmt.Errorf("EmergencyDeactivate: failed to marshal enterprise features: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("EmergencyDeactivate: failed to marshal enterprise features: %w", err), http.StatusInternalServerError)
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		return errlib.New(fmt.Errorf("EmergencyDeactivate: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("EmergencyDeactivate: failed to begin transaction: %w", err), http.StatusInternalServerError)
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -117,16 +109,16 @@ func (h *IPWhitelistHandler) emergencyDeactivate(ctx context.Context, token stri
 		ID:                 claims.TenantID,
 	})
 	if err != nil {
-		return errlib.New(fmt.Errorf("EmergencyDeactivate: failed to update tenant enterprise features: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("EmergencyDeactivate: failed to update tenant enterprise features: %w", err), http.StatusInternalServerError)
 	}
 
 	err = qtx.MarkIPWhitelistEmergencyTokenAsUsed(ctx, claims.JTI)
 	if err != nil {
-		return errlib.New(fmt.Errorf("EmergencyDeactivate: failed to mark emergency token as used: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("EmergencyDeactivate: failed to mark emergency token as used: %w", err), http.StatusInternalServerError)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return errlib.New(fmt.Errorf("EmergencyDeactivate: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("EmergencyDeactivate: failed to commit transaction: %w", err), http.StatusInternalServerError)
 	}
 
 	return nil

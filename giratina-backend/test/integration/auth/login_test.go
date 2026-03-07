@@ -62,14 +62,14 @@ func TestLogin(t *testing.T) {
 			request: auth.LoginRequestBody{
 				Password: testUser.PlainTextPassword,
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name: "missing password",
 			request: auth.LoginRequestBody{
 				Email: testUser.Email,
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 	}
 

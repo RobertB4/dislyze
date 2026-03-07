@@ -3,6 +3,7 @@ package ip_whitelist
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/netip"
 
@@ -11,7 +12,6 @@ import (
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"lugia/lib/humautil"
 	"lugia/lib/iputils"
 	"lugia/queries"
 )
@@ -27,46 +27,21 @@ type AddIPInput struct {
 }
 
 type AddIPToWhitelistRequest struct {
-	IPAddress string  `json:"ip_address"`
-	Label     *string `json:"label"`
+	IPAddress string  `json:"ip_address" minLength:"1"`
+	Label     *string `json:"label" maxLength:"255"`
 }
 
-func (r *AddIPToWhitelistRequest) Validate() error {
-	if r.IPAddress == "" {
-		return errlib.New(nil, http.StatusBadRequest, "")
+func (r *AddIPToWhitelistRequest) Resolve(ctx huma.Context) []error {
+	if _, err := iputils.ValidateCIDR(r.IPAddress); err != nil {
+		return []error{fmt.Errorf("invalid IP address or CIDR: %w", err)}
 	}
-
-	_, err := iputils.ValidateCIDR(r.IPAddress)
-	if err != nil {
-		return errlib.New(err, http.StatusBadRequest, "")
-	}
-
-	if r.Label != nil && len(*r.Label) > 255 {
-		return errlib.New(nil, http.StatusBadRequest, "")
-	}
-
 	return nil
 }
 
 func (h *IPWhitelistHandler) AddIPToWhitelist(ctx context.Context, input *AddIPInput) (*struct{}, error) {
-	if err := input.Body.Validate(); err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusBadRequest)
-	}
-
 	err := h.addIPToWhitelist(ctx, input.Body)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return nil, nil
 }
@@ -77,12 +52,12 @@ func (h *IPWhitelistHandler) addIPToWhitelist(ctx context.Context, req AddIPToWh
 
 	normalizedCIDR, err := iputils.ValidateCIDR(req.IPAddress)
 	if err != nil {
-		return errlib.New(err, http.StatusBadRequest, "")
+		return errlib.NewError(err, http.StatusBadRequest)
 	}
 
 	prefix, err := netip.ParsePrefix(normalizedCIDR)
 	if err != nil {
-		return errlib.New(err, http.StatusBadRequest, "")
+		return errlib.NewError(err, http.StatusBadRequest)
 	}
 
 	exists, err := h.q.CheckIPExists(ctx, &queries.CheckIPExistsParams{
@@ -90,10 +65,10 @@ func (h *IPWhitelistHandler) addIPToWhitelist(ctx context.Context, req AddIPToWh
 		IpAddress: prefix,
 	})
 	if err != nil {
-		return errlib.New(err, http.StatusInternalServerError, "")
+		return errlib.NewError(err, http.StatusInternalServerError)
 	}
 	if exists {
-		return errlib.New(nil, http.StatusBadRequest, "")
+		return errlib.NewError(fmt.Errorf("AddIPToWhitelist: IP %s already exists for tenant", prefix), http.StatusBadRequest)
 	}
 
 	var label pgtype.Text
@@ -108,7 +83,7 @@ func (h *IPWhitelistHandler) addIPToWhitelist(ctx context.Context, req AddIPToWh
 		CreatedBy: userID,
 	})
 	if err != nil {
-		return errlib.New(err, http.StatusInternalServerError, "")
+		return errlib.NewError(err, http.StatusInternalServerError)
 	}
 
 	return nil

@@ -34,14 +34,14 @@ func (h *AuthHandler) SSOACS(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
 	if err := r.ParseForm(); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "Invalid form data")
+		appErr := errlib.NewErrorWithDetail(err, http.StatusBadRequest, "Invalid form data")
 		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	samlResponseBase64 := r.FormValue("SAMLResponse")
 	if samlResponseBase64 == "" {
-		appErr := errlib.New(fmt.Errorf("missing SAMLResponse"), http.StatusBadRequest, "")
+		appErr := errlib.NewError(fmt.Errorf("missing SAMLResponse"), http.StatusBadRequest)
 		responder.RespondWithError(w, appErr)
 		return
 	}
@@ -63,7 +63,7 @@ func (h *AuthHandler) SSOACS(w http.ResponseWriter, r *http.Request) {
 			errorMessage = "ログインに失敗しました。管理者にお問い合わせください。"
 		}
 
-		errlib.LogError(errlib.New(err, http.StatusUnauthorized, err.Error()))
+		errlib.LogError(err)
 		http.Redirect(w, r, h.env.FrontendURL+"/auth/sso/login?error="+errorMessage, http.StatusFound)
 		return
 	}

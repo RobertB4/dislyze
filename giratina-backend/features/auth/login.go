@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -17,7 +16,6 @@ import (
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/jwt"
 	"dislyze/jirachi/logger"
-	"giratina/lib/humautil"
 	"giratina/lib/middleware"
 	"giratina/queries"
 )
@@ -33,21 +31,8 @@ type LoginInput struct {
 }
 
 type LoginRequestBody struct {
-	Email    string `json:"email"`
-	Password string `json:"password"` // #nosec G117 -- intentional: login request body, not a leaked secret
-}
-
-func (r *LoginRequestBody) Validate() error {
-	r.Email = strings.TrimSpace(r.Email)
-	r.Password = strings.TrimSpace(r.Password)
-
-	if r.Email == "" {
-		return fmt.Errorf("email is required")
-	}
-	if r.Password == "" {
-		return fmt.Errorf("password is required")
-	}
-	return nil
+	Email    string `json:"email" minLength:"1"`
+	Password string `json:"password" minLength:"1"` // #nosec G117 -- intentional: login request body, not a leaked secret
 }
 
 func (h *AuthHandler) Login(ctx context.Context, input *LoginInput) (*struct{}, error) {
@@ -55,11 +40,7 @@ func (h *AuthHandler) Login(ctx context.Context, input *LoginInput) (*struct{}, 
 	w := middleware.GetResponseWriter(ctx)
 
 	if !h.rateLimiter.Allow(r.RemoteAddr, r) {
-		return nil, humautil.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for login from %s", r.RemoteAddr), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
-	}
-
-	if err := input.Body.Validate(); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("login validation failed: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for login from %s", r.RemoteAddr), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
 	}
 
 	tokenPair, userID, err := h.login(ctx, &input.Body, r)
@@ -74,7 +55,7 @@ func (h *AuthHandler) Login(ctx context.Context, input *LoginInput) (*struct{}, 
 			Success:   false,
 			Error:     err.Error(),
 		})
-		return nil, humautil.NewErrorWithDetail(err, http.StatusUnauthorized, err.Error())
+		return nil, errlib.NewErrorWithDetail(err, http.StatusUnauthorized, err.Error())
 	}
 
 	http.SetCookie(w, &http.Cookie{

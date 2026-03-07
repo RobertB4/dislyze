@@ -16,8 +16,7 @@
         },
         "required": [
           "rbac",
-          "ip_whitelist",
-          "sso"
+          "ip_whitelist"
         ],
         "type": "object"
       },
@@ -118,6 +117,8 @@
             "type": "string"
           },
           "email": {
+            "minLength": 1,
+            "pattern": "@",
             "type": "string"
           },
           "sso": {
@@ -128,9 +129,7 @@
           }
         },
         "required": [
-          "email",
-          "company_name",
-          "user_name"
+          "email"
         ],
         "type": "object"
       },
@@ -224,7 +223,8 @@
         },
         "required": [
           "enabled",
-          "active"
+          "active",
+          "allow_internal_admin_bypass"
         ],
         "type": "object"
       },
@@ -241,9 +241,11 @@
             "type": "string"
           },
           "email": {
+            "minLength": 1,
             "type": "string"
           },
           "password": {
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -324,10 +326,7 @@
           }
         },
         "required": [
-          "enabled",
-          "idp_metadata_url",
-          "attribute_mapping",
-          "allowed_domains"
+          "enabled"
         ],
         "type": "object"
       },
@@ -404,6 +403,7 @@
             "$ref": "#/components/schemas/EnterpriseFeatures"
           },
           "name": {
+            "minLength": 1,
             "type": "string"
           }
         },

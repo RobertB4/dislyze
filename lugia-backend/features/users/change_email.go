@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -21,7 +20,6 @@ import (
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/sendgridlib"
-	"lugia/lib/humautil"
 	"lugia/lib/middleware"
 	"lugia/queries"
 )
@@ -37,38 +35,16 @@ type ChangeEmailInput struct {
 }
 
 type ChangeEmailRequestBody struct {
-	NewEmail string `json:"new_email"`
-}
-
-func (r *ChangeEmailRequestBody) Validate() error {
-	r.NewEmail = strings.TrimSpace(r.NewEmail)
-	if r.NewEmail == "" {
-		return fmt.Errorf("new email is required")
-	}
-	if !strings.ContainsRune(r.NewEmail, '@') {
-		return fmt.Errorf("new email is invalid")
-	}
-	return nil
+	NewEmail string `json:"new_email" minLength:"1" pattern:"@"`
 }
 
 func (h *UsersHandler) ChangeEmail(ctx context.Context, input *ChangeEmailInput) (*struct{}, error) {
-	if err := input.Body.Validate(); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("change email validation failed: %w", err), http.StatusBadRequest)
-	}
-
 	userID := libctx.GetUserID(ctx)
 	r := middleware.GetHTTPRequest(ctx)
 
 	err := h.changeEmail(ctx, userID, input.Body, r)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return nil, nil
 }
@@ -76,19 +52,19 @@ func (h *UsersHandler) ChangeEmail(ctx context.Context, input *ChangeEmailInput)
 func (h *UsersHandler) changeEmail(ctx context.Context, userID pgtype.UUID, req ChangeEmailRequestBody, r *http.Request) error {
 	existingUser, err := h.q.GetUserByEmail(ctx, req.NewEmail)
 	if err == nil && existingUser != nil {
-		return errlib.New(fmt.Errorf("ChangeEmail: email %s is already in use", req.NewEmail), http.StatusConflict, "このメールアドレスは既に使用されています。")
+		return errlib.NewErrorWithDetail(fmt.Errorf("ChangeEmail: email %s is already in use", req.NewEmail), http.StatusConflict, "このメールアドレスは既に使用されています。")
 	}
 	if err != nil && !errlib.Is(err, pgx.ErrNoRows) {
-		return errlib.New(fmt.Errorf("ChangeEmail: failed to check if email exists: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangeEmail: failed to check if email exists: %w", err), http.StatusInternalServerError)
 	}
 
 	if !h.changeEmailRateLimiter.Allow(userID.String(), r) {
-		return errlib.New(fmt.Errorf("ChangeEmail: rate limit exceeded for user %s", userID.String()), http.StatusTooManyRequests, "メールアドレス変更の試行回数が上限を超えました。しばらくしてから再度お試しください。")
+		return errlib.NewErrorWithDetail(fmt.Errorf("ChangeEmail: rate limit exceeded for user %s", userID.String()), http.StatusTooManyRequests, "メールアドレス変更の試行回数が上限を超えました。しばらくしてから再度お試しください。")
 	}
 
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
-		return errlib.New(fmt.Errorf("ChangeEmail: failed to generate random token: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangeEmail: failed to generate random token: %w", err), http.StatusInternalServerError)
 	}
 	plaintextToken := base64.URLEncoding.EncodeToString(tokenBytes)
 
@@ -99,7 +75,7 @@ func (h *UsersHandler) changeEmail(ctx context.Context, userID pgtype.UUID, req 
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		return errlib.New(fmt.Errorf("ChangeEmail: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangeEmail: failed to begin transaction: %w", err), http.StatusInternalServerError)
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -110,7 +86,7 @@ func (h *UsersHandler) changeEmail(ctx context.Context, userID pgtype.UUID, req 
 	qtx := h.q.WithTx(tx)
 
 	if err := qtx.DeleteEmailChangeTokensByUserID(ctx, userID); err != nil {
-		return errlib.New(fmt.Errorf("ChangeEmail: failed to delete existing tokens: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangeEmail: failed to delete existing tokens: %w", err), http.StatusInternalServerError)
 	}
 
 	if err := qtx.CreateEmailChangeToken(ctx, &queries.CreateEmailChangeTokenParams{
@@ -119,11 +95,11 @@ func (h *UsersHandler) changeEmail(ctx context.Context, userID pgtype.UUID, req 
 		TokenHash: hashedTokenStr,
 		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	}); err != nil {
-		return errlib.New(fmt.Errorf("ChangeEmail: failed to create token: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangeEmail: failed to create token: %w", err), http.StatusInternalServerError)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return errlib.New(fmt.Errorf("ChangeEmail: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangeEmail: failed to commit transaction: %w", err), http.StatusInternalServerError)
 	}
 
 	verificationLink := fmt.Sprintf("%s/verify/change-email?token=%s", h.env.FrontendURL, plaintextToken)
@@ -145,7 +121,7 @@ func (h *UsersHandler) changeEmail(ctx context.Context, userID pgtype.UUID, req 
 
 	bodyBytes, err := json.Marshal(sgMailBody)
 	if err != nil {
-		return errlib.New(fmt.Errorf("ChangeEmail: failed to marshal SendGrid request: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangeEmail: failed to marshal SendGrid request: %w", err), http.StatusInternalServerError)
 	}
 
 	sendgridRequest := sendgrid.GetRequest(h.env.SendgridAPIKey, "/v3/mail/send", h.env.SendgridAPIUrl)
@@ -153,11 +129,11 @@ func (h *UsersHandler) changeEmail(ctx context.Context, userID pgtype.UUID, req 
 	sendgridRequest.Body = bodyBytes
 	response, err := sendgrid.API(sendgridRequest)
 	if err != nil {
-		return errlib.New(fmt.Errorf("ChangeEmail: SendGrid API call failed: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangeEmail: SendGrid API call failed: %w", err), http.StatusInternalServerError)
 	}
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return errlib.New(fmt.Errorf("ChangeEmail: SendGrid API returned error status code %d. Body: %s", response.StatusCode, response.Body), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("ChangeEmail: SendGrid API returned error status code %d. Body: %s", response.StatusCode, response.Body), http.StatusInternalServerError)
 	}
 
 	return nil

@@ -13,7 +13,6 @@ import (
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"lugia/lib/humautil"
 	"lugia/queries"
 )
 
@@ -29,12 +28,12 @@ type UpdateUserRolesInput struct {
 }
 
 type UpdateUserRolesRequestBody struct {
-	RoleIDs []string `json:"role_ids"`
+	RoleIDs []string `json:"role_ids" minItems:"1"`
 }
 
-func (r *UpdateUserRolesRequestBody) Validate() error {
-	if len(r.RoleIDs) == 0 {
-		return fmt.Errorf("users need at least one role")
+func (r *UpdateUserRolesRequestBody) Resolve(ctx huma.Context) []error {
+	if r.RoleIDs == nil {
+		return []error{fmt.Errorf("role_ids is required")}
 	}
 	return nil
 }
@@ -68,27 +67,16 @@ func difference(slice1, slice2 []pgtype.UUID) []pgtype.UUID {
 func (h *UsersHandler) UpdateUserRoles(ctx context.Context, input *UpdateUserRolesInput) (*struct{}, error) {
 	var targetUserID pgtype.UUID
 	if err := targetUserID.Scan(input.UserID); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("invalid user ID format for update roles: %w", err), http.StatusBadRequest)
-	}
-
-	if err := input.Body.Validate(); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("update user roles validation failed: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("invalid user ID format for update roles: %w", err), http.StatusBadRequest)
 	}
 
 	roleIDs, err := parseUUIDs(input.Body.RoleIDs)
 	if err != nil {
-		return nil, humautil.NewError(fmt.Errorf("invalid role ID format: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("invalid role ID format: %w", err), http.StatusBadRequest)
 	}
 
 	if err := h.updateUserRoles(ctx, targetUserID, roleIDs); err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return nil, nil
 }
@@ -98,19 +86,19 @@ func (h *UsersHandler) updateUserRoles(ctx context.Context, targetUserID pgtype.
 	requestingTenantID := libctx.GetTenantID(ctx)
 
 	if requestingUserID == targetUserID {
-		return errlib.New(fmt.Errorf("UpdateUserRoles: user %s attempting to update their own role", requestingUserID.String()), http.StatusBadRequest, "")
+		return errlib.NewError(fmt.Errorf("UpdateUserRoles: user %s attempting to update their own role", requestingUserID.String()), http.StatusBadRequest)
 	}
 
 	targetUser, err := h.q.GetUserByID(ctx, targetUserID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return errlib.New(fmt.Errorf("UpdateUserRoles: target user with ID %s not found: %w", targetUserID.String(), err), http.StatusNotFound, "")
+			return errlib.NewError(fmt.Errorf("UpdateUserRoles: target user with ID %s not found: %w", targetUserID.String(), err), http.StatusNotFound)
 		}
-		return errlib.New(fmt.Errorf("UpdateUserRoles: failed to get target user %s: %w", targetUserID.String(), err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("UpdateUserRoles: failed to get target user %s: %w", targetUserID.String(), err), http.StatusInternalServerError)
 	}
 
 	if requestingTenantID != targetUser.TenantID {
-		return errlib.New(fmt.Errorf("UpdateUserRoles: requesting user %s (tenant %s) attempting to update user %s (tenant %s) in different tenant", requestingUserID.String(), requestingTenantID.String(), targetUserID.String(), targetUser.TenantID.String()), http.StatusForbidden, "")
+		return errlib.NewError(fmt.Errorf("UpdateUserRoles: requesting user %s (tenant %s) attempting to update user %s (tenant %s) in different tenant", requestingUserID.String(), requestingTenantID.String(), targetUserID.String(), targetUser.TenantID.String()), http.StatusForbidden)
 	}
 
 	validRoleIDs, err := h.q.ValidateRolesBelongToTenant(ctx, &queries.ValidateRolesBelongToTenantParams{
@@ -118,10 +106,10 @@ func (h *UsersHandler) updateUserRoles(ctx context.Context, targetUserID pgtype.
 		TenantID: requestingTenantID,
 	})
 	if err != nil {
-		return errlib.New(fmt.Errorf("UpdateUserRoles: failed to validate roles belong to tenant: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("UpdateUserRoles: failed to validate roles belong to tenant: %w", err), http.StatusInternalServerError)
 	}
 	if len(validRoleIDs) != len(roleIDs) {
-		return errlib.New(fmt.Errorf("UpdateUserRoles: some roles don't belong to tenant"), http.StatusBadRequest, "")
+		return errlib.NewError(fmt.Errorf("UpdateUserRoles: some roles don't belong to tenant"), http.StatusBadRequest)
 	}
 
 	currentRoleIDs, err := h.q.GetUserRoleIDs(ctx, &queries.GetUserRoleIDsParams{
@@ -129,7 +117,7 @@ func (h *UsersHandler) updateUserRoles(ctx context.Context, targetUserID pgtype.
 		TenantID: requestingTenantID,
 	})
 	if err != nil {
-		return errlib.New(fmt.Errorf("UpdateUserRoles: failed to get current user roles: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("UpdateUserRoles: failed to get current user roles: %w", err), http.StatusInternalServerError)
 	}
 
 	toAdd := difference(roleIDs, currentRoleIDs)
@@ -138,7 +126,7 @@ func (h *UsersHandler) updateUserRoles(ctx context.Context, targetUserID pgtype.
 	if len(toRemove) > 0 || len(toAdd) > 0 {
 		tx, err := h.dbConn.Begin(ctx)
 		if err != nil {
-			return errlib.New(fmt.Errorf("UpdateUserRoles: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+			return errlib.NewError(fmt.Errorf("UpdateUserRoles: failed to begin transaction: %w", err), http.StatusInternalServerError)
 		}
 		defer func() {
 			if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -155,7 +143,7 @@ func (h *UsersHandler) updateUserRoles(ctx context.Context, targetUserID pgtype.
 				Column3:  toRemove,
 			})
 			if err != nil {
-				return errlib.New(fmt.Errorf("UpdateUserRoles: failed to remove roles: %w", err), http.StatusInternalServerError, "")
+				return errlib.NewError(fmt.Errorf("UpdateUserRoles: failed to remove roles: %w", err), http.StatusInternalServerError)
 			}
 		}
 
@@ -171,12 +159,12 @@ func (h *UsersHandler) updateUserRoles(ctx context.Context, targetUserID pgtype.
 
 			_, err = qtx.AddRolesToUser(ctx, addRolesInput)
 			if err != nil {
-				return errlib.New(fmt.Errorf("UpdateUserRoles: failed to add roles: %w", err), http.StatusInternalServerError, "")
+				return errlib.NewError(fmt.Errorf("UpdateUserRoles: failed to add roles: %w", err), http.StatusInternalServerError)
 			}
 		}
 
 		if err = tx.Commit(ctx); err != nil {
-			return errlib.New(fmt.Errorf("UpdateUserRoles: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
+			return errlib.NewError(fmt.Errorf("UpdateUserRoles: failed to commit transaction: %w", err), http.StatusInternalServerError)
 		}
 	}
 

@@ -132,7 +132,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 			expectedStatus: http.StatusNotFound,
 		},
 		{
-			name:         "empty role name returns 400",
+			name:         "empty role name returns 422",
 			loginUserKey: "enterprise_1",
 			setupRole: func(t *testing.T, pool *pgxpool.Pool) string {
 				return createTestRole(t, pool, "Test Role for Empty Name", "Test Description",
@@ -143,7 +143,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 				Description:   "Valid Description",
 				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"},
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:         "invalid permission ID format returns 500",

@@ -12,7 +12,6 @@ import (
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"lugia/lib/humautil"
 	"lugia/lib/iputils"
 	"lugia/lib/middleware"
 	"lugia/queries"
@@ -31,19 +30,12 @@ type DeleteIPInput struct {
 func (h *IPWhitelistHandler) DeleteIP(ctx context.Context, input *DeleteIPInput) (*struct{}, error) {
 	var id pgtype.UUID
 	if err := id.Scan(input.ID); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("invalid IP whitelist rule ID format: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("invalid IP whitelist rule ID format: %w", err), http.StatusBadRequest)
 	}
 
 	err := h.deleteIP(ctx, id)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return nil, nil
 }
@@ -57,9 +49,9 @@ func (h *IPWhitelistHandler) deleteIP(ctx context.Context, id pgtype.UUID) error
 	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return errlib.New(err, http.StatusNotFound, "")
+			return errlib.NewError(err, http.StatusNotFound)
 		}
-		return errlib.New(err, http.StatusInternalServerError, "")
+		return errlib.NewError(err, http.StatusInternalServerError)
 	}
 
 	ipConfig := libctx.GetIPWhitelistConfig(ctx)
@@ -69,11 +61,11 @@ func (h *IPWhitelistHandler) deleteIP(ctx context.Context, id pgtype.UUID) error
 
 		isCurrentIP, err := iputils.IsIPInCIDRList(clientIP, []string{rule.IpAddress.String()})
 		if err != nil {
-			return errlib.New(err, http.StatusInternalServerError, "")
+			return errlib.NewError(err, http.StatusInternalServerError)
 		}
 
 		if isCurrentIP {
-			return errlib.New(nil, http.StatusBadRequest, "現在使用中のIPアドレスは削除できません。")
+			return errlib.NewErrorWithDetail(nil, http.StatusBadRequest, "現在使用中のIPアドレスは削除できません。")
 		}
 	}
 
@@ -82,7 +74,7 @@ func (h *IPWhitelistHandler) deleteIP(ctx context.Context, id pgtype.UUID) error
 		TenantID: tenantID,
 	})
 	if err != nil {
-		return errlib.New(err, http.StatusInternalServerError, "")
+		return errlib.NewError(err, http.StatusInternalServerError)
 	}
 
 	return nil

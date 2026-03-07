@@ -26,7 +26,7 @@ Every file has one canonical import path. Relative imports, `$lib/`, and zoroark
 
 ```typescript
 // Source files: use $lugia/ prefix
-import { mutationFetch } from "$lugia/lib/fetch";
+import { createMutationClient } from "$lugia/lib/api";
 import Layout from "$lugia/components/Layout.svelte";
 
 // Test files: use $lugia-test/ prefix
@@ -43,14 +43,13 @@ import type { PageData } from "./$types";
 
 ### Frontend API Calls
 
-**For load functions — migrated endpoints (in OpenAPI spec):**
+**For load functions:**
 Use the typed `openapi-fetch` client. Types are auto-inferred from the URL — no manual type annotations.
 ```typescript
 import { createLoadClient } from "$lugia/lib/api";
 
 export function load({ fetch }: Parameters<PageLoad>[0]) {
   const api = createLoadClient(fetch);
-  // URL, query params, and response type are all auto-typed from the schema
   const usersPromise = api.GET("/users", {
     params: { query: { page: 1, limit: 50 } }
   }).then(({ data }) => data!);
@@ -59,12 +58,7 @@ export function load({ fetch }: Parameters<PageLoad>[0]) {
 ```
 `data!` is safe: middleware in `createLoadClient` throws on all error statuses before openapi-fetch returns. See `src/lib/api.ts` for details.
 
-**For load functions — non-migrated endpoints (not yet in OpenAPI spec):**
-```typescript
-const rolesPromise: Promise<GetRolesResponse> = loadFunctionFetch(fetch, '/api/roles').then((res) => res.json());
-```
-
-**For mutations — migrated endpoints (in OpenAPI spec):**
+**For mutations:**
 ```typescript
 import { createMutationClient } from "$lugia/lib/api";
 
@@ -77,18 +71,12 @@ if (!error) {
 }
 ```
 
-**For mutations — non-migrated endpoints:**
-```typescript
-const {response, success} = await mutationFetch('/api/endpoint', {
-  method: 'POST',
-  body: JSON.stringify(data)
-});
-```
-
 **For types — import directly from schema:**
 ```typescript
 import type { UserInfo, GetUsersResponse } from "$lugia/schema";
 ```
+
+`$lugia/lib/fetch` exports `handleLoadError` for `{:catch}` blocks in page components. `+layout.ts` has its own local `loadFunctionFetch` for the complex auth logic.
 
 ### Frontend Format
 Follow the format specified in @lugia-frontend/.prettierrc

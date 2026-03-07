@@ -698,7 +698,7 @@ export interface components {
         };
         IPWhitelist: {
             active: boolean;
-            allow_internal_admin_bypass?: boolean;
+            allow_internal_admin_bypass: boolean;
             enabled: boolean;
         };
         IPWhitelistRule: {
@@ -885,6 +885,42 @@ export interface components {
     headers: never;
     pathItems: never;
 }
+export type AcceptInviteRequestBody = components['schemas']['AcceptInviteRequestBody'];
+export type ActivateWhitelistRequestBody = components['schemas']['ActivateWhitelistRequestBody'];
+export type ActivateWhitelistResponse = components['schemas']['ActivateWhitelistResponse'];
+export type AddIpToWhitelistRequest = components['schemas']['AddIPToWhitelistRequest'];
+export type ChangeEmailRequestBody = components['schemas']['ChangeEmailRequestBody'];
+export type ChangePasswordRequestBody = components['schemas']['ChangePasswordRequestBody'];
+export type ChangeTenantNameRequestBody = components['schemas']['ChangeTenantNameRequestBody'];
+export type ClientEnterpriseFeatures = components['schemas']['ClientEnterpriseFeatures'];
+export type CreateRoleRequestBody = components['schemas']['CreateRoleRequestBody'];
+export type ErrorDetail = components['schemas']['ErrorDetail'];
+export type ErrorModel = components['schemas']['ErrorModel'];
+export type ForgotPasswordRequestBody = components['schemas']['ForgotPasswordRequestBody'];
+export type GetIpWhitelistResponse = components['schemas']['GetIPWhitelistResponse'];
+export type GetPermissionsResponse = components['schemas']['GetPermissionsResponse'];
+export type GetRolesResponse = components['schemas']['GetRolesResponse'];
+export type GetUsersResponse = components['schemas']['GetUsersResponse'];
+export type IpWhitelist = components['schemas']['IPWhitelist'];
+export type IpWhitelistRule = components['schemas']['IPWhitelistRule'];
+export type InviteUserRequestBody = components['schemas']['InviteUserRequestBody'];
+export type LoginRequestBody = components['schemas']['LoginRequestBody'];
+export type MeResponse = components['schemas']['MeResponse'];
+export type PaginationMetadata = components['schemas']['PaginationMetadata'];
+export type Permission = components['schemas']['Permission'];
+export type Rbac = components['schemas']['RBAC'];
+export type ResetPasswordRequestBody = components['schemas']['ResetPasswordRequestBody'];
+export type RoleInfo = components['schemas']['RoleInfo'];
+export type SignupRequestBody = components['schemas']['SignupRequestBody'];
+export type TenantSignupRequestBody = components['schemas']['TenantSignupRequestBody'];
+export type UpdateLabelRequest = components['schemas']['UpdateLabelRequest'];
+export type UpdateMeRequestBody = components['schemas']['UpdateMeRequestBody'];
+export type UpdateRoleRequestBody = components['schemas']['UpdateRoleRequestBody'];
+export type UpdateUserRolesRequestBody = components['schemas']['UpdateUserRolesRequestBody'];
+export type UserInfo = components['schemas']['UserInfo'];
+export type UserRole = components['schemas']['UserRole'];
+export type VerifyResetTokenRequestBody = components['schemas']['VerifyResetTokenRequestBody'];
+export type VerifyResetTokenResponse = components['schemas']['VerifyResetTokenResponse'];
 export type $defs = Record<string, never>;
 export interface operations {
     "accept-invite": {
@@ -1864,9 +1900,3 @@ export interface operations {
         };
     };
 }
-
-// Convenience type aliases for component schemas
-export type IpWhitelistRule = components["schemas"]["IPWhitelistRule"];
-export type Permission = components["schemas"]["Permission"];
-export type RoleInfo = components["schemas"]["RoleInfo"];
-export type UserInfo = components["schemas"]["UserInfo"];

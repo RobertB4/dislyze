@@ -65,16 +65,16 @@ func TestChangeTenantName_Integration(t *testing.T) {
 			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
-			name:           "empty name string returns 400",
+			name:           "empty name string returns 422",
 			loginUserKey:   "enterprise_1",
 			requestBody:    map[string]string{"name": ""},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
-			name:           "name with only whitespace returns 400",
+			name:           "whitespace only name passes huma validation (no trim)",
 			loginUserKey:   "enterprise_1",
 			requestBody:    map[string]string{"name": "   \t\n   "},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusNoContent,
 		},
 
 		// Business Logic

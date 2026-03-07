@@ -48,7 +48,7 @@ func TestChangePassword_Integration(t *testing.T) {
 				NewPassword:     "newSecurePassword123",
 				PasswordConfirm: "differentPassword123",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:         "new password too short",
@@ -58,7 +58,7 @@ func TestChangePassword_Integration(t *testing.T) {
 				NewPassword:     "short",
 				PasswordConfirm: "short",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:         "empty current password",
@@ -68,7 +68,7 @@ func TestChangePassword_Integration(t *testing.T) {
 				NewPassword:     "newSecurePassword123",
 				PasswordConfirm: "newSecurePassword123",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:         "empty new password",
@@ -78,7 +78,7 @@ func TestChangePassword_Integration(t *testing.T) {
 				NewPassword:     "",
 				PasswordConfirm: "",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name: "unauthenticated request",

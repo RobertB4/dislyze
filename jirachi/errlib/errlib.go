@@ -2,52 +2,41 @@ package errlib
 
 import (
 	stdErrors "errors"
-	"fmt"
 	"log"
-	"runtime"
-	"strings"
 )
 
-type AppError struct {
-	OriginalError error
-	Message       string
-	StatusCode    int
-	File          string
-	Line          int
+// APIError represents an HTTP error response. Through structural typing, it
+// satisfies huma.StatusError (GetStatus() int + Error() string) without
+// importing huma.
+//
+// When Detail is empty, it serializes to {} — the frontend treats this
+// the same as a non-JSON error body (shows a generic toast).
+type APIError struct {
+	Status int    `json:"-"`
+	Detail string `json:"error,omitempty"`
 }
 
-func (e *AppError) Error() string {
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("AppError: %s:%d", e.File, e.Line))
-	if e.Message != "" {
-		sb.WriteString(fmt.Sprintf(" | UserMessage: %s", e.Message))
-	}
-	if e.StatusCode != 0 {
-		sb.WriteString(fmt.Sprintf(" | StatusCode: %d", e.StatusCode))
-	}
-	if e.OriginalError != nil {
-		sb.WriteString(fmt.Sprintf(" | OriginalError: %v", e.OriginalError))
-	}
-	return sb.String()
+func (e *APIError) Error() string  { return e.Detail }
+func (e *APIError) GetStatus() int { return e.Status }
+
+// NewError logs the internal error and returns an APIError with the given
+// status code. The client receives an empty error body and shows a generic
+// toast. Use this for most errors.
+//
+// For errors where the client needs a specific message it can't determine
+// on its own (e.g., "このメールアドレスは既に使用されています。"), use
+// NewErrorWithDetail instead.
+func NewError(err error, status int) error {
+	LogError(err)
+	return &APIError{Status: status}
 }
 
-func (e *AppError) Unwrap() error {
-	return e.OriginalError
-}
-
-func New(originalError error, statusCode int, userMessage string) *AppError {
-	_, file, line, ok := runtime.Caller(1)
-	if !ok {
-		file = "???"
-		line = 0
-	}
-	return &AppError{
-		OriginalError: originalError,
-		StatusCode:    statusCode,
-		Message:       userMessage,
-		File:          file,
-		Line:          line,
-	}
+// NewErrorWithDetail logs the internal error and returns an APIError with
+// a user-visible detail message. Use this only when the client needs
+// information that requires server knowledge.
+func NewErrorWithDetail(err error, status int, detail string) error {
+	LogError(err)
+	return &APIError{Status: status, Detail: detail}
 }
 
 func LogError(err error) {

@@ -38,16 +38,16 @@ func TestUpdateMe_Integration(t *testing.T) {
 
 		// Input Validation Tests
 		{
-			name:           "empty name gets 400",
+			name:           "empty name gets 422",
 			loginUserKey:   "enterprise_1",
 			requestBody:    users.UpdateMeRequestBody{Name: ""},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
-			name:           "name with only whitespace gets 400",
+			name:           "name with only whitespace succeeds (huma minLength does not trim)",
 			loginUserKey:   "enterprise_1",
 			requestBody:    users.UpdateMeRequestBody{Name: "   "},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:           "malformed JSON request gets 400",

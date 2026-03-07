@@ -49,20 +49,20 @@ type SSOLoginResponse struct {
 
 func (h *AuthHandler) SSOLogin(w http.ResponseWriter, r *http.Request) {
 	if !h.rateLimiter.Allow(r.RemoteAddr, r) {
-		appErr := errlib.New(fmt.Errorf("rate limit exceeded for SSO login"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
+		appErr := errlib.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for SSO login"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
 		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	var req SSOLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "Invalid request body")
+		appErr := errlib.NewErrorWithDetail(err, http.StatusBadRequest, "Invalid request body")
 		responder.RespondWithError(w, appErr)
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, err.Error())
+		appErr := errlib.NewErrorWithDetail(err, http.StatusBadRequest, err.Error())
 		responder.RespondWithError(w, appErr)
 		return
 	}
@@ -79,7 +79,7 @@ func (h *AuthHandler) SSOLogin(w http.ResponseWriter, r *http.Request) {
 			Error:     err.Error(),
 		})
 
-		appErr := errlib.New(err, http.StatusUnauthorized, "")
+		appErr := errlib.NewError(err, http.StatusUnauthorized)
 		responder.RespondWithError(w, appErr)
 		return
 	}

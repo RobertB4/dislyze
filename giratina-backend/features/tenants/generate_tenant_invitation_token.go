@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 
 	"dislyze/jirachi/errlib"
-	"giratina/lib/humautil"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -25,47 +23,29 @@ type SSOConfig struct {
 }
 
 type GenerateTenantInvitationTokenRequest struct {
-	Email       string     `json:"email"`
-	CompanyName string     `json:"company_name"`
-	UserName    string     `json:"user_name"`
+	Email       string     `json:"email" minLength:"1" pattern:"@"`
+	CompanyName string     `json:"company_name,omitempty"`
+	UserName    string     `json:"user_name,omitempty"`
 	SSO         *SSOConfig `json:"sso,omitempty"`
 }
 
-func (r *GenerateTenantInvitationTokenRequest) Validate() error {
-	r.Email = strings.TrimSpace(r.Email)
-	r.CompanyName = strings.TrimSpace(r.CompanyName)
-	r.UserName = strings.TrimSpace(r.UserName)
-
-	if r.Email == "" {
-		return fmt.Errorf("email is required")
-	}
-	if !strings.Contains(r.Email, "@") {
-		return fmt.Errorf("valid email is required")
-	}
-
+func (r *GenerateTenantInvitationTokenRequest) Resolve(ctx huma.Context) []error {
 	if r.SSO != nil && r.SSO.Enabled {
-		r.SSO.IdpMetadataURL = strings.TrimSpace(r.SSO.IdpMetadataURL)
-
 		if r.SSO.IdpMetadataURL == "" {
-			return fmt.Errorf("idp_metadata_url is required when SSO is enabled")
+			return []error{fmt.Errorf("idp_metadata_url is required when SSO is enabled")}
 		}
-
 		if _, err := url.ParseRequestURI(r.SSO.IdpMetadataURL); err != nil {
-			return fmt.Errorf("idp_metadata_url must be a valid URL")
+			return []error{fmt.Errorf("idp_metadata_url must be a valid URL")}
 		}
-
 		if len(r.SSO.AllowedDomains) == 0 {
-			return fmt.Errorf("at least one allowed domain is required when SSO is enabled")
+			return []error{fmt.Errorf("at least one allowed domain is required when SSO is enabled")}
 		}
-
-		for i, domain := range r.SSO.AllowedDomains {
-			r.SSO.AllowedDomains[i] = strings.TrimSpace(domain)
-			if r.SSO.AllowedDomains[i] == "" {
-				return fmt.Errorf("allowed domains cannot be empty")
+		for _, domain := range r.SSO.AllowedDomains {
+			if domain == "" {
+				return []error{fmt.Errorf("allowed domains cannot be empty")}
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -81,14 +61,10 @@ type TenantInvitationClaims struct {
 	jwt.RegisteredClaims
 }
 
-// TODO: Remove SkipValidateBody once request struct fields have correct
-// omitempty tags (company_name, user_name are optional but huma marks them
-// required). See PROGRESS.md "SkipValidateBody workarounds".
 var GenerateTokenOp = huma.Operation{
-	OperationID:      "generate-tenant-invitation-token",
-	Method:           http.MethodPost,
-	Path:             "/tenants/generate-token",
-	SkipValidateBody: true,
+	OperationID: "generate-tenant-invitation-token",
+	Method:      http.MethodPost,
+	Path:        "/tenants/generate-token",
 }
 
 type GenerateTokenInput struct {
@@ -100,10 +76,6 @@ type GenerateTokenOutput struct {
 }
 
 func (h *TenantsHandler) GenerateTenantInvitationToken(ctx context.Context, input *GenerateTokenInput) (*GenerateTokenOutput, error) {
-	if err := input.Body.Validate(); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("tenant invitation validation failed: %w", err), http.StatusBadRequest)
-	}
-
 	response, err := h.generateTenantInvitationToken(ctx, &input.Body)
 	if err != nil {
 		return nil, err
@@ -116,11 +88,11 @@ func (h *TenantsHandler) generateTenantInvitationToken(ctx context.Context, req 
 	_, err := h.queries.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errlib.Is(err, pgx.ErrNoRows) {
-			return nil, humautil.NewError(fmt.Errorf("failed to check user existence: %w", err), http.StatusInternalServerError)
+			return nil, errlib.NewError(fmt.Errorf("failed to check user existence: %w", err), http.StatusInternalServerError)
 		}
 		// ErrNoRows means user doesn't exist, which is what we want - continue
 	} else {
-		return nil, humautil.NewErrorWithDetail(fmt.Errorf("GenerateTenantInvitationToken: email already in use"), http.StatusBadRequest, "このメールアドレスは既に使用されています。")
+		return nil, errlib.NewErrorWithDetail(fmt.Errorf("GenerateTenantInvitationToken: email already in use"), http.StatusBadRequest, "このメールアドレスは既に使用されています。")
 	}
 
 	now := time.Now()
@@ -138,7 +110,7 @@ func (h *TenantsHandler) generateTenantInvitationToken(ctx context.Context, req 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(h.env.CreateTenantJwtSecret))
 	if err != nil {
-		return nil, humautil.NewError(fmt.Errorf("failed to sign JWT token: %w", err), http.StatusInternalServerError)
+		return nil, errlib.NewError(fmt.Errorf("failed to sign JWT token: %w", err), http.StatusInternalServerError)
 	}
 
 	inviteURL := fmt.Sprintf("%s/auth/tenant-signup?token=%s", h.env.LugiaFrontendUrl, tokenString)

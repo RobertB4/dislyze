@@ -14,7 +14,6 @@ import (
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 	"lugia/lib/conversions"
-	"lugia/lib/humautil"
 	"lugia/lib/pagination"
 	"lugia/queries"
 
@@ -78,14 +77,7 @@ func (h *UsersHandler) GetUsers(ctx context.Context, input *GetUsersInput) (*Get
 
 	response, err := h.getUsers(ctx, tenantID, paginationParams, input.Search)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return &GetUsersOutput{Body: *response}, nil
 }
@@ -94,14 +86,14 @@ func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, pagin
 	tenant, err := h.q.GetTenantByID(ctx, tenantID)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return nil, errlib.New(fmt.Errorf("GetUsers: tenant not found %s: %w", tenantID.String(), err), http.StatusUnauthorized, "")
+			return nil, errlib.NewError(fmt.Errorf("GetUsers: tenant not found %s: %w", tenantID.String(), err), http.StatusUnauthorized)
 		}
-		return nil, errlib.New(fmt.Errorf("GetUsers: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
+		return nil, errlib.NewError(fmt.Errorf("GetUsers: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError)
 	}
 
 	var enterpriseFeatures authz.EnterpriseFeatures
 	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
-		return nil, errlib.New(fmt.Errorf("GetUsers: failed to unmarshal features config for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError, "")
+		return nil, errlib.NewError(fmt.Errorf("GetUsers: failed to unmarshal features config for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError)
 	}
 
 	totalCount, err := h.q.CountUsersByTenantID(ctx, &queries.CountUsersByTenantIDParams{
@@ -109,7 +101,7 @@ func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, pagin
 		Column2:  searchTerm,
 	})
 	if err != nil {
-		return nil, errlib.New(fmt.Errorf("GetUsers: failed to count users: %w", err), http.StatusInternalServerError, "")
+		return nil, errlib.NewError(fmt.Errorf("GetUsers: failed to count users: %w", err), http.StatusInternalServerError)
 	}
 
 	usersWithRoles, err := h.q.GetUsersWithRolesRespectingRBAC(ctx, &queries.GetUsersWithRolesRespectingRBACParams{
@@ -128,7 +120,7 @@ func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, pagin
 			}
 			return response, nil
 		}
-		return nil, errlib.New(fmt.Errorf("GetUsers: failed to get users with roles: %w", err), http.StatusInternalServerError, "")
+		return nil, errlib.NewError(fmt.Errorf("GetUsers: failed to get users with roles: %w", err), http.StatusInternalServerError)
 	}
 
 	var userOrder []string

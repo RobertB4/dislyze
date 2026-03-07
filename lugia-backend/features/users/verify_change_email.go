@@ -13,7 +13,6 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"dislyze/jirachi/errlib"
-	"lugia/lib/humautil"
 	"lugia/queries"
 )
 
@@ -29,19 +28,12 @@ type VerifyChangeEmailInput struct {
 
 func (h *UsersHandler) VerifyChangeEmail(ctx context.Context, input *VerifyChangeEmailInput) (*struct{}, error) {
 	if input.Token == "" {
-		return nil, humautil.NewErrorWithDetail(fmt.Errorf("verify change email token is empty"), http.StatusBadRequest, "無効または期限切れのトークンです。")
+		return nil, errlib.NewErrorWithDetail(fmt.Errorf("verify change email token is empty"), http.StatusBadRequest, "無効または期限切れのトークンです。")
 	}
 
 	err := h.verifyChangeEmail(ctx, input.Token)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return nil, nil
 }
@@ -52,7 +44,7 @@ func (h *UsersHandler) verifyChangeEmail(ctx context.Context, token string) erro
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		return errlib.New(fmt.Errorf("VerifyChangeEmail: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to begin transaction: %w", err), http.StatusInternalServerError)
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -65,32 +57,32 @@ func (h *UsersHandler) verifyChangeEmail(ctx context.Context, token string) erro
 	emailChangeToken, err := qtx.GetEmailChangeTokenByHash(ctx, hashedTokenStr)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return errlib.New(fmt.Errorf("VerifyChangeEmail: invalid or expired token: %w", err), http.StatusBadRequest, "無効または期限切れのトークンです。")
+			return errlib.NewErrorWithDetail(fmt.Errorf("VerifyChangeEmail: invalid or expired token: %w", err), http.StatusBadRequest, "無効または期限切れのトークンです。")
 		}
-		return errlib.New(fmt.Errorf("VerifyChangeEmail: failed to get email change token: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to get email change token: %w", err), http.StatusInternalServerError)
 	}
 
 	if emailChangeToken.ExpiresAt.Time.Before(time.Now()) {
-		return errlib.New(fmt.Errorf("VerifyChangeEmail: token expired at %s", emailChangeToken.ExpiresAt.Time), http.StatusBadRequest, "無効または期限切れのトークンです。")
+		return errlib.NewErrorWithDetail(fmt.Errorf("VerifyChangeEmail: token expired at %s", emailChangeToken.ExpiresAt.Time), http.StatusBadRequest, "無効または期限切れのトークンです。")
 	}
 
 	if err := qtx.UpdateUserEmail(ctx, &queries.UpdateUserEmailParams{
 		ID:    emailChangeToken.UserID,
 		Email: emailChangeToken.NewEmail,
 	}); err != nil {
-		return errlib.New(fmt.Errorf("VerifyChangeEmail: failed to update user email: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to update user email: %w", err), http.StatusInternalServerError)
 	}
 
 	if err := qtx.MarkEmailChangeTokenAsUsed(ctx, emailChangeToken.ID); err != nil {
-		return errlib.New(fmt.Errorf("VerifyChangeEmail: failed to mark token as used: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to mark token as used: %w", err), http.StatusInternalServerError)
 	}
 
 	if err := qtx.DeleteRefreshTokensByUserID(ctx, emailChangeToken.UserID); err != nil {
-		return errlib.New(fmt.Errorf("VerifyChangeEmail: failed to invalidate sessions: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to invalidate sessions: %w", err), http.StatusInternalServerError)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return errlib.New(fmt.Errorf("VerifyChangeEmail: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to commit transaction: %w", err), http.StatusInternalServerError)
 	}
 
 	return nil

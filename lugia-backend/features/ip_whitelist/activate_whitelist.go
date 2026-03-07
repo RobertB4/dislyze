@@ -20,7 +20,6 @@ import (
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/sendgridlib"
 	"dislyze/jirachi/utils"
-	"lugia/lib/humautil"
 	"lugia/lib/iputils"
 	"lugia/lib/middleware"
 	"lugia/queries"
@@ -52,19 +51,12 @@ func (h *IPWhitelistHandler) ActivateWhitelist(ctx context.Context, input *Activ
 	r := middleware.GetHTTPRequest(ctx)
 
 	if !h.rateLimiter.Allow(libctx.GetUserID(ctx).String(), r) {
-		return nil, humautil.NewError(fmt.Errorf("rate limit exceeded for activate whitelist"), http.StatusTooManyRequests)
+		return nil, errlib.NewError(fmt.Errorf("rate limit exceeded for activate whitelist"), http.StatusTooManyRequests)
 	}
 
 	userIP, err := h.activateWhitelist(ctx, input.Body, r)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 
 	if userIP != "" {
@@ -82,7 +74,7 @@ func (h *IPWhitelistHandler) activateWhitelist(ctx context.Context, req Activate
 	if !req.Force {
 		isSafe, err := h.validateActivationSafety(ctx, tenantID, userIP)
 		if err != nil {
-			return "", errlib.New(fmt.Errorf("ActivateWhitelist: failed to validate activation safety: %w", err), http.StatusInternalServerError, "")
+			return "", errlib.NewError(fmt.Errorf("ActivateWhitelist: failed to validate activation safety: %w", err), http.StatusInternalServerError)
 		}
 
 		if !isSafe {
@@ -92,28 +84,28 @@ func (h *IPWhitelistHandler) activateWhitelist(ctx context.Context, req Activate
 
 	tenant, err := h.q.GetTenantByID(ctx, tenantID)
 	if err != nil {
-		return "", errlib.New(fmt.Errorf("ActivateWhitelist: failed to get tenant: %w", err), http.StatusInternalServerError, "")
+		return "", errlib.NewError(fmt.Errorf("ActivateWhitelist: failed to get tenant: %w", err), http.StatusInternalServerError)
 	}
 
 	if len(tenant.EnterpriseFeatures) == 0 {
-		return "", errlib.New(fmt.Errorf("ActivateWhitelist: tenant %s has no enterprise features configured", tenantID.String()), http.StatusInternalServerError, "")
+		return "", errlib.NewError(fmt.Errorf("ActivateWhitelist: tenant %s has no enterprise features configured", tenantID.String()), http.StatusInternalServerError)
 	}
 
 	var currentFeatures jirachiAuthz.EnterpriseFeatures
 	if err := json.Unmarshal(tenant.EnterpriseFeatures, &currentFeatures); err != nil {
-		return "", errlib.New(fmt.Errorf("ActivateWhitelist: failed to parse enterprise features: %w", err), http.StatusInternalServerError, "")
+		return "", errlib.NewError(fmt.Errorf("ActivateWhitelist: failed to parse enterprise features: %w", err), http.StatusInternalServerError)
 	}
 
 	currentFeatures.IPWhitelist.Active = true
 
 	updatedFeaturesJSON, err := json.Marshal(currentFeatures)
 	if err != nil {
-		return "", errlib.New(fmt.Errorf("ActivateWhitelist: failed to marshal enterprise features: %w", err), http.StatusInternalServerError, "")
+		return "", errlib.NewError(fmt.Errorf("ActivateWhitelist: failed to marshal enterprise features: %w", err), http.StatusInternalServerError)
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		return "", errlib.New(fmt.Errorf("ActivateWhitelist: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+		return "", errlib.NewError(fmt.Errorf("ActivateWhitelist: failed to begin transaction: %w", err), http.StatusInternalServerError)
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -127,18 +119,18 @@ func (h *IPWhitelistHandler) activateWhitelist(ctx context.Context, req Activate
 		ID:                 tenantID,
 	})
 	if err != nil {
-		return "", errlib.New(fmt.Errorf("ActivateWhitelist: failed to update tenant enterprise features: %w", err), http.StatusInternalServerError, "")
+		return "", errlib.NewError(fmt.Errorf("ActivateWhitelist: failed to update tenant enterprise features: %w", err), http.StatusInternalServerError)
 	}
 
 	if req.Force {
 		err = h.createEmergencyTokenAndSendEmail(ctx, qtx, tenantID, userID)
 		if err != nil {
-			return "", errlib.New(fmt.Errorf("ActivateWhitelist: failed to create emergency token and send email: %w", err), http.StatusInternalServerError, "")
+			return "", errlib.NewError(fmt.Errorf("ActivateWhitelist: failed to create emergency token and send email: %w", err), http.StatusInternalServerError)
 		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return "", errlib.New(fmt.Errorf("ActivateWhitelist: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
+		return "", errlib.NewError(fmt.Errorf("ActivateWhitelist: failed to commit transaction: %w", err), http.StatusInternalServerError)
 	}
 
 	return "", nil

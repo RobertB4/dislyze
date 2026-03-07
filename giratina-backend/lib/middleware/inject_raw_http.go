@@ -8,9 +8,9 @@ import (
 type httpRequestKey struct{}
 type responseWriterKey struct{}
 
-// StoreHTTPRequest saves *http.Request and http.ResponseWriter in context
+// InjectRawHTTP saves *http.Request and http.ResponseWriter in context
 // so huma handlers can access them for rate limiting, cookie setting, etc.
-func StoreHTTPRequest(next http.Handler) http.Handler {
+func InjectRawHTTP(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), httpRequestKey{}, r)
 		ctx = context.WithValue(ctx, responseWriterKey{}, w)

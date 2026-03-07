@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -15,7 +14,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"dislyze/jirachi/errlib"
-	"lugia/lib/humautil"
 	"lugia/queries"
 )
 
@@ -30,46 +28,22 @@ type ResetPasswordInput struct {
 }
 
 type ResetPasswordRequestBody struct {
-	Token           string `json:"token"`
-	Password        string `json:"password"` // #nosec G117 -- intentional: request body, not a leaked secret
-	PasswordConfirm string `json:"password_confirm"`
+	Token           string `json:"token" minLength:"1"`
+	Password        string `json:"password" minLength:"8"` // #nosec G117 -- intentional: request body, not a leaked secret
+	PasswordConfirm string `json:"password_confirm" minLength:"1"`
 }
 
-func (r *ResetPasswordRequestBody) Validate() error {
-	r.Token = strings.TrimSpace(r.Token)
-	r.Password = strings.TrimSpace(r.Password)
-	r.PasswordConfirm = strings.TrimSpace(r.PasswordConfirm)
-
-	if r.Token == "" {
-		return fmt.Errorf("token is required")
-	}
-	if r.Password == "" {
-		return fmt.Errorf("password is required")
-	}
-	if len(r.Password) < 8 {
-		return fmt.Errorf("password must be at least 8 characters long")
-	}
+func (r *ResetPasswordRequestBody) Resolve(ctx huma.Context) []error {
 	if r.Password != r.PasswordConfirm {
-		return fmt.Errorf("passwords do not match")
+		return []error{fmt.Errorf("passwords do not match")}
 	}
 	return nil
 }
 
 func (h *AuthHandler) ResetPassword(ctx context.Context, input *ResetPasswordInput) (*struct{}, error) {
-	if err := input.Body.Validate(); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("reset password validation failed: %w", err), http.StatusBadRequest)
-	}
-
 	err := h.resetPassword(ctx, input.Body)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return nil, nil
 }
@@ -81,27 +55,27 @@ func (h *AuthHandler) resetPassword(ctx context.Context, req ResetPasswordReques
 	tokenRecord, err := h.queries.GetPasswordResetTokenByHash(ctx, hashedTokenStr)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
-			return errlib.New(err, http.StatusBadRequest, fmt.Sprintf("ResetPassword: Token hash not found: %s", hashedTokenStr))
+			return errlib.NewError(fmt.Errorf("ResetPassword: token hash not found: %s: %w", hashedTokenStr, err), http.StatusBadRequest)
 		}
-		return errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to query password reset token by hash %s", hashedTokenStr))
+		return errlib.NewError(fmt.Errorf("ResetPassword: failed to query password reset token by hash %s: %w", hashedTokenStr, err), http.StatusInternalServerError)
 	}
 
 	if tokenRecord.UsedAt.Valid {
-		return errlib.New(fmt.Errorf("ResetPassword: Token ID %s already used at %v", tokenRecord.ID, tokenRecord.UsedAt.Time), http.StatusBadRequest, "Token already used")
+		return errlib.NewError(fmt.Errorf("ResetPassword: token ID %s already used at %v", tokenRecord.ID, tokenRecord.UsedAt.Time), http.StatusBadRequest)
 	}
 
 	if time.Now().After(tokenRecord.ExpiresAt.Time) {
-		return errlib.New(fmt.Errorf("ResetPassword: Token ID %s expired at %v", tokenRecord.ID, tokenRecord.ExpiresAt.Time), http.StatusBadRequest, "Token expired")
+		return errlib.NewError(fmt.Errorf("ResetPassword: token ID %s expired at %v", tokenRecord.ID, tokenRecord.ExpiresAt.Time), http.StatusBadRequest)
 	}
 
 	hashedNewPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to hash new password")
+		return errlib.NewError(fmt.Errorf("ResetPassword: failed to hash new password: %w", err), http.StatusInternalServerError)
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		return errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to begin transaction")
+		return errlib.NewError(fmt.Errorf("ResetPassword: failed to begin transaction: %w", err), http.StatusInternalServerError)
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -115,19 +89,19 @@ func (h *AuthHandler) resetPassword(ctx context.Context, req ResetPasswordReques
 		ID:           tokenRecord.UserID,
 		PasswordHash: string(hashedNewPassword),
 	}); err != nil {
-		return errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to update password for user ID %s", tokenRecord.UserID))
+		return errlib.NewError(fmt.Errorf("ResetPassword: failed to update password for user ID %s: %w", tokenRecord.UserID, err), http.StatusInternalServerError)
 	}
 
 	if err := qtx.MarkPasswordResetTokenAsUsed(ctx, tokenRecord.ID); err != nil {
-		return errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to mark reset token ID %s as used", tokenRecord.ID))
+		return errlib.NewError(fmt.Errorf("ResetPassword: failed to mark reset token ID %s as used: %w", tokenRecord.ID, err), http.StatusInternalServerError)
 	}
 
 	if err := qtx.DeleteRefreshTokensByUserID(ctx, tokenRecord.UserID); err != nil {
-		errlib.LogError(errlib.New(err, http.StatusInternalServerError, fmt.Sprintf("ResetPassword: Failed to delete refresh tokens for user ID %s, but password reset was successful", tokenRecord.UserID)))
+		errlib.LogError(fmt.Errorf("ResetPassword: Failed to delete refresh tokens for user ID %s, but password reset was successful: %w", tokenRecord.UserID, err))
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return errlib.New(err, http.StatusInternalServerError, "ResetPassword: Failed to commit transaction")
+		return errlib.NewError(fmt.Errorf("ResetPassword: failed to commit transaction: %w", err), http.StatusInternalServerError)
 	}
 
 	return nil

@@ -14,7 +14,7 @@
 	import { invalidate } from "$app/navigation";
 	import { handleLoadError } from "$giratina/lib/fetch";
 	import { createMutationClient } from "$giratina/lib/api";
-	import type { Tenant, EnterpriseFeatures } from "$giratina/schema";
+	import type { TenantResponse as Tenant, EnterpriseFeatures } from "$giratina/schema";
 	import { resolve } from "$app/paths";
 
 	let { data: pageData }: { data: PageData } = $props();
@@ -534,7 +534,7 @@
 													? () =>
 															($editData.enterprise_features[
 																featureKey as keyof EnterpriseFeatures
-															].enabled = false)
+															]!.enabled = false)
 													: undefined}
 												variant={editable ? "orange" : "gray"}
 												class={!editable ? "opacity-50" : ""}
@@ -548,7 +548,7 @@
 													? () =>
 															($editData.enterprise_features[
 																featureKey as keyof EnterpriseFeatures
-															].enabled = true)
+															]!.enabled = true)
 													: undefined}
 												variant={editable ? "orange" : "gray"}
 												class={!editable ? "opacity-50" : ""}

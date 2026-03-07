@@ -57,7 +57,7 @@ const { data, error } = await api.POST("/tenants/{id}/update", {
 if (!error) { /* success */ }
 ```
 
-Legacy `loadFunctionFetch`/`mutationFetch` from `$giratina/lib/fetch` still used in `+layout.ts` (complex auth logic) and `handleLoadError` for `{:catch}` blocks.
+`$giratina/lib/fetch` exports `handleLoadError` for `{:catch}` blocks in page components. `+layout.ts` has its own local `loadFunctionFetch` for the complex auth logic.
 
 ### Frontend Format
 Follow the format specified in @giratina-frontend/.prettierrc

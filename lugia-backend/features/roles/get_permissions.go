@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"dislyze/jirachi/errlib"
-	"lugia/lib/humautil"
 )
 
 var GetPermissionsOp = huma.Operation{
@@ -32,14 +31,7 @@ type GetPermissionsOutput struct {
 func (h *RolesHandler) GetPermissions(ctx context.Context, input *GetPermissionsInput) (*GetPermissionsOutput, error) {
 	response, err := h.getPermissions(ctx)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return &GetPermissionsOutput{Body: *response}, nil
 }
@@ -53,7 +45,7 @@ func (h *RolesHandler) getPermissions(ctx context.Context) (*GetPermissionsRespo
 			}
 			return response, nil
 		}
-		return nil, errlib.New(fmt.Errorf("GetPermissions: failed to get permissions: %w", err), http.StatusInternalServerError, "")
+		return nil, errlib.NewError(fmt.Errorf("GetPermissions: failed to get permissions: %w", err), http.StatusInternalServerError)
 	}
 
 	permissionInfos := make([]Permission, len(permissions))

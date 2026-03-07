@@ -9,7 +9,8 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"giratina/lib/humautil"
+	"dislyze/jirachi/errlib"
+
 )
 
 type UserInfo struct {
@@ -40,7 +41,7 @@ type GetUsersByTenantOutput struct {
 func (h *TenantsHandler) GetUsersByTenant(ctx context.Context, input *GetUsersByTenantInput) (*GetUsersByTenantOutput, error) {
 	var tenantID pgtype.UUID
 	if err := tenantID.Scan(input.TenantID); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("invalid tenant ID format: %w", err), http.StatusBadRequest)
+		return nil, errlib.NewError(fmt.Errorf("invalid tenant ID format: %w", err), http.StatusBadRequest)
 	}
 
 	users, err := h.getUsersByTenant(ctx, tenantID)
@@ -54,7 +55,7 @@ func (h *TenantsHandler) GetUsersByTenant(ctx context.Context, input *GetUsersBy
 func (h *TenantsHandler) getUsersByTenant(ctx context.Context, tenantID pgtype.UUID) ([]UserInfo, error) {
 	dbUsers, err := h.queries.GetUsersByTenantID(ctx, tenantID)
 	if err != nil {
-		return nil, humautil.NewError(fmt.Errorf("GetUsersByTenant: failed to get users by tenant: %w", err), http.StatusInternalServerError)
+		return nil, errlib.NewError(fmt.Errorf("GetUsersByTenant: failed to get users by tenant: %w", err), http.StatusInternalServerError)
 	}
 
 	users := make([]UserInfo, len(dbUsers))

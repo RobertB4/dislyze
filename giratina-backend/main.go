@@ -19,8 +19,9 @@ import (
 	"giratina/features/auth"
 	"giratina/lib/config"
 	"giratina/lib/db"
-	"giratina/lib/humautil"
 	"giratina/lib/middleware"
+
+	"dislyze/jirachi/errlib"
 	"giratina/queries"
 
 	jirachi_auth "dislyze/jirachi/auth"
@@ -69,17 +70,17 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	r.Route("/api", func(r chi.Router) {
 		// Huma route registrations below are mirrored in giratina-backend/cmd/openapi/main.go
 		// for OpenAPI spec generation. When adding or removing endpoints, update both files.
-		humaConfig := humautil.NewConfig("Giratina API", "1.0.0")
+		humaConfig := newHumaConfig("Giratina API", "1.0.0")
 
-		// /auth endpoints — public, only need StoreHTTPRequest for cookie/rate-limit access
-		authAPI := humachi.New(r.With(middleware.StoreHTTPRequest), humaConfig)
+		// /auth endpoints — public, only need InjectRawHTTP for cookie/rate-limit access
+		authAPI := humachi.New(r.With(middleware.InjectRawHTTP), humaConfig)
 		huma.Register(authAPI, auth.LoginOp, authHandler.Login)
 		huma.Register(authAPI, auth.LogoutOp, authHandler.Logout)
 
 		r.Group(func(r chi.Router) {
 			r.Use(jirachiAuthMiddleware.Authenticate)
 
-			api := humachi.New(r.With(middleware.StoreHTTPRequest), humaConfig)
+			api := humachi.New(r.With(middleware.InjectRawHTTP), humaConfig)
 			huma.Register(api, users.GetMeOp, usersHandler.GetMe)
 			huma.Register(api, tenants.GetTenantsOp, tenantsHandler.GetTenants)
 			huma.Register(api, tenants.UpdateTenantOp, tenantsHandler.UpdateTenant)
@@ -186,4 +187,18 @@ func main() {
 		}
 	}
 	log.Printf("main: Shutdown complete")
+}
+
+func newHumaConfig(title, version string) huma.Config {
+	huma.NewError = func(status int, msg string, errs ...error) huma.StatusError {
+		if len(errs) > 0 {
+			log.Printf("huma error %d: %s (details: %v)", status, msg, errs)
+		}
+		return &errlib.APIError{Status: status, Detail: msg}
+	}
+
+	config := huma.DefaultConfig(title, version)
+	config.DocsPath = ""
+	config.OpenAPIPath = ""
+	return config
 }

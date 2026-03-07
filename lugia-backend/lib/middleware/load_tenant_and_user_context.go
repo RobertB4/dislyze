@@ -58,7 +58,7 @@ func LoadTenantAndUserContext(db *queries.Queries) func(http.Handler) http.Handl
 					Error:     "Failed to load context data: " + err.Error(),
 				})
 
-				errlib.LogError(errlib.New(err, 500, "LoadContext: failed to get context data"))
+				errlib.LogError(fmt.Errorf("LoadContext: failed to get context data: %w", err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -76,7 +76,7 @@ func LoadTenantAndUserContext(db *queries.Queries) func(http.Handler) http.Handl
 					Error:     "Failed to parse enterprise features: " + err.Error(),
 				})
 
-				errlib.LogError(errlib.New(err, 500, "LoadContext: failed to parse enterprise features"))
+				errlib.LogError(fmt.Errorf("LoadContext: failed to parse enterprise features: %w", err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}

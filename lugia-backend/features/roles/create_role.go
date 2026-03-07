@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
@@ -14,7 +13,6 @@ import (
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"lugia/lib/humautil"
 	"lugia/queries"
 )
 
@@ -29,40 +27,15 @@ type CreateRoleInput struct {
 }
 
 type CreateRoleRequestBody struct {
-	Name          string   `json:"name"`
+	Name          string   `json:"name" minLength:"1"`
 	Description   string   `json:"description"`
-	PermissionIDs []string `json:"permission_ids"`
-}
-
-func (r *CreateRoleRequestBody) Validate() error {
-	r.Name = strings.TrimSpace(r.Name)
-	r.Description = strings.TrimSpace(r.Description)
-
-	if r.Name == "" {
-		return fmt.Errorf("name is required")
-	}
-
-	if len(r.PermissionIDs) == 0 {
-		return fmt.Errorf("at least one permission is required")
-	}
-	return nil
+	PermissionIDs []string `json:"permission_ids" minItems:"1"`
 }
 
 func (h *RolesHandler) CreateRole(ctx context.Context, input *CreateRoleInput) (*struct{}, error) {
-	if err := input.Body.Validate(); err != nil {
-		return nil, humautil.NewError(fmt.Errorf("create role validation failed: %w", err), http.StatusBadRequest)
-	}
-
 	err := h.createRole(ctx, input.Body)
 	if err != nil {
-		var appErr *errlib.AppError
-		if errlib.As(err, &appErr) {
-			if appErr.Message != "" {
-				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
-			}
-			return nil, humautil.NewError(err, appErr.StatusCode)
-		}
-		return nil, humautil.NewError(err, http.StatusInternalServerError)
+		return nil, err
 	}
 	return nil, nil
 }
@@ -75,14 +48,14 @@ func (h *RolesHandler) createRole(ctx context.Context, req CreateRoleRequestBody
 		var permissionID pgtype.UUID
 		err := permissionID.Scan(permissionIDStr)
 		if err != nil {
-			return errlib.New(fmt.Errorf("CreateRole: invalid permission ID format %s: %w", permissionIDStr, err), http.StatusInternalServerError, "")
+			return errlib.NewError(fmt.Errorf("CreateRole: invalid permission ID format %s: %w", permissionIDStr, err), http.StatusInternalServerError)
 		}
 		permissionIDs[i] = permissionID
 	}
 
 	allPermissions, err := h.q.GetAllPermissions(ctx)
 	if err != nil {
-		return errlib.New(fmt.Errorf("CreateRole: failed to get all permissions: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("CreateRole: failed to get all permissions: %w", err), http.StatusInternalServerError)
 	}
 
 	permissionMap := make(map[pgtype.UUID]bool)
@@ -92,13 +65,13 @@ func (h *RolesHandler) createRole(ctx context.Context, req CreateRoleRequestBody
 
 	for _, permissionID := range permissionIDs {
 		if !permissionMap[permissionID] {
-			return errlib.New(fmt.Errorf("CreateRole: permission ID %s does not exist", permissionID.String()), http.StatusInternalServerError, "")
+			return errlib.NewError(fmt.Errorf("CreateRole: permission ID %s does not exist", permissionID.String()), http.StatusInternalServerError)
 		}
 	}
 
 	tx, err := h.dbConn.Begin(ctx)
 	if err != nil {
-		return errlib.New(fmt.Errorf("CreateRole: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("CreateRole: failed to begin transaction: %w", err), http.StatusInternalServerError)
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
@@ -115,7 +88,7 @@ func (h *RolesHandler) createRole(ctx context.Context, req CreateRoleRequestBody
 		IsDefault:   false,
 	})
 	if err != nil {
-		return errlib.New(fmt.Errorf("CreateRole: failed to create role: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("CreateRole: failed to create role: %w", err), http.StatusInternalServerError)
 	}
 
 	err = qtx.CreateRolePermissionsBulk(ctx, &queries.CreateRolePermissionsBulkParams{
@@ -124,11 +97,11 @@ func (h *RolesHandler) createRole(ctx context.Context, req CreateRoleRequestBody
 		TenantID:      tenantID,
 	})
 	if err != nil {
-		return errlib.New(fmt.Errorf("CreateRole: failed to assign permissions to role: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("CreateRole: failed to assign permissions to role: %w", err), http.StatusInternalServerError)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return errlib.New(fmt.Errorf("CreateRole: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
+		return errlib.NewError(fmt.Errorf("CreateRole: failed to commit transaction: %w", err), http.StatusInternalServerError)
 	}
 
 	return nil

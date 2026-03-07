@@ -56,14 +56,14 @@ func TestLogin(t *testing.T) {
 			request: auth.LoginRequestBody{
 				Password: testUser.PlainTextPassword,
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name: "missing password",
 			request: auth.LoginRequestBody{
 				Email: testUser.Email,
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 	}
 
@@ -425,14 +425,14 @@ func TestLoginInvalidRequestBody_Integration(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "whitespace-only email returns 400",
+			name:           "whitespace-only email returns 401",
 			body:           `{"email": "   ", "password": "somepassword"}`,
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnauthorized,
 		},
 		{
-			name:           "whitespace-only password returns 400",
+			name:           "whitespace-only password returns 401",
 			body:           `{"email": "test@example.com", "password": "   "}`,
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnauthorized,
 		},
 	}
 

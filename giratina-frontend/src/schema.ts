@@ -100,6 +100,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tenants/{tenantID}/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Log in to a tenant */
+        get: operations["log-in-to-tenant"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tenants/{tenantID}/users": {
         parameters: {
             query?: never;
@@ -123,7 +140,7 @@ export interface components {
         EnterpriseFeatures: {
             ip_whitelist: components["schemas"]["IPWhitelist"];
             rbac: components["schemas"]["RBAC"];
-            sso: components["schemas"]["SSO"];
+            sso?: components["schemas"]["SSO"];
         };
         ErrorDetail: {
             /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */
@@ -179,10 +196,10 @@ export interface components {
              * @example https://example.com/schemas/GenerateTenantInvitationTokenRequest.json
              */
             readonly $schema?: string;
-            company_name: string;
+            company_name?: string;
             email: string;
             sso?: components["schemas"]["SSOConfig"];
-            user_name: string;
+            user_name?: string;
         };
         GenerateTenantInvitationTokenResponse: {
             /**
@@ -213,7 +230,7 @@ export interface components {
         };
         IPWhitelist: {
             active: boolean;
-            allow_internal_admin_bypass?: boolean;
+            allow_internal_admin_bypass: boolean;
             enabled: boolean;
         };
         LoginRequestBody: {
@@ -242,12 +259,12 @@ export interface components {
             enabled: boolean;
         };
         SSO: {
-            allowed_domains: string[] | null;
-            attribute_mapping: {
+            allowed_domains?: string[] | null;
+            attribute_mapping?: {
                 [key: string]: string;
             };
             enabled: boolean;
-            idp_metadata_url: string;
+            idp_metadata_url?: string;
         };
         SSOConfig: {
             allowed_domains: string[] | null;
@@ -285,6 +302,22 @@ export interface components {
     headers: never;
     pathItems: never;
 }
+export type EnterpriseFeatures = components['schemas']['EnterpriseFeatures'];
+export type ErrorDetail = components['schemas']['ErrorDetail'];
+export type ErrorModel = components['schemas']['ErrorModel'];
+export type GenerateTenantInvitationTokenRequest = components['schemas']['GenerateTenantInvitationTokenRequest'];
+export type GenerateTenantInvitationTokenResponse = components['schemas']['GenerateTenantInvitationTokenResponse'];
+export type GetTenantsResponse = components['schemas']['GetTenantsResponse'];
+export type GetUsersByTenantResponse = components['schemas']['GetUsersByTenantResponse'];
+export type IpWhitelist = components['schemas']['IPWhitelist'];
+export type LoginRequestBody = components['schemas']['LoginRequestBody'];
+export type MeResponse = components['schemas']['MeResponse'];
+export type Rbac = components['schemas']['RBAC'];
+export type Sso = components['schemas']['SSO'];
+export type SsoConfig = components['schemas']['SSOConfig'];
+export type TenantResponse = components['schemas']['TenantResponse'];
+export type UpdateTenantRequestBody = components['schemas']['UpdateTenantRequestBody'];
+export type UserInfo = components['schemas']['UserInfo'];
 export type $defs = Record<string, never>;
 export interface operations {
     login: {
@@ -469,6 +502,36 @@ export interface operations {
             };
         };
     };
+    "log-in-to-tenant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Found */
+            302: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-users-by-tenant": {
         parameters: {
             query?: never;
@@ -501,8 +564,3 @@ export interface operations {
         };
     };
 }
-
-// Convenience type aliases for component schemas
-export type Tenant = components["schemas"]["TenantResponse"];
-export type EnterpriseFeatures = components["schemas"]["EnterpriseFeatures"];
-export type UserInfo = components["schemas"]["UserInfo"];

@@ -14,12 +14,15 @@
             "type": "string"
           },
           "password": {
+            "minLength": 8,
             "type": "string"
           },
           "password_confirm": {
+            "minLength": 1,
             "type": "string"
           },
           "token": {
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -79,9 +82,11 @@
             "type": "string"
           },
           "ip_address": {
+            "minLength": 1,
             "type": "string"
           },
           "label": {
+            "maxLength": 255,
             "type": [
               "string",
               "null"
@@ -107,6 +112,8 @@
             "type": "string"
           },
           "new_email": {
+            "minLength": 1,
+            "pattern": "@",
             "type": "string"
           }
         },
@@ -128,12 +135,15 @@
             "type": "string"
           },
           "current_password": {
+            "minLength": 1,
             "type": "string"
           },
           "new_password": {
+            "minLength": 8,
             "type": "string"
           },
           "new_password_confirm": {
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -157,6 +167,7 @@
             "type": "string"
           },
           "name": {
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -197,12 +208,14 @@
             "type": "string"
           },
           "name": {
+            "minLength": 1,
             "type": "string"
           },
           "permission_ids": {
             "items": {
               "type": "string"
             },
+            "minItems": 1,
             "type": [
               "array",
               "null"
@@ -310,6 +323,8 @@
             "type": "string"
           },
           "email": {
+            "minLength": 1,
+            "pattern": "@",
             "type": "string"
           }
         },
@@ -433,7 +448,8 @@
         },
         "required": [
           "enabled",
-          "active"
+          "active",
+          "allow_internal_admin_bypass"
         ],
         "type": "object"
       },
@@ -482,15 +498,19 @@
             "type": "string"
           },
           "email": {
+            "minLength": 1,
+            "pattern": "@",
             "type": "string"
           },
           "name": {
+            "minLength": 1,
             "type": "string"
           },
           "role_ids": {
             "items": {
               "type": "string"
             },
+            "minItems": 1,
             "type": [
               "array",
               "null"
@@ -517,9 +537,11 @@
             "type": "string"
           },
           "email": {
+            "minLength": 1,
             "type": "string"
           },
           "password": {
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -658,12 +680,15 @@
             "type": "string"
           },
           "password": {
+            "minLength": 8,
             "type": "string"
           },
           "password_confirm": {
+            "minLength": 1,
             "type": "string"
           },
           "token": {
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -718,18 +743,24 @@
             "type": "string"
           },
           "company_name": {
+            "minLength": 1,
             "type": "string"
           },
           "email": {
+            "minLength": 1,
+            "pattern": "@",
             "type": "string"
           },
           "password": {
+            "minLength": 8,
             "type": "string"
           },
           "password_confirm": {
+            "minLength": 1,
             "type": "string"
           },
           "user_name": {
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -788,6 +819,7 @@
             "type": "string"
           },
           "label": {
+            "maxLength": 255,
             "type": [
               "string",
               "null"
@@ -812,6 +844,7 @@
             "type": "string"
           },
           "name": {
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -836,6 +869,7 @@
             "type": "string"
           },
           "name": {
+            "minLength": 1,
             "type": "string"
           },
           "permission_ids": {
@@ -871,6 +905,7 @@
             "items": {
               "type": "string"
             },
+            "minItems": 1,
             "type": [
               "array",
               "null"
@@ -954,6 +989,7 @@
             "type": "string"
           },
           "token": {
+            "minLength": 1,
             "type": "string"
           }
         },

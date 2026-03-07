@@ -62,7 +62,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 			requestBody: ChangeEmailRequest{
 				NewEmail: "",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:         "whitespace only email",
@@ -70,7 +70,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 			requestBody: ChangeEmailRequest{
 				NewEmail: "   ",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:         "email without @ symbol",
@@ -78,7 +78,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 			requestBody: ChangeEmailRequest{
 				NewEmail: "invalidemail.com",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:         "email already in use by another user",

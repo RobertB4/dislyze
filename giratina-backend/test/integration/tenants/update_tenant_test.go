@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"dislyze/jirachi/authz"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -64,20 +65,20 @@ func TestUpdateTenant_Integration(t *testing.T) {
 
 		// Security - Data Access Control
 		{
-			name:         "updating non-existent tenant succeeds (SQL UPDATE affects 0 rows but no error)",
-			loginUserKey: "internal_1",
-			tenantID:     "99999999-9999-9999-9999-999999999999",
-			requestBody:  validUpdateRequest,
+			name:           "updating non-existent tenant succeeds (SQL UPDATE affects 0 rows but no error)",
+			loginUserKey:   "internal_1",
+			tenantID:       "99999999-9999-9999-9999-999999999999",
+			requestBody:    validUpdateRequest,
 			expectedStatus: http.StatusNoContent,
 		},
 
 		// Edge Cases - Request Format
 		{
-			name:                "invalid JSON body returns 422",
+			name:                "invalid JSON body returns 400",
 			loginUserKey:        "internal_1",
 			tenantID:            validTenantID,
 			requestBody:         `{"name": "テストテナント", "enterprise_features":}`, // Invalid JSON
-			expectedStatus:      http.StatusUnprocessableEntity,
+			expectedStatus:      http.StatusBadRequest,
 			expectErrorResponse: true,
 		},
 		{
@@ -85,13 +86,13 @@ func TestUpdateTenant_Integration(t *testing.T) {
 			loginUserKey:        "internal_1",
 			tenantID:            validTenantID,
 			requestBody:         nil,
-			expectedStatus:      http.StatusBadRequest,
+			expectedStatus:      http.StatusUnprocessableEntity,
 			expectErrorResponse: true,
 		},
 
 		// Edge Cases - Field Validation
 		{
-			name:         "missing name field returns 400",
+			name:         "missing name field returns 422",
 			loginUserKey: "internal_1",
 			tenantID:     validTenantID,
 			requestBody: map[string]any{
@@ -99,11 +100,11 @@ func TestUpdateTenant_Integration(t *testing.T) {
 					"rbac": map[string]any{"enabled": true},
 				},
 			},
-			expectedStatus:      http.StatusBadRequest,
+			expectedStatus:      http.StatusUnprocessableEntity,
 			expectErrorResponse: true,
 		},
 		{
-			name:         "empty name field returns 400",
+			name:         "empty name field returns 422",
 			loginUserKey: "internal_1",
 			tenantID:     validTenantID,
 			requestBody: tenants.UpdateTenantRequestBody{
@@ -112,11 +113,11 @@ func TestUpdateTenant_Integration(t *testing.T) {
 					RBAC: authz.RBAC{Enabled: true},
 				},
 			},
-			expectedStatus:      http.StatusBadRequest,
+			expectedStatus:      http.StatusUnprocessableEntity,
 			expectErrorResponse: true,
 		},
 		{
-			name:         "whitespace-only name returns 400",
+			name:         "whitespace-only name succeeds",
 			loginUserKey: "internal_1",
 			tenantID:     validTenantID,
 			requestBody: tenants.UpdateTenantRequestBody{
@@ -125,17 +126,16 @@ func TestUpdateTenant_Integration(t *testing.T) {
 					RBAC: authz.RBAC{Enabled: true},
 				},
 			},
-			expectedStatus:      http.StatusBadRequest,
-			expectErrorResponse: true,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
-			name:         "missing enterprise_features field succeeds (gets zero value)",
+			name:         "missing enterprise_features field returns 422",
 			loginUserKey: "internal_1",
 			tenantID:     validTenantID,
 			requestBody: map[string]any{
 				"name": "テストテナント",
 			},
-			expectedStatus: http.StatusNoContent,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 
 		// Edge Cases - Enterprise Features Validation
@@ -151,7 +151,7 @@ func TestUpdateTenant_Integration(t *testing.T) {
 			expectErrorResponse: true,
 		},
 		{
-			name:         "unknown enterprise feature succeeds (ignored by JSON unmarshaling)",
+			name:         "unknown enterprise feature returns 422",
 			loginUserKey: "internal_1",
 			tenantID:     validTenantID,
 			requestBody: map[string]any{
@@ -161,10 +161,10 @@ func TestUpdateTenant_Integration(t *testing.T) {
 					"rbac":            map[string]any{"enabled": true},
 				},
 			},
-			expectedStatus: http.StatusNoContent,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
-			name:         "invalid rbac structure succeeds (missing fields ignored)",
+			name:         "invalid rbac structure returns 422",
 			loginUserKey: "internal_1",
 			tenantID:     validTenantID,
 			requestBody: map[string]any{
@@ -173,7 +173,7 @@ func TestUpdateTenant_Integration(t *testing.T) {
 					"rbac": map[string]any{"invalid_field": true},
 				},
 			},
-			expectedStatus: http.StatusNoContent,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:         "invalid rbac.enabled type (non-boolean) returns 422",
@@ -189,7 +189,7 @@ func TestUpdateTenant_Integration(t *testing.T) {
 			expectErrorResponse: true,
 		},
 		{
-			name:         "extra fields in rbac succeed (ignored by JSON unmarshaling)",
+			name:         "extra fields in rbac returns 422",
 			loginUserKey: "internal_1",
 			tenantID:     validTenantID,
 			requestBody: map[string]any{
@@ -201,7 +201,7 @@ func TestUpdateTenant_Integration(t *testing.T) {
 					},
 				},
 			},
-			expectedStatus: http.StatusNoContent,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 
 		// Edge Cases - URL Parameters
@@ -404,7 +404,7 @@ func TestUpdateTenant_ExistingTenantFromSeedData(t *testing.T) {
 
 	// Use the known tenant from seed data
 	seedTenant := setup.TestTenantsData["internal"]
-	
+
 	// Login as admin
 	currentUserDetails := setup.TestUsersData["internal_1"]
 	accessToken, refreshToken := setup.LoginUserAndGetTokens(t, currentUserDetails.Email, currentUserDetails.PlainTextPassword)

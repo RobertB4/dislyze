@@ -85,33 +85,33 @@ func TestGenerateTenantInvitationToken_Integration(t *testing.T) {
 			},
 		},
 		{
-			name:         "empty email returns 400",
+			name:         "empty email returns 422",
 			loginUserKey: "internal_1",
 			requestBody: tenants.GenerateTenantInvitationTokenRequest{
 				Email: "",
 			},
-			expectedStatus:      http.StatusBadRequest,
-			expectErrorResponse: true,
-		},
-		{
-			name:                "missing email field returns 400",
-			loginUserKey:        "internal_1",
-			requestBody:         map[string]any{}, // Empty object
-			expectedStatus:      http.StatusBadRequest,
-			expectErrorResponse: true,
-		},
-		{
-			name:                "invalid JSON returns 422",
-			loginUserKey:        "internal_1",
-			requestBody:         `{"email": "test@example.com"`, // Missing closing brace
 			expectedStatus:      http.StatusUnprocessableEntity,
 			expectErrorResponse: true,
 		},
 		{
-			name:                "empty request body returns 400",
+			name:                "missing email field returns 422",
+			loginUserKey:        "internal_1",
+			requestBody:         map[string]any{}, // Empty object
+			expectedStatus:      http.StatusUnprocessableEntity,
+			expectErrorResponse: true,
+		},
+		{
+			name:                "invalid JSON returns 400",
+			loginUserKey:        "internal_1",
+			requestBody:         `{"email": "test@example.com"`, // Missing closing brace
+			expectedStatus:      http.StatusBadRequest,
+			expectErrorResponse: true,
+		},
+		{
+			name:                "empty request body returns 422",
 			loginUserKey:        "internal_1",
 			requestBody:         nil,
-			expectedStatus:      http.StatusBadRequest,
+			expectedStatus:      http.StatusUnprocessableEntity,
 			expectErrorResponse: true,
 		},
 		{

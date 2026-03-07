@@ -62,18 +62,18 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			expectedStatus:       http.StatusBadRequest,
 		},
 		{
-			name:           "empty role gets 400",
+			name:           "empty role gets 422",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2",
 			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{}},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
-			name:           "invalid role value gets 400",
+			name:           "invalid role value gets 422",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2",
 			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{}},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:           "malformed JSON request gets 400",
@@ -88,10 +88,10 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "null role_ids field gets 400",
+			name:           "null role_ids field gets 422",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2",
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 
 		// Business Logic Tests
@@ -220,7 +220,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			} else if tt.name == "empty request body gets 400" {
 				// Send empty body
 				reqBody = []byte(``)
-			} else if tt.name == "null role_ids field gets 400" {
+			} else if tt.name == "null role_ids field gets 422" {
 				// Send JSON with null role_ids
 				reqBody = []byte(`{"role_ids": null}`)
 			} else if tt.name == "malformed UUID in role_ids gets 400" {
