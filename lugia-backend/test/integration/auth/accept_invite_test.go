@@ -68,7 +68,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 				Password:        newPasswordForAcceptInvite,
 				PasswordConfirm: "IncorrectP@sswOrdConfirm",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name: "validation error - password too short",
@@ -77,7 +77,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 				Password:        "short",
 				PasswordConfirm: "short",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name: "validation error - empty token",
@@ -86,7 +86,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 				Password:        newPasswordForAcceptInvite,
 				PasswordConfirm: newPasswordForAcceptInvite,
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name: "expired token",

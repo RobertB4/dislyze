@@ -31,6 +31,13 @@ type UpdateUserRolesRequestBody struct {
 	RoleIDs []string `json:"role_ids" minItems:"1"`
 }
 
+func (r *UpdateUserRolesRequestBody) Resolve(ctx huma.Context) []error {
+	if r.RoleIDs == nil {
+		return []error{fmt.Errorf("role_ids is required")}
+	}
+	return nil
+}
+
 func parseUUIDs(ids []string) ([]pgtype.UUID, error) {
 	result := make([]pgtype.UUID, len(ids))
 	for i, id := range ids {

@@ -411,7 +411,7 @@ func TestTenantSignupRequestBodyValidation(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resp := makeTenantSignupRequest(t, validToken, tt.requestBody)

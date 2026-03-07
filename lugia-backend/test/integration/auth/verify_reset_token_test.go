@@ -181,6 +181,6 @@ func TestVerifyResetToken(t *testing.T) {
 			}
 		}()
 
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
 	})
 }

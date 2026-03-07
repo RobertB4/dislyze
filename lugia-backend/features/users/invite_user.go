@@ -43,6 +43,13 @@ type InviteUserRequestBody struct {
 	RoleIDs []string `json:"role_ids" minItems:"1"`
 }
 
+func (r *InviteUserRequestBody) Resolve(ctx huma.Context) []error {
+	if r.RoleIDs == nil {
+		return []error{fmt.Errorf("role_ids is required")}
+	}
+	return nil
+}
+
 func (h *UsersHandler) InviteUser(ctx context.Context, input *InviteUserInput) (*struct{}, error) {
 	err := h.inviteUser(ctx, input.Body)
 	if err != nil {

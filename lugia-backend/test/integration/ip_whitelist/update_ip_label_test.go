@@ -262,7 +262,7 @@ func TestUpdateIPLabelIntegration(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 
-	t.Run("test_label_too_long_returns_400", func(t *testing.T) {
+	t.Run("test_label_too_long_returns_422", func(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
@@ -312,8 +312,8 @@ func TestUpdateIPLabelIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 400 because label is too long
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		// Check status code - should return 422 because label is too long (huma maxLength validation)
+		assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
 	})
 
 	t.Run("test_ip_rule_does_not_exist_returns_404", func(t *testing.T) {

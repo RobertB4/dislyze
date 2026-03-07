@@ -60,7 +60,7 @@ func TestCreateRole_Integration(t *testing.T) {
 				Description:   "Valid description",
 				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"},
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:         "validation error: no permissions",
@@ -70,7 +70,7 @@ func TestCreateRole_Integration(t *testing.T) {
 				Description:   "Valid description",
 				PermissionIDs: []string{}, // Empty permissions array
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 
 		// Business Logic Tests

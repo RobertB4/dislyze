@@ -48,7 +48,7 @@ func TestSignup(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "password123",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name: "missing user name",
@@ -58,7 +58,7 @@ func TestSignup(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "password123",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name: "missing email",
@@ -68,7 +68,7 @@ func TestSignup(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "password123",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name: "missing password",
@@ -77,7 +77,7 @@ func TestSignup(t *testing.T) {
 				UserName:    "Test User",
 				Email:       "test@example.com",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name: "password too short",
@@ -88,7 +88,7 @@ func TestSignup(t *testing.T) {
 				Password:        "short",
 				PasswordConfirm: "short",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name: "passwords do not match",
@@ -99,7 +99,7 @@ func TestSignup(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "password456",
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 	}
 
@@ -147,7 +147,7 @@ func TestSignup(t *testing.T) {
 				assert.True(t, refreshToken.HttpOnly, "Refresh token cookie should be HttpOnly")
 				assert.True(t, refreshToken.Secure, "Refresh token cookie should be Secure")
 				assert.Equal(t, http.SameSiteStrictMode, refreshToken.SameSite, "Refresh token cookie should have SameSite=Strict")
-			} else if tt.expectedStatus == http.StatusBadRequest {
+			} else if tt.expectedStatus == http.StatusUnprocessableEntity {
 				cookies := resp.Cookies()
 				assert.Empty(t, cookies, "Expected no cookies for failed signup with status %d", tt.expectedStatus)
 			} else {

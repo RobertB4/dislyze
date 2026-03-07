@@ -405,11 +405,11 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 400 because ip_address is empty
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		// Check status code - should return 422 because ip_address is empty (huma minLength validation)
+		assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
 	})
 
-	t.Run("test_invalid_ip_address_returns_400", func(t *testing.T) {
+	t.Run("test_invalid_ip_address_returns_422", func(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
@@ -459,11 +459,11 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 400 because IP address is invalid
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		// Check status code - should return 422 because IP address is invalid (huma Resolve validation)
+		assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
 	})
 
-	t.Run("test_invalid_cidr_returns_400", func(t *testing.T) {
+	t.Run("test_invalid_cidr_returns_422", func(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
@@ -513,8 +513,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 400 because CIDR notation is invalid
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		// Check status code - should return 422 because CIDR notation is invalid (huma Resolve validation)
+		assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
 	})
 
 	t.Run("test_add_ipv4_single_ip_success", func(t *testing.T) {

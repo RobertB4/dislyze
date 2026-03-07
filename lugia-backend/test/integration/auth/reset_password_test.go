@@ -263,7 +263,7 @@ func TestResetPassword(t *testing.T) {
 				t.Logf("Error closing resetResp body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with empty token should fail")
+		assert.Equal(t, http.StatusUnprocessableEntity, resetResp.StatusCode, "Reset password with empty token should fail")
 
 		newLoginResp := setup.AttemptLogin(t, testUser.Email, newPassword)
 		defer func() {
@@ -304,7 +304,7 @@ func TestResetPassword(t *testing.T) {
 				t.Logf("Error closing resetResp body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with missing password should fail")
+		assert.Equal(t, http.StatusUnprocessableEntity, resetResp.StatusCode, "Reset password with missing password should fail")
 
 		oldLoginResp := setup.AttemptLogin(t, testUser.Email, originalPassword)
 		defer func() {
@@ -345,7 +345,7 @@ func TestResetPassword(t *testing.T) {
 				t.Logf("Error closing resetResp body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with short password should fail")
+		assert.Equal(t, http.StatusUnprocessableEntity, resetResp.StatusCode, "Reset password with short password should fail")
 
 		newLoginResp := setup.AttemptLogin(t, testUser.Email, newPassword)
 		defer func() {
@@ -393,7 +393,7 @@ func TestResetPassword(t *testing.T) {
 				t.Logf("Error closing resetResp body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusBadRequest, resetResp.StatusCode, "Reset password with mismatching passwords should fail")
+		assert.Equal(t, http.StatusUnprocessableEntity, resetResp.StatusCode, "Reset password with mismatching passwords should fail")
 
 		newLoginResp1 := setup.AttemptLogin(t, testUser.Email, "newValidPass123")
 		defer func() {
