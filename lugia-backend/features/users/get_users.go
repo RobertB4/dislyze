@@ -13,6 +13,7 @@ import (
 	"dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
+	"lugia/lib/conversions"
 	"lugia/lib/humautil"
 	"lugia/lib/pagination"
 	"lugia/queries"
@@ -48,9 +49,9 @@ type GetUsersResponse struct {
 }
 
 type GetUsersInput struct {
-	Page   int     `query:"page" default:"1" minimum:"1"`
-	Limit  int32   `query:"limit" default:"50" minimum:"1" maximum:"100"`
-	Search string  `query:"search" maxLength:"100"`
+	Page   int    `query:"page" default:"1" minimum:"1"`
+	Limit  int    `query:"limit" default:"50" minimum:"1" maximum:"100"`
+	Search string `query:"search" maxLength:"100"`
 }
 
 type GetUsersOutput struct {
@@ -60,8 +61,14 @@ type GetUsersOutput struct {
 func (h *UsersHandler) GetUsers(ctx context.Context, input *GetUsersInput) (*GetUsersOutput, error) {
 	tenantID := libctx.GetTenantID(ctx)
 
-	limit := input.Limit
-	offset := limit * int32(input.Page-1) // #nosec G115 -- Page is validated by huma (minimum:1)
+	limit, err := conversions.SafeInt32(input.Limit)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid limit", err)
+	}
+	offset, err := conversions.SafeInt32((input.Page - 1) * input.Limit)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid page/limit combination", err)
+	}
 
 	paginationParams := pagination.QueryParams{
 		Page:   input.Page,
