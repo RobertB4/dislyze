@@ -95,11 +95,11 @@ export function createLoadClient(loadEventFetch: typeof fetch) {
 /**
  * Creates a typed API client for use in Svelte components for mutations.
  * Error handling mirrors mutationFetch: toast on error, redirect on 401.
- * Does NOT throw — callers check `success` to decide next steps.
+ * Does NOT throw — callers check `!error` to decide next steps.
  *
  * Usage:
  *   const api = createMutationClient();
- *   const { data, response, success } = await api.POST("/users/invite", {
+ *   const { error } = await api.POST("/users/invite", {
  *     body: { email: "...", name: "...", role_ids: ["..."] }
  *   });
  */

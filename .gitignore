@@ -12,6 +12,7 @@
 *.test
 *.out
 *main
+*/openapi
 
 # Air ignores
 tmp/
