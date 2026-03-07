@@ -38,35 +38,12 @@ type InviteUserInput struct {
 }
 
 type InviteUserRequestBody struct {
-	Email   string   `json:"email"`
-	Name    string   `json:"name"`
-	RoleIDs []string `json:"role_ids"`
-}
-
-func (r *InviteUserRequestBody) Validate() error {
-	r.Email = strings.TrimSpace(r.Email)
-	r.Name = strings.TrimSpace(r.Name)
-
-	if r.Email == "" {
-		return fmt.Errorf("email is required")
-	}
-	if !strings.ContainsRune(r.Email, '@') {
-		return fmt.Errorf("email is invalid")
-	}
-	if r.Name == "" {
-		return fmt.Errorf("name is required and cannot be only whitespace")
-	}
-	if len(r.RoleIDs) == 0 {
-		return fmt.Errorf("at least one role is required")
-	}
-	return nil
+	Email   string   `json:"email" minLength:"1" pattern:"@"`
+	Name    string   `json:"name" minLength:"1"`
+	RoleIDs []string `json:"role_ids" minItems:"1"`
 }
 
 func (h *UsersHandler) InviteUser(ctx context.Context, input *InviteUserInput) (*struct{}, error) {
-	if err := input.Body.Validate(); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("invite user validation failed: %w", err), http.StatusBadRequest)
-	}
-
 	err := h.inviteUser(ctx, input.Body)
 	if err != nil {
 		return nil, err

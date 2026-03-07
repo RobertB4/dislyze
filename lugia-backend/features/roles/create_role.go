@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
@@ -28,30 +27,12 @@ type CreateRoleInput struct {
 }
 
 type CreateRoleRequestBody struct {
-	Name          string   `json:"name"`
+	Name          string   `json:"name" minLength:"1"`
 	Description   string   `json:"description"`
-	PermissionIDs []string `json:"permission_ids"`
-}
-
-func (r *CreateRoleRequestBody) Validate() error {
-	r.Name = strings.TrimSpace(r.Name)
-	r.Description = strings.TrimSpace(r.Description)
-
-	if r.Name == "" {
-		return fmt.Errorf("name is required")
-	}
-
-	if len(r.PermissionIDs) == 0 {
-		return fmt.Errorf("at least one permission is required")
-	}
-	return nil
+	PermissionIDs []string `json:"permission_ids" minItems:"1"`
 }
 
 func (h *RolesHandler) CreateRole(ctx context.Context, input *CreateRoleInput) (*struct{}, error) {
-	if err := input.Body.Validate(); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("create role validation failed: %w", err), http.StatusBadRequest)
-	}
-
 	err := h.createRole(ctx, input.Body)
 	if err != nil {
 		return nil, err

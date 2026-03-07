@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -32,27 +31,14 @@ type AcceptInviteInput struct {
 }
 
 type AcceptInviteRequestBody struct {
-	Token           string `json:"token"`
-	Password        string `json:"password"` // #nosec G117 -- intentional: request body, not a leaked secret
-	PasswordConfirm string `json:"password_confirm"`
+	Token           string `json:"token" minLength:"1"`
+	Password        string `json:"password" minLength:"8"` // #nosec G117 -- intentional: request body, not a leaked secret
+	PasswordConfirm string `json:"password_confirm" minLength:"1"`
 }
 
-func (r *AcceptInviteRequestBody) Validate() error {
-	r.Token = strings.TrimSpace(r.Token)
-	r.Password = strings.TrimSpace(r.Password)
-	r.PasswordConfirm = strings.TrimSpace(r.PasswordConfirm)
-
-	if r.Token == "" {
-		return fmt.Errorf("token is required")
-	}
-	if r.Password == "" {
-		return fmt.Errorf("password is required")
-	}
-	if len(r.Password) < 8 {
-		return fmt.Errorf("password must be at least 8 characters long")
-	}
+func (r *AcceptInviteRequestBody) Resolve(ctx huma.Context) []error {
 	if r.Password != r.PasswordConfirm {
-		return fmt.Errorf("passwords do not match")
+		return []error{fmt.Errorf("passwords do not match")}
 	}
 	return nil
 }
@@ -60,10 +46,6 @@ func (r *AcceptInviteRequestBody) Validate() error {
 func (h *AuthHandler) AcceptInvite(ctx context.Context, input *AcceptInviteInput) (*struct{}, error) {
 	r := middleware.GetHTTPRequest(ctx)
 	w := middleware.GetResponseWriter(ctx)
-
-	if err := input.Body.Validate(); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("accept invite validation failed: %w", err), http.StatusBadRequest)
-	}
 
 	tokenPair, err := h.acceptInvite(ctx, input.Body, r)
 	if err != nil {

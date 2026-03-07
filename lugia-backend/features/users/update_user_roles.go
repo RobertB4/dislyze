@@ -28,14 +28,7 @@ type UpdateUserRolesInput struct {
 }
 
 type UpdateUserRolesRequestBody struct {
-	RoleIDs []string `json:"role_ids"`
-}
-
-func (r *UpdateUserRolesRequestBody) Validate() error {
-	if len(r.RoleIDs) == 0 {
-		return fmt.Errorf("users need at least one role")
-	}
-	return nil
+	RoleIDs []string `json:"role_ids" minItems:"1"`
 }
 
 func parseUUIDs(ids []string) ([]pgtype.UUID, error) {
@@ -68,10 +61,6 @@ func (h *UsersHandler) UpdateUserRoles(ctx context.Context, input *UpdateUserRol
 	var targetUserID pgtype.UUID
 	if err := targetUserID.Scan(input.UserID); err != nil {
 		return nil, errlib.NewError(fmt.Errorf("invalid user ID format for update roles: %w", err), http.StatusBadRequest)
-	}
-
-	if err := input.Body.Validate(); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("update user roles validation failed: %w", err), http.StatusBadRequest)
 	}
 
 	roleIDs, err := parseUUIDs(input.Body.RoleIDs)

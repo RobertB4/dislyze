@@ -39,11 +39,11 @@ make test-integration
 ## Code Patterns and Conventions
 
 ### Validation Pattern
-All backend requests have a `Validate()` method that:
-1. Trims whitespace
-2. Checks required fields
-3. Validates formats
-4. Returns specific error messages for logging
+Use huma's built-in validation — no custom `Validate()` methods:
+1. **Struct tags** for standard validation: `minLength`, `maxLength`, `minItems`, `pattern`, etc.
+2. **Resolvers** (`Resolve(ctx huma.Context) []error`) for cross-field validation (e.g., passwords must match, conditional SSO fields)
+3. Huma returns 422 for validation failures automatically
+4. Exception: `sso_login.go` keeps `Validate()` because it's a Chi-style handler, not huma
 
 ### Backend Error Handling
 ```go

@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -32,21 +31,8 @@ type LoginInput struct {
 }
 
 type LoginRequestBody struct {
-	Email    string `json:"email"`
-	Password string `json:"password"` // #nosec G117 -- intentional: login request body, not a leaked secret
-}
-
-func (r *LoginRequestBody) Validate() error {
-	r.Email = strings.TrimSpace(r.Email)
-	r.Password = strings.TrimSpace(r.Password)
-
-	if r.Email == "" {
-		return fmt.Errorf("email is required")
-	}
-	if r.Password == "" {
-		return fmt.Errorf("password is required")
-	}
-	return nil
+	Email    string `json:"email" minLength:"1"`
+	Password string `json:"password" minLength:"1"` // #nosec G117 -- intentional: login request body, not a leaked secret
 }
 
 func (h *AuthHandler) Login(ctx context.Context, input *LoginInput) (*struct{}, error) {
@@ -55,10 +41,6 @@ func (h *AuthHandler) Login(ctx context.Context, input *LoginInput) (*struct{}, 
 
 	if !h.rateLimiter.Allow(r.RemoteAddr, r) {
 		return nil, errlib.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for login"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
-	}
-
-	if err := input.Body.Validate(); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("login validation failed: %w", err), http.StatusBadRequest)
 	}
 
 	tokenPair, userID, err := h.login(ctx, &input.Body, r)

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -24,47 +23,29 @@ type SSOConfig struct {
 }
 
 type GenerateTenantInvitationTokenRequest struct {
-	Email       string     `json:"email"`
+	Email       string     `json:"email" minLength:"1" pattern:"@"`
 	CompanyName string     `json:"company_name,omitempty"`
 	UserName    string     `json:"user_name,omitempty"`
 	SSO         *SSOConfig `json:"sso,omitempty"`
 }
 
-func (r *GenerateTenantInvitationTokenRequest) Validate() error {
-	r.Email = strings.TrimSpace(r.Email)
-	r.CompanyName = strings.TrimSpace(r.CompanyName)
-	r.UserName = strings.TrimSpace(r.UserName)
-
-	if r.Email == "" {
-		return fmt.Errorf("email is required")
-	}
-	if !strings.Contains(r.Email, "@") {
-		return fmt.Errorf("valid email is required")
-	}
-
+func (r *GenerateTenantInvitationTokenRequest) Resolve(ctx huma.Context) []error {
 	if r.SSO != nil && r.SSO.Enabled {
-		r.SSO.IdpMetadataURL = strings.TrimSpace(r.SSO.IdpMetadataURL)
-
 		if r.SSO.IdpMetadataURL == "" {
-			return fmt.Errorf("idp_metadata_url is required when SSO is enabled")
+			return []error{fmt.Errorf("idp_metadata_url is required when SSO is enabled")}
 		}
-
 		if _, err := url.ParseRequestURI(r.SSO.IdpMetadataURL); err != nil {
-			return fmt.Errorf("idp_metadata_url must be a valid URL")
+			return []error{fmt.Errorf("idp_metadata_url must be a valid URL")}
 		}
-
 		if len(r.SSO.AllowedDomains) == 0 {
-			return fmt.Errorf("at least one allowed domain is required when SSO is enabled")
+			return []error{fmt.Errorf("at least one allowed domain is required when SSO is enabled")}
 		}
-
-		for i, domain := range r.SSO.AllowedDomains {
-			r.SSO.AllowedDomains[i] = strings.TrimSpace(domain)
-			if r.SSO.AllowedDomains[i] == "" {
-				return fmt.Errorf("allowed domains cannot be empty")
+		for _, domain := range r.SSO.AllowedDomains {
+			if domain == "" {
+				return []error{fmt.Errorf("allowed domains cannot be empty")}
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -95,10 +76,6 @@ type GenerateTokenOutput struct {
 }
 
 func (h *TenantsHandler) GenerateTenantInvitationToken(ctx context.Context, input *GenerateTokenInput) (*GenerateTokenOutput, error) {
-	if err := input.Body.Validate(); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("tenant invitation validation failed: %w", err), http.StatusBadRequest)
-	}
-
 	response, err := h.generateTenantInvitationToken(ctx, &input.Body)
 	if err != nil {
 		return nil, err

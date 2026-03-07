@@ -113,6 +113,8 @@
             "type": "string"
           },
           "email": {
+            "minLength": 1,
+            "pattern": "@",
             "type": "string"
           },
           "sso": {
@@ -230,9 +232,11 @@
             "type": "string"
           },
           "email": {
+            "minLength": 1,
             "type": "string"
           },
           "password": {
+            "minLength": 1,
             "type": "string"
           }
         },
@@ -384,6 +388,7 @@
             "$ref": "#/components/schemas/EnterpriseFeatures"
           },
           "name": {
+            "minLength": 1,
             "type": "string"
           }
         },

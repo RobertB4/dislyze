@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"giratina/queries"
 	"net/http"
-	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -28,27 +27,14 @@ type UpdateTenantInput struct {
 }
 
 type UpdateTenantRequestBody struct {
-	Name               string                   `json:"name"`
+	Name               string                   `json:"name" minLength:"1"`
 	EnterpriseFeatures authz.EnterpriseFeatures `json:"enterprise_features"`
-}
-
-func (r *UpdateTenantRequestBody) Validate() error {
-	r.Name = strings.TrimSpace(r.Name)
-	if r.Name == "" {
-		return fmt.Errorf("name is required")
-	}
-
-	return nil
 }
 
 func (h *TenantsHandler) UpdateTenant(ctx context.Context, input *UpdateTenantInput) (*struct{}, error) {
 	var tenantID pgtype.UUID
 	if err := tenantID.Scan(input.ID); err != nil {
 		return nil, errlib.NewError(fmt.Errorf("invalid tenant ID format: %w", err), http.StatusBadRequest)
-	}
-
-	if err := input.Body.Validate(); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("update tenant validation failed: %w", err), http.StatusBadRequest)
 	}
 
 	if err := h.updateTenant(ctx, &tenantID, &input.Body); err != nil {

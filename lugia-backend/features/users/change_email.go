@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -36,25 +35,10 @@ type ChangeEmailInput struct {
 }
 
 type ChangeEmailRequestBody struct {
-	NewEmail string `json:"new_email"`
-}
-
-func (r *ChangeEmailRequestBody) Validate() error {
-	r.NewEmail = strings.TrimSpace(r.NewEmail)
-	if r.NewEmail == "" {
-		return fmt.Errorf("new email is required")
-	}
-	if !strings.ContainsRune(r.NewEmail, '@') {
-		return fmt.Errorf("new email is invalid")
-	}
-	return nil
+	NewEmail string `json:"new_email" minLength:"1" pattern:"@"`
 }
 
 func (h *UsersHandler) ChangeEmail(ctx context.Context, input *ChangeEmailInput) (*struct{}, error) {
-	if err := input.Body.Validate(); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("change email validation failed: %w", err), http.StatusBadRequest)
-	}
-
 	userID := libctx.GetUserID(ctx)
 	r := middleware.GetHTTPRequest(ctx)
 

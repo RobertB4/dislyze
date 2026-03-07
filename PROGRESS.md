@@ -63,27 +63,16 @@
 - Regenerated OpenAPI specs and frontend TypeScript schemas
 - Fixed TypeScript non-null assertions in giratina-frontend `+page.svelte` for optional feature access
 
-### Unify validation on huma
-
-### Problem
-We use a mix of huma struct tags and custom `Validate()` methods. This split confuses agents — they see a huma codebase and naturally reach for huma tags, but some validation lives in `Validate()`. Two systems for the same concern.
-
-### Decision
-Embrace huma validation fully:
-- **Huma tags** for the ~90-95% standard cases: `required`, `minimum`, `maximum`, `maxLength`, `default`, etc.
-- **Huma Resolvers** for the ~5-10% complex cases: cross-field validation (e.g., passwords must match)
-- **Remove all `Validate()` methods** — no custom validation pattern
-- Tags handle binding (`query`, `path`, `header`), defaults, and validation in one place
-- Agents do the right thing by default without special instructions
+### ~~Unify validation on huma~~ ✅
+- Replaced all `Validate()` methods with huma struct tags (`minLength`, `maxLength`, `minItems`, `pattern`) and `Resolve()` (huma Resolver interface) for cross-field validation
+- **Simple cases** (tags only): login, signup fields, create/update role, update user roles, verify reset token, update me, change tenant name, forgot password email, change email, invite user, update IP label, add IP to whitelist
+- **Complex cases** (tags + Resolver): reset password, accept invite, signup, change password (password match), add IP to whitelist (CIDR validation), generate tenant invitation token (conditional SSO validation)
+- Removed 12 obsolete `Validate()` unit test files — validation now covered by huma framework and integration tests
+- Only remaining `Validate()`: `sso_login.go` (Chi-style handler, not huma — intentionally kept)
+- Regenerated OpenAPI specs and frontend TypeScript schemas
+- Validation errors now return 422 (huma default) instead of 400 for schema/tag violations
 
 ### Fix nullable slices in OpenAPI spec
 - Go nil slices serialize to `null` in JSON, so the OpenAPI spec generates `T[] | null` for slice fields
 - This forces frontend code to use `?? []` defensively (e.g. `data!.tenants ?? []`)
 - Fix: ensure Go handlers always return initialized slices (not nil), or use appropriate huma tags
-- Address during the validation unification pass since it touches the same struct definitions
-
-### Scope
-- lugia-backend: Replace all `Validate()` methods with huma tags + Resolvers where needed
-- giratina-backend: Same
-- Update CLAUDE.md files to document the convention
-- Regenerate OpenAPI specs and frontend TypeScript schemas

@@ -3,6 +3,7 @@ package ip_whitelist
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/netip"
 
@@ -26,32 +27,18 @@ type AddIPInput struct {
 }
 
 type AddIPToWhitelistRequest struct {
-	IPAddress string  `json:"ip_address"`
-	Label     *string `json:"label"`
+	IPAddress string  `json:"ip_address" minLength:"1"`
+	Label     *string `json:"label" maxLength:"255"`
 }
 
-func (r *AddIPToWhitelistRequest) Validate() error {
-	if r.IPAddress == "" {
-		return errlib.NewError(nil, http.StatusBadRequest)
+func (r *AddIPToWhitelistRequest) Resolve(ctx huma.Context) []error {
+	if _, err := iputils.ValidateCIDR(r.IPAddress); err != nil {
+		return []error{fmt.Errorf("invalid IP address or CIDR: %w", err)}
 	}
-
-	_, err := iputils.ValidateCIDR(r.IPAddress)
-	if err != nil {
-		return errlib.NewError(err, http.StatusBadRequest)
-	}
-
-	if r.Label != nil && len(*r.Label) > 255 {
-		return errlib.NewError(nil, http.StatusBadRequest)
-	}
-
 	return nil
 }
 
 func (h *IPWhitelistHandler) AddIPToWhitelist(ctx context.Context, input *AddIPInput) (*struct{}, error) {
-	if err := input.Body.Validate(); err != nil {
-		return nil, err
-	}
-
 	err := h.addIPToWhitelist(ctx, input.Body)
 	if err != nil {
 		return nil, err

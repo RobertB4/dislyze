@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
@@ -29,30 +28,15 @@ type UpdateRoleInput struct {
 }
 
 type UpdateRoleRequestBody struct {
-	Name          string   `json:"name"`
+	Name          string   `json:"name" minLength:"1"`
 	Description   string   `json:"description"`
 	PermissionIDs []string `json:"permission_ids"`
-}
-
-func (r *UpdateRoleRequestBody) Validate() error {
-	r.Name = strings.TrimSpace(r.Name)
-	r.Description = strings.TrimSpace(r.Description)
-
-	if r.Name == "" {
-		return fmt.Errorf("name is required")
-	}
-
-	return nil
 }
 
 func (h *RolesHandler) UpdateRole(ctx context.Context, input *UpdateRoleInput) (*struct{}, error) {
 	var roleID pgtype.UUID
 	if err := roleID.Scan(input.RoleID); err != nil {
 		return nil, errlib.NewError(fmt.Errorf("invalid role ID format for update: %w", err), http.StatusBadRequest)
-	}
-
-	if err := input.Body.Validate(); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("update role validation failed: %w", err), http.StatusBadRequest)
 	}
 
 	err := h.updateRole(ctx, roleID, input.Body)

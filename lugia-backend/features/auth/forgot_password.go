@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -35,18 +34,7 @@ type ForgotPasswordInput struct {
 }
 
 type ForgotPasswordRequestBody struct {
-	Email string `json:"email"`
-}
-
-func (r *ForgotPasswordRequestBody) Validate() error {
-	r.Email = strings.TrimSpace(r.Email)
-	if r.Email == "" {
-		return fmt.Errorf("email is required")
-	}
-	if !strings.Contains(r.Email, "@") {
-		return fmt.Errorf("invalid email address format")
-	}
-	return nil
+	Email string `json:"email" minLength:"1" pattern:"@"`
 }
 
 func (h *AuthHandler) ForgotPassword(ctx context.Context, input *ForgotPasswordInput) (*struct{}, error) {
@@ -54,12 +42,6 @@ func (h *AuthHandler) ForgotPassword(ctx context.Context, input *ForgotPasswordI
 
 	if !h.rateLimiter.Allow(r.RemoteAddr, r) {
 		errlib.LogError(fmt.Errorf("rate limit exceeded for forgot password: %s", r.RemoteAddr))
-		// Always return success for security (prevent email enumeration)
-		return nil, nil
-	}
-
-	if err := input.Body.Validate(); err != nil {
-		errlib.LogError(fmt.Errorf("forgot password validation failed: %w", err))
 		// Always return success for security (prevent email enumeration)
 		return nil, nil
 	}

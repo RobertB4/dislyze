@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
@@ -28,30 +27,13 @@ type UpdateIPLabelInput struct {
 }
 
 type UpdateLabelRequest struct {
-	Label *string `json:"label"`
-}
-
-func (r *UpdateLabelRequest) Validate() error {
-	if r.Label != nil {
-		trimmed := strings.TrimSpace(*r.Label)
-		r.Label = &trimmed
-
-		if len(*r.Label) > 255 {
-			return errlib.NewError(nil, http.StatusBadRequest)
-		}
-	}
-
-	return nil
+	Label *string `json:"label" maxLength:"255"`
 }
 
 func (h *IPWhitelistHandler) UpdateIPLabel(ctx context.Context, input *UpdateIPLabelInput) (*struct{}, error) {
 	var id pgtype.UUID
 	if err := id.Scan(input.ID); err != nil {
 		return nil, errlib.NewError(fmt.Errorf("invalid IP whitelist rule ID format: %w", err), http.StatusBadRequest)
-	}
-
-	if err := input.Body.Validate(); err != nil {
-		return nil, err
 	}
 
 	err := h.updateIPLabel(ctx, id, input.Body)

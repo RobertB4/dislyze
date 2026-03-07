@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -26,7 +25,7 @@ type VerifyResetTokenInput struct {
 }
 
 type VerifyResetTokenRequestBody struct {
-	Token string `json:"token"`
+	Token string `json:"token" minLength:"1"`
 }
 
 type VerifyResetTokenResponse struct {
@@ -37,19 +36,7 @@ type VerifyResetTokenOutput struct {
 	Body VerifyResetTokenResponse
 }
 
-func (r *VerifyResetTokenRequestBody) Validate() error {
-	r.Token = strings.TrimSpace(r.Token)
-	if r.Token == "" {
-		return fmt.Errorf("token is required")
-	}
-	return nil
-}
-
 func (h *AuthHandler) VerifyResetToken(ctx context.Context, input *VerifyResetTokenInput) (*VerifyResetTokenOutput, error) {
-	if err := input.Body.Validate(); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("verify reset token validation failed: %w", err), http.StatusBadRequest)
-	}
-
 	email, err := h.verifyResetToken(ctx, input.Body)
 	if err != nil {
 		return nil, err

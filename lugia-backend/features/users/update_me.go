@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
 
@@ -25,22 +24,10 @@ type UpdateMeInput struct {
 }
 
 type UpdateMeRequestBody struct {
-	Name string `json:"name"`
-}
-
-func (r *UpdateMeRequestBody) Validate() error {
-	r.Name = strings.TrimSpace(r.Name)
-	if r.Name == "" {
-		return fmt.Errorf("name is required")
-	}
-	return nil
+	Name string `json:"name" minLength:"1"`
 }
 
 func (h *UsersHandler) UpdateMe(ctx context.Context, input *UpdateMeInput) (*struct{}, error) {
-	if err := input.Body.Validate(); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("update me validation failed: %w", err), http.StatusBadRequest)
-	}
-
 	err := h.updateMe(ctx, input.Body)
 	if err != nil {
 		return nil, err

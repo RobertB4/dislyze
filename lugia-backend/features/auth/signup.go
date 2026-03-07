@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -31,37 +30,16 @@ type SignupInput struct {
 }
 
 type SignupRequestBody struct {
-	CompanyName     string `json:"company_name"`
-	UserName        string `json:"user_name"`
-	Email           string `json:"email"`
-	Password        string `json:"password"` // #nosec G117 -- intentional: request body, not a leaked secret
-	PasswordConfirm string `json:"password_confirm"`
+	CompanyName     string `json:"company_name" minLength:"1"`
+	UserName        string `json:"user_name" minLength:"1"`
+	Email           string `json:"email" minLength:"1" pattern:"@"`
+	Password        string `json:"password" minLength:"8"` // #nosec G117 -- intentional: request body, not a leaked secret
+	PasswordConfirm string `json:"password_confirm" minLength:"1"`
 }
 
-func (r *SignupRequestBody) Validate() error {
-	r.CompanyName = strings.TrimSpace(r.CompanyName)
-	r.UserName = strings.TrimSpace(r.UserName)
-	r.Email = strings.TrimSpace(r.Email)
-	r.Password = strings.TrimSpace(r.Password)
-	r.PasswordConfirm = strings.TrimSpace(r.PasswordConfirm)
-
-	if r.CompanyName == "" {
-		return fmt.Errorf("company name is required")
-	}
-	if r.UserName == "" {
-		return fmt.Errorf("user name is required")
-	}
-	if r.Email == "" {
-		return fmt.Errorf("email is required")
-	}
-	if r.Password == "" {
-		return fmt.Errorf("password is required")
-	}
-	if len(r.Password) < 8 {
-		return fmt.Errorf("password must be at least 8 characters long")
-	}
+func (r *SignupRequestBody) Resolve(ctx huma.Context) []error {
 	if r.Password != r.PasswordConfirm {
-		return fmt.Errorf("passwords do not match")
+		return []error{fmt.Errorf("passwords do not match")}
 	}
 	return nil
 }
@@ -72,10 +50,6 @@ func (h *AuthHandler) Signup(ctx context.Context, input *SignupInput) (*struct{}
 
 	if !h.rateLimiter.Allow(r.RemoteAddr, r) {
 		return nil, errlib.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for signup"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
-	}
-
-	if err := input.Body.Validate(); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("signup validation failed: %w", err), http.StatusBadRequest)
 	}
 
 	exists, err := h.queries.ExistsUserWithEmail(ctx, input.Body.Email)

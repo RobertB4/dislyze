@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -26,22 +25,10 @@ type ChangeTenantNameInput struct {
 }
 
 type ChangeTenantNameRequestBody struct {
-	Name string `json:"name"`
-}
-
-func (r *ChangeTenantNameRequestBody) Validate() error {
-	r.Name = strings.TrimSpace(r.Name)
-	if r.Name == "" {
-		return fmt.Errorf("name is required")
-	}
-	return nil
+	Name string `json:"name" minLength:"1"`
 }
 
 func (h *UsersHandler) ChangeTenantName(ctx context.Context, input *ChangeTenantNameInput) (*struct{}, error) {
-	if err := input.Body.Validate(); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("change tenant name validation failed: %w", err), http.StatusBadRequest)
-	}
-
 	tenantID := libctx.GetTenantID(ctx)
 	err := h.changeTenantName(ctx, tenantID, input.Body)
 	if err != nil {

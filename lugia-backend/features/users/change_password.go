@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
@@ -29,39 +28,22 @@ type ChangePasswordInput struct {
 }
 
 type ChangePasswordRequestBody struct {
-	CurrentPassword    string `json:"current_password"` // #nosec G117 -- intentional: request body, not a leaked secret
-	NewPassword        string `json:"new_password"`    // #nosec G117
-	NewPasswordConfirm string `json:"new_password_confirm"`
+	CurrentPassword    string `json:"current_password" minLength:"1"` // #nosec G117 -- intentional: request body, not a leaked secret
+	NewPassword        string `json:"new_password" minLength:"8"`    // #nosec G117
+	NewPasswordConfirm string `json:"new_password_confirm" minLength:"1"`
 }
 
-func (r *ChangePasswordRequestBody) Validate() error {
-	r.CurrentPassword = strings.TrimSpace(r.CurrentPassword)
-	r.NewPassword = strings.TrimSpace(r.NewPassword)
-	r.NewPasswordConfirm = strings.TrimSpace(r.NewPasswordConfirm)
-
-	if r.CurrentPassword == "" {
-		return fmt.Errorf("current password is required")
-	}
-	if r.NewPassword == "" {
-		return fmt.Errorf("new password is required")
-	}
-	if len(r.NewPassword) < 8 {
-		return fmt.Errorf("new password must be at least 8 characters long")
-	}
+func (r *ChangePasswordRequestBody) Resolve(ctx huma.Context) []error {
 	if r.NewPassword != r.NewPasswordConfirm {
-		return fmt.Errorf("new passwords do not match")
+		return []error{fmt.Errorf("new passwords do not match")}
 	}
 	if r.CurrentPassword == r.NewPassword {
-		return fmt.Errorf("new password must be different from current password")
+		return []error{fmt.Errorf("new password must be different from current password")}
 	}
 	return nil
 }
 
 func (h *UsersHandler) ChangePassword(ctx context.Context, input *ChangePasswordInput) (*struct{}, error) {
-	if err := input.Body.Validate(); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("change password validation failed: %w", err), http.StatusBadRequest)
-	}
-
 	userID := libctx.GetUserID(ctx)
 	err := h.changePassword(ctx, userID, input.Body)
 	if err != nil {
