@@ -48,9 +48,9 @@ type GetUsersResponse struct {
 }
 
 type GetUsersInput struct {
-	Page   int    `query:"page" default:"1" minimum:"1"`
-	Limit  int    `query:"limit" default:"50" minimum:"1" maximum:"100"`
-	Search string `query:"search" maxLength:"100"`
+	Page   int     `query:"page" default:"1" minimum:"1"`
+	Limit  int32   `query:"limit" default:"50" minimum:"1" maximum:"100"`
+	Search string  `query:"search" maxLength:"100"`
 }
 
 type GetUsersOutput struct {
@@ -60,8 +60,8 @@ type GetUsersOutput struct {
 func (h *UsersHandler) GetUsers(ctx context.Context, input *GetUsersInput) (*GetUsersOutput, error) {
 	tenantID := libctx.GetTenantID(ctx)
 
-	limit := int32(input.Limit)
-	offset := int32((input.Page - 1) * input.Limit)
+	limit := input.Limit
+	offset := int32(input.Page-1) * input.Limit
 
 	paginationParams := pagination.QueryParams{
 		Page:   input.Page,
