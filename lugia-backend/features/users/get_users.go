@@ -13,6 +13,7 @@ import (
 	"dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
+	"lugia/lib/conversions"
 	"lugia/lib/humautil"
 	"lugia/lib/pagination"
 	"lugia/queries"
@@ -60,8 +61,14 @@ type GetUsersOutput struct {
 func (h *UsersHandler) GetUsers(ctx context.Context, input *GetUsersInput) (*GetUsersOutput, error) {
 	tenantID := libctx.GetTenantID(ctx)
 
-	limit := int32(input.Limit)
-	offset := int32((input.Page - 1) * input.Limit)
+	limit, err := conversions.SafeInt32(input.Limit)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid limit", err)
+	}
+	offset, err := conversions.SafeInt32((input.Page - 1) * input.Limit)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid page/limit combination", err)
+	}
 
 	paginationParams := pagination.QueryParams{
 		Page:   input.Page,
