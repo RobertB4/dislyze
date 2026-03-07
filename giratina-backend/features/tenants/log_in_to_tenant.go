@@ -13,6 +13,7 @@ import (
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/jwt"
 	"dislyze/jirachi/logger"
+	"giratina/lib/humautil"
 	"giratina/lib/middleware"
 	"giratina/queries"
 
@@ -69,7 +70,7 @@ func (h *TenantsHandler) LogInToTenant(ctx context.Context, input *LogInToTenant
 
 	var tenantID pgtype.UUID
 	if err := tenantID.Scan(input.TenantID); err != nil {
-		return nil, errlib.New(err, http.StatusBadRequest, "Invalid tenant ID format")
+		return nil, humautil.NewError(fmt.Errorf("LogInToTenant: invalid tenant ID format: %w", err), http.StatusBadRequest)
 	}
 
 	tokenPair, userID, err := h.logInToTenant(ctx, tenantID, r)
@@ -84,7 +85,7 @@ func (h *TenantsHandler) LogInToTenant(ctx context.Context, input *LogInToTenant
 			Success:   false,
 			Error:     err.Error(),
 		})
-		return nil, errlib.New(err, http.StatusUnauthorized, err.Error())
+		return nil, humautil.NewError(fmt.Errorf("LogInToTenant: %w", err), http.StatusUnauthorized)
 	}
 
 	cookieDomain := h.getCookieDomain()

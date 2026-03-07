@@ -626,6 +626,47 @@
         }
       }
     },
+    "/tenants/{tenantID}/login": {
+      "get": {
+        "operationId": "log-in-to-tenant",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenantID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Found",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Log in to a tenant",
+        "tags": [
+          "tenants"
+        ]
+      }
+    },
     "/tenants/{tenantID}/users": {
       "get": {
         "operationId": "get-users-by-tenant",

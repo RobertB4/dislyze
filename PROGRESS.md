@@ -38,9 +38,12 @@
 - Add a CI step that runs `make generate` (SQLC) and `go run ./cmd/openapi` (OpenAPI specs) and fails if the output differs from what's committed
 - Catches cases where someone changes types/queries but forgets to regenerate
 
-### Rename humautil package files
-- `lib/humautil/humautil.go` — the filename is redundant with the package name. Split into `errors.go` (NewError, NewErrorWithDetail, APIError) + `config.go` (NewConfig) or similar
-- Cosmetic, but improves discoverability
+### Consolidate error handling: humautil → jirachi/errlib
+- Remove `errlib.New` / `errlib.AppError` (replaced by `humautil.NewError` / `NewErrorWithDetail`)
+- Move `APIError`, `NewError`, `NewErrorWithDetail` into `jirachi/errlib` — these don't import huma (Go structural typing satisfies `huma.StatusError` implicitly)
+- Keep `NewConfig` in each backend (thin wrapper that wires `huma.NewError` to errlib's `APIError`) — can't move to jirachi because it imports `huma/v2`
+- Delete `lib/humautil/` from both backends
+- End state: `jirachi/errlib` is the single place for all error handling; each backend has only a thin huma config wiring
 
 ### Rename StoreHTTPRequest middleware
 - `StoreHTTPRequest` doesn't communicate *where* it stores the request (context)
