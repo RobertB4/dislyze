@@ -99,7 +99,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -139,7 +139,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 
 		verifyResp, err := client.Do(verifyReq)
 		assert.NoError(t, err)
-		defer verifyResp.Body.Close()
+		defer func() { _ = verifyResp.Body.Close() }()
 
 		assert.Equal(t, http.StatusNoContent, verifyResp.StatusCode, "Email verification should succeed")
 
@@ -157,7 +157,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 
 		loginResp, err := client.Do(loginHTTPReq)
 		assert.NoError(t, err)
-		defer loginResp.Body.Close()
+		defer func() { _ = loginResp.Body.Close() }()
 
 		assert.Equal(t, http.StatusNoContent, loginResp.StatusCode, "Should be able to login with new email")
 
@@ -207,7 +207,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 
 		verifyResp1, err := client.Do(verifyReq1)
 		assert.NoError(t, err)
-		defer verifyResp1.Body.Close()
+		defer func() { _ = verifyResp1.Body.Close() }()
 
 		assert.Equal(t, http.StatusNoContent, verifyResp1.StatusCode, "First verification should succeed")
 
@@ -224,7 +224,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 
 		verifyResp2, err := client.Do(verifyReq2)
 		assert.NoError(t, err)
-		defer verifyResp2.Body.Close()
+		defer func() { _ = verifyResp2.Body.Close() }()
 
 		assert.Equal(t, http.StatusBadRequest, verifyResp2.StatusCode, "Second verification should fail")
 
@@ -260,7 +260,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode, "Unauthenticated request should return 401")
 	})

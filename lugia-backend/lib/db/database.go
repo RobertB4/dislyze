@@ -15,9 +15,7 @@ func NewDB(env *config.Env) (*pgxpool.Pool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	var dsn string
-
-	dsn = fmt.Sprintf(
+	dsn := fmt.Sprintf(
 		"user=%s password=%s host=%s port=5432 dbname=%s sslmode=%s",
 		env.DBUser, env.DBPassword, env.DBHost, env.DBName, env.DBSSLMode,
 	)

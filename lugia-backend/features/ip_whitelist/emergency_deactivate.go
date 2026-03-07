@@ -153,7 +153,7 @@ func ValidateEmergencyToken(tokenString string, secret []byte) (*EmergencyClaims
 		return nil, fmt.Errorf("emergency token has no ExpiresAt set")
 	}
 
-	if claims.ExpiresAt.Time.Before(time.Now()) {
+	if claims.ExpiresAt.Before(time.Now()) {
 		return nil, fmt.Errorf("emergency token has expired")
 	}
 

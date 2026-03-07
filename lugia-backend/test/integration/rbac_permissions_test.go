@@ -254,8 +254,8 @@ func getMePermissions(t *testing.T, userKey string) []string {
 	
 	resp, err := client.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
-	
+	defer func() { _ = resp.Body.Close() }()
+
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	
 	var meResponse users.MeResponse

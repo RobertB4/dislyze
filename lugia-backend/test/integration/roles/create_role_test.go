@@ -207,7 +207,7 @@ func createTenantViaSignup(t *testing.T, email, password, tenantName, userName s
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	assert.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Signup should succeed (204 No Content with cookies set)
 	assert.Equal(t, http.StatusNoContent, resp.StatusCode, "Signup should succeed")
@@ -266,7 +266,7 @@ func TestCreateRole_RBACFeatureFlag(t *testing.T) {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		// Should be blocked by RBAC feature flag with 403 Forbidden
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode, "RBAC disabled should block access with 403")
@@ -302,7 +302,7 @@ func TestCreateRole_RBACFeatureFlag(t *testing.T) {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		// Should succeed now that RBAC is enabled
 		assert.Equal(t, http.StatusNoContent, resp.StatusCode, "RBAC enabled should allow access")

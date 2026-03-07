@@ -133,7 +133,8 @@ func TestChangePassword_Integration(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Status code mismatch for test: %s", tt.name)
 
-			if tt.expectedStatus == http.StatusNoContent {
+			switch tt.expectedStatus {
+			case http.StatusNoContent:
 				// Test that the new password works for login
 				attemptLoginResp := setup.AttemptLogin(t, setup.TestUsersData[tt.loginUserKey].Email, tt.requestBody.NewPassword)
 				defer func() {
@@ -152,7 +153,7 @@ func TestChangePassword_Integration(t *testing.T) {
 				}()
 				assert.Equal(t, http.StatusUnauthorized, attemptOldLoginResp.StatusCode, "Login with old password should fail for test: %s", tt.name)
 
-			} else if tt.expectedStatus == http.StatusBadRequest || tt.expectedStatus == http.StatusUnauthorized {
+			case http.StatusBadRequest, http.StatusUnauthorized:
 				// Only "invalid current password" case should have an error message in the response body
 				if tt.name == "invalid current password" {
 					var errorResponse ErrorResponse

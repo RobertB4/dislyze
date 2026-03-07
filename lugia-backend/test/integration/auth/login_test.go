@@ -272,7 +272,7 @@ func TestLoginUserStatus_Integration(t *testing.T) {
 
 			resp, err := client.Do(req)
 			require.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -313,7 +313,7 @@ func TestLoginSSOOnlyTenant_Integration(t *testing.T) {
 
 	resp, err := client.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
@@ -377,7 +377,7 @@ func TestLoginErrorMessages_Integration(t *testing.T) {
 
 			resp, err := client.Do(req)
 			require.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -444,7 +444,7 @@ func TestLoginInvalidRequestBody_Integration(t *testing.T) {
 
 			resp, err := client.Do(req)
 			require.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -481,7 +481,7 @@ func TestLoginRefreshTokenCreation_Integration(t *testing.T) {
 
 	resp, err := client.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
 
@@ -520,7 +520,7 @@ func TestLoginFailedDoesNotCreateRefreshToken_Integration(t *testing.T) {
 
 	resp, err := client.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
@@ -574,7 +574,7 @@ func TestLoginMultipleTenants_Integration(t *testing.T) {
 
 			resp, err := client.Do(req)
 			require.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			assert.Equal(t, http.StatusNoContent, resp.StatusCode, "User from %s should be able to login", tt.loginUserKey)
 

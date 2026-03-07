@@ -214,22 +214,23 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			var reqBody []byte
 			var err error
 
-			if tt.name == "malformed JSON request gets 400" {
+			switch tt.name {
+			case "malformed JSON request gets 400":
 				// Send malformed JSON for this specific test
 				reqBody = []byte(`{"role": "admin", invalid}`)
-			} else if tt.name == "empty request body gets 400" {
+			case "empty request body gets 400":
 				// Send empty body
 				reqBody = []byte(``)
-			} else if tt.name == "null role_ids field gets 422" {
+			case "null role_ids field gets 422":
 				// Send JSON with null role_ids
 				reqBody = []byte(`{"role_ids": null}`)
-			} else if tt.name == "malformed UUID in role_ids gets 400" {
+			case "malformed UUID in role_ids gets 400":
 				// Send JSON with malformed UUID string
 				reqBody = []byte(`{"role_ids": ["not-a-valid-uuid-format"]}`)
-			} else if tt.name == "empty string UUID in role_ids gets 400" {
+			case "empty string UUID in role_ids gets 400":
 				// Send JSON with empty string as UUID
 				reqBody = []byte(`{"role_ids": [""]}`)
-			} else {
+			default:
 				reqBody, err = json.Marshal(tt.requestBody)
 				assert.NoError(t, err, "Failed to marshal request body")
 			}

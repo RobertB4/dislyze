@@ -389,16 +389,12 @@ func TestUpdateRole_Integration(t *testing.T) {
 			resp, err := client.Do(req)
 			assert.NoError(t, err)
 
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			// Verify response status
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Response status should match expected")
 
-			// For successful updates, verify the response and check data integrity
-			if resp.StatusCode == http.StatusNoContent {
-				// Additional verification can be added here
-				// For example, making a GET request to verify the role was updated correctly
-			}
+			// For successful updates, additional verification (e.g. GET to confirm update) can be added here
 		})
 	}
 }

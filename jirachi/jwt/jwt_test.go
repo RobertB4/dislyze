@@ -171,6 +171,6 @@ func TestTokenExpiration(t *testing.T) {
 	assert.NotNil(t, claims)
 
 	expectedExp := time.Now().Add(15 * time.Minute)
-	assert.True(t, claims.ExpiresAt.Time.After(time.Now()))
-	assert.True(t, claims.ExpiresAt.Time.Before(expectedExp.Add(time.Minute)))
+	assert.True(t, claims.ExpiresAt.After(time.Now()))
+	assert.True(t, claims.ExpiresAt.Before(expectedExp.Add(time.Minute)))
 }

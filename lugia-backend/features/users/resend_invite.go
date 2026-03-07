@@ -170,11 +170,11 @@ func (h *UsersHandler) resendPasswordInvite(ctx context.Context, targetUserID pg
 	sendgridRequest.Body = bodyBytes
 	sgResponse, err := sendgrid.API(sendgridRequest)
 	if err != nil {
-		return errlib.NewError(fmt.Errorf("ResendInvite: SendGrid API call failed for user %s: %w.", targetUserID.String(), err), http.StatusInternalServerError)
+		return errlib.NewError(fmt.Errorf("ResendInvite: SendGrid API call failed for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError)
 	}
 
 	if sgResponse.StatusCode < 200 || sgResponse.StatusCode >= 300 {
-		return errlib.NewError(fmt.Errorf("ResendInvite: SendGrid API returned error status code %d for user %s. Body: %s.", sgResponse.StatusCode, targetUserID.String(), sgResponse.Body), http.StatusInternalServerError)
+		return errlib.NewError(fmt.Errorf("ResendInvite: SendGrid API returned error status code %d for user %s, body: %s", sgResponse.StatusCode, targetUserID.String(), sgResponse.Body), http.StatusInternalServerError)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -254,11 +254,11 @@ func (h *UsersHandler) resendSSOInvite(ctx context.Context, targetUserID pgtype.
 	sendgridRequest.Body = bodyBytes
 	sgResponse, err := sendgrid.API(sendgridRequest)
 	if err != nil {
-		return errlib.NewError(fmt.Errorf("ResendInvite: SendGrid API call failed for user %s: %w.", targetUserID.String(), err), http.StatusInternalServerError)
+		return errlib.NewError(fmt.Errorf("ResendInvite: SendGrid API call failed for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError)
 	}
 
 	if sgResponse.StatusCode < 200 || sgResponse.StatusCode >= 300 {
-		return errlib.NewError(fmt.Errorf("ResendInvite: SendGrid API returned error status code %d for user %s. Body: %s.", sgResponse.StatusCode, targetUserID.String(), sgResponse.Body), http.StatusInternalServerError)
+		return errlib.NewError(fmt.Errorf("ResendInvite: SendGrid API returned error status code %d for user %s, body: %s", sgResponse.StatusCode, targetUserID.String(), sgResponse.Body), http.StatusInternalServerError)
 	}
 
 	return nil

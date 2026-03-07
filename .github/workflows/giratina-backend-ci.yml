@@ -85,7 +85,7 @@ jobs:
         with:
           version: v2.11
           working-directory: ./giratina-backend
-          args: --fast-only
+          args: --timeout 5m
 
       - name: Run unit tests
         working-directory: ./giratina-backend

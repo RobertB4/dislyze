@@ -123,8 +123,8 @@ func TestSignup(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
-			if tt.expectedStatus == http.StatusNoContent {
-
+			switch tt.expectedStatus {
+			case http.StatusNoContent:
 				cookies := resp.Cookies()
 				assert.NotEmpty(t, cookies, "Expected cookies in response for successful signup")
 
@@ -147,10 +147,7 @@ func TestSignup(t *testing.T) {
 				assert.True(t, refreshToken.HttpOnly, "Refresh token cookie should be HttpOnly")
 				assert.True(t, refreshToken.Secure, "Refresh token cookie should be Secure")
 				assert.Equal(t, http.SameSiteStrictMode, refreshToken.SameSite, "Refresh token cookie should have SameSite=Strict")
-			} else if tt.expectedStatus == http.StatusUnprocessableEntity {
-				cookies := resp.Cookies()
-				assert.Empty(t, cookies, "Expected no cookies for failed signup with status %d", tt.expectedStatus)
-			} else {
+			default:
 				cookies := resp.Cookies()
 				assert.Empty(t, cookies, "Expected no cookies for failed signup with status %d", tt.expectedStatus)
 			}

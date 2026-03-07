@@ -669,7 +669,7 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Make first request - should succeed
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 
 		// Now try to add the same IP again (duplicate)
@@ -1030,7 +1030,7 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Make first request - should succeed
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 
 		// Now add the same IP to SMB tenant - should also succeed
