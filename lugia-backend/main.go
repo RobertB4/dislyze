@@ -84,8 +84,8 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		// for OpenAPI spec generation. When adding or removing endpoints, update both files.
 		humaConfig := humautil.NewConfig("Lugia API", "1.0.0")
 
-		// /auth endpoints — public, only need StoreHTTPRequest for cookie/rate-limit access
-		authAPI := humachi.New(r.With(middleware.StoreHTTPRequest), humaConfig)
+		// /auth endpoints — public, only need InjectRawHTTP for cookie/rate-limit access
+		authAPI := humachi.New(r.With(middleware.InjectRawHTTP), humaConfig)
 		huma.Register(authAPI, auth.SignupOp, authHandler.Signup)
 		huma.Register(authAPI, auth.LoginOp, authHandler.Login)
 		huma.Register(authAPI, auth.LogoutOp, authHandler.Logout)
@@ -101,7 +101,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 			jirachiAuthMiddleware.Authenticate,
 			middleware.LoadTenantAndUserContext(queries),
 			middleware.IPWhitelistMiddleware(queries),
-			middleware.StoreHTTPRequest,
+			middleware.InjectRawHTTP,
 		)
 
 		// /me endpoints — authenticated, no extra permission middleware

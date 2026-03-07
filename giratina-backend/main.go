@@ -71,15 +71,15 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		// for OpenAPI spec generation. When adding or removing endpoints, update both files.
 		humaConfig := humautil.NewConfig("Giratina API", "1.0.0")
 
-		// /auth endpoints — public, only need StoreHTTPRequest for cookie/rate-limit access
-		authAPI := humachi.New(r.With(middleware.StoreHTTPRequest), humaConfig)
+		// /auth endpoints — public, only need InjectRawHTTP for cookie/rate-limit access
+		authAPI := humachi.New(r.With(middleware.InjectRawHTTP), humaConfig)
 		huma.Register(authAPI, auth.LoginOp, authHandler.Login)
 		huma.Register(authAPI, auth.LogoutOp, authHandler.Logout)
 
 		r.Group(func(r chi.Router) {
 			r.Use(jirachiAuthMiddleware.Authenticate)
 
-			api := humachi.New(r.With(middleware.StoreHTTPRequest), humaConfig)
+			api := humachi.New(r.With(middleware.InjectRawHTTP), humaConfig)
 			huma.Register(api, users.GetMeOp, usersHandler.GetMe)
 			huma.Register(api, tenants.GetTenantsOp, tenantsHandler.GetTenants)
 			huma.Register(api, tenants.UpdateTenantOp, tenantsHandler.UpdateTenant)

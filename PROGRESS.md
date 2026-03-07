@@ -11,7 +11,7 @@
   - `NewError(err, status)` — logs internally, returns generic error to client
   - `NewErrorWithDetail(err, status, detail)` — logs internally, returns specific user-facing message
   - `huma.NewError` override logs huma's validation details server-side
-- `lib/middleware/store_request.go` in both backends — stores `*http.Request` / `http.ResponseWriter` in context for handlers needing cookie/rate-limit access
+- `lib/middleware/inject_raw_http.go` in both backends — stores `*http.Request` / `http.ResponseWriter` in context for handlers needing cookie/rate-limit access
 - `cmd/openapi/main.go` in both backends — offline OpenAPI spec generation
 - OpenAPI specs committed as `openapi.json`
 
@@ -45,10 +45,10 @@
 - Delete `lib/humautil/` from both backends
 - End state: `jirachi/errlib` is the single place for all error handling; each backend has only a thin huma config wiring
 
-### Rename StoreHTTPRequest middleware
-- `StoreHTTPRequest` doesn't communicate *where* it stores the request (context)
-- Rename to something like `InjectRawHTTP` or `StoreHTTPInContext` for clarity
-- Update all references in both backends
+### ~~Rename StoreHTTPRequest middleware~~ ✅
+- Renamed `StoreHTTPRequest` → `InjectRawHTTP` in both backends
+- Renamed file `store_request.go` → `inject_raw_http.go`
+- Updated all references in `main.go` of both backends
 
 ### SSO endpoints — not migrating to huma
 - `SSOLogin`, `SSOACS`, `SSOMetadata` in lugia-backend remain Chi-style handlers
