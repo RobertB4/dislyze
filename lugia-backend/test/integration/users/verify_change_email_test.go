@@ -141,7 +141,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 		assert.NoError(t, err)
 		defer verifyResp.Body.Close()
 
-		assert.Equal(t, http.StatusOK, verifyResp.StatusCode, "Email verification should succeed")
+		assert.Equal(t, http.StatusNoContent, verifyResp.StatusCode, "Email verification should succeed")
 
 		// Test that user can now login with new email and old password
 		loginReq := map[string]string{
@@ -159,7 +159,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 		assert.NoError(t, err)
 		defer loginResp.Body.Close()
 
-		assert.Equal(t, http.StatusOK, loginResp.StatusCode, "Should be able to login with new email")
+		assert.Equal(t, http.StatusNoContent, loginResp.StatusCode, "Should be able to login with new email")
 
 		// Verify token was marked as used
 		var usedAt pgtype.Timestamptz
@@ -209,7 +209,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 		assert.NoError(t, err)
 		defer verifyResp1.Body.Close()
 
-		assert.Equal(t, http.StatusOK, verifyResp1.StatusCode, "First verification should succeed")
+		assert.Equal(t, http.StatusNoContent, verifyResp1.StatusCode, "First verification should succeed")
 
 		// Second verification should fail (token already used)
 		verifyReq2, err := http.NewRequest("GET", verifyURL, nil)

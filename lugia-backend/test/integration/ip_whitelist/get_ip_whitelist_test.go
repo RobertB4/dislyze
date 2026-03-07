@@ -86,7 +86,6 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 	pool := setup.InitDB(t)
 	defer setup.CloseDB(pool)
 
-
 	tests := []struct {
 		name           string
 		setupFunc      func(t *testing.T, pool *pgxpool.Pool) (string, string) // Returns (userKey, clientIP)
@@ -724,10 +723,9 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 				// Add IP rule for 192.168.1.0/24 range
 				insertIPWhitelistRule(t, pool, setup.TestTenantsData["enterprise"].ID, "192.168.1.0/24", "Office Network", setup.TestUsersData["enterprise_1"].UserID)
 
-				// Return special marker for X-Real-IP test
 				return "enterprise_2", "X-Real-IP:192.168.1.75"
 			},
-			expectedStatus: http.StatusOK, // X-Real-IP (192.168.1.75) matches 192.168.1.0/24
+			expectedStatus: http.StatusOK, // IP 192.168.1.75 matches 192.168.1.0/24
 			validateFunc: func(t *testing.T, response []ip_whitelist.IPWhitelistRule) {
 				// Should return 1 IP rule
 				assert.Equal(t, 1, len(response))
@@ -796,11 +794,11 @@ func TestGetIPWhitelistIntegration(t *testing.T) {
 
 			// If success, validate response
 			if tt.expectedStatus == http.StatusOK && tt.validateFunc != nil {
-				var response []ip_whitelist.IPWhitelistRule
+				var response ip_whitelist.GetIPWhitelistResponse
 				err := json.NewDecoder(resp.Body).Decode(&response)
 				require.NoError(t, err, "Should be able to decode JSON response")
 
-				tt.validateFunc(t, response)
+				tt.validateFunc(t, response.Rules)
 			}
 		})
 	}

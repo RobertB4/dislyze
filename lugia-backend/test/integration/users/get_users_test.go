@@ -278,17 +278,17 @@ func TestGetUsersPagination_Integration(t *testing.T) {
 			expectedUserCount:  0,
 		},
 		{
-			name:               "limit exceeding max (100) gets capped",
+			name:               "limit exceeding max (100) returns 422",
 			page:               1,
 			limit:              150,
-			expectedStatus:     http.StatusOK,
-			expectedPage:       1,
-			expectedLimit:      100, // Should be capped at 100
-			expectedTotal:      totalUsers,
-			expectedTotalPages: 2, // 100+ users but less than 200
-			expectedHasNext:    true,
+			expectedStatus:     http.StatusUnprocessableEntity,
+			expectedPage:       0,
+			expectedLimit:      0,
+			expectedTotal:      0,
+			expectedTotalPages: 0,
+			expectedHasNext:    false,
 			expectedHasPrev:    false,
-			expectedUserCount:  100,
+			expectedUserCount:  0,
 		},
 	}
 
@@ -537,46 +537,34 @@ func TestGetUsersInvalidParameters_Integration(t *testing.T) {
 		expectedLimit  int
 	}{
 		{
-			name:           "invalid page parameter - non-numeric defaults to 1",
+			name:           "invalid page parameter - non-numeric returns 422",
 			queryParams:    "page=abc&limit=10",
-			expectedStatus: http.StatusOK,
-			expectedPage:   1,  // Should default to page=1
-			expectedLimit:  10, // Valid limit should be preserved
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
-			name:           "invalid limit parameter - non-numeric defaults to 50",
+			name:           "invalid limit parameter - non-numeric returns 422",
 			queryParams:    "page=1&limit=xyz",
-			expectedStatus: http.StatusOK,
-			expectedPage:   1,  // Valid page should be preserved
-			expectedLimit:  50, // Should default to limit=50
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
-			name:           "negative page parameter defaults to 1",
+			name:           "negative page parameter returns 422",
 			queryParams:    "page=-1&limit=10",
-			expectedStatus: http.StatusOK,
-			expectedPage:   1,  // Should default to page=1
-			expectedLimit:  10, // Valid limit should be preserved
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
-			name:           "zero page parameter defaults to 1",
+			name:           "zero page parameter returns 422",
 			queryParams:    "page=0&limit=10",
-			expectedStatus: http.StatusOK,
-			expectedPage:   1,  // Should default to page=1
-			expectedLimit:  10, // Valid limit should be preserved
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
-			name:           "negative limit parameter defaults to 50",
+			name:           "negative limit parameter returns 422",
 			queryParams:    "page=1&limit=-5",
-			expectedStatus: http.StatusOK,
-			expectedPage:   1,  // Valid page should be preserved
-			expectedLimit:  50, // Should default to limit=50
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
-			name:           "zero limit parameter defaults to 50",
+			name:           "zero limit parameter returns 422",
 			queryParams:    "page=1&limit=0",
-			expectedStatus: http.StatusOK,
-			expectedPage:   1,  // Valid page should be preserved
-			expectedLimit:  50, // Should default to limit=50
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:           "missing parameters use defaults",

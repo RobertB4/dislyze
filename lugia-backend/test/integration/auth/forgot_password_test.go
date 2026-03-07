@@ -43,7 +43,7 @@ func TestForgotPassword(t *testing.T) {
 			}
 		}()
 
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 
 		email, err := setup.GetLatestEmailFromSendgridMock(t, testUser.Email)
 		assert.NoError(t, err, "Failed to get email from SendGrid mock")
@@ -99,7 +99,7 @@ func TestForgotPassword(t *testing.T) {
 			}
 		}()
 
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
 
 	t.Run("TestForgotPassword_InvalidEmailFormat", func(t *testing.T) {
@@ -119,7 +119,8 @@ func TestForgotPassword(t *testing.T) {
 			}
 		}()
 
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		// Handler always returns 204 to prevent email enumeration
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
 
 	t.Run("TestForgotPassword_EmptyEmail", func(t *testing.T) {
@@ -139,7 +140,8 @@ func TestForgotPassword(t *testing.T) {
 			}
 		}()
 
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		// Handler always returns 204 to prevent email enumeration
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
 
 	t.Run("TestForgotPassword_MultipleRequestsForSameUser", func(t *testing.T) {
@@ -159,7 +161,7 @@ func TestForgotPassword(t *testing.T) {
 				t.Logf("Error closing resp1 body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusOK, resp1.StatusCode)
+		assert.Equal(t, http.StatusNoContent, resp1.StatusCode)
 
 		email1, err := setup.GetLatestEmailFromSendgridMock(t, testUser.Email)
 		assert.NoError(t, err)
@@ -201,7 +203,7 @@ func TestForgotPassword(t *testing.T) {
 				t.Logf("Error closing resp2 body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusOK, resp2.StatusCode)
+		assert.Equal(t, http.StatusNoContent, resp2.StatusCode)
 
 		email2, err := setup.GetLatestEmailFromSendgridMock(t, testUser.Email)
 		assert.NoError(t, err)

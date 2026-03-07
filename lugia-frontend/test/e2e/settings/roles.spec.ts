@@ -191,7 +191,7 @@ test.describe("Settings - Roles Page", () => {
 
 			// Submit the form
 			const responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/api/roles/create") && response.status() === 200
+				(response) => response.url().includes("/api/roles/create") && response.status() === 204
 			);
 
 			await page.getByTestId("create-role-slideover-primary-button").click();
@@ -258,7 +258,7 @@ test.describe("Settings - Roles Page", () => {
 			await page.getByTestId("permission-users-view").click();
 
 			const responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/api/roles/create") && response.status() === 200
+				(response) => response.url().includes("/api/roles/create") && response.status() === 204
 			);
 
 			await page.getByTestId("create-role-slideover-primary-button").click();
@@ -307,7 +307,7 @@ test.describe("Settings - Roles Page", () => {
 
 			// Submit changes
 			const responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/update") && response.status() === 200
+				(response) => response.url().includes("/update") && response.status() === 204
 			);
 
 			await page.getByTestId("edit-role-slideover-primary-button").click();
@@ -369,7 +369,7 @@ test.describe("Settings - Roles Page", () => {
 			await page.getByTestId("permission-users-view").click();
 
 			const responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/api/roles/create") && response.status() === 200
+				(response) => response.url().includes("/api/roles/create") && response.status() === 204
 			);
 
 			await page.getByTestId("create-role-slideover-primary-button").click();
@@ -447,7 +447,7 @@ test.describe("Settings - Roles Page", () => {
 
 			// Submit deletion
 			const responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/delete") && response.status() === 200
+				(response) => response.url().includes("/delete") && response.status() === 204
 			);
 
 			await page.getByTestId("delete-role-slideover-primary-button").click();
@@ -467,6 +467,13 @@ test.describe("Settings - Roles Page", () => {
 		});
 
 		test("should prevent deletion of role assigned to users", async ({ page }) => {
+			// Multiple navigations and API calls make this slow on constrained environments.
+			test.slow();
+
+			// Reload to reset toast counter (beforeEach incremented it)
+			await page.goto(rolesPageURL);
+			await expect(page.getByTestId("roles-table")).toBeVisible();
+
 			const roleInUseName = `Role In Use ${Date.now()}`;
 
 			// First create a role
@@ -478,17 +485,17 @@ test.describe("Settings - Roles Page", () => {
 			await page.getByTestId("permission-users-view").click();
 
 			let responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/api/roles/create") && response.status() === 200
+				(response) => response.url().includes("/api/roles/create") && response.status() === 204
 			);
 
 			await page.getByTestId("create-role-slideover-primary-button").click();
 			await responsePromise;
 
 			// Dismiss the success toast
-			const toastMessage = page.getByTestId("toast-1");
+			const toastMessage = page.getByTestId("toast-0");
 			await expect(toastMessage).toBeVisible({ timeout: 10000 });
-			await page.getByTestId("toast-1-close").click();
-			await expect(page.getByTestId("toast-1")).not.toBeVisible();
+			await page.getByTestId("toast-0-close").click();
+			await expect(page.getByTestId("toast-0")).not.toBeVisible();
 
 			await expect(page.getByTestId("create-role-slideover")).not.toBeVisible();
 
@@ -516,13 +523,13 @@ test.describe("Settings - Roles Page", () => {
 
 			// Submit role assignment
 			responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/roles") && response.status() === 200
+				(response) => response.url().includes("/roles") && response.status() === 204
 			);
 
 			await page.getByTestId("edit-user-slideover-primary-button").click();
 			await responsePromise;
 
-			// Go back to roles page
+			// Go back to roles page (also resets toast counter)
 			await page.goto(rolesPageURL);
 			await expect(page.getByTestId("roles-table")).toBeVisible();
 
@@ -539,7 +546,7 @@ test.describe("Settings - Roles Page", () => {
 			// Try to delete - should fail with error about role being in use
 			await page.getByTestId("delete-role-slideover-primary-button").click();
 
-			// Should show error toast about role being assigned to users
+			// Should show error toast (toast-0 since page.goto reset the counter)
 			const errorToast = page.getByTestId("toast-0");
 			await expect(errorToast).toBeVisible({ timeout: 10000 });
 			await expect(errorToast).toContainText(
@@ -684,7 +691,7 @@ test.describe("Settings - Roles Page", () => {
 			await page.getByTestId("permission-users-view").click();
 
 			const responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/api/roles/create") && response.status() === 200
+				(response) => response.url().includes("/api/roles/create") && response.status() === 204
 			);
 
 			await page.getByTestId("create-role-slideover-primary-button").click();
@@ -711,7 +718,7 @@ test.describe("Settings - Roles Page", () => {
 			await page.getByTestId("permission-users-view").click();
 
 			const responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/api/roles/create") && response.status() === 200
+				(response) => response.url().includes("/api/roles/create") && response.status() === 204
 			);
 
 			await page.getByTestId("create-role-slideover-primary-button").click();
@@ -746,7 +753,7 @@ test.describe("Settings - Roles Page", () => {
 			await page.getByTestId("permission-tenant-edit").click();
 
 			const responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/api/roles/create") && response.status() === 200
+				(response) => response.url().includes("/api/roles/create") && response.status() === 204
 			);
 
 			await page.getByTestId("create-role-slideover-primary-button").click();
@@ -790,7 +797,7 @@ test.describe("Settings - Roles Page", () => {
 			await page.getByTestId("permission-users-view").click();
 
 			const responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/api/roles/create") && response.status() === 200
+				(response) => response.url().includes("/api/roles/create") && response.status() === 204
 			);
 
 			await page.getByTestId("create-role-slideover-primary-button").click();
@@ -822,7 +829,7 @@ test.describe("Settings - Roles Page", () => {
 			await page.getByTestId("permission-users-view").click();
 
 			const responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/api/roles/create") && response.status() === 200
+				(response) => response.url().includes("/api/roles/create") && response.status() === 204
 			);
 
 			await page.getByTestId("create-role-slideover-primary-button").click();

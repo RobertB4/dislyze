@@ -101,10 +101,10 @@ func TestGenerateTenantInvitationToken_Integration(t *testing.T) {
 			expectErrorResponse: true,
 		},
 		{
-			name:                "invalid JSON returns 400",
+			name:                "invalid JSON returns 422",
 			loginUserKey:        "internal_1",
 			requestBody:         `{"email": "test@example.com"`, // Missing closing brace
-			expectedStatus:      http.StatusBadRequest,
+			expectedStatus:      http.StatusUnprocessableEntity,
 			expectErrorResponse: true,
 		},
 		{

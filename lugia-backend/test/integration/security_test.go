@@ -34,7 +34,7 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 				"name": "'; DROP TABLE users; --",
 			},
 			userKey:        "enterprise_1",
-			expectedStatus: 200, // Should be safely stored as text (most systems allow special chars in names)
+			expectedStatus: 204, // Should be safely stored as text (most systems allow special chars in names)
 			description:    "SQL injection in name field should be safely stored as text",
 		},
 		{
@@ -44,7 +44,7 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 				"new_email": "evil'; DROP TABLE users; --@example.com",
 			},
 			userKey:        "enterprise_2", // Use different user to avoid rate limiting
-			expectedStatus: 200,            // Based on test results, it's being accepted (safely stored)
+			expectedStatus: 204,            // Based on test results, it's being accepted (safely stored)
 			description:    "SQL injection in email field should be safely handled",
 		},
 		{
@@ -54,7 +54,7 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 				"name": "'; UPDATE user_roles SET role_id='e0000000-0000-0000-0000-000000000001' WHERE user_id='b0000000-0000-0000-0000-000000000002'; --",
 			},
 			userKey:        "enterprise_1", // Admin user for tenant operations
-			expectedStatus: 200,            // Should be safely stored as text
+			expectedStatus: 204,            // Should be safely stored as text
 			description:    "SQL injection in tenant name should be safely stored as text",
 		},
 		{
@@ -64,7 +64,7 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 				"name": "Valid User Name",
 			},
 			userKey:        "enterprise_3", // Use different user
-			expectedStatus: 200,            // Should succeed
+			expectedStatus: 204,            // Should succeed
 			description:    "Legitimate name change operation should work correctly",
 		},
 		{
@@ -74,7 +74,7 @@ func TestSecuritySQLInjectionProtection_Integration(t *testing.T) {
 				"new_email": "newemail@example.com",
 			},
 			userKey:        "enterprise_4", // Use different user to avoid rate limiting
-			expectedStatus: 200,            // Should succeed
+			expectedStatus: 204,            // Should succeed
 			description:    "Legitimate email change operation should work correctly",
 		},
 	}
@@ -166,7 +166,7 @@ func TestSecurityXSSProtection_Integration(t *testing.T) {
 		assert.NoError(t, err)
 		defer resp.Body.Close()
 
-		assert.Equal(t, 200, resp.StatusCode, "Legitimate name change should succeed")
+		assert.Equal(t, 204, resp.StatusCode, "Legitimate name change should succeed")
 	})
 
 	// Then test XSS protection
@@ -193,7 +193,7 @@ func TestSecurityXSSProtection_Integration(t *testing.T) {
 
 			// XSS payloads should be safely stored as text (most systems allow special chars in names)
 			// The key is that they're stored as text, not executed as scripts
-			assert.Equal(t, 200, resp.StatusCode, "XSS payload should be safely stored as text, got %d", resp.StatusCode)
+			assert.Equal(t, 204, resp.StatusCode, "XSS payload should be safely stored as text, got %d", resp.StatusCode)
 
 			// Verify the payload was safely stored (not executed)
 			var storedName string
@@ -224,7 +224,7 @@ func TestSecurityXSSProtection_Integration(t *testing.T) {
 			defer resp.Body.Close()
 
 			// XSS payloads in tenant names should also be safely stored as text
-			assert.Equal(t, 200, resp.StatusCode, "XSS payload in tenant name should be safely stored as text, got %d", resp.StatusCode)
+			assert.Equal(t, 204, resp.StatusCode, "XSS payload in tenant name should be safely stored as text, got %d", resp.StatusCode)
 		})
 	}
 }
@@ -323,7 +323,7 @@ func TestSecurityJWTSecurity_Integration(t *testing.T) {
 		assert.NoError(t, err)
 		defer resp.Body.Close()
 
-		assert.Equal(t, 200, resp.StatusCode, "Valid JWT should allow legitimate operations")
+		assert.Equal(t, 204, resp.StatusCode, "Valid JWT should allow legitimate operations")
 	})
 
 	tests := []struct {

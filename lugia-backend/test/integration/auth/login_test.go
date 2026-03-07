@@ -33,7 +33,7 @@ func TestLogin(t *testing.T) {
 				Email:    testUser.Email,
 				Password: testUser.PlainTextPassword,
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name: "wrong password",
@@ -87,7 +87,7 @@ func TestLogin(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
-			if tt.expectedStatus == http.StatusOK {
+			if tt.expectedStatus == http.StatusNoContent {
 
 				cookies := resp.Cookies()
 				assert.NotEmpty(t, cookies, "Expected cookies in response for successful login")
@@ -146,7 +146,7 @@ func TestLoginLogoutAndVerifyMeEndpoint(t *testing.T) {
 			t.Logf("Error closing loginResp body: %v", err)
 		}
 	}()
-	assert.Equal(t, http.StatusOK, loginResp.StatusCode, "Login request failed")
+	assert.Equal(t, http.StatusNoContent, loginResp.StatusCode, "Login request failed")
 
 	loginCookies := loginResp.Cookies()
 	assert.NotEmpty(t, loginCookies, "Expected cookies from successful login")
@@ -182,7 +182,7 @@ func TestLoginLogoutAndVerifyMeEndpoint(t *testing.T) {
 		}
 	}()
 
-	assert.Equal(t, http.StatusOK, logoutResp.StatusCode, "Logout request should return 200 OK")
+	assert.Equal(t, http.StatusNoContent, logoutResp.StatusCode, "Logout request should return 204 No Content")
 
 	var accessTokenCleared, refreshTokenCleared bool
 	for _, cookie := range logoutResp.Cookies() {
@@ -415,9 +415,9 @@ func TestLoginInvalidRequestBody_Integration(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "empty JSON object returns 400",
+			name:           "empty JSON object returns 422",
 			body:           `{}`,
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:           "empty string body returns 400",
@@ -483,7 +483,7 @@ func TestLoginRefreshTokenCreation_Integration(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
 
 	// Count refresh tokens after login - should have at least one
 	var afterCount int
@@ -576,7 +576,7 @@ func TestLoginMultipleTenants_Integration(t *testing.T) {
 			require.NoError(t, err)
 			defer resp.Body.Close()
 
-			assert.Equal(t, http.StatusOK, resp.StatusCode, "User from %s should be able to login", tt.loginUserKey)
+			assert.Equal(t, http.StatusNoContent, resp.StatusCode, "User from %s should be able to login", tt.loginUserKey)
 
 			// Verify cookies are set with correct security attributes
 			var accessTokenFound, refreshTokenFound bool

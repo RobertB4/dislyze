@@ -55,6 +55,14 @@
 - Reason: they handle non-JSON payloads (SAML form-encoded POST, XML metadata) that don't fit huma's JSON-centric model
 - This is intentional, not tech debt
 
+### SkipValidateBody workarounds
+Two giratina operations use `SkipValidateBody: true` because huma's JSON schema marks all non-pointer, non-omitempty struct fields as required — rejecting valid requests:
+
+- **`update_tenant.go` — `UpdateTenantOp`**: `UpdateTenantRequestBody` embeds `authz.EnterpriseFeatures` (shared jirachi type). Huma requires `ip_whitelist`, `sso`, and all their sub-fields. Fixing requires adding `omitempty`/pointers to `authz.EnterpriseFeatures` in jirachi — large blast radius (15+ locations across both backends + frontends access nested fields like `.IPWhitelist.Active`).
+- **`generate_tenant_invitation_token.go` — `GenerateTokenOp`**: `company_name` and `user_name` are optional but huma marks them required. Fix: add `omitempty` to these fields (request-only type, small blast radius — do this first).
+
+Fix these as part of the "Unify validation on huma" effort below, which already touches the same struct definitions.
+
 ### Unify validation on huma
 
 ### Problem

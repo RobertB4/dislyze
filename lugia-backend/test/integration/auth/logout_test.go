@@ -39,7 +39,7 @@ func TestLogout(t *testing.T) {
 			t.Logf("Error closing loginResp body: %v", err)
 		}
 	}()
-	assert.Equal(t, http.StatusOK, loginResp.StatusCode)
+	assert.Equal(t, http.StatusNoContent, loginResp.StatusCode)
 
 	loginCookies := loginResp.Cookies()
 	assert.NotEmpty(t, loginCookies, "Expected cookies from login")
@@ -59,7 +59,7 @@ func TestLogout(t *testing.T) {
 		}
 	}()
 
-	assert.Equal(t, http.StatusOK, logoutResp.StatusCode, "Logout should return 200 OK")
+	assert.Equal(t, http.StatusNoContent, logoutResp.StatusCode, "Logout should return 204 No Content")
 
 	// Verify that the logout response clears the cookies
 	var accessTokenCleared, refreshTokenCleared bool
@@ -99,7 +99,7 @@ func TestLogoutWithoutCookies(t *testing.T) {
 	}()
 
 	// Logout should still work even without cookies (idempotent)
-	assert.Equal(t, http.StatusOK, logoutResp.StatusCode, "Logout should return 200 OK even without cookies")
+	assert.Equal(t, http.StatusNoContent, logoutResp.StatusCode, "Logout should return 204 No Content even without cookies")
 
 	// Should still send cookie clearing instructions
 	var accessTokenCleared, refreshTokenCleared bool

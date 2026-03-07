@@ -36,7 +36,7 @@ func TestChangeEmail_Integration(t *testing.T) {
 			requestBody: ChangeEmailRequest{
 				NewEmail: "newemail@example.com",
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 				// Verify token was created in database
 				ctx := context.Background()
@@ -179,7 +179,7 @@ func TestChangeEmailRateLimit_Integration(t *testing.T) {
 
 		if i == 0 {
 			// First request should succeed
-			assert.Equal(t, http.StatusOK, resp.StatusCode, "First request should succeed")
+			assert.Equal(t, http.StatusNoContent, resp.StatusCode, "First request should succeed")
 		} else {
 			// Subsequent requests should be rate limited
 			assert.Equal(t, http.StatusTooManyRequests, resp.StatusCode,

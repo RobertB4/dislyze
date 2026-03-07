@@ -56,10 +56,10 @@ func TestUpdateMe_Integration(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "missing name field gets 400",
+			name:           "missing name field returns 422",
 			loginUserKey:   "enterprise_1",
 			customJSON:     `{}`,
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:           "name exceeding 255 characters gets 500",
@@ -73,37 +73,37 @@ func TestUpdateMe_Integration(t *testing.T) {
 			name:           "enterprise_1 successfully updates name",
 			loginUserKey:   "enterprise_1",
 			requestBody:    users.UpdateMeRequestBody{Name: "Updated Enterprise Admin"},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:           "smb_1 successfully updates name",
 			loginUserKey:   "smb_1",
 			requestBody:    users.UpdateMeRequestBody{Name: "Updated SMB Admin"},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:           "name with leading/trailing whitespace is trimmed",
 			loginUserKey:   "enterprise_2",
 			requestBody:    users.UpdateMeRequestBody{Name: "  Trimmed Name  "},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:           "name with special characters works",
 			loginUserKey:   "enterprise_2",
 			requestBody:    users.UpdateMeRequestBody{Name: "Jean-Claude O'Connor"},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:           "name with unicode characters works",
 			loginUserKey:   "enterprise_2",
 			requestBody:    users.UpdateMeRequestBody{Name: "田中太郎 🎉 Émilie"},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:           "maximum length name (255 chars) works",
 			loginUserKey:   "enterprise_2",
 			requestBody:    users.UpdateMeRequestBody{Name: strings.Repeat("a", 255)}, // Exactly 255 chars
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 	}
 

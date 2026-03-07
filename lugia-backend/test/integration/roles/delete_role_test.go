@@ -154,7 +154,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 				return createTestRoleForDeletion(t, pool, "Deletable Role", "Can be deleted",
 					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 			verifyDeleted:  true,
 		},
 		{
@@ -167,7 +167,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 						"db994eda-6ff7-4ae5-a675-3abe735ce9cc", // users.edit
 					}, "11111111-1111-1111-1111-111111111111")
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 			verifyDeleted:  true,
 		},
 		{
@@ -177,7 +177,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 				return createTestRoleForDeletion(t, pool, "Role No Permissions", "No permissions assigned",
 					[]string{}, "11111111-1111-1111-1111-111111111111")
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 			verifyDeleted:  true,
 		},
 
@@ -189,7 +189,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 				return createTestRoleForDeletion(t, pool, "To Be Verified Gone", "This role will be verified as deleted",
 					[]string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, "11111111-1111-1111-1111-111111111111")
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 			verifyDeleted:  true,
 		},
 	}
@@ -236,7 +236,7 @@ func TestDeleteRole_Integration(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Test: %s", tt.name)
 
 			// Verify role is actually deleted for success cases
-			if tt.verifyDeleted && resp.StatusCode == http.StatusOK {
+			if tt.verifyDeleted && resp.StatusCode == http.StatusNoContent {
 				verifyRoleDeleted(t, pool, roleID, "11111111-1111-1111-1111-111111111111")
 			}
 		})
@@ -277,7 +277,7 @@ func TestDeleteRole_VerifyGoneAfterDeletion(t *testing.T) {
 		}
 	}()
 
-	assert.Equal(t, http.StatusOK, deleteResp.StatusCode)
+	assert.Equal(t, http.StatusNoContent, deleteResp.StatusCode)
 
 	// Try to delete the same role again - should return 404
 	deleteReq2, err := http.NewRequest("POST", deleteURL, nil)

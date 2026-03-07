@@ -38,7 +38,7 @@ func TestSignup(t *testing.T) {
 				Password:        "password123",
 				PasswordConfirm: "password123",
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name: "missing company name",
@@ -123,7 +123,7 @@ func TestSignup(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
-			if tt.expectedStatus == http.StatusOK {
+			if tt.expectedStatus == http.StatusNoContent {
 
 				cookies := resp.Cookies()
 				assert.NotEmpty(t, cookies, "Expected cookies in response for successful signup")
@@ -187,7 +187,7 @@ func TestSignupDuplicateEmail(t *testing.T) {
 		}
 	}()
 
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 
 	cookies := resp.Cookies()
 	assert.NotEmpty(t, cookies, "Expected cookies for initial successful signup")

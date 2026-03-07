@@ -550,7 +550,7 @@ test.describe("Settings - Users Page", () => {
 
 			// Submit the form and wait for API response
 			const responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/api/users/invite") && response.status() === 200
+				(response) => response.url().includes("/api/users/invite") && response.status() === 204
 			);
 
 			await page.getByTestId("add-user-slideover-primary-button").click();
@@ -655,7 +655,7 @@ test.describe("Settings - Users Page", () => {
 			const responsePromise = page.waitForResponse(
 				(response) =>
 					response.url().includes(`/api/users/${pendingUserId}/resend-invite`) &&
-					response.status() === 200
+					response.status() === 204
 			);
 
 			// Click the resend invitation button
@@ -752,7 +752,7 @@ test.describe("Settings - Users Page", () => {
 			const editUserResponse = page.waitForResponse(
 				(response) =>
 					response.url().includes(`/api/users/${TestUsersData.enterprise_2.userID}/roles`) &&
-					response.status() === 200
+					response.status() === 204
 			);
 
 			// Submit the form by clicking the save button
@@ -810,7 +810,7 @@ test.describe("Settings - Users Page", () => {
 			const editUserResponse = page.waitForResponse(
 				(response) =>
 					response.url().includes(`/api/users/${TestUsersData.enterprise_2.userID}/roles`) &&
-					response.status() === 200
+					response.status() === 204
 			);
 
 			// Submit the form by clicking the save button
@@ -934,7 +934,7 @@ test.describe("Settings - Users Page", () => {
 
 			// Submit the form and wait for API response
 			const responsePromise = page.waitForResponse(
-				(response) => response.url().includes("/api/users/invite") && response.status() === 200
+				(response) => response.url().includes("/api/users/invite") && response.status() === 204
 			);
 
 			await page.getByTestId("add-user-slideover-primary-button").click();
@@ -1009,7 +1009,7 @@ test.describe("Settings - Users Page", () => {
 			const editUserResponse = page.waitForResponse(
 				(response) =>
 					response.url().includes(`/api/users/${TestUsersData.enterprise_16.userID}/roles`) &&
-					response.status() === 200
+					response.status() === 204
 			);
 
 			await page.getByTestId("edit-user-slideover-primary-button").click();
@@ -1070,7 +1070,7 @@ test.describe("Settings - Users Page", () => {
 			const editUserResponse = page.waitForResponse(
 				(response) =>
 					response.url().includes(`/api/users/${TestUsersData.enterprise_16.userID}/roles`) &&
-					response.status() === 200
+					response.status() === 204
 			);
 
 			await page.getByTestId("edit-user-slideover-primary-button").click();
@@ -1237,7 +1237,7 @@ test.describe("Settings - Users Page", () => {
 			const responsePromise = page.waitForResponse(
 				(response) =>
 					response.url().includes(`/api/users/${TestUsersData.enterprise_2.userID}`) &&
-					response.status() === 200
+					response.status() === 204
 			);
 
 			// Submit the form

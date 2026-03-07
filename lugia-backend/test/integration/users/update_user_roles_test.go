@@ -156,7 +156,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2",
 			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
 		},
@@ -165,7 +165,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2", // Was updated to admin in previous test
 			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
 		},
@@ -174,7 +174,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2",
 			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
 		},
@@ -183,7 +183,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2", // Should have both roles from previous test
 			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
 		},
@@ -192,7 +192,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2", // Should have both roles, remove one
 			requestBody:    users.UpdateUserRolesRequestBody{RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 			validateResponse: func(t *testing.T, resp *http.Response) {
 			},
 		},
@@ -268,7 +268,7 @@ func TestUpdateUserRoles_Integration(t *testing.T) {
 			}
 
 			// For successful updates, verify the roles were actually changed in database
-			if tt.expectedStatus == http.StatusOK && tt.targetUserKey != "" {
+			if tt.expectedStatus == http.StatusNoContent && tt.targetUserKey != "" {
 				ctx := context.Background()
 
 				// Query the user's current role IDs from user_roles table
