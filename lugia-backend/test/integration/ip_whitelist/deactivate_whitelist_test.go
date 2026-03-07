@@ -101,7 +101,7 @@ func TestDeactivateWhitelistIntegration(t *testing.T) {
 				})
 				return "enterprise_1", true
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name: "test_deactivate_when_inactive_idempotent",
@@ -118,7 +118,7 @@ func TestDeactivateWhitelistIntegration(t *testing.T) {
 				})
 				return "enterprise_1", true
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name: "test_tenant_isolation",
@@ -146,7 +146,7 @@ func TestDeactivateWhitelistIntegration(t *testing.T) {
 				})
 				return "enterprise_1", true
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 			validateFunc: func(t *testing.T, pool *pgxpool.Pool) {
 				// Verify enterprise tenant is deactivated
 				var enterpriseFeatures map[string]interface{}

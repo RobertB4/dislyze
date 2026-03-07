@@ -7,7 +7,7 @@
 	import { safeGoto } from "@dislyze/zoroark/routing";
 	import { createForm } from "felte";
 	import type { PageData } from "./$types";
-	import { mutationFetch } from "$lugia/lib/fetch";
+	import { createMutationClient } from "$lugia/lib/api";
 	import { resolve } from "$app/paths";
 
 	let { data: pageData }: { data: PageData } = $props();
@@ -55,21 +55,18 @@
 		},
 		onSubmit: async (values) => {
 			try {
-				const encodedToken = encodeURIComponent(pageData.token);
-				const { success } = await mutationFetch(`/api/auth/tenant-signup?token=${encodedToken}`, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json"
-					},
-					body: JSON.stringify({
+				const api = createMutationClient();
+				const { error } = await api.POST("/auth/tenant-signup", {
+					params: { query: { token: pageData.token } },
+					body: {
 						password: values.password,
 						password_confirm: values.password_confirm,
 						company_name: values.company_name,
 						user_name: values.user_name
-					})
+					}
 				});
 
-				if (success) {
+				if (!error) {
 					if (pageData.ssoEnabled) {
 						const response = await fetch(`/api/auth/sso/login`, {
 							method: "POST",

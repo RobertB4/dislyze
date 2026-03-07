@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sendgrid/sendgrid-go"
@@ -20,36 +21,46 @@ import (
 	"dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
 	"dislyze/jirachi/sendgridlib"
+	"lugia/lib/humautil"
+	"lugia/lib/middleware"
 	"lugia/queries"
 )
 
-func (h *UsersHandler) ResendInvite(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+var ResendInviteOp = huma.Operation{
+	OperationID: "resend-invite",
+	Method:      http.MethodPost,
+	Path:        "/users/{userID}/resend-invite",
+}
 
-	targetUserIDStr := r.PathValue("userID")
+type ResendInviteInput struct {
+	UserID string `path:"userID"`
+}
 
-	if !h.resendInviteRateLimiter.Allow(targetUserIDStr, r) {
-		appErr := errlib.New(fmt.Errorf("rate limit exceeded for user %s resend invite", targetUserIDStr), http.StatusTooManyRequests, "招待メールの再送信は、ユーザーごとに5分間に1回のみ可能です。しばらくしてから再度お試しください。")
-		responder.RespondWithError(w, appErr)
-		return
+func (h *UsersHandler) ResendInvite(ctx context.Context, input *ResendInviteInput) (*struct{}, error) {
+	r := middleware.GetHTTPRequest(ctx)
+
+	if !h.resendInviteRateLimiter.Allow(input.UserID, r) {
+		return nil, humautil.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for resend invite"), http.StatusTooManyRequests, "招待メールの再送信は、ユーザーごとに5分間に1回のみ可能です。しばらくしてから再度お試しください。")
 	}
 
 	var targetUserID pgtype.UUID
-	if err := targetUserID.Scan(targetUserIDStr); err != nil {
-		appErr := errlib.New(fmt.Errorf("ResendInvite: invalid target userID format '%s': %w", targetUserIDStr, err), http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+	if err := targetUserID.Scan(input.UserID); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("invalid user ID format for resend invite: %w", err), http.StatusBadRequest)
 	}
 
 	err := h.resendInvite(ctx, targetUserID)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
-
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *UsersHandler) resendInvite(ctx context.Context, targetUserID pgtype.UUID) error {

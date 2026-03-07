@@ -1,24 +1,16 @@
 // Feature doc: docs/features/user-management.md
 import type { PageLoad } from "./$types";
-import { loadFunctionFetch } from "$giratina/lib/fetch";
-
-export interface User {
-	id: string;
-	name: string;
-	email: string;
-	status: string;
-}
-
-export interface GetUsersByTenantResponse {
-	users: User[];
-}
+import { createLoadClient } from "$giratina/lib/api";
 
 export function load({ fetch, params }: Parameters<PageLoad>[0]) {
 	const { tenantId } = params;
+	const api = createLoadClient(fetch);
 
-	const usersPromise = loadFunctionFetch(fetch, `/api/tenants/${tenantId}/users`)
-		.then((response) => response.json())
-		.then((data: GetUsersByTenantResponse) => data);
+	const usersPromise = api
+		.GET("/tenants/{tenantID}/users", {
+			params: { path: { tenantID: tenantId } }
+		})
+		.then(({ data }) => data!.users ?? []);
 
 	return {
 		usersPromise,

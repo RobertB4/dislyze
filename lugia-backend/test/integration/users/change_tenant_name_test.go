@@ -39,10 +39,10 @@ func TestChangeTenantName_Integration(t *testing.T) {
 			expectedStatus: http.StatusForbidden,
 		},
 		{
-			name:           "admin role gets 200 (authorized)",
+			name:           "admin role gets 204 (authorized)",
 			loginUserKey:   "enterprise_1",
 			requestBody:    map[string]string{"name": "New Tenant Name"},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 
 		// Request Validation
@@ -59,10 +59,10 @@ func TestChangeTenantName_Integration(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "missing name field returns 400",
+			name:           "missing name field returns 422",
 			loginUserKey:   "enterprise_1",
 			requestBody:    map[string]string{},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:           "empty name string returns 400",
@@ -82,7 +82,7 @@ func TestChangeTenantName_Integration(t *testing.T) {
 			name:           "successful update with no response body",
 			loginUserKey:   "enterprise_1",
 			requestBody:    map[string]string{"name": "Updated Company Name"},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:           "name too long (>255 chars) returns 500",

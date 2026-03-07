@@ -42,7 +42,7 @@ func TestResetPassword(t *testing.T) {
 				t.Logf("Error closing fpResp body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusOK, fpResp.StatusCode, "Forgot password request did not return OK")
+		assert.Equal(t, http.StatusNoContent, fpResp.StatusCode, "Forgot password request did not return 204 No Content")
 
 		emailContent, err := setup.GetLatestEmailFromSendgridMock(t, userEmail)
 		assert.NoError(t, err, "Failed to get latest email from Sendgrid mock")
@@ -78,7 +78,7 @@ func TestResetPassword(t *testing.T) {
 			}
 		}()
 
-		assert.Equal(t, http.StatusOK, resetResp.StatusCode, "Reset password should succeed")
+		assert.Equal(t, http.StatusNoContent, resetResp.StatusCode, "Reset password should succeed")
 
 		oldLoginResp := setup.AttemptLogin(t, testUser.Email, originalPassword)
 		defer func() {
@@ -94,7 +94,7 @@ func TestResetPassword(t *testing.T) {
 				t.Logf("Error closing newLoginResp body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusOK, newLoginResp.StatusCode, "Login with new password should succeed after reset")
+		assert.Equal(t, http.StatusNoContent, newLoginResp.StatusCode, "Login with new password should succeed after reset")
 
 		hash := sha256.Sum256([]byte(rawToken))
 		hashedTokenStr := hex.EncodeToString(hash[:])
@@ -144,7 +144,7 @@ func TestResetPassword(t *testing.T) {
 				t.Logf("Error closing oldLoginResp body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode, "Login with old password should still succeed")
+		assert.Equal(t, http.StatusNoContent, oldLoginResp.StatusCode, "Login with old password should still succeed")
 	})
 
 	t.Run("_ExpiredToken", func(t *testing.T) {
@@ -191,7 +191,7 @@ func TestResetPassword(t *testing.T) {
 				t.Logf("Error closing oldLoginResp body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
+		assert.Equal(t, http.StatusNoContent, oldLoginResp.StatusCode)
 	})
 
 	t.Run("_AlreadyUsedToken", func(t *testing.T) {
@@ -238,7 +238,7 @@ func TestResetPassword(t *testing.T) {
 				t.Logf("Error closing oldLoginResp body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
+		assert.Equal(t, http.StatusNoContent, oldLoginResp.StatusCode)
 	})
 
 	t.Run("_EmptyToken", func(t *testing.T) {
@@ -279,7 +279,7 @@ func TestResetPassword(t *testing.T) {
 				t.Logf("Error closing oldLoginResp body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
+		assert.Equal(t, http.StatusNoContent, oldLoginResp.StatusCode)
 	})
 
 	t.Run("_MissingPassword", func(t *testing.T) {
@@ -312,7 +312,7 @@ func TestResetPassword(t *testing.T) {
 				t.Logf("Error closing oldLoginResp body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
+		assert.Equal(t, http.StatusNoContent, oldLoginResp.StatusCode)
 
 		hash := sha256.Sum256([]byte(rawToken))
 		hashedTokenStr := hex.EncodeToString(hash[:])
@@ -361,7 +361,7 @@ func TestResetPassword(t *testing.T) {
 				t.Logf("Error closing oldLoginResp body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
+		assert.Equal(t, http.StatusNoContent, oldLoginResp.StatusCode)
 
 		hash := sha256.Sum256([]byte(rawToken))
 		hashedTokenStr := hex.EncodeToString(hash[:])
@@ -417,7 +417,7 @@ func TestResetPassword(t *testing.T) {
 				t.Logf("Error closing oldLoginResp body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusOK, oldLoginResp.StatusCode)
+		assert.Equal(t, http.StatusNoContent, oldLoginResp.StatusCode)
 
 		hash := sha256.Sum256([]byte(rawToken))
 		hashedTokenStr := hex.EncodeToString(hash[:])

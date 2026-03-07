@@ -133,7 +133,7 @@ func LoginUserAndGetTokens(t *testing.T, email string, password string) (string,
 		}
 	}()
 
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "Login request failed for user %s. Status: %s", email, resp.Status)
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode, "Login request failed for user %s. Status: %s", email, resp.Status)
 
 	var accessTokenValue string
 	var refreshTokenValue string

@@ -2,19 +2,31 @@
 package ip_whitelist
 
 import (
-	"encoding/json"
+	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
-	libctx "dislyze/jirachi/ctx"
-	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
-	"lugia/queries"
-
-	"github.com/go-chi/chi/v5"
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+
+	libctx "dislyze/jirachi/ctx"
+	"dislyze/jirachi/errlib"
+	"lugia/lib/humautil"
+	"lugia/queries"
 )
+
+var UpdateIPLabelOp = huma.Operation{
+	OperationID: "update-ip-label",
+	Method:      http.MethodPost,
+	Path:        "/ip-whitelist/{id}/label/update",
+}
+
+type UpdateIPLabelInput struct {
+	ID   string `path:"id"`
+	Body UpdateLabelRequest
+}
 
 type UpdateLabelRequest struct {
 	Label *string `json:"label"`
@@ -24,7 +36,7 @@ func (r *UpdateLabelRequest) Validate() error {
 	if r.Label != nil {
 		trimmed := strings.TrimSpace(*r.Label)
 		r.Label = &trimmed
-		
+
 		if len(*r.Label) > 255 {
 			return errlib.New(nil, http.StatusBadRequest, "")
 		}
@@ -33,35 +45,36 @@ func (r *UpdateLabelRequest) Validate() error {
 	return nil
 }
 
-func (h *IPWhitelistHandler) UpdateIPLabel(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	tenantID := libctx.GetTenantID(ctx)
-
-	idStr := chi.URLParam(r, "id")
-	if idStr == "" {
-		appErr := errlib.New(nil, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
+func (h *IPWhitelistHandler) UpdateIPLabel(ctx context.Context, input *UpdateIPLabelInput) (*struct{}, error) {
 	var id pgtype.UUID
-	if err := id.Scan(idStr); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+	if err := id.Scan(input.ID); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("invalid IP whitelist rule ID format: %w", err), http.StatusBadRequest)
 	}
 
-	var req UpdateLabelRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+	if err := input.Body.Validate(); err != nil {
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusBadRequest)
 	}
 
-	if err := req.Validate(); err != nil {
-		responder.RespondWithError(w, err)
-		return
+	err := h.updateIPLabel(ctx, id, input.Body)
+	if err != nil {
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
+	return nil, nil
+}
+
+func (h *IPWhitelistHandler) updateIPLabel(ctx context.Context, id pgtype.UUID, req UpdateLabelRequest) error {
+	tenantID := libctx.GetTenantID(ctx)
 
 	_, err := h.q.GetIPWhitelistRuleByID(ctx, &queries.GetIPWhitelistRuleByIDParams{
 		ID:       id,
@@ -69,13 +82,9 @@ func (h *IPWhitelistHandler) UpdateIPLabel(w http.ResponseWriter, r *http.Reques
 	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			appErr := errlib.New(err, http.StatusNotFound, "")
-			responder.RespondWithError(w, appErr)
-			return
+			return errlib.New(err, http.StatusNotFound, "")
 		}
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(err, http.StatusInternalServerError, "")
 	}
 
 	var label pgtype.Text
@@ -89,10 +98,8 @@ func (h *IPWhitelistHandler) UpdateIPLabel(w http.ResponseWriter, r *http.Reques
 		TenantID: tenantID,
 	})
 	if err != nil {
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(err, http.StatusInternalServerError, "")
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil
 }

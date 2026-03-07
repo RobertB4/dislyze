@@ -4,20 +4,38 @@ package auth
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
-	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
-
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
+
+	"dislyze/jirachi/errlib"
+	"lugia/lib/humautil"
 )
+
+var VerifyResetTokenOp = huma.Operation{
+	OperationID: "verify-reset-token",
+	Method:      http.MethodPost,
+	Path:        "/auth/verify-reset-token",
+}
+
+type VerifyResetTokenInput struct {
+	Body VerifyResetTokenRequestBody
+}
 
 type VerifyResetTokenRequestBody struct {
 	Token string `json:"token"`
+}
+
+type VerifyResetTokenResponse struct {
+	Email string `json:"email"`
+}
+
+type VerifyResetTokenOutput struct {
+	Body VerifyResetTokenResponse
 }
 
 func (r *VerifyResetTokenRequestBody) Validate() error {
@@ -28,36 +46,24 @@ func (r *VerifyResetTokenRequestBody) Validate() error {
 	return nil
 }
 
-func (h *AuthHandler) VerifyResetToken(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var req VerifyResetTokenRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		internalErr := errlib.New(err, http.StatusBadRequest, "Failed to decode verify reset token request body")
-		errlib.LogError(internalErr)
-		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
-		return
-	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			errlib.LogError(fmt.Errorf("VerifyResetToken: failed to close request body: %w", err))
-		}
-	}()
-
-	if err := req.Validate(); err != nil {
-		internalErr := errlib.New(err, http.StatusBadRequest, "Verify reset token validation failed")
-		errlib.LogError(internalErr)
-		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
-		return
+func (h *AuthHandler) VerifyResetToken(ctx context.Context, input *VerifyResetTokenInput) (*VerifyResetTokenOutput, error) {
+	if err := input.Body.Validate(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("verify reset token validation failed: %w", err), http.StatusBadRequest)
 	}
 
-	email, err := h.verifyResetToken(ctx, req)
+	email, err := h.verifyResetToken(ctx, input.Body)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
 
-	responder.RespondWithJSON(w, http.StatusOK, map[string]string{"email": email})
+	return &VerifyResetTokenOutput{Body: VerifyResetTokenResponse{Email: email}}, nil
 }
 
 func (h *AuthHandler) verifyResetToken(ctx context.Context, req VerifyResetTokenRequestBody) (string, error) {

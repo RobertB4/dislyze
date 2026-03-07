@@ -3,23 +3,33 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/jwt"
-	"dislyze/jirachi/responder"
 	"lugia/lib/authz"
+	"lugia/lib/humautil"
+	"lugia/lib/middleware"
 	"lugia/queries"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 )
+
+var SignupOp = huma.Operation{
+	OperationID: "signup",
+	Method:      http.MethodPost,
+	Path:        "/auth/signup",
+}
+
+type SignupInput struct {
+	Body SignupRequestBody
+}
 
 type SignupRequestBody struct {
 	CompanyName     string `json:"company_name"`
@@ -57,43 +67,29 @@ func (r *SignupRequestBody) Validate() error {
 	return nil
 }
 
-func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Signup(ctx context.Context, input *SignupInput) (*struct{}, error) {
+	r := middleware.GetHTTPRequest(ctx)
+	w := middleware.GetResponseWriter(ctx)
+
 	if !h.rateLimiter.Allow(r.RemoteAddr, r) {
-		appErr := errlib.New(fmt.Errorf("rate limit exceeded for signup"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for signup"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
 	}
 
-	var req SignupRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "Invalid request body")
-		responder.RespondWithError(w, appErr)
-		return
+	if err := input.Body.Validate(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("signup validation failed: %w", err), http.StatusBadRequest)
 	}
 
-	if err := req.Validate(); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	exists, err := h.queries.ExistsUserWithEmail(r.Context(), req.Email)
+	exists, err := h.queries.ExistsUserWithEmail(ctx, input.Body.Email)
 	if err != nil {
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
 	if exists {
-		appErr := errlib.New(fmt.Errorf("user already exists with this email"), http.StatusBadRequest, "このメールアドレスは既に使用されています。")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewErrorWithDetail(fmt.Errorf("signup attempted with existing email"), http.StatusBadRequest, "このメールアドレスは既に使用されています。")
 	}
 
-	tokenPair, err := h.signup(r.Context(), &req, r)
+	tokenPair, err := h.signup(ctx, &input.Body, r)
 	if err != nil {
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -116,7 +112,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   7 * 24 * 60 * 60, // 7 days
 	})
 
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *AuthHandler) signup(ctx context.Context, req *SignupRequestBody, r *http.Request) (*jwt.TokenPair, error) {

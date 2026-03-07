@@ -6,7 +6,7 @@
 	import { safeGoto } from "@dislyze/zoroark/routing";
 	import { createForm } from "felte";
 	import type { PageData } from "./$types";
-	import { mutationFetch } from "$lugia/lib/fetch";
+	import { createMutationClient } from "$lugia/lib/api";
 	import { resolve } from "$app/paths";
 
 	let { data: pageData }: { data: PageData } = $props();
@@ -37,19 +37,16 @@
 			return errs;
 		},
 		onSubmit: async (values) => {
-			const { success } = await mutationFetch(`/api/auth/accept-invite`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					token: pageData.token,
+			const api = createMutationClient();
+			const { error } = await api.POST("/auth/accept-invite", {
+				body: {
+					token: pageData.token!,
 					password: values.password,
 					password_confirm: values.password_confirm
-				})
+				}
 			});
 
-			if (success) {
+			if (!error) {
 				toast.show("招待が承認されました。", "success");
 				safeGoto("/");
 			}

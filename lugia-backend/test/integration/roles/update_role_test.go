@@ -226,7 +226,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 				Description:   "Cross tenant name should be allowed",
 				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"},
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 
 		// Edge Cases
@@ -272,7 +272,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 				Description:   "Updated Description",
 				PermissionIDs: []string{"db994eda-6ff7-4ae5-a675-3abe735ce9cc"},
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:         "success: update role with empty permissions array",
@@ -286,7 +286,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 				Description:   "Now has no permissions",
 				PermissionIDs: []string{},
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:         "success: update role with same name (no-op)",
@@ -300,7 +300,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 				Description:   "Updated Description",
 				PermissionIDs: []string{"db994eda-6ff7-4ae5-a675-3abe735ce9cc"},
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:         "success: update only description keeping same name",
@@ -314,7 +314,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 				Description:   "New Description",
 				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"},
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:         "success: update role with empty description",
@@ -328,7 +328,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 				Description:   "",
 				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"},
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 
 		// Request Format Tests
@@ -395,7 +395,7 @@ func TestUpdateRole_Integration(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Response status should match expected")
 
 			// For successful updates, verify the response and check data integrity
-			if resp.StatusCode == http.StatusOK {
+			if resp.StatusCode == http.StatusNoContent {
 				// Additional verification can be added here
 				// For example, making a GET request to verify the role was updated correctly
 			}

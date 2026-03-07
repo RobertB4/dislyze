@@ -13,39 +13,30 @@
 	import DeactivationWarningModal from "$lugia/routes/settings/ip-whitelist/DeactivationWarningModal.svelte";
 	import type { PageData } from "./$types";
 	import { hasPermission } from "$lugia/lib/authz";
-	import { mutationFetch, handleLoadError } from "$lugia/lib/fetch";
+	import { handleLoadError } from "$lugia/lib/fetch";
+	import { createMutationClient } from "$lugia/lib/api";
 	import { invalidate } from "$app/navigation";
 	import { forceUpdateMeCache } from "@dislyze/zoroark/meCache";
-	import type { IPWhitelistRule } from "$lugia/routes/settings/ip-whitelist/+page";
+	import type { IpWhitelistRule } from "$lugia/schema";
 
 	let { data: pageData }: { data: PageData } = $props();
 
 	let isAddIpSlideoverOpen = $state(false);
 	let isActivationModalOpen = $state(false);
 	let isDeactivationModalOpen = $state(false);
-	let selectedWhitelistRule = $state<IPWhitelistRule | null>(null);
-	let whitelistRuleToDelete = $state<IPWhitelistRule | null>(null);
+	let selectedWhitelistRule = $state<IpWhitelistRule | null>(null);
+	let whitelistRuleToDelete = $state<IpWhitelistRule | null>(null);
 	let warningUserIP = $state<string | null>(null);
 
 	async function handleActivate() {
-		const { success, response } = await mutationFetch(`/api/ip-whitelist/activate`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify({ force: false })
+		const api = createMutationClient();
+		const { data, error } = await api.POST("/ip-whitelist/activate", {
+			body: { force: false }
 		});
 
-		if (success) {
-			const contentType = response.headers.get("content-type");
-			if (contentType && contentType.includes("application/json")) {
-				const responseData = await response.json();
-
-				if (!responseData.user_ip) {
-					throw new Error(`Expected responseData.user_ip to be defined`);
-				}
-
-				warningUserIP = responseData.user_ip;
+		if (!error) {
+			if (data?.user_ip) {
+				warningUserIP = data.user_ip;
 				isActivationModalOpen = true;
 			} else {
 				// Empty response - activation successful without warning

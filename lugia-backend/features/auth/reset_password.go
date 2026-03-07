@@ -5,20 +5,29 @@ import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
 	"lugia/queries"
-
-	"github.com/jackc/pgx/v5"
 )
+
+var ResetPasswordOp = huma.Operation{
+	OperationID: "reset-password",
+	Method:      http.MethodPost,
+	Path:        "/auth/reset-password",
+}
+
+type ResetPasswordInput struct {
+	Body ResetPasswordRequestBody
+}
 
 type ResetPasswordRequestBody struct {
 	Token           string `json:"token"`
@@ -46,36 +55,23 @@ func (r *ResetPasswordRequestBody) Validate() error {
 	return nil
 }
 
-func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var req ResetPasswordRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		internalErr := errlib.New(err, http.StatusBadRequest, "Failed to decode reset password request body")
-		errlib.LogError(internalErr)
-		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
-		return
-	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			errlib.LogError(fmt.Errorf("ResetPassword: failed to close request body: %w", err))
-		}
-	}()
-
-	if err := req.Validate(); err != nil {
-		internalErr := errlib.New(err, http.StatusBadRequest, "Reset password validation failed")
-		errlib.LogError(internalErr)
-		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
-		return
+func (h *AuthHandler) ResetPassword(ctx context.Context, input *ResetPasswordInput) (*struct{}, error) {
+	if err := input.Body.Validate(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("reset password validation failed: %w", err), http.StatusBadRequest)
 	}
 
-	err := h.resetPassword(ctx, req)
+	err := h.resetPassword(ctx, input.Body)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
-
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *AuthHandler) resetPassword(ctx context.Context, req ResetPasswordRequestBody) error {

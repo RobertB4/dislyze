@@ -4,20 +4,30 @@ package users
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
 	"lugia/queries"
 )
+
+var ChangePasswordOp = huma.Operation{
+	OperationID: "change-password",
+	Method:      http.MethodPost,
+	Path:        "/me/change-password",
+}
+
+type ChangePasswordInput struct {
+	Body ChangePasswordRequestBody
+}
 
 type ChangePasswordRequestBody struct {
 	CurrentPassword    string `json:"current_password"` // #nosec G117 -- intentional: request body, not a leaked secret
@@ -48,35 +58,24 @@ func (r *ChangePasswordRequestBody) Validate() error {
 	return nil
 }
 
-func (h *UsersHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (h *UsersHandler) ChangePassword(ctx context.Context, input *ChangePasswordInput) (*struct{}, error) {
+	if err := input.Body.Validate(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("change password validation failed: %w", err), http.StatusBadRequest)
+	}
+
 	userID := libctx.GetUserID(ctx)
-
-	var req ChangePasswordRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(fmt.Errorf("ChangePassword: failed to decode request: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			errlib.LogError(fmt.Errorf("ChangePassword: failed to close request body: %w", err))
-		}
-	}()
-
-	if err := req.Validate(); err != nil {
-		appErr := errlib.New(fmt.Errorf("ChangePassword: validation failed: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	err := h.changePassword(ctx, userID, req)
+	err := h.changePassword(ctx, userID, input.Body)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
-
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *UsersHandler) changePassword(ctx context.Context, userID pgtype.UUID, req ChangePasswordRequestBody) error {

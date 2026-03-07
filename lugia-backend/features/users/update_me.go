@@ -3,16 +3,27 @@ package users
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/danielgtaylor/huma/v2"
+
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
 	"lugia/queries"
 )
+
+var UpdateMeOp = huma.Operation{
+	OperationID: "update-me",
+	Method:      http.MethodPost,
+	Path:        "/me/change-name",
+}
+
+type UpdateMeInput struct {
+	Body UpdateMeRequestBody
+}
 
 type UpdateMeRequestBody struct {
 	Name string `json:"name"`
@@ -26,34 +37,23 @@ func (r *UpdateMeRequestBody) Validate() error {
 	return nil
 }
 
-func (h *UsersHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var req UpdateMeRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(fmt.Errorf("UpdateMe: failed to decode request: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			errlib.LogError(fmt.Errorf("UpdateMe: failed to close request body: %w", err))
-		}
-	}()
-
-	if err := req.Validate(); err != nil {
-		appErr := errlib.New(fmt.Errorf("UpdateMe: validation failed: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+func (h *UsersHandler) UpdateMe(ctx context.Context, input *UpdateMeInput) (*struct{}, error) {
+	if err := input.Body.Validate(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("update me validation failed: %w", err), http.StatusBadRequest)
 	}
 
-	err := h.updateMe(ctx, req)
+	err := h.updateMe(ctx, input.Body)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
-
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *UsersHandler) updateMe(ctx context.Context, req UpdateMeRequestBody) error {

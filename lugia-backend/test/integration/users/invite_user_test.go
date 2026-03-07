@@ -192,7 +192,7 @@ func TestInviteUser_Integration(t *testing.T) {
 				Name:    "Single Role User",
 				RoleIDs: []string{"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}, // Enterprise editor role
 			},
-			expectedStatus:         http.StatusOK,
+			expectedStatus:         http.StatusNoContent,
 			validateRoleAssignment: true,
 			expectedRoleCount:      1,
 		},
@@ -207,7 +207,7 @@ func TestInviteUser_Integration(t *testing.T) {
 					"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", // Enterprise editor role
 				},
 			},
-			expectedStatus:         http.StatusOK,
+			expectedStatus:         http.StatusNoContent,
 			validateRoleAssignment: true,
 			expectedRoleCount:      2,
 		},
@@ -219,7 +219,7 @@ func TestInviteUser_Integration(t *testing.T) {
 				Name:    "New Admin User",
 				RoleIDs: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}, // Enterprise admin role
 			},
-			expectedStatus:         http.StatusOK,
+			expectedStatus:         http.StatusNoContent,
 			validateRoleAssignment: true,
 			expectedRoleCount:      1,
 		},
@@ -268,7 +268,7 @@ func TestInviteUser_Integration(t *testing.T) {
 				assert.Equal(t, expectedMsg, errResp.Error, "Error message mismatch for test: %s", tt.name)
 			}
 
-			if tt.expectedStatus == http.StatusOK && tt.validateRoleAssignment {
+			if tt.expectedStatus == http.StatusNoContent && tt.validateRoleAssignment {
 				validateUserRoleAssignment(t, tt.requestBody.Email, tt.expectedRoleCount)
 			}
 		})

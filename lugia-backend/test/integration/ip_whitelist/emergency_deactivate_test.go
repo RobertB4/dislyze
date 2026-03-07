@@ -365,7 +365,7 @@ func TestEmergencyDeactivateIntegration(t *testing.T) {
 				token := generateValidEmergencyTokenWithDB(t, pool, setup.TestUsersData["enterprise_1"].UserID, setup.TestTenantsData["enterprise"].ID)
 				return "enterprise_1", token, true
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name: "test_tenant_isolation",
@@ -395,7 +395,7 @@ func TestEmergencyDeactivateIntegration(t *testing.T) {
 				token := generateValidEmergencyTokenWithDB(t, pool, setup.TestUsersData["enterprise_1"].UserID, setup.TestTenantsData["enterprise"].ID)
 				return "enterprise_1", token, true
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 			validateFunc: func(t *testing.T, pool *pgxpool.Pool) {
 				// Verify enterprise tenant is deactivated
 				var enterpriseFeatures map[string]interface{}

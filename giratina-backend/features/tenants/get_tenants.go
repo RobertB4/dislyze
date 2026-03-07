@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/danielgtaylor/huma/v2"
+
 	"dislyze/jirachi/authz"
-	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"giratina/lib/humautil"
 )
 
 type TenantResponse struct {
@@ -25,26 +26,31 @@ type GetTenantsResponse struct {
 	Tenants []TenantResponse `json:"tenants"`
 }
 
-func (h *TenantsHandler) GetTenants(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+var GetTenantsOp = huma.Operation{
+	OperationID: "get-tenants",
+	Method:      http.MethodGet,
+	Path:        "/tenants",
+}
 
+type GetTenantsInput struct{}
+
+type GetTenantsOutput struct {
+	Body GetTenantsResponse
+}
+
+func (h *TenantsHandler) GetTenants(ctx context.Context, input *GetTenantsInput) (*GetTenantsOutput, error) {
 	tenants, err := h.getTenants(ctx)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		return nil, err
 	}
 
-	response := GetTenantsResponse{
-		Tenants: tenants,
-	}
-
-	responder.RespondWithJSON(w, http.StatusOK, response)
+	return &GetTenantsOutput{Body: GetTenantsResponse{Tenants: tenants}}, nil
 }
 
 func (h *TenantsHandler) getTenants(ctx context.Context) ([]TenantResponse, error) {
 	dbTenants, err := h.queries.GetTenants(ctx)
 	if err != nil {
-		return nil, errlib.New(fmt.Errorf("GetTenants: failed to get tenants: %w", err), http.StatusInternalServerError, "")
+		return nil, humautil.NewError(fmt.Errorf("GetTenants: failed to get tenants: %w", err), http.StatusInternalServerError)
 	}
 
 	tenants := make([]TenantResponse, len(dbTenants))
@@ -53,7 +59,7 @@ func (h *TenantsHandler) getTenants(ctx context.Context) ([]TenantResponse, erro
 		enterpriseFeatures := authz.EnterpriseFeatures{}
 		if len(tenant.EnterpriseFeatures) > 0 {
 			if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
-				return nil, errlib.New(fmt.Errorf("GetMe: failed to unmarshal features config for tenant %s: %w", tenant.ID.String(), err), http.StatusInternalServerError, "")
+				return nil, humautil.NewError(fmt.Errorf("GetTenants: failed to unmarshal features config for tenant %s: %w", tenant.ID.String(), err), http.StatusInternalServerError)
 			}
 		}
 

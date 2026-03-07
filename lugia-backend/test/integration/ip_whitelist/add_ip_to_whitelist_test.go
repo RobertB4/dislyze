@@ -143,8 +143,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 200 because user has IP whitelist edit permission
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		// Check status code - should return 204 because user has IP whitelist edit permission
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
 
 	t.Run("test_feature_disabled_returns_403", func(t *testing.T) {
@@ -302,7 +302,7 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 
-	t.Run("test_missing_ip_address_returns_400", func(t *testing.T) {
+	t.Run("test_missing_ip_address_returns_422", func(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
@@ -351,8 +351,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 400 because ip_address field is missing
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		// Check status code - should return 422 because huma catches missing required field
+		assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
 	})
 
 	t.Run("test_empty_ip_address_returns_400", func(t *testing.T) {
@@ -567,8 +567,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 200 because IP was added successfully
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		// Check status code - should return 204 because IP was added successfully
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
 
 	t.Run("test_add_ipv4_cidr_range_success", func(t *testing.T) {
@@ -621,8 +621,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 200 because CIDR range was added successfully
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		// Check status code - should return 204 because CIDR range was added successfully
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
 
 	t.Run("test_duplicate_ip_returns_400", func(t *testing.T) {
@@ -670,7 +670,7 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
 		resp.Body.Close()
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 
 		// Now try to add the same IP again (duplicate)
 		duplicateRequestBody := map[string]interface{}{
@@ -753,8 +753,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 200 because IPv6 IP was added successfully
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		// Check status code - should return 204 because IPv6 IP was added successfully
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
 
 	t.Run("test_add_ipv6_cidr_range_success", func(t *testing.T) {
@@ -807,8 +807,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 200 because IPv6 CIDR range was added successfully
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		// Check status code - should return 204 because IPv6 CIDR range was added successfully
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
 
 	t.Run("test_add_with_label_success", func(t *testing.T) {
@@ -861,8 +861,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 200 because IP with label was added successfully
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		// Check status code - should return 204 because IP with label was added successfully
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
 
 	t.Run("test_add_without_label_success", func(t *testing.T) {
@@ -884,9 +884,10 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		// Use enterprise_1 who already has IP whitelist permissions
 		email, password := findUserCredentials("enterprise_1")
 
-		// Create request body without label (omit field entirely)
+		// Create request body with label set to null
 		requestBody := map[string]interface{}{
 			"ip_address": "10.0.0.200",
+			"label":      nil,
 		}
 		bodyBytes, err := json.Marshal(requestBody)
 		assert.NoError(t, err)
@@ -914,8 +915,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 200 because IP without label was added successfully
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		// Check status code - should return 204 because IP without label was added successfully
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
 
 	t.Run("test_tenant_isolation_add_to_correct_tenant", func(t *testing.T) {
@@ -974,8 +975,8 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 200 because IP was added to enterprise tenant
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		// Check status code - should return 204 because IP was added to enterprise tenant
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
 
 	t.Run("test_different_tenants_can_add_same_ip", func(t *testing.T) {
@@ -1030,7 +1031,7 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
 		resp.Body.Close()
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 
 		// Now add the same IP to SMB tenant - should also succeed
 		smbEmail, smbPassword := findUserCredentials("smb_1")
@@ -1061,7 +1062,7 @@ func TestAddIPToWhitelistIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 200 because same IP can exist in different tenants
-		assert.Equal(t, http.StatusOK, smbResp.StatusCode)
+		// Check status code - should return 204 because same IP can exist in different tenants
+		assert.Equal(t, http.StatusNoContent, smbResp.StatusCode)
 	})
 }

@@ -4,23 +4,33 @@ package auth
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/jwt"
 	"dislyze/jirachi/logger"
-	"dislyze/jirachi/responder"
+	"giratina/lib/humautil"
+	"giratina/lib/middleware"
 	"giratina/queries"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 )
+
+var LoginOp = huma.Operation{
+	OperationID: "login",
+	Method:      http.MethodPost,
+	Path:        "/auth/login",
+}
+
+type LoginInput struct {
+	Body LoginRequestBody
+}
 
 type LoginRequestBody struct {
 	Email    string `json:"email"`
@@ -40,27 +50,19 @@ func (r *LoginRequestBody) Validate() error {
 	return nil
 }
 
-func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Login(ctx context.Context, input *LoginInput) (*struct{}, error) {
+	r := middleware.GetHTTPRequest(ctx)
+	w := middleware.GetResponseWriter(ctx)
+
 	if !h.rateLimiter.Allow(r.RemoteAddr, r) {
-		appErr := errlib.New(fmt.Errorf("rate limit exceeded for login"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for login from %s", r.RemoteAddr), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
 	}
 
-	var req LoginRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "Invalid request body")
-		responder.RespondWithError(w, appErr)
-		return
+	if err := input.Body.Validate(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("login validation failed: %w", err), http.StatusBadRequest)
 	}
 
-	if err := req.Validate(); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	tokenPair, userID, err := h.login(r.Context(), &req, r)
+	tokenPair, userID, err := h.login(ctx, &input.Body, r)
 	if err != nil {
 		logger.LogAuthEvent(logger.AuthEvent{
 			EventType: "login",
@@ -72,9 +74,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			Success:   false,
 			Error:     err.Error(),
 		})
-		appErr := errlib.New(err, http.StatusUnauthorized, err.Error())
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewErrorWithDetail(err, http.StatusUnauthorized, err.Error())
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -107,7 +107,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Success:   true,
 	})
 
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *AuthHandler) login(ctx context.Context, req *LoginRequestBody, r *http.Request) (*jwt.TokenPair, string, error) {

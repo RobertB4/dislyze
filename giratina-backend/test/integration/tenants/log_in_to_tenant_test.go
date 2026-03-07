@@ -188,8 +188,8 @@ func TestLogInToTenant_EmptyTenantID_Integration(t *testing.T) {
 		}
 	}()
 
-	// Should return 400 because empty tenant ID is invalid
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	// Huma validates path params and returns 422 for empty tenant ID
+	assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
 }
 
 func TestLogInToTenant_InvalidJWT_Integration(t *testing.T) {

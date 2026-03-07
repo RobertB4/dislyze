@@ -9,30 +9,41 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
 	"lugia/queries"
 )
 
-func (h *UsersHandler) VerifyChangeEmail(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+var VerifyChangeEmailOp = huma.Operation{
+	OperationID: "verify-change-email",
+	Method:      http.MethodGet,
+	Path:        "/me/verify-change-email",
+}
 
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		appErr := errlib.New(fmt.Errorf("VerifyChangeEmail: token is missing"), http.StatusBadRequest, "無効または期限切れのトークンです。")
-		responder.RespondWithError(w, appErr)
-		return
+type VerifyChangeEmailInput struct {
+	Token string `query:"token"`
+}
+
+func (h *UsersHandler) VerifyChangeEmail(ctx context.Context, input *VerifyChangeEmailInput) (*struct{}, error) {
+	if input.Token == "" {
+		return nil, humautil.NewErrorWithDetail(fmt.Errorf("verify change email token is empty"), http.StatusBadRequest, "無効または期限切れのトークンです。")
 	}
 
-	err := h.verifyChangeEmail(ctx, token)
+	err := h.verifyChangeEmail(ctx, input.Token)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
-
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *UsersHandler) verifyChangeEmail(ctx context.Context, token string) error {

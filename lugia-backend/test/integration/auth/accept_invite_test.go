@@ -41,7 +41,7 @@ func TestAcceptInvite_Integration(t *testing.T) {
 				Password:        newPasswordForAcceptInvite,
 				PasswordConfirm: newPasswordForAcceptInvite,
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name: "token already used fails",

@@ -98,7 +98,7 @@ func TestChangePassword_Integration(t *testing.T) {
 				NewPassword:     "newSecurePassword123",
 				PasswordConfirm: "newSecurePassword123",
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 	}
 
@@ -133,7 +133,7 @@ func TestChangePassword_Integration(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Status code mismatch for test: %s", tt.name)
 
-			if tt.expectedStatus == http.StatusOK {
+			if tt.expectedStatus == http.StatusNoContent {
 				// Test that the new password works for login
 				attemptLoginResp := setup.AttemptLogin(t, setup.TestUsersData[tt.loginUserKey].Email, tt.requestBody.NewPassword)
 				defer func() {
@@ -141,7 +141,7 @@ func TestChangePassword_Integration(t *testing.T) {
 						t.Logf("Error closing login attempt response body: %v", err)
 					}
 				}()
-				assert.Equal(t, http.StatusOK, attemptLoginResp.StatusCode, "Login with new password should succeed for test: %s", tt.name)
+				assert.Equal(t, http.StatusNoContent, attemptLoginResp.StatusCode, "Login with new password should succeed for test: %s", tt.name)
 
 				// Test that the old password no longer works
 				attemptOldLoginResp := setup.AttemptLogin(t, setup.TestUsersData[tt.loginUserKey].Email, setup.TestUsersData[tt.loginUserKey].PlainTextPassword)
@@ -235,7 +235,7 @@ func TestChangePasswordSessionInvalidation_Integration(t *testing.T) {
 			t.Logf("Error closing cpResp body: %v", err)
 		}
 	}()
-	assert.Equal(t, http.StatusOK, cpResp.StatusCode, "Password change should succeed")
+	assert.Equal(t, http.StatusNoContent, cpResp.StatusCode, "Password change should succeed")
 
 	// Try to use the first session again - should still work since access token is still valid
 	// but refresh token should be invalidated

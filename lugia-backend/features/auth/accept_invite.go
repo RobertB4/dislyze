@@ -5,22 +5,32 @@ import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/jwt"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
+	"lugia/lib/middleware"
 	"lugia/queries"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 )
+
+var AcceptInviteOp = huma.Operation{
+	OperationID: "accept-invite",
+	Method:      http.MethodPost,
+	Path:        "/auth/accept-invite",
+}
+
+type AcceptInviteInput struct {
+	Body AcceptInviteRequestBody
+}
 
 type AcceptInviteRequestBody struct {
 	Token           string `json:"token"`
@@ -48,113 +58,24 @@ func (r *AcceptInviteRequestBody) Validate() error {
 	return nil
 }
 
-func (h *AuthHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (h *AuthHandler) AcceptInvite(ctx context.Context, input *AcceptInviteInput) (*struct{}, error) {
+	r := middleware.GetHTTPRequest(ctx)
+	w := middleware.GetResponseWriter(ctx)
 
-	var req AcceptInviteRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(fmt.Errorf("AcceptInvite: failed to decode request: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+	if err := input.Body.Validate(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("accept invite validation failed: %w", err), http.StatusBadRequest)
 	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			errlib.LogError(fmt.Errorf("AcceptInvite: failed to close request body: %w", err))
+
+	tokenPair, err := h.acceptInvite(ctx, input.Body, r)
+	if err != nil {
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
 		}
-	}()
-
-	if err := req.Validate(); err != nil {
-		appErr := errlib.New(fmt.Errorf("AcceptInvite: validation failed: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	err := h.acceptInvite(ctx, req, w, r)
-	if err != nil {
-		responder.RespondWithError(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func (h *AuthHandler) acceptInvite(ctx context.Context, req AcceptInviteRequestBody, w http.ResponseWriter, r *http.Request) error {
-	hash := sha256.Sum256([]byte(req.Token))
-	hashedTokenStr := fmt.Sprintf("%x", hash[:])
-
-	tx, err := h.dbConn.Begin(ctx)
-	if err != nil {
-		return errlib.New(fmt.Errorf("AcceptInvite: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
-	}
-	defer func() {
-		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
-			errlib.LogError(fmt.Errorf("AcceptInvite: failed to rollback transaction: %w", rbErr))
-		}
-	}()
-	qtx := h.queries.WithTx(tx)
-
-	invitationTokenRecord, err := qtx.GetInvitationByTokenHash(ctx, hashedTokenStr)
-	if err != nil {
-		if errlib.Is(err, pgx.ErrNoRows) {
-			return errlib.New(fmt.Errorf("AcceptInvite: token not found or expired for hash %s: %w", hashedTokenStr, err), http.StatusBadRequest, "招待リンクが無効か、期限切れです。お手数ですが、招待者に再度依頼してください。")
-		}
-		return errlib.New(fmt.Errorf("AcceptInvite: GetInvitationByTokenHash failed: %w", err), http.StatusInternalServerError, "")
-	}
-
-	dbUser, err := qtx.GetUserByID(ctx, invitationTokenRecord.UserID)
-	if err != nil {
-		if errlib.Is(err, pgx.ErrNoRows) {
-			return errlib.New(fmt.Errorf("AcceptInvite: user for valid token not found, userID: %s: %w", invitationTokenRecord.UserID, err), http.StatusInternalServerError, "")
-
-		}
-		return errlib.New(fmt.Errorf("AcceptInvite: GetUserByID failed: %w", err), http.StatusInternalServerError, "")
-	}
-
-	tenant, err := qtx.GetTenantByID(ctx, dbUser.TenantID)
-	if err != nil {
-		return errlib.New(fmt.Errorf("AcceptInvite: failed to get tenant: %w", err), http.StatusInternalServerError, "")
-	}
-
-	if tenant.AuthMethod == "sso" {
-		return errlib.New(fmt.Errorf("AcceptInvite: user belongs to SSO tenant"), http.StatusBadRequest, "")
-	}
-
-	if dbUser.Status != "pending_verification" {
-		return errlib.New(fmt.Errorf("AcceptInvite: user %s status is '%s', expected 'pending_verification' for token %s", dbUser.ID.String(), dbUser.Status, hashedTokenStr), http.StatusBadRequest, "このユーザーはすでに承諾済みです。")
-	}
-
-	hashedNewPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return errlib.New(fmt.Errorf("AcceptInvite: failed to hash new password: %w", err), http.StatusInternalServerError, "")
-	}
-
-	err = qtx.ActivateInvitedUser(ctx, &queries.ActivateInvitedUserParams{
-		PasswordHash: string(hashedNewPassword),
-		ID:           invitationTokenRecord.UserID,
-	})
-	if err != nil {
-		return errlib.New(fmt.Errorf("AcceptInvite: ActivateInvitedUser failed: %w", err), http.StatusInternalServerError, "")
-	}
-
-	err = qtx.MarkInvitationTokenAsUsed(ctx, invitationTokenRecord.ID)
-	if err != nil {
-		return errlib.New(fmt.Errorf("AcceptInvite: failed to mark invitation token as used ID %s: %w", invitationTokenRecord.ID.String(), err), http.StatusInternalServerError, "")
-	}
-
-	tokenPair, err := jwt.GenerateTokenPair(dbUser.ID, invitationTokenRecord.TenantID, []byte(h.env.AuthJWTSecret))
-	if err != nil {
-		return errlib.New(fmt.Errorf("AcceptInvite: failed to generate token pair: %w", err), http.StatusInternalServerError, "")
-	}
-
-	_, err = qtx.CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
-		UserID:     dbUser.ID,
-		Jti:        tokenPair.JTI,
-		DeviceInfo: pgtype.Text{String: r.UserAgent(), Valid: true},
-		IpAddress:  pgtype.Text{String: r.RemoteAddr, Valid: true},
-		ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
-	})
-	if err != nil {
-		return errlib.New(fmt.Errorf("AcceptInvite: failed to store refresh token: %w", err), http.StatusInternalServerError, "")
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -177,9 +98,90 @@ func (h *AuthHandler) acceptInvite(ctx context.Context, req AcceptInviteRequestB
 		MaxAge:   7 * 24 * 60 * 60, // 7 days
 	})
 
-	if err := tx.Commit(ctx); err != nil {
-		return errlib.New(fmt.Errorf("AcceptInvite: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
+	return nil, nil
+}
+
+func (h *AuthHandler) acceptInvite(ctx context.Context, req AcceptInviteRequestBody, r *http.Request) (*jwt.TokenPair, error) {
+	hash := sha256.Sum256([]byte(req.Token))
+	hashedTokenStr := fmt.Sprintf("%x", hash[:])
+
+	tx, err := h.dbConn.Begin(ctx)
+	if err != nil {
+		return nil, errlib.New(fmt.Errorf("AcceptInvite: failed to begin transaction: %w", err), http.StatusInternalServerError, "")
+	}
+	defer func() {
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
+			errlib.LogError(fmt.Errorf("AcceptInvite: failed to rollback transaction: %w", rbErr))
+		}
+	}()
+	qtx := h.queries.WithTx(tx)
+
+	invitationTokenRecord, err := qtx.GetInvitationByTokenHash(ctx, hashedTokenStr)
+	if err != nil {
+		if errlib.Is(err, pgx.ErrNoRows) {
+			return nil, errlib.New(fmt.Errorf("AcceptInvite: token not found or expired for hash %s: %w", hashedTokenStr, err), http.StatusBadRequest, "招待リンクが無効か、期限切れです。お手数ですが、招待者に再度依頼してください。")
+		}
+		return nil, errlib.New(fmt.Errorf("AcceptInvite: GetInvitationByTokenHash failed: %w", err), http.StatusInternalServerError, "")
 	}
 
-	return nil
+	dbUser, err := qtx.GetUserByID(ctx, invitationTokenRecord.UserID)
+	if err != nil {
+		if errlib.Is(err, pgx.ErrNoRows) {
+			return nil, errlib.New(fmt.Errorf("AcceptInvite: user for valid token not found, userID: %s: %w", invitationTokenRecord.UserID, err), http.StatusInternalServerError, "")
+		}
+		return nil, errlib.New(fmt.Errorf("AcceptInvite: GetUserByID failed: %w", err), http.StatusInternalServerError, "")
+	}
+
+	tenant, err := qtx.GetTenantByID(ctx, dbUser.TenantID)
+	if err != nil {
+		return nil, errlib.New(fmt.Errorf("AcceptInvite: failed to get tenant: %w", err), http.StatusInternalServerError, "")
+	}
+
+	if tenant.AuthMethod == "sso" {
+		return nil, errlib.New(fmt.Errorf("AcceptInvite: user belongs to SSO tenant"), http.StatusBadRequest, "")
+	}
+
+	if dbUser.Status != "pending_verification" {
+		return nil, errlib.New(fmt.Errorf("AcceptInvite: user %s status is '%s', expected 'pending_verification' for token %s", dbUser.ID.String(), dbUser.Status, hashedTokenStr), http.StatusBadRequest, "このユーザーはすでに承諾済みです。")
+	}
+
+	hashedNewPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, errlib.New(fmt.Errorf("AcceptInvite: failed to hash new password: %w", err), http.StatusInternalServerError, "")
+	}
+
+	err = qtx.ActivateInvitedUser(ctx, &queries.ActivateInvitedUserParams{
+		PasswordHash: string(hashedNewPassword),
+		ID:           invitationTokenRecord.UserID,
+	})
+	if err != nil {
+		return nil, errlib.New(fmt.Errorf("AcceptInvite: ActivateInvitedUser failed: %w", err), http.StatusInternalServerError, "")
+	}
+
+	err = qtx.MarkInvitationTokenAsUsed(ctx, invitationTokenRecord.ID)
+	if err != nil {
+		return nil, errlib.New(fmt.Errorf("AcceptInvite: failed to mark invitation token as used ID %s: %w", invitationTokenRecord.ID.String(), err), http.StatusInternalServerError, "")
+	}
+
+	tokenPair, err := jwt.GenerateTokenPair(dbUser.ID, invitationTokenRecord.TenantID, []byte(h.env.AuthJWTSecret))
+	if err != nil {
+		return nil, errlib.New(fmt.Errorf("AcceptInvite: failed to generate token pair: %w", err), http.StatusInternalServerError, "")
+	}
+
+	_, err = qtx.CreateRefreshToken(ctx, &queries.CreateRefreshTokenParams{
+		UserID:     dbUser.ID,
+		Jti:        tokenPair.JTI,
+		DeviceInfo: pgtype.Text{String: r.UserAgent(), Valid: true},
+		IpAddress:  pgtype.Text{String: r.RemoteAddr, Valid: true},
+		ExpiresAt:  pgtype.Timestamptz{Time: time.Now().Add(7 * 24 * time.Hour), Valid: true},
+	})
+	if err != nil {
+		return nil, errlib.New(fmt.Errorf("AcceptInvite: failed to store refresh token: %w", err), http.StatusInternalServerError, "")
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, errlib.New(fmt.Errorf("AcceptInvite: failed to commit transaction: %w", err), http.StatusInternalServerError, "")
+	}
+
+	return tokenPair, nil
 }

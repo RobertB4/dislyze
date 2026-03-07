@@ -2,36 +2,54 @@
 package ip_whitelist
 
 import (
+	"context"
+	"fmt"
 	"net/http"
+
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
 	"lugia/lib/iputils"
+	"lugia/lib/middleware"
 	"lugia/queries"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func (h *IPWhitelistHandler) DeleteIP(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	tenantID := libctx.GetTenantID(ctx)
+var DeleteIPOp = huma.Operation{
+	OperationID: "delete-ip",
+	Method:      http.MethodPost,
+	Path:        "/ip-whitelist/{id}/delete",
+}
 
-	idStr := chi.URLParam(r, "id")
-	if idStr == "" {
-		appErr := errlib.New(nil, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
+type DeleteIPInput struct {
+	ID string `path:"id"`
+}
 
+func (h *IPWhitelistHandler) DeleteIP(ctx context.Context, input *DeleteIPInput) (*struct{}, error) {
 	var id pgtype.UUID
-	if err := id.Scan(idStr); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+	if err := id.Scan(input.ID); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("invalid IP whitelist rule ID format: %w", err), http.StatusBadRequest)
 	}
+
+	err := h.deleteIP(ctx, id)
+	if err != nil {
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
+	}
+	return nil, nil
+}
+
+func (h *IPWhitelistHandler) deleteIP(ctx context.Context, id pgtype.UUID) error {
+	tenantID := libctx.GetTenantID(ctx)
 
 	rule, err := h.q.GetIPWhitelistRuleByID(ctx, &queries.GetIPWhitelistRuleByIDParams{
 		ID:       id,
@@ -39,30 +57,23 @@ func (h *IPWhitelistHandler) DeleteIP(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			appErr := errlib.New(err, http.StatusNotFound, "")
-			responder.RespondWithError(w, appErr)
-			return
+			return errlib.New(err, http.StatusNotFound, "")
 		}
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(err, http.StatusInternalServerError, "")
 	}
 
 	ipConfig := libctx.GetIPWhitelistConfig(ctx)
 	if ipConfig.Active {
+		r := middleware.GetHTTPRequest(ctx)
 		clientIP := iputils.ExtractClientIP(r)
 
 		isCurrentIP, err := iputils.IsIPInCIDRList(clientIP, []string{rule.IpAddress.String()})
 		if err != nil {
-			appErr := errlib.New(err, http.StatusInternalServerError, "")
-			responder.RespondWithError(w, appErr)
-			return
+			return errlib.New(err, http.StatusInternalServerError, "")
 		}
 
 		if isCurrentIP {
-			appErr := errlib.New(nil, http.StatusBadRequest, "現在使用中のIPアドレスは削除できません。")
-			responder.RespondWithError(w, appErr)
-			return
+			return errlib.New(nil, http.StatusBadRequest, "現在使用中のIPアドレスは削除できません。")
 		}
 	}
 
@@ -71,10 +82,8 @@ func (h *IPWhitelistHandler) DeleteIP(w http.ResponseWriter, r *http.Request) {
 		TenantID: tenantID,
 	})
 	if err != nil {
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return errlib.New(err, http.StatusInternalServerError, "")
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil
 }

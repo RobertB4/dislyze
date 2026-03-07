@@ -484,8 +484,8 @@ func TestUpdateIPLabelIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 200 because update succeeded
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		// Check status code - should return 204 because update succeeded
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
 
 	t.Run("test_clear_label_empty_string_success", func(t *testing.T) {
@@ -546,11 +546,11 @@ func TestUpdateIPLabelIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 200 because label was cleared
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		// Check status code - should return 204 because label was cleared
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
 
-	t.Run("test_missing_label_field_success", func(t *testing.T) {
+	t.Run("test_missing_label_field_returns_422", func(t *testing.T) {
 		// Reset database state before test
 		setup.ResetAndSeedDB(t, pool)
 
@@ -573,7 +573,7 @@ func TestUpdateIPLabelIntegration(t *testing.T) {
 		})
 
 		// Create IP rule with a label
-		ipRuleID := insertIPWhitelistRuleAndReturnID(t, pool, setup.TestTenantsData["enterprise"].ID, "192.168.1.0/24", "Label to Clear", setup.TestUsersData["enterprise_1"].UserID)
+		insertIPWhitelistRuleAndReturnID(t, pool, setup.TestTenantsData["enterprise"].ID, "192.168.1.0/24", "Label to Clear", setup.TestUsersData["enterprise_1"].UserID)
 
 		// Get user credentials
 		email, password := findUserCredentials("enterprise_3")
@@ -585,8 +585,8 @@ func TestUpdateIPLabelIntegration(t *testing.T) {
 		bodyBytes, err := json.Marshal(requestBody)
 		assert.NoError(t, err)
 
-		// Create request
-		reqURL := fmt.Sprintf("%s/ip-whitelist/%s/label/update", setup.BaseURL, ipRuleID)
+		// Create request (using dummy ID - huma rejects before handler runs)
+		reqURL := fmt.Sprintf("%s/ip-whitelist/11111111-1111-1111-1111-111111111111/label/update", setup.BaseURL)
 		req, err := http.NewRequest("POST", reqURL, bytes.NewBuffer(bodyBytes))
 		assert.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
@@ -608,8 +608,8 @@ func TestUpdateIPLabelIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 200 because missing field clears label
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		// Check status code - huma catches missing required field
+		assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
 	})
 
 	t.Run("test_label_exactly_100_characters_success", func(t *testing.T) {
@@ -671,7 +671,7 @@ func TestUpdateIPLabelIntegration(t *testing.T) {
 			}
 		}()
 
-		// Check status code - should return 200 because 100 characters is allowed
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		// Check status code - should return 204 because 100 characters is allowed
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
 }

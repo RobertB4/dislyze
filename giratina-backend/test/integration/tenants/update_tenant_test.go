@@ -52,14 +52,14 @@ func TestUpdateTenant_Integration(t *testing.T) {
 			loginUserKey:   "internal_1",
 			tenantID:       validTenantID,
 			requestBody:    validUpdateRequest,
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:           "internal admin 2 succeeds",
 			loginUserKey:   "internal_2",
 			tenantID:       validTenantID,
 			requestBody:    validUpdateRequest,
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 
 		// Security - Data Access Control
@@ -68,16 +68,16 @@ func TestUpdateTenant_Integration(t *testing.T) {
 			loginUserKey: "internal_1",
 			tenantID:     "99999999-9999-9999-9999-999999999999",
 			requestBody:  validUpdateRequest,
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 
 		// Edge Cases - Request Format
 		{
-			name:                "invalid JSON body returns 400",
+			name:                "invalid JSON body returns 422",
 			loginUserKey:        "internal_1",
 			tenantID:            validTenantID,
 			requestBody:         `{"name": "テストテナント", "enterprise_features":}`, // Invalid JSON
-			expectedStatus:      http.StatusBadRequest,
+			expectedStatus:      http.StatusUnprocessableEntity,
 			expectErrorResponse: true,
 		},
 		{
@@ -135,19 +135,19 @@ func TestUpdateTenant_Integration(t *testing.T) {
 			requestBody: map[string]any{
 				"name": "テストテナント",
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 
 		// Edge Cases - Enterprise Features Validation
 		{
-			name:         "invalid enterprise_features JSON returns 400",
+			name:         "invalid enterprise_features JSON returns 422",
 			loginUserKey: "internal_1",
 			tenantID:     validTenantID,
 			requestBody: map[string]any{
 				"name":                "テストテナント",
 				"enterprise_features": "invalid_json_structure",
 			},
-			expectedStatus:      http.StatusBadRequest,
+			expectedStatus:      http.StatusUnprocessableEntity,
 			expectErrorResponse: true,
 		},
 		{
@@ -161,7 +161,7 @@ func TestUpdateTenant_Integration(t *testing.T) {
 					"rbac":            map[string]any{"enabled": true},
 				},
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:         "invalid rbac structure succeeds (missing fields ignored)",
@@ -173,10 +173,10 @@ func TestUpdateTenant_Integration(t *testing.T) {
 					"rbac": map[string]any{"invalid_field": true},
 				},
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
-			name:         "invalid rbac.enabled type (non-boolean) returns 400",
+			name:         "invalid rbac.enabled type (non-boolean) returns 422",
 			loginUserKey: "internal_1",
 			tenantID:     validTenantID,
 			requestBody: map[string]any{
@@ -185,7 +185,7 @@ func TestUpdateTenant_Integration(t *testing.T) {
 					"rbac": map[string]any{"enabled": "true"}, // String instead of bool
 				},
 			},
-			expectedStatus:      http.StatusBadRequest,
+			expectedStatus:      http.StatusUnprocessableEntity,
 			expectErrorResponse: true,
 		},
 		{
@@ -201,7 +201,7 @@ func TestUpdateTenant_Integration(t *testing.T) {
 					},
 				},
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 
 		// Edge Cases - URL Parameters
@@ -233,7 +233,7 @@ func TestUpdateTenant_Integration(t *testing.T) {
 					RBAC: authz.RBAC{Enabled: true},
 				},
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:         "valid update with rbac disabled",
@@ -245,7 +245,7 @@ func TestUpdateTenant_Integration(t *testing.T) {
 					RBAC: authz.RBAC{Enabled: false},
 				},
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 	}
 
@@ -357,7 +357,7 @@ func TestUpdateTenant_DatabaseChanges(t *testing.T) {
 		}
 	}()
 
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 
 	// Verify database changes by getting the tenant
 	getReq, err := http.NewRequest("GET", fmt.Sprintf("%s/tenants", setup.BaseURL), nil)
@@ -440,5 +440,5 @@ func TestUpdateTenant_ExistingTenantFromSeedData(t *testing.T) {
 		}
 	}()
 
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 }

@@ -7,39 +7,44 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
 	"lugia/queries"
 )
 
-func (h *RolesHandler) DeleteRole(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+var DeleteRoleOp = huma.Operation{
+	OperationID: "delete-role",
+	Method:      http.MethodPost,
+	Path:        "/roles/{roleID}/delete",
+}
 
-	roleIDStr := r.PathValue("roleID")
-	if roleIDStr == "" {
-		appErr := errlib.New(fmt.Errorf("DeleteRole: roleID is required"), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
+type DeleteRoleInput struct {
+	RoleID string `path:"roleID"`
+}
 
+func (h *RolesHandler) DeleteRole(ctx context.Context, input *DeleteRoleInput) (*struct{}, error) {
 	var roleID pgtype.UUID
-	if err := roleID.Scan(roleIDStr); err != nil {
-		appErr := errlib.New(fmt.Errorf("DeleteRole: invalid role ID format %s: %w", roleIDStr, err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+	if err := roleID.Scan(input.RoleID); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("invalid role ID format for delete: %w", err), http.StatusBadRequest)
 	}
 
 	err := h.deleteRole(ctx, roleID)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
-
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *RolesHandler) deleteRole(ctx context.Context, roleID pgtype.UUID) error {

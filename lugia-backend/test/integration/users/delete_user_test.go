@@ -65,7 +65,7 @@ func TestDeleteUser_Integration(t *testing.T) {
 			name:           "Admin Deletes Editor - Success",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_2",
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:             "Admin Tries to Delete Self - Conflict",
@@ -161,7 +161,7 @@ func TestDeleteUser_Integration(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode, "Unexpected status code for test: %s", tt.name)
 
-			if tt.expectedStatus == http.StatusOK {
+			if tt.expectedStatus == http.StatusNoContent {
 				// Verify user is marked as deleted (anonymized)
 				assert.False(t, CheckUserExists(t, pool, targetUserID), "User %s should have been marked as deleted", targetUserID)
 				// Note: tokens are preserved for audit compliance, so we don't check for deletion
@@ -170,14 +170,14 @@ func TestDeleteUser_Integration(t *testing.T) {
 				err = json.NewDecoder(resp.Body).Decode(&errResp)
 				assert.NoError(t, err, "Failed to decode error response for test: %s", tt.name)
 				assert.Equal(t, tt.expectedErrorMsg, errResp.Error, "Unexpected error message for test: %s", tt.name)
-			} else if resp.StatusCode != http.StatusOK { // Log body for unexpected errors
+			} else if resp.StatusCode != http.StatusNoContent { // Log body for unexpected errors
 				bodyBytes, err := io.ReadAll(resp.Body)
 				assert.NoError(t, err)
 				t.Logf("Received unexpected error response body for %s (Status %d): %s", tt.name, resp.StatusCode, string(bodyBytes))
 			}
 
 			// For tests where user should NOT be deleted, verify they still exist
-			if tt.expectedStatus != http.StatusOK && tt.targetUserKey != "" {
+			if tt.expectedStatus != http.StatusNoContent && tt.targetUserKey != "" {
 				originalTargetUserDetails, ok := setup.TestUsersData[tt.targetUserKey]
 				if ok {
 					assert.True(t, CheckUserExists(t, pool, originalTargetUserDetails.UserID), "User %s should still exist in DB for test: %s", originalTargetUserDetails.UserID, tt.name)

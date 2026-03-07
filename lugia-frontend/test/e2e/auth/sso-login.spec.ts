@@ -8,6 +8,8 @@ test.describe("SSO Login", () => {
 	});
 
 	test("should successfully login via SSO with sso1@sso.test", async ({ page }) => {
+		// SSO involves multiple redirects (app → Keycloak → SAML callback → app)
+		test.slow();
 		// Navigate to SSO login page
 		await page.goto("/auth/sso/login");
 
@@ -37,6 +39,7 @@ test.describe("SSO Login", () => {
 	});
 
 	test("should auto-provision new user on first SSO login", async ({ page }) => {
+		test.slow();
 		// Navigate to SSO login page
 		await page.goto("/auth/sso/login");
 
@@ -62,6 +65,7 @@ test.describe("SSO Login", () => {
 	});
 
 	test("should activate pending_verification user on SSO login", async ({ page }) => {
+		test.slow();
 		// sso2@sso.test exists in database with status='pending_verification' (from seed data)
 		// Navigate to SSO login page
 		await page.goto("/auth/sso/login");

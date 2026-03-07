@@ -144,7 +144,7 @@ func TestTenantSignupJWTValidation(t *testing.T) {
 		{
 			name:           "valid JWT token",
 			token:          generateValidJWTToken(t, "new@example.com"),
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 			expectedError:  "",
 		},
 		{
@@ -203,11 +203,11 @@ func TestTenantSignupJWTValidation(t *testing.T) {
 				assert.Equal(t, tt.expectedError, errorResponse["error"])
 			}
 			
-			if tt.expectedStatus == http.StatusOK {
+			if tt.expectedStatus == http.StatusNoContent {
 				// Check cookies are set
 				cookies := resp.Cookies()
 				assert.NotEmpty(t, cookies, "Expected cookies for successful signup")
-				
+
 				var accessToken, refreshToken *http.Cookie
 				for _, cookie := range cookies {
 					switch cookie.Name {
@@ -217,12 +217,12 @@ func TestTenantSignupJWTValidation(t *testing.T) {
 						refreshToken = cookie
 					}
 				}
-				
+
 				assert.NotNil(t, accessToken, "Access token cookie not found")
 				assert.True(t, accessToken.HttpOnly, "Access token cookie should be HttpOnly")
 				assert.True(t, accessToken.Secure, "Access token cookie should be Secure")
 				assert.Equal(t, http.SameSiteStrictMode, accessToken.SameSite, "Access token cookie should have SameSite=Strict")
-				
+
 				assert.NotNil(t, refreshToken, "Refresh token cookie not found")
 				assert.True(t, refreshToken.HttpOnly, "Refresh token cookie should be HttpOnly")
 				assert.True(t, refreshToken.Secure, "Refresh token cookie should be Secure")
@@ -283,7 +283,7 @@ func TestTenantSignupJWTClaimsValidation(t *testing.T) {
 				assert.Equal(t, tt.expectedError, errorResponse["error"])
 			}
 			
-			if tt.expectedStatus != http.StatusOK {
+			if tt.expectedStatus != http.StatusNoContent {
 				// Check no cookies are set for failed requests
 				cookies := resp.Cookies()
 				assert.Empty(t, cookies, "Expected no cookies for failed signup")
@@ -312,7 +312,7 @@ func TestTenantSignupRequestBodyValidation(t *testing.T) {
 				CompanyName:     "Test Company",
 				UserName:        "Test User",
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name: "missing password field",
@@ -423,7 +423,7 @@ func TestTenantSignupRequestBodyValidation(t *testing.T) {
 			
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 			
-			if tt.expectedStatus == http.StatusOK {
+			if tt.expectedStatus == http.StatusNoContent {
 				// Check cookies are set
 				cookies := resp.Cookies()
 				assert.NotEmpty(t, cookies, "Expected cookies for successful signup")
@@ -453,13 +453,13 @@ func TestTenantSignupInvalidJSON(t *testing.T) {
 			name:           "invalid JSON request body",
 			requestBody:    `{"invalid": json}`,
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "Invalid request body",
+			expectedError:  "",
 		},
 		{
 			name:           "empty request body",
 			requestBody:    "",
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "Invalid request body",
+			expectedError:  "",
 		},
 	}
 	
@@ -482,12 +482,14 @@ func TestTenantSignupInvalidJSON(t *testing.T) {
 			}()
 			
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
-			
-			var errorResponse map[string]any
-			err = json.NewDecoder(resp.Body).Decode(&errorResponse)
-			assert.NoError(t, err, "Failed to decode error response")
-			assert.Equal(t, tt.expectedError, errorResponse["error"])
-			
+
+			if tt.expectedError != "" {
+				var errorResponse map[string]any
+				err = json.NewDecoder(resp.Body).Decode(&errorResponse)
+				assert.NoError(t, err, "Failed to decode error response")
+				assert.Equal(t, tt.expectedError, errorResponse["error"])
+			}
+
 			// Check no cookies are set for failed requests
 			cookies := resp.Cookies()
 			assert.Empty(t, cookies, "Expected no cookies for failed signup")

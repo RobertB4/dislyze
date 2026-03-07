@@ -114,7 +114,7 @@ func TestCreateRole_Integration(t *testing.T) {
 				Description:   "A test role with one permission",
 				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, // users.view
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:         "success: create role with multiple permissions",
@@ -127,7 +127,7 @@ func TestCreateRole_Integration(t *testing.T) {
 					"db994eda-6ff7-4ae5-a675-3abe735ce9cc", // users.edit
 				},
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:         "success: create role with empty description",
@@ -137,7 +137,7 @@ func TestCreateRole_Integration(t *testing.T) {
 				Description:   "",
 				PermissionIDs: []string{"3a52c807-ddcb-4044-8682-658e04800a8e"}, // users.view
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 	}
 
@@ -209,8 +209,8 @@ func createTenantViaSignup(t *testing.T, email, password, tenantName, userName s
 	assert.NoError(t, err)
 	defer resp.Body.Close()
 
-	// Signup should succeed
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "Signup should succeed")
+	// Signup should succeed (204 No Content with cookies set)
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode, "Signup should succeed")
 
 	return struct {
 		Email    string
@@ -305,7 +305,7 @@ func TestCreateRole_RBACFeatureFlag(t *testing.T) {
 		defer resp.Body.Close()
 
 		// Should succeed now that RBAC is enabled
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "RBAC enabled should allow access")
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode, "RBAC enabled should allow access")
 	})
 }
 

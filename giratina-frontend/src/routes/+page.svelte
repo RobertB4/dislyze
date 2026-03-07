@@ -12,8 +12,9 @@
 	import type { PageData } from "./$types";
 	import { createForm } from "felte";
 	import { invalidate } from "$app/navigation";
-	import { mutationFetch, handleLoadError } from "$giratina/lib/fetch";
-	import type { Tenant, EnterpriseFeatures } from "$giratina/routes/+page";
+	import { handleLoadError } from "$giratina/lib/fetch";
+	import { createMutationClient } from "$giratina/lib/api";
+	import type { Tenant, EnterpriseFeatures } from "$giratina/schema";
 	import { resolve } from "$app/paths";
 
 	let { data: pageData }: { data: PageData } = $props();
@@ -26,11 +27,6 @@
 
 	function isFeatureEditable(featureKey: string): boolean {
 		return featureKey !== "sso";
-	}
-
-	interface UpdateTenantRequestBody {
-		name: string;
-		enterprise_features: EnterpriseFeatures;
 	}
 
 	let editingTenant = $state<Tenant | null>(null);
@@ -64,20 +60,16 @@
 		onSubmit: async (values) => {
 			if (!editingTenant) return;
 
-			const requestBody: UpdateTenantRequestBody = {
-				name: values.name,
-				enterprise_features: values.enterprise_features
-			};
-
-			const { success } = await mutationFetch(`/api/tenants/${editingTenant.id}/update`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify(requestBody)
+			const api = createMutationClient();
+			const { error } = await api.POST("/tenants/{id}/update", {
+				params: { path: { id: editingTenant.id } },
+				body: {
+					name: values.name,
+					enterprise_features: values.enterprise_features
+				}
 			});
 
-			if (success) {
+			if (!error) {
 				await invalidate((u) => u.pathname === "/api/tenants");
 				editReset();
 				toast.show("テナントを更新しました。", "success");
@@ -174,14 +166,14 @@
 			return errs;
 		},
 		onSubmit: async (values) => {
-			const body: any = {
+			const requestBody: any = {
 				email: values.email,
 				company_name: values.company_name,
 				user_name: values.user_name
 			};
 
 			if (values.sso_enabled) {
-				body.sso = {
+				requestBody.sso = {
 					enabled: true,
 					idp_metadata_url: values.idp_metadata_url,
 					allowed_domains: values.allowed_domains
@@ -190,16 +182,12 @@
 				};
 			}
 
-			const { response, success } = await mutationFetch("/api/tenants/generate-token", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify(body)
+			const api = createMutationClient();
+			const { data, error } = await api.POST("/tenants/generate-token", {
+				body: requestBody
 			});
 
-			if (success && response) {
-				const data = await response.json();
+			if (!error && data) {
 				generatedInviteUrl = data.url;
 				toast.show("招待URLを生成しました。", "success");
 			}
@@ -328,7 +316,7 @@
 				</div>
 			</div>
 		</div>
-	{:then { tenants }}
+	{:then tenants}
 		{#if isInviteSlideoverOpen}
 			<form
 				use:inviteForm

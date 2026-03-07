@@ -135,7 +135,7 @@ func TestDeleteIPIntegration(t *testing.T) {
 
 				return "enterprise_1", ipRuleID
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name: "test_delete_with_empty_request_body_success",
@@ -157,7 +157,7 @@ func TestDeleteIPIntegration(t *testing.T) {
 
 				return "enterprise_1", ipRuleID
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 	}
 

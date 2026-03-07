@@ -12,16 +12,27 @@ import (
 	"strings"
 	"time"
 
-	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
-	"dislyze/jirachi/sendgridlib"
-	"dislyze/jirachi/utils"
-	"lugia/queries"
-
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sendgrid/sendgrid-go"
+
+	"dislyze/jirachi/errlib"
+	"dislyze/jirachi/sendgridlib"
+	"dislyze/jirachi/utils"
+	"lugia/lib/middleware"
+	"lugia/queries"
 )
+
+var ForgotPasswordOp = huma.Operation{
+	OperationID: "forgot-password",
+	Method:      http.MethodPost,
+	Path:        "/auth/forgot-password",
+}
+
+type ForgotPasswordInput struct {
+	Body ForgotPasswordRequestBody
+}
 
 type ForgotPasswordRequestBody struct {
 	Email string `json:"email"`
@@ -38,45 +49,27 @@ func (r *ForgotPasswordRequestBody) Validate() error {
 	return nil
 }
 
-func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (h *AuthHandler) ForgotPassword(ctx context.Context, input *ForgotPasswordInput) (*struct{}, error) {
+	r := middleware.GetHTTPRequest(ctx)
 
 	if !h.rateLimiter.Allow(r.RemoteAddr, r) {
-		internalErr := errlib.New(fmt.Errorf("rate limit exceeded for forgot password: %s", r.RemoteAddr), http.StatusTooManyRequests, "Rate limit for forgot password")
-		errlib.LogError(internalErr)
-		w.WriteHeader(http.StatusOK)
-		return
+		errlib.LogError(errlib.New(fmt.Errorf("rate limit exceeded for forgot password: %s", r.RemoteAddr), http.StatusTooManyRequests, ""))
+		// Always return success for security (prevent email enumeration)
+		return nil, nil
 	}
 
-	var req ForgotPasswordRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		internalErr := errlib.New(err, http.StatusBadRequest, "Failed to decode forgot password request body")
-		errlib.LogError(internalErr)
-		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
-		return
-	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			errlib.LogError(fmt.Errorf("ForgotPassword: failed to close request body: %w", err))
-		}
-	}()
-
-	if err := req.Validate(); err != nil {
-		internalErr := errlib.New(err, http.StatusBadRequest, "Forgot password validation failed")
-		errlib.LogError(internalErr)
-		responder.RespondWithError(w, errlib.New(err, http.StatusBadRequest, ""))
-		return
+	if err := input.Body.Validate(); err != nil {
+		errlib.LogError(errlib.New(err, http.StatusBadRequest, "Forgot password validation failed"))
+		// Always return success for security (prevent email enumeration)
+		return nil, nil
 	}
 
-	err := h.forgotPassword(ctx, req)
-	if err != nil {
+	if err := h.forgotPassword(ctx, input.Body); err != nil {
 		errlib.LogError(err)
-		// Always return 200 OK for security reasons (prevent email enumeration)
-		w.WriteHeader(http.StatusOK)
-		return
+		// Always return success for security (prevent email enumeration)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *AuthHandler) forgotPassword(ctx context.Context, req ForgotPasswordRequestBody) error {

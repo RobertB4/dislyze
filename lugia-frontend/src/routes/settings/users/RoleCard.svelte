@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Tooltip from "@dislyze/zoroark/Tooltip";
-	import type { RoleInfo } from "$lugia/routes/settings/users/+page";
+	import type { RoleInfo } from "$lugia/schema";
 
 	let {
 		role,

@@ -4,7 +4,7 @@
 	import { toast } from "@dislyze/zoroark/toast";
 	import { forceUpdateMeCache } from "@dislyze/zoroark/meCache";
 	import { invalidate } from "$app/navigation";
-	import { mutationFetch } from "$lugia/lib/fetch";
+	import { createMutationClient } from "$lugia/lib/api";
 
 	let {
 		onClose
@@ -17,11 +17,10 @@
 	async function handleDeactivate() {
 		isSubmitting = true;
 
-		const { success } = await mutationFetch(`/api/ip-whitelist/deactivate`, {
-			method: "POST"
-		});
+		const api = createMutationClient();
+		const { error } = await api.POST("/ip-whitelist/deactivate");
 
-		if (success) {
+		if (!error) {
 			forceUpdateMeCache.set(true);
 			await invalidate((u) => u.pathname.includes("/api/me"));
 			toast.show("IPアドレス制限を無効にしました", "success");

@@ -31,7 +31,7 @@ func TestLogin(t *testing.T) {
 				Email:    testUser.Email,
 				Password: testUser.PlainTextPassword,
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name: "valid user but not internal admin",
@@ -93,7 +93,7 @@ func TestLogin(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
-			if tt.expectedStatus == http.StatusOK {
+			if tt.expectedStatus == http.StatusNoContent {
 
 				cookies := resp.Cookies()
 				assert.NotEmpty(t, cookies, "Expected cookies in response for successful login")

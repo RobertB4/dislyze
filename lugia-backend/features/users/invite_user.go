@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sendgrid/sendgrid-go"
@@ -22,10 +23,20 @@ import (
 	"dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
 	"dislyze/jirachi/sendgridlib"
+	"lugia/lib/humautil"
 	"lugia/queries"
 )
+
+var InviteUserOp = huma.Operation{
+	OperationID: "invite-user",
+	Method:      http.MethodPost,
+	Path:        "/users/invite",
+}
+
+type InviteUserInput struct {
+	Body InviteUserRequestBody
+}
 
 type InviteUserRequestBody struct {
 	Email   string   `json:"email"`
@@ -52,34 +63,23 @@ func (r *InviteUserRequestBody) Validate() error {
 	return nil
 }
 
-func (h *UsersHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var req InviteUserRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(fmt.Errorf("InviteUser: failed to decode request: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			errlib.LogError(fmt.Errorf("InviteUser: failed to close request body: %w", err))
-		}
-	}()
-
-	if err := req.Validate(); err != nil {
-		appErr := errlib.New(fmt.Errorf("InviteUser: validation failed: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+func (h *UsersHandler) InviteUser(ctx context.Context, input *InviteUserInput) (*struct{}, error) {
+	if err := input.Body.Validate(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("invite user validation failed: %w", err), http.StatusBadRequest)
 	}
 
-	err := h.inviteUser(ctx, req)
+	err := h.inviteUser(ctx, input.Body)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
-
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *UsersHandler) inviteUser(ctx context.Context, req InviteUserRequestBody) error {

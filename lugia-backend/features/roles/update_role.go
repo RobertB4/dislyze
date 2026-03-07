@@ -4,19 +4,30 @@ package roles
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
 	"lugia/queries"
 )
+
+var UpdateRoleOp = huma.Operation{
+	OperationID: "update-role",
+	Method:      http.MethodPost,
+	Path:        "/roles/{roleID}/update",
+}
+
+type UpdateRoleInput struct {
+	RoleID string `path:"roleID"`
+	Body   UpdateRoleRequestBody
+}
 
 type UpdateRoleRequestBody struct {
 	Name          string   `json:"name"`
@@ -35,48 +46,28 @@ func (r *UpdateRoleRequestBody) Validate() error {
 	return nil
 }
 
-func (h *RolesHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	roleIDStr := r.PathValue("roleID")
-	if roleIDStr == "" {
-		appErr := errlib.New(fmt.Errorf("UpdateRole: roleID is required"), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
+func (h *RolesHandler) UpdateRole(ctx context.Context, input *UpdateRoleInput) (*struct{}, error) {
 	var roleID pgtype.UUID
-	if err := roleID.Scan(roleIDStr); err != nil {
-		appErr := errlib.New(fmt.Errorf("UpdateRole: invalid role ID format %s: %w", roleIDStr, err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+	if err := roleID.Scan(input.RoleID); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("invalid role ID format for update: %w", err), http.StatusBadRequest)
 	}
 
-	var req UpdateRoleRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(fmt.Errorf("UpdateRole: failed to decode request: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			errlib.LogError(fmt.Errorf("UpdateRole: failed to close request body: %w", err))
-		}
-	}()
-
-	if err := req.Validate(); err != nil {
-		appErr := errlib.New(fmt.Errorf("UpdateRole: validation failed: %w", err), http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+	if err := input.Body.Validate(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("update role validation failed: %w", err), http.StatusBadRequest)
 	}
 
-	err := h.updateRole(ctx, roleID, req)
+	err := h.updateRole(ctx, roleID, input.Body)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
-
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *RolesHandler) updateRole(ctx context.Context, roleID pgtype.UUID, req UpdateRoleRequestBody) error {

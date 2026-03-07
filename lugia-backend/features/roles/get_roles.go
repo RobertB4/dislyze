@@ -6,13 +6,28 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
 )
+
+var GetRolesOp = huma.Operation{
+	OperationID: "get-roles",
+	Method:      http.MethodGet,
+	Path:        "/roles",
+}
+
+// GetUsersRolesOp serves the same handler at /users/roles for the user
+// management page (requires users.view instead of roles.view).
+var GetUsersRolesOp = huma.Operation{
+	OperationID: "get-users-roles",
+	Method:      http.MethodGet,
+	Path:        "/users/roles",
+}
 
 type Permission struct {
 	ID          string `json:"id"`
@@ -26,24 +41,34 @@ type RoleInfo struct {
 	Name        string       `json:"name"`
 	Description string       `json:"description"`
 	IsDefault   bool         `json:"is_default"`
-	Permissions []Permission `json:"permissions"`
+	Permissions []Permission `json:"permissions" nullable:"false"`
 }
+
+type GetRolesInput struct{}
 
 type GetRolesResponse struct {
-	Roles []RoleInfo `json:"roles"`
+	Roles []RoleInfo `json:"roles" nullable:"false"`
 }
 
-func (h *RolesHandler) GetRoles(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	rawTenantID := libctx.GetTenantID(ctx)
+type GetRolesOutput struct {
+	Body GetRolesResponse
+}
 
-	response, err := h.getRoles(ctx, rawTenantID)
+func (h *RolesHandler) GetRoles(ctx context.Context, input *GetRolesInput) (*GetRolesOutput, error) {
+	tenantID := libctx.GetTenantID(ctx)
+
+	response, err := h.getRoles(ctx, tenantID)
 	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
-
-	responder.RespondWithJSON(w, http.StatusOK, response)
+	return &GetRolesOutput{Body: *response}, nil
 }
 
 func (h *RolesHandler) getRoles(ctx context.Context, tenantID pgtype.UUID) (*GetRolesResponse, error) {

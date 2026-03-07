@@ -10,18 +10,30 @@ import (
 	"strings"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
+	golangJwt "github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 
 	"dislyze/jirachi/errlib"
 	jirachijwt "dislyze/jirachi/jwt"
 	"dislyze/jirachi/logger"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
+	"lugia/lib/middleware"
 	"lugia/queries"
-
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 )
+
+var TenantSignupOp = huma.Operation{
+	OperationID: "tenant-signup",
+	Method:      http.MethodPost,
+	Path:        "/auth/tenant-signup",
+}
+
+type TenantSignupInput struct {
+	Token string `query:"token"`
+	Body  TenantSignupRequestBody
+}
 
 type TenantSignupRequestBody struct {
 	Password        string `json:"password"` // #nosec G117 -- intentional: request body, not a leaked secret
@@ -41,7 +53,7 @@ type CreateTenantTokenClaims struct {
 	CompanyName string     `json:"company_name"`
 	UserName    string     `json:"user_name"`
 	SSO         *SSOConfig `json:"sso,omitempty"`
-	jwt.RegisteredClaims
+	golangJwt.RegisteredClaims
 }
 
 func (r *TenantSignupRequestBody) ValidatePasswordSignup() error {
@@ -86,18 +98,17 @@ func (r *TenantSignupRequestBody) ValidateSSOSignup() error {
 	return nil
 }
 
-func (h *AuthHandler) TenantSignup(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) TenantSignup(ctx context.Context, input *TenantSignupInput) (*struct{}, error) {
+	r := middleware.GetHTTPRequest(ctx)
+	w := middleware.GetResponseWriter(ctx)
+
 	if !h.rateLimiter.Allow(r.RemoteAddr, r) {
-		appErr := errlib.New(fmt.Errorf("rate limit exceeded for tenant signup"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewErrorWithDetail(fmt.Errorf("rate limit exceeded for tenant signup"), http.StatusTooManyRequests, "試行回数が上限を超えました。お手数ですが、しばらく時間をおいてから再度お試しください。")
 	}
 
-	tokenString := r.URL.Query().Get("token")
+	tokenString := input.Token
 	if tokenString == "" {
-		appErr := errlib.New(fmt.Errorf("token is required"), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewErrorWithDetail(fmt.Errorf("tenant signup token is empty"), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
 	}
 
 	decodedToken, urlErr := url.QueryUnescape(tokenString)
@@ -105,77 +116,51 @@ func (h *AuthHandler) TenantSignup(w http.ResponseWriter, r *http.Request) {
 		tokenString = decodedToken
 	}
 
-	token, err := jwt.ParseWithClaims(tokenString, &CreateTenantTokenClaims{}, func(token *jwt.Token) (any, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+	token, err := golangJwt.ParseWithClaims(tokenString, &CreateTenantTokenClaims{}, func(token *golangJwt.Token) (any, error) {
+		if _, ok := token.Method.(*golangJwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte(h.env.CreateTenantJwtSecret), nil
 	})
 	if err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "無効または期限切れの招待リンクです。")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewErrorWithDetail(fmt.Errorf("tenant signup token parse failed: %w", err), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
 	}
 
 	claims, ok := token.Claims.(*CreateTenantTokenClaims)
 	if !ok || !token.Valid {
-		appErr := errlib.New(fmt.Errorf("invalid token claims"), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewErrorWithDetail(fmt.Errorf("tenant signup token claims invalid"), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
 	}
 
 	if strings.TrimSpace(claims.Email) == "" {
-		appErr := errlib.New(fmt.Errorf("email is required in token claims"), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewErrorWithDetail(fmt.Errorf("tenant signup token has empty email"), http.StatusBadRequest, "無効または期限切れの招待リンクです。")
 	}
 
-	var req TenantSignupRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "Invalid request body")
-		responder.RespondWithError(w, appErr)
-		return
-	}
-
-	exists, err := h.queries.ExistsUserWithEmail(r.Context(), claims.Email)
+	exists, err := h.queries.ExistsUserWithEmail(ctx, claims.Email)
 	if err != nil {
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
 	if exists {
-		appErr := errlib.New(fmt.Errorf("user already exists with this email"), http.StatusBadRequest, "このメールアドレスは既に使用されています。")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewErrorWithDetail(fmt.Errorf("tenant signup attempted with existing email"), http.StatusBadRequest, "このメールアドレスは既に使用されています。")
 	}
 
 	if claims.SSO != nil && claims.SSO.Enabled {
-		if err := req.ValidateSSOSignup(); err != nil {
-			appErr := errlib.New(err, http.StatusBadRequest, "")
-			responder.RespondWithError(w, appErr)
-			return
+		if err := input.Body.ValidateSSOSignup(); err != nil {
+			return nil, humautil.NewError(fmt.Errorf("tenant signup SSO validation failed: %w", err), http.StatusBadRequest)
 		}
 
-		if err := h.ssoTenantSignup(r.Context(), &req, claims); err != nil {
-			appErr := errlib.New(err, http.StatusInternalServerError, "")
-			responder.RespondWithError(w, appErr)
-			return
+		if err := h.ssoTenantSignup(ctx, &input.Body, claims); err != nil {
+			return nil, humautil.NewError(err, http.StatusInternalServerError)
 		}
-		w.WriteHeader(http.StatusOK)
-		return
+		return nil, nil
 	}
 
-	if err := req.ValidatePasswordSignup(); err != nil {
-		appErr := errlib.New(err, http.StatusBadRequest, "")
-		responder.RespondWithError(w, appErr)
-		return
+	if err := input.Body.ValidatePasswordSignup(); err != nil {
+		return nil, humautil.NewError(fmt.Errorf("tenant signup password validation failed: %w", err), http.StatusBadRequest)
 	}
 
-	tokenPair, err := h.passwordTenantSignup(r.Context(), &req, claims, r)
+	tokenPair, err := h.passwordTenantSignup(ctx, &input.Body, claims, r)
 	if err != nil {
-		appErr := errlib.New(err, http.StatusInternalServerError, "")
-		responder.RespondWithError(w, appErr)
-		return
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -198,7 +183,7 @@ func (h *AuthHandler) TenantSignup(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   7 * 24 * 60 * 60, // 7 days
 	})
 
-	w.WriteHeader(http.StatusOK)
+	return nil, nil
 }
 
 func (h *AuthHandler) passwordTenantSignup(ctx context.Context, req *TenantSignupRequestBody, claims *CreateTenantTokenClaims, r *http.Request) (*jirachijwt.TokenPair, error) {

@@ -13,11 +13,18 @@ import (
 	"dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
-	"dislyze/jirachi/responder"
+	"lugia/lib/humautil"
 	"lugia/lib/pagination"
-	"lugia/lib/search"
 	"lugia/queries"
+
+	"github.com/danielgtaylor/huma/v2"
 )
+
+var GetUsersOp = huma.Operation{
+	OperationID: "get-users",
+	Method:      http.MethodGet,
+	Path:        "/users",
+}
 
 type UserRole struct {
 	ID          string `json:"id"`
@@ -32,28 +39,48 @@ type UserInfo struct {
 	Status    string     `json:"status"`
 	CreatedAt string     `json:"created_at"`
 	UpdatedAt string     `json:"updated_at"`
-	Roles     []UserRole `json:"roles"`
+	Roles     []UserRole `json:"roles" nullable:"false"`
 }
 
 type GetUsersResponse struct {
-	Users      []UserInfo                    `json:"users"`
+	Users      []UserInfo                    `json:"users" nullable:"false"`
 	Pagination pagination.PaginationMetadata `json:"pagination"`
 }
 
-func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	rawTenantID := libctx.GetTenantID(ctx)
+type GetUsersInput struct {
+	Page   int    `query:"page" default:"1" minimum:"1"`
+	Limit  int    `query:"limit" default:"50" minimum:"1" maximum:"100"`
+	Search string `query:"search" maxLength:"100"`
+}
 
-	paginationParams := pagination.CalculatePagination(r)
-	searchTerm := search.ValidateSearchTerm(r, 100)
+type GetUsersOutput struct {
+	Body GetUsersResponse
+}
 
-	response, err := h.getUsers(ctx, rawTenantID, paginationParams, searchTerm)
-	if err != nil {
-		responder.RespondWithError(w, err)
-		return
+func (h *UsersHandler) GetUsers(ctx context.Context, input *GetUsersInput) (*GetUsersOutput, error) {
+	tenantID := libctx.GetTenantID(ctx)
+
+	limit := int32(input.Limit)
+	offset := int32((input.Page - 1) * input.Limit)
+
+	paginationParams := pagination.QueryParams{
+		Page:   input.Page,
+		Limit:  limit,
+		Offset: offset,
 	}
 
-	responder.RespondWithJSON(w, http.StatusOK, response)
+	response, err := h.getUsers(ctx, tenantID, paginationParams, input.Search)
+	if err != nil {
+		var appErr *errlib.AppError
+		if errlib.As(err, &appErr) {
+			if appErr.Message != "" {
+				return nil, humautil.NewErrorWithDetail(err, appErr.StatusCode, appErr.Message)
+			}
+			return nil, humautil.NewError(err, appErr.StatusCode)
+		}
+		return nil, humautil.NewError(err, http.StatusInternalServerError)
+	}
+	return &GetUsersOutput{Body: *response}, nil
 }
 
 func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, paginationParams pagination.QueryParams, searchTerm string) (*GetUsersResponse, error) {

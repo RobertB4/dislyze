@@ -40,7 +40,7 @@ func TestVerifyResetToken(t *testing.T) {
 				t.Logf("Error closing fpResp body: %v", err)
 			}
 		}()
-		assert.Equal(t, http.StatusOK, fpResp.StatusCode)
+		assert.Equal(t, http.StatusNoContent, fpResp.StatusCode)
 
 		email, err := setup.GetLatestEmailFromSendgridMock(t, userEmail)
 		assert.NoError(t, err)

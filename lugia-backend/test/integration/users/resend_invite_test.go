@@ -61,9 +61,9 @@ func TestResendInvite_Integration(t *testing.T) {
 			name:           "successful resend by admin for pending user (enterprise_11)",
 			loginUserKey:   "enterprise_1",
 			targetUserKey:  "enterprise_11",
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 			customAssertions: func(t *testing.T, resp *http.Response, invokerUser setup.UserTestData, targetUser setup.UserTestData, firstCallRespStatus int) {
-				assert.Equal(t, http.StatusOK, resp.StatusCode, "Response status should be OK")
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode, "Response status should be 204 No Content")
 
 				var countOldToken int
 				err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM invitation_tokens WHERE token_hash = $1 AND user_id = $2", initialTokenHashForPendingUser, targetUser.UserID).Scan(&countOldToken)
@@ -129,7 +129,7 @@ func TestResendInvite_Integration(t *testing.T) {
 				}()
 
 				acceptInviteBodyBytes, _ := io.ReadAll(acceptInviteResp.Body)
-				assert.Equal(t, http.StatusOK, acceptInviteResp.StatusCode, "AcceptInvite request failed. Body: %s", string(acceptInviteBodyBytes))
+				assert.Equal(t, http.StatusNoContent, acceptInviteResp.StatusCode, "AcceptInvite request failed. Body: %s", string(acceptInviteBodyBytes))
 
 				var userStatus string
 				err = pool.QueryRow(ctx, "SELECT status FROM users WHERE id = $1", targetUser.UserID).Scan(&userStatus)
@@ -180,10 +180,10 @@ func TestResendInvite_Integration(t *testing.T) {
 			expectForbidden: true,
 		},
 		{
-			name:                 "invalid target user ID format",
+			name:                 "invalid target user ID format returns 400",
 			loginUserKey:         "enterprise_1",
 			targetUserIDOverride: "not-a-uuid",
-			expectedStatus:       http.StatusInternalServerError,
+			expectedStatus:       http.StatusBadRequest,
 		},
 		{
 			name:            "rate limit: first call OK, second call TooManyRequests",
@@ -194,7 +194,7 @@ func TestResendInvite_Integration(t *testing.T) {
 			// Here, customAssertions will handle all checks.
 			expectedStatus: http.StatusTooManyRequests,
 			customAssertions: func(t *testing.T, resp *http.Response, invokerUser setup.UserTestData, targetUser setup.UserTestData, firstCallRespStatus int) {
-				assert.Equal(t, http.StatusOK, firstCallRespStatus, "First call for rate limit test should succeed (200 OK)")
+				assert.Equal(t, http.StatusNoContent, firstCallRespStatus, "First call for rate limit test should succeed (204 No Content)")
 
 				// Assertions for the second call (which is the `resp` passed to this function)
 				assert.Equal(t, http.StatusTooManyRequests, resp.StatusCode, "Second call for rate limit test should be 429 Too Many Requests")
