@@ -45,11 +45,11 @@ RUN echo "node ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/node
 RUN mkdir -p /workspace && chown node:node /workspace \
     && chown -R node:node /home/node/go
 
-# Switch to node user
-USER node
-
 # Playwright CLI (browser automation for agents)
 RUN npm install -g @playwright/cli@latest
+
+# Switch to node user
+USER node
 
 # Claude Code (native installer)
 RUN curl -fsSL https://claude.ai/install.sh | bash
