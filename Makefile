@@ -1,9 +1,9 @@
-check-structural: check-claude-refs check-feature-docs
+check-structural: verify-claude-refs verify-feature-docs
 
-check-claude-refs:
+verify-claude-refs:
 	@./scripts/verify-claude-refs.sh
 
-check-feature-docs:
+verify-feature-docs:
 	@./scripts/verify-feature-docs.sh
 
 periodic-review:
