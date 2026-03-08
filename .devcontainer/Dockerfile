@@ -35,6 +35,7 @@ RUN go install github.com/pressly/goose/v3/cmd/goose@latest \
     && go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest \
     && go install github.com/air-verse/air@latest \
     && go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest \
+    && go install golang.org/x/tools/cmd/deadcode@latest \
     && curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
         | sh -s -- -b $(go env GOPATH)/bin v2.11.1
 
