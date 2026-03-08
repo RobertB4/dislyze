@@ -11,6 +11,7 @@ Allow tenants to customize who can do what. When RBAC is off, tenants still have
 - **Enterprise feature flag:** Must be enabled per tenant by admins in giratina.
 - **Touches everything:** RBAC gates access to all other features. Permission checks (`RequireUsersEdit`, `RequireRolesView`, etc.) run as middleware on protected routes.
 - **IP whitelisting, user management, profile:** UI sections are shown/hidden based on the user's effective permissions.
+- **Audit logging:** Role mutations are logged — create, update, delete roles, and user role assignment changes. Viewing audit logs requires the `audit_log view` permission, which is managed through RBAC.
 
 ## Non-obvious constraints
 

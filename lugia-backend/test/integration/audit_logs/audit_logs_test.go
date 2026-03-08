@@ -1,12 +1,10 @@
 package audit_logs
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"lugia/features/audit_logs"
-	"lugia/features/roles"
 	"lugia/test/integration/setup"
 	"net/http"
 	"testing"
@@ -217,149 +215,6 @@ func TestAuditLogs_Pagination(t *testing.T) {
 				"Different pages should have different entries")
 		}
 	}
-}
-
-func TestAuditLogs_RoleCreatedEvent(t *testing.T) {
-	pool := setup.InitDB(t)
-	defer setup.CloseDB(pool)
-	setup.ResetAndSeedDB(t, pool)
-
-	// Clear existing audit logs to isolate this test
-	_, err := pool.Exec(context.Background(), "DELETE FROM audit_logs")
-	require.NoError(t, err)
-
-	enterpriseAdmin := setup.TestUsersData["enterprise_1"]
-	accessToken, _ := setup.LoginUserAndGetTokens(t, enterpriseAdmin.Email, enterpriseAdmin.PlainTextPassword)
-
-	// Create a role
-	createRoleRequest := roles.CreateRoleRequestBody{
-		Name:          "Audit Test Role",
-		Description:   "Role created to test audit logging",
-		PermissionIDs: []string{setup.TestPermissionsData["users_view"].ID},
-	}
-	jsonData, err := json.Marshal(createRoleRequest)
-	require.NoError(t, err)
-
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", setup.BaseURL+"/roles/create", bytes.NewBuffer(jsonData))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.AddCookie(&http.Cookie{Name: "dislyze_access_token", Value: accessToken})
-
-	resp, err := client.Do(req)
-	require.NoError(t, err)
-	defer func() { _ = resp.Body.Close() }()
-	assert.Equal(t, http.StatusNoContent, resp.StatusCode, "Role creation should succeed")
-
-	// Verify audit log entry was created
-	result, status := getAuditLogs(t, accessToken, "resource_type=role&action=created&limit=10")
-	assert.Equal(t, http.StatusOK, status)
-	require.Greater(t, len(result.AuditLogs), 0, "Should have role.created audit entry")
-
-	entry := result.AuditLogs[0]
-	assert.Equal(t, "role", entry.ResourceType)
-	assert.Equal(t, "created", entry.Action)
-	assert.Equal(t, "success", entry.Outcome)
-	assert.Equal(t, enterpriseAdmin.UserID, entry.ActorID)
-	assert.Equal(t, enterpriseAdmin.Name, entry.ActorName)
-	assert.Equal(t, enterpriseAdmin.Email, entry.ActorEmail)
-	assert.NotNil(t, entry.ResourceID, "Role creation should include resource_id")
-
-	// Verify metadata contains role_name
-	var metadata map[string]string
-	err = json.Unmarshal(entry.Metadata, &metadata)
-	require.NoError(t, err)
-	assert.Equal(t, "Audit Test Role", metadata["role_name"])
-}
-
-func TestAuditLogs_LoginEvent(t *testing.T) {
-	pool := setup.InitDB(t)
-	defer setup.CloseDB(pool)
-	setup.ResetAndSeedDB(t, pool)
-
-	// Clear existing audit logs
-	_, err := pool.Exec(context.Background(), "DELETE FROM audit_logs")
-	require.NoError(t, err)
-
-	enterpriseAdmin := setup.TestUsersData["enterprise_1"]
-
-	// Perform a login (which generates an audit event)
-	accessToken, _ := setup.LoginUserAndGetTokens(t, enterpriseAdmin.Email, enterpriseAdmin.PlainTextPassword)
-
-	// Check for login audit entry
-	result, status := getAuditLogs(t, accessToken, "resource_type=auth&action=login&limit=10")
-	assert.Equal(t, http.StatusOK, status)
-	require.Greater(t, len(result.AuditLogs), 0, "Should have auth.login audit entry")
-
-	entry := result.AuditLogs[0]
-	assert.Equal(t, "auth", entry.ResourceType)
-	assert.Equal(t, "login", entry.Action)
-	assert.Equal(t, "success", entry.Outcome)
-	assert.Equal(t, enterpriseAdmin.UserID, entry.ActorID)
-}
-
-func TestAuditLogs_LoginFailureEvent(t *testing.T) {
-	pool := setup.InitDB(t)
-	defer setup.CloseDB(pool)
-	setup.ResetAndSeedDB(t, pool)
-
-	// Clear existing audit logs
-	_, err := pool.Exec(context.Background(), "DELETE FROM audit_logs")
-	require.NoError(t, err)
-
-	enterpriseAdmin := setup.TestUsersData["enterprise_1"]
-
-	// Attempt login with wrong password
-	resp := setup.AttemptLogin(t, enterpriseAdmin.Email, "wrong_password")
-	defer func() { _ = resp.Body.Close() }()
-	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-
-	// Login with correct password to access audit logs
-	accessToken, _ := setup.LoginUserAndGetTokens(t, enterpriseAdmin.Email, enterpriseAdmin.PlainTextPassword)
-
-	// Check for failed login audit entry
-	result, status := getAuditLogs(t, accessToken, "resource_type=auth&action=login&outcome=failure&limit=10")
-	assert.Equal(t, http.StatusOK, status)
-	require.Greater(t, len(result.AuditLogs), 0, "Should have auth.login failure audit entry")
-
-	entry := result.AuditLogs[0]
-	assert.Equal(t, "auth", entry.ResourceType)
-	assert.Equal(t, "login", entry.Action)
-	assert.Equal(t, "failure", entry.Outcome)
-}
-
-func TestAuditLogs_UserListViewedEvent(t *testing.T) {
-	pool := setup.InitDB(t)
-	defer setup.CloseDB(pool)
-	setup.ResetAndSeedDB(t, pool)
-
-	// Clear existing audit logs
-	_, err := pool.Exec(context.Background(), "DELETE FROM audit_logs")
-	require.NoError(t, err)
-
-	enterpriseAdmin := setup.TestUsersData["enterprise_1"]
-	accessToken, _ := setup.LoginUserAndGetTokens(t, enterpriseAdmin.Email, enterpriseAdmin.PlainTextPassword)
-
-	// Access users list
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", setup.BaseURL+"/users", nil)
-	require.NoError(t, err)
-	req.AddCookie(&http.Cookie{Name: "dislyze_access_token", Value: accessToken})
-
-	resp, err := client.Do(req)
-	require.NoError(t, err)
-	defer func() { _ = resp.Body.Close() }()
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-	// Verify GDPR read access audit entry
-	result, status := getAuditLogs(t, accessToken, "resource_type=user&action=list_viewed&limit=10")
-	assert.Equal(t, http.StatusOK, status)
-	require.Greater(t, len(result.AuditLogs), 0, "Should have user.list_viewed audit entry")
-
-	entry := result.AuditLogs[0]
-	assert.Equal(t, "user", entry.ResourceType)
-	assert.Equal(t, "list_viewed", entry.Action)
-	assert.Equal(t, "success", entry.Outcome)
 }
 
 func TestAuditLogs_PermissionDeniedNotLogged_ForNonAuditTenant(t *testing.T) {

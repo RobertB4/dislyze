@@ -3,12 +3,14 @@ package ip_whitelist
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/netip"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"dislyze/jirachi/auditlog"
@@ -80,7 +82,18 @@ func (h *IPWhitelistHandler) addIPToWhitelist(ctx context.Context, req AddIPToWh
 		label = pgtype.Text{String: *req.Label, Valid: true}
 	}
 
-	newRule, err := h.q.AddIPToWhitelist(ctx, &queries.AddIPToWhitelistParams{
+	tx, err := h.dbConn.Begin(ctx)
+	if err != nil {
+		return errlib.NewError(fmt.Errorf("AddIPToWhitelist: failed to begin transaction: %w", err), http.StatusInternalServerError)
+	}
+	defer func() {
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
+			errlib.LogError(fmt.Errorf("AddIPToWhitelist: failed to rollback transaction: %w", rbErr))
+		}
+	}()
+	qtx := h.q.WithTx(tx)
+
+	newRule, err := qtx.AddIPToWhitelist(ctx, &queries.AddIPToWhitelistParams{
 		TenantID:  tenantID,
 		IpAddress: prefix,
 		Label:     label,
@@ -92,7 +105,7 @@ func (h *IPWhitelistHandler) addIPToWhitelist(ctx context.Context, req AddIPToWh
 
 	if authz.TenantHasFeature(ctx, authz.FeatureAuditLog) {
 		r := middleware.GetHTTPRequest(ctx)
-		actor, err := h.q.GetUserByID(ctx, userID)
+		actor, err := qtx.GetUserByID(ctx, userID)
 		if err != nil {
 			return errlib.NewError(fmt.Errorf("AddIPToWhitelist: failed to get actor for audit log: %w", err), http.StatusInternalServerError)
 		}
@@ -102,7 +115,7 @@ func (h *IPWhitelistHandler) addIPToWhitelist(ctx context.Context, req AddIPToWh
 			"ip_address":  normalizedCIDR,
 		})
 		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
-		err = h.q.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+		err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
 			TenantID:     tenantID,
 			ActorID:      userID,
 			ResourceType: string(auditlog.ResourceIPWhitelist),
@@ -116,6 +129,10 @@ func (h *IPWhitelistHandler) addIPToWhitelist(ctx context.Context, req AddIPToWh
 		if err != nil {
 			return errlib.NewError(fmt.Errorf("AddIPToWhitelist: failed to insert audit log: %w", err), http.StatusInternalServerError)
 		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return errlib.NewError(fmt.Errorf("AddIPToWhitelist: failed to commit transaction: %w", err), http.StatusInternalServerError)
 	}
 
 	return nil

@@ -14,6 +14,7 @@ Good UX for both paths, but the enterprise path prioritizes security configurati
 - **SSO:** SSO-enabled tenants can only be created via giratina invitation. There is no way to self-signup and activate SSO afterwards. The SSO config (IdP metadata URL, allowed domains) is set at invitation time.
 - **Tenant impersonation:** An `is_internal_user` account is created automatically for every tenant during setup (both self-signup and giratina invite).
 - **RBAC:** New tenants get default roles regardless of RBAC status. Enterprise tenants can have RBAC enabled by admins in giratina.
+- **Audit logging:** Signup and accept-invite events are logged. These are the tenant's first audit log entries.
 
 ## Non-obvious constraints
 

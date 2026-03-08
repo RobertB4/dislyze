@@ -14,14 +14,15 @@ import (
 
 const CountAuditLogs = `-- name: CountAuditLogs :one
 SELECT COUNT(*)
-FROM audit_logs
-WHERE tenant_id = $1
-AND ($2::uuid IS NULL OR actor_id = $2)
-AND ($3::varchar = '' OR resource_type = $3)
-AND ($4::varchar = '' OR action = $4)
-AND ($5::varchar = '' OR outcome = $5)
-AND ($6::timestamptz IS NULL OR created_at >= $6)
-AND ($7::timestamptz IS NULL OR created_at <= $7)
+FROM audit_logs al
+INNER JOIN users u ON u.id = al.actor_id
+WHERE al.tenant_id = $1
+AND ($2::uuid IS NULL OR al.actor_id = $2)
+AND ($3::varchar = '' OR al.resource_type = $3)
+AND ($4::varchar = '' OR al.action = $4)
+AND ($5::varchar = '' OR al.outcome = $5)
+AND ($6::timestamptz IS NULL OR al.created_at >= $6)
+AND ($7::timestamptz IS NULL OR al.created_at <= $7)
 `
 
 type CountAuditLogsParams struct {

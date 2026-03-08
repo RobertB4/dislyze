@@ -126,7 +126,7 @@ func (h *AuthHandler) forgotPassword(ctx context.Context, req ForgotPasswordRequ
 				IpAddress:    &ipAddr,
 				UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
 			}); err != nil {
-				errlib.LogError(fmt.Errorf("ForgotPassword: failed to insert audit log: %w", err))
+				return errlib.NewError(fmt.Errorf("ForgotPassword: failed to insert audit log: %w", err), http.StatusInternalServerError)
 			}
 		}
 	}

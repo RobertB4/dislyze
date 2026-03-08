@@ -38,7 +38,8 @@ const (
 const (
 	ActionInvited      Action = "invited"
 	ActionDeleted      Action = "deleted"
-	ActionEmailChanged Action = "email_changed"
+	ActionEmailChangeRequested Action = "email_change_requested"
+	ActionEmailChangeVerified  Action = "email_change_verified"
 	ActionRolesUpdated Action = "roles_updated"
 	ActionInviteResent Action = "invite_resent"
 	ActionListViewed   Action = "list_viewed"

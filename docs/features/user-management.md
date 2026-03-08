@@ -7,6 +7,7 @@ Standard SaaS user management — invite users, assign roles, manage access.
 - **RBAC:** When RBAC is enabled, users can be assigned custom roles during invitation or later via role editing. When RBAC is off, only default roles are available.
 - **Tenant onboarding:** Inviting a user is essentially onboarding a new user to the tenant. The invited user receives a link to accept and set up their account.
 - **Giratina:** Admins can view users within any tenant. Customer-facing user management (lugia) is separate — customers manage their own coworkers.
+- **Audit logging:** User management actions are logged — invite, resend invite, delete user, and viewing the user list (GDPR data access logging). Mutations and audit log inserts are atomic (same transaction).
 
 ## Non-obvious constraints
 

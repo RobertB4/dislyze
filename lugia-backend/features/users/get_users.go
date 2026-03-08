@@ -87,6 +87,8 @@ func (h *UsersHandler) GetUsers(ctx context.Context, input *GetUsersInput) (*Get
 }
 
 func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, paginationParams pagination.QueryParams, searchTerm string) (*GetUsersResponse, error) {
+	// Compliance: audit log failure must block the request. If we can't prove
+	// who accessed personal data, we must deny access (GDPR Article 30).
 	if libAuthz.TenantHasFeature(ctx, libAuthz.FeatureAuditLog) {
 		actorUserID := libctx.GetUserID(ctx)
 		actorDBUser, err := h.q.GetUserByID(ctx, actorUserID)

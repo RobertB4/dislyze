@@ -4,14 +4,15 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
 
 -- name: CountAuditLogs :one
 SELECT COUNT(*)
-FROM audit_logs
-WHERE tenant_id = @tenant_id
-AND (@actor_id::uuid IS NULL OR actor_id = @actor_id)
-AND (@resource_type::varchar = '' OR resource_type = @resource_type)
-AND (@action::varchar = '' OR action = @action)
-AND (@outcome::varchar = '' OR outcome = @outcome)
-AND (@from_date::timestamptz IS NULL OR created_at >= @from_date)
-AND (@to_date::timestamptz IS NULL OR created_at <= @to_date);
+FROM audit_logs al
+INNER JOIN users u ON u.id = al.actor_id
+WHERE al.tenant_id = @tenant_id
+AND (@actor_id::uuid IS NULL OR al.actor_id = @actor_id)
+AND (@resource_type::varchar = '' OR al.resource_type = @resource_type)
+AND (@action::varchar = '' OR al.action = @action)
+AND (@outcome::varchar = '' OR al.outcome = @outcome)
+AND (@from_date::timestamptz IS NULL OR al.created_at >= @from_date)
+AND (@to_date::timestamptz IS NULL OR al.created_at <= @to_date);
 
 -- name: ListAuditLogs :many
 SELECT

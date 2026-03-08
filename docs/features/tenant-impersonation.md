@@ -10,7 +10,7 @@ Reuses the regular JWT auth system rather than a separate admin backdoor. The sy
 
 - **Authentication:** Uses the same JWT token flow as regular login. The impersonation session is indistinguishable from a normal session at the middleware level.
 - **IP whitelisting:** The `is_internal_user` can bypass IP whitelist restrictions, but only if `AllowInternalAdminBypass` is enabled in the tenant's enterprise feature config. The customer decides whether to allow this, but the setting is managed through giratina by our admins.
-- **Audit logging:** Both successful and failed impersonation attempts are logged with user ID, IP, and user agent.
+- **Audit logging:** Both successful and failed impersonation attempts are logged to the structured logger (jirachi/logger), but not to the tenant's `audit_logs` table. This is a known limitation — impersonation logging exists for internal ops visibility but is not part of the customer-facing compliance audit trail.
 
 ## Non-obvious constraints
 

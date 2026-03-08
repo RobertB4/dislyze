@@ -11,6 +11,7 @@ import (
 
 	"dislyze/jirachi/auditlog"
 	libctx "dislyze/jirachi/ctx"
+	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/logger"
 	"lugia/lib/authz"
 	"lugia/lib/iputils"
@@ -41,7 +42,8 @@ func RequireFeature(feature authz.EnterpriseFeature, db *queries.Queries) func(h
 						"feature": string(feature),
 					})
 					ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
-					_ = db.InsertAuditLog(r.Context(), &queries.InsertAuditLogParams{
+					//nolint:auditcheck // access already denied (403), audit log is best-effort for denial events
+					if err := db.InsertAuditLog(r.Context(), &queries.InsertAuditLogParams{
 						TenantID:     tenantID,
 						ActorID:      userID,
 						ResourceType: string(auditlog.ResourceAccess),
@@ -51,7 +53,9 @@ func RequireFeature(feature authz.EnterpriseFeature, db *queries.Queries) func(h
 						Metadata:     metadata,
 						IpAddress:    &ipAddr,
 						UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
-					})
+					}); err != nil {
+						errlib.LogError(fmt.Errorf("RequireFeature: failed to insert audit log: %w", err))
+					}
 				}
 
 				w.WriteHeader(http.StatusForbidden)

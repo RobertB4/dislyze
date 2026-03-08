@@ -168,7 +168,9 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequestBody, r *http.
 		return nil, user.ID.String(), fmt.Errorf("failed to store refresh token: %w", err)
 	}
 
-	h.insertLoginAuditLogTx(ctx, r, qtx, tenant, user, auditlog.OutcomeSuccess, "")
+	if err := h.insertLoginAuditLogTx(ctx, r, qtx, tenant, user, auditlog.OutcomeSuccess, ""); err != nil {
+		return nil, user.ID.String(), fmt.Errorf("failed to insert audit log: %w", err)
+	}
 
 	if err := tx.Commit(ctx); err != nil {
 		return nil, user.ID.String(), fmt.Errorf("failed to commit transaction: %w", err)
@@ -194,6 +196,7 @@ func (h *AuthHandler) insertLoginAuditLog(ctx context.Context, r *http.Request, 
 	metadataJSON, _ := json.Marshal(metadata)
 
 	ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+	//nolint:auditcheck // login already failed, user gets 401 regardless — audit log is best-effort for failure events
 	err := h.queries.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
 		TenantID:     tenant.ID,
 		ActorID:      user.ID,
@@ -212,10 +215,10 @@ func (h *AuthHandler) insertLoginAuditLog(ctx context.Context, r *http.Request, 
 
 // insertLoginAuditLogTx inserts an audit log for login events within a transaction.
 // Used for the success path where the audit log should be part of the same transaction.
-func (h *AuthHandler) insertLoginAuditLogTx(ctx context.Context, r *http.Request, qtx *queries.Queries, tenant *queries.Tenant, user *queries.User, outcome auditlog.Outcome, reason string) {
+func (h *AuthHandler) insertLoginAuditLogTx(ctx context.Context, r *http.Request, qtx *queries.Queries, tenant *queries.Tenant, user *queries.User, outcome auditlog.Outcome, reason string) error {
 	var ef jirachiAuthz.EnterpriseFeatures
 	if err := json.Unmarshal(tenant.EnterpriseFeatures, &ef); err != nil || !ef.AuditLog.Enabled {
-		return
+		return nil
 	}
 
 	metadata := map[string]string{
@@ -228,7 +231,7 @@ func (h *AuthHandler) insertLoginAuditLogTx(ctx context.Context, r *http.Request
 	metadataJSON, _ := json.Marshal(metadata)
 
 	ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
-	err := qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+	return qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
 		TenantID:     tenant.ID,
 		ActorID:      user.ID,
 		ResourceType: string(auditlog.ResourceAuth),
@@ -239,7 +242,4 @@ func (h *AuthHandler) insertLoginAuditLogTx(ctx context.Context, r *http.Request
 		IpAddress:    &ipAddr,
 		UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
 	})
-	if err != nil {
-		errlib.LogError(fmt.Errorf("login: failed to insert audit log: %w", err))
-	}
 }

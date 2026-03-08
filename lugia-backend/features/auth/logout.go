@@ -81,6 +81,7 @@ func (h *AuthHandler) Logout(ctx context.Context, input *LogoutInput) (*struct{}
 			})
 
 			ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+			//nolint:auditcheck // failing logout to log it would leave the session active, which is worse for security
 			err = h.queries.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
 				TenantID:     logoutTenant.ID,
 				ActorID:      logoutUser.ID,

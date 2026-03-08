@@ -74,6 +74,16 @@ func (h *UsersHandler) verifyChangeEmail(ctx context.Context, token string) erro
 		return errlib.NewErrorWithDetail(fmt.Errorf("VerifyChangeEmail: token expired at %s", emailChangeToken.ExpiresAt.Time), http.StatusBadRequest, "無効または期限切れのトークンです。")
 	}
 
+	// Fetch actor before updating email so we capture the old email in the audit log.
+	var oldEmail string
+	if authz.TenantHasFeature(ctx, authz.FeatureAuditLog) {
+		actor, err := qtx.GetUserByID(ctx, emailChangeToken.UserID)
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to get actor for audit log: %w", err), http.StatusInternalServerError)
+		}
+		oldEmail = actor.Email
+	}
+
 	if err := qtx.UpdateUserEmail(ctx, &queries.UpdateUserEmailParams{
 		ID:    emailChangeToken.UserID,
 		Email: emailChangeToken.NewEmail,
@@ -99,6 +109,7 @@ func (h *UsersHandler) verifyChangeEmail(ctx context.Context, token string) erro
 		metadata, _ := json.Marshal(map[string]string{
 			"actor_name":  actor.Name,
 			"actor_email": actor.Email,
+			"old_email":   oldEmail,
 			"new_email":   emailChangeToken.NewEmail,
 		})
 
@@ -107,9 +118,9 @@ func (h *UsersHandler) verifyChangeEmail(ctx context.Context, token string) erro
 			TenantID:     libctx.GetTenantID(ctx),
 			ActorID:      actor.ID,
 			ResourceType: string(auditlog.ResourceUser),
-			Action:       string(auditlog.ActionEmailChanged),
+			Action:       string(auditlog.ActionEmailChangeVerified),
 			Outcome:      string(auditlog.OutcomeSuccess),
-			ResourceID:   pgtype.Text{},
+			ResourceID:   pgtype.Text{String: emailChangeToken.UserID.String(), Valid: true},
 			Metadata:     metadata,
 			IpAddress:    &ipAddr,
 			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},

@@ -114,7 +114,7 @@ func (h *UsersHandler) changePassword(ctx context.Context, userID pgtype.UUID, r
 			ResourceType: string(auditlog.ResourceAuth),
 			Action:       string(auditlog.ActionPasswordChanged),
 			Outcome:      string(auditlog.OutcomeSuccess),
-			ResourceID:   pgtype.Text{},
+			ResourceID:   pgtype.Text{String: userID.String(), Valid: true},
 			Metadata:     metadata,
 			IpAddress:    &ipAddr,
 			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},

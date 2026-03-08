@@ -163,7 +163,8 @@ func IPWhitelistMiddleware(db *queries.Queries) func(http.Handler) http.Handler 
 						"blocked_ip": clientIP,
 					})
 					ipAddr, _ := netip.ParseAddr(clientIP)
-					_ = db.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+					//nolint:auditcheck // access already denied (403), audit log is best-effort for denial events
+					if err := db.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
 						TenantID:     tenantID,
 						ActorID:      userID,
 						ResourceType: string(auditlog.ResourceAccess),
@@ -173,7 +174,9 @@ func IPWhitelistMiddleware(db *queries.Queries) func(http.Handler) http.Handler 
 						Metadata:     metadata,
 						IpAddress:    &ipAddr,
 						UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
-					})
+					}); err != nil {
+						errlib.LogError(fmt.Errorf("IPWhitelistMiddleware: failed to insert audit log: %w", err))
+					}
 				}
 
 				w.WriteHeader(http.StatusForbidden)

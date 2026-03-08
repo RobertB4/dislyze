@@ -13,6 +13,7 @@ Enterprise feature that restricts product access to specific IP addresses/CIDR r
 - **Enterprise feature flag:** Must be enabled per tenant by admins in giratina before customers can use it.
 - **Auth endpoints are exempt:** The IP check runs as middleware on every request, but auth endpoints (login, SSO, password reset) are not checked. The check happens after authentication, so users can still log in — they just can't access anything else.
 - **SSO:** IP check is after the IdP redirect, not before. Users complete SSO auth first, then get blocked if their IP isn't whitelisted.
+- **Audit logging:** All IP whitelist mutations are logged — activate, deactivate, emergency deactivate, add/update/delete IP rules. Metadata includes the affected IP address. Mutations and audit log inserts are atomic (same transaction).
 
 ## Non-obvious constraints
 

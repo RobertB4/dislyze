@@ -3,6 +3,7 @@ package ip_whitelist
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -73,7 +74,18 @@ func (h *IPWhitelistHandler) deleteIP(ctx context.Context, id pgtype.UUID) error
 		}
 	}
 
-	err = h.q.RemoveIPFromWhitelist(ctx, &queries.RemoveIPFromWhitelistParams{
+	tx, err := h.dbConn.Begin(ctx)
+	if err != nil {
+		return errlib.NewError(fmt.Errorf("DeleteIP: failed to begin transaction: %w", err), http.StatusInternalServerError)
+	}
+	defer func() {
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
+			errlib.LogError(fmt.Errorf("DeleteIP: failed to rollback transaction: %w", rbErr))
+		}
+	}()
+	qtx := h.q.WithTx(tx)
+
+	err = qtx.RemoveIPFromWhitelist(ctx, &queries.RemoveIPFromWhitelistParams{
 		ID:       id,
 		TenantID: tenantID,
 	})
@@ -84,7 +96,7 @@ func (h *IPWhitelistHandler) deleteIP(ctx context.Context, id pgtype.UUID) error
 	if authz.TenantHasFeature(ctx, authz.FeatureAuditLog) {
 		r := middleware.GetHTTPRequest(ctx)
 		userID := libctx.GetUserID(ctx)
-		actor, err := h.q.GetUserByID(ctx, userID)
+		actor, err := qtx.GetUserByID(ctx, userID)
 		if err != nil {
 			return errlib.NewError(fmt.Errorf("DeleteIP: failed to get actor for audit log: %w", err), http.StatusInternalServerError)
 		}
@@ -94,7 +106,7 @@ func (h *IPWhitelistHandler) deleteIP(ctx context.Context, id pgtype.UUID) error
 			"ip_address":  rule.IpAddress.String(),
 		})
 		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
-		err = h.q.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+		err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
 			TenantID:     tenantID,
 			ActorID:      userID,
 			ResourceType: string(auditlog.ResourceIPWhitelist),
@@ -108,6 +120,10 @@ func (h *IPWhitelistHandler) deleteIP(ctx context.Context, id pgtype.UUID) error
 		if err != nil {
 			return errlib.NewError(fmt.Errorf("DeleteIP: failed to insert audit log: %w", err), http.StatusInternalServerError)
 		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return errlib.NewError(fmt.Errorf("DeleteIP: failed to commit transaction: %w", err), http.StatusInternalServerError)
 	}
 
 	return nil

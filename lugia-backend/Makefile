@@ -26,8 +26,13 @@ test-integration-single:
 	cd test && docker compose -p lugia-backend-integration -f docker-compose.integration.yml up -d
 	cd test && docker compose -p lugia-backend-integration -f docker-compose.integration.yml exec lugia-backend go test ./test/integration/... -run "$(TEST)" -json -v -p 1 -parallel 1 2>&1 | gotestfmt -hide=empty-packages
 
-lint:
-	golangci-lint run --timeout 5m
+lint: build-custom-gcl
+	./custom-gcl run --timeout 5m
+
+build-custom-gcl:
+	@if [ ! -f ./custom-gcl ] || [ .custom-gcl.yml -nt ./custom-gcl ]; then \
+		golangci-lint custom; \
+	fi
 
 build:
 	go build -o tmp/main main.go
