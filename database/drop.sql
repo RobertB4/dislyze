@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS audit_logs;
 DROP TABLE IF EXISTS ip_whitelist_emergency_tokens;
 DROP TABLE IF EXISTS tenant_ip_whitelist;
 DROP TABLE IF EXISTS goose_db_version;

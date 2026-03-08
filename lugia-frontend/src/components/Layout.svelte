@@ -116,7 +116,7 @@
 							href={resolve("/")}
 							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
-							class:bg-gray-900={page.route.id?.includes("/data/custom-fields")}
+							class:bg-gray-900={false}
 						>
 							<!-- Heroicon name: outline/table-cells -->
 							<svg
@@ -143,7 +143,7 @@
 							href={resolve("/")}
 							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
-							class:bg-gray-900={page.route.id?.includes("/data/companies")}
+							class:bg-gray-900={false}
 						>
 							<!-- Heroicon name: building-office-2 -->
 							<svg
@@ -170,7 +170,7 @@
 							href={resolve("/")}
 							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
-							class:bg-gray-900={page.route.id?.includes("/data/users")}
+							class:bg-gray-900={false}
 						>
 							<!-- Heroicon name: users -->
 							<svg
@@ -196,7 +196,7 @@
 							href={resolve("/")}
 							onclick={toggleMobileNavigation}
 							class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
-							class:bg-gray-900={page.route.id?.includes("/data/segments")}
+							class:bg-gray-900={false}
 						>
 							<!-- Heroicon name: chart-pie -->
 							<svg
@@ -227,7 +227,7 @@
 				<nav class="px-2 pb-2">
 					<a
 						data-testid="navigation-settings-mobile"
-						href={resolve("/settings/users")}
+						href={resolve("/settings/profile")}
 						onclick={toggleMobileNavigation}
 						class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base rounded-md"
 						class:bg-gray-900={page.route.id?.includes("/settings")}
@@ -359,7 +359,7 @@
 					data-testid="navigation-custom-fields"
 					href={resolve("/")}
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-					class:bg-gray-900={page.route.id?.includes("/data/custom-fields")}
+					class:bg-gray-900={false}
 				>
 					<!-- Heroicon name: outline/table-cells -->
 					<svg
@@ -385,7 +385,7 @@
 					data-testid="navigation-companies"
 					href={resolve("/")}
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-					class:bg-gray-900={page.route.id?.includes("/data/companies")}
+					class:bg-gray-900={false}
 				>
 					<!-- Heroicon name: building-office-2 -->
 					<svg
@@ -411,7 +411,7 @@
 					data-testid="navigation-users"
 					href={resolve("/")}
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-					class:bg-gray-900={page.route.id?.includes("/data/users")}
+					class:bg-gray-900={false}
 				>
 					<!-- Heroicon name: users -->
 					<svg
@@ -436,7 +436,7 @@
 					data-testid="navigation-segments"
 					href={resolve("/")}
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-					class:bg-gray-900={page.route.id?.includes("/data/segments")}
+					class:bg-gray-900={false}
 				>
 					<!-- Heroicon name: chart-pie -->
 					<svg
@@ -469,7 +469,7 @@
 			{#if hasPermission(me, "users.view")}
 				<a
 					data-testid="navigation-settings"
-					href={resolve("/settings/users")}
+					href={resolve("/settings/profile")}
 					class=" text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
 					class:bg-gray-900={page.route.id?.includes("/settings")}
 				>
