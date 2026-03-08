@@ -30,7 +30,7 @@ lint: build-custom-gcl
 	./custom-gcl run --timeout 5m
 
 build-custom-gcl:
-	@if [ ! -f ./custom-gcl ] || [ .custom-gcl.yml -nt ./custom-gcl ]; then \
+	@if [ ! -f ./custom-gcl ] || [ ./.custom-gcl.yml -nt ./custom-gcl ]; then \
 		golangci-lint custom; \
 	fi
 

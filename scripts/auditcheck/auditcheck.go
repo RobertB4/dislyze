@@ -59,7 +59,7 @@ func run(pass *analysis.Pass) (any, error) {
 				if isInsertAuditLogIfWithoutReturn(node) {
 					pass.Report(analysis.Diagnostic{
 						Pos:     node.Pos(),
-						Message: "InsertAuditLog error not returned — audit log errors must be returned (compliance requirement).",
+						Message: "InsertAuditLog error not returned — audit log errors must be returned (compliance requirement)",
 					})
 				}
 			case *ast.BlockStmt:
@@ -137,7 +137,7 @@ func checkConsecutiveStmts(pass *analysis.Pass, block *ast.BlockStmt) {
 		if !containsReturn(ifStmt.Body) {
 			pass.Report(analysis.Diagnostic{
 				Pos:     assignStmt.Pos(),
-				Message: "InsertAuditLog error not returned — audit log errors must be returned (compliance requirement).",
+				Message: "InsertAuditLog error not returned — audit log errors must be returned (compliance requirement)",
 			})
 		}
 	}
