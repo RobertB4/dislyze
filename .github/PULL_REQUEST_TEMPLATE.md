@@ -17,7 +17,6 @@
 
 ## Testing
 
-- [ ] `make verify` passes from root
 - [ ] Manually tested (describe below if applicable)
 
 <!-- Describe any manual testing performed, or remove this section. -->

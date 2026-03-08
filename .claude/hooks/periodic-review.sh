@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # PostToolUse hook: periodic review guardrail
-# Every 7 minutes, nudges the agent to zoom out and review progress.
+# Every 7 minutes, nudges the agent to pause and run `make periodic-review`.
 # Uses a state file keyed by session_id to track timing.
 #
 # Input (stdin): JSON with session_id, tool_name, etc.
@@ -61,8 +61,11 @@ if [[ ! -f "$PROMPT_FILE" ]]; then
   exit 0
 fi
 
-# --- Read and interpolate the prompt ---
-NUDGE_TEXT=$(sed "s|{{TASK_FILE}}|${TASK_FILE}|g" "$PROMPT_FILE")
+NUDGE_TEXT=$(cat "$PROMPT_FILE")
+
+if [[ "$HAS_TASK_FILE" == "true" ]]; then
+  NUDGE_TEXT="${NUDGE_TEXT} Task file: ${TASK_FILE}"
+fi
 
 jq -n --arg message "$NUDGE_TEXT" '{
   hookSpecificOutput: {

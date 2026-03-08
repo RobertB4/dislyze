@@ -11,9 +11,11 @@ This is an internal admin application for managing customers, subscriptions, and
 
 ## Essential Commands
 ```bash
-make test-unit    # Run unit tests
-make test-integration # Run integration tests
-make sqlc         # Generate SQL queries from queries_pregeneration/*.sql
+make check            # Fast static checks: lint + unit tests + deadcode
+make verify           # Full verification: check + integration tests (Docker required)
+make test-unit        # Run unit tests only
+make test-integration # Run integration tests only (Docker required)
+make sqlc             # Generate SQL queries from queries_pregeneration/*.sql
 ```
 
 ## Architecture

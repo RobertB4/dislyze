@@ -95,7 +95,7 @@ If tests fail, fix them. Iterate until they pass.
 
 **Tests must be executed and passing before committing. No exceptions.** If the test runner fails for environmental reasons, stop and tell the user — do not commit unverified tests.
 
-Then run `make verify` from the repo root to ensure nothing else is broken.
+Then run `make check` / `npm run check` in the affected service(s) to ensure nothing else is broken.
 
 ## Phase 6: Finish
 

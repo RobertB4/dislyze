@@ -4,10 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working in lugi
 
 ## Essential Commands
 ```bash
+make check            # Fast static checks: lint + unit tests + deadcode
+make verify           # Full verification: check + integration tests (Docker required)
 make build            # Build Go binary
-make test-unit        # Run unit tests
-make test-integration # Run integration tests (Docker required)
-make lint             # Run golangci-lint
+make test-unit        # Run unit tests only
+make test-integration # Run integration tests only (Docker required)
+make lint             # Run golangci-lint only
 make sqlc             # Generate SQL queries from queries_pregeneration/*.sql
 ```
 

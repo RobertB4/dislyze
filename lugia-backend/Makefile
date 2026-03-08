@@ -4,6 +4,12 @@ install:
 dev:
 	$(HOME)/go/bin/air
 
+# check: fast static checks (lint, unit tests, deadcode). Use after small changes.
+check: lint test-unit deadcode
+
+# verify: full verification including integration tests. Use after completing a step.
+verify: check test-integration
+
 test-unit:
 	go test `go list ./... | grep -v test` -json -v 2>&1 | gotestfmt -hide=empty-packages,successful-tests
 

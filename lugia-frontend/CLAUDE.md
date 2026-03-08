@@ -5,9 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working in lugi
 ## Essential Commands
 
 ```bash
-npm run build         # Production build
-npm run test-e2e      # E2E tests (Playwright with Docker)
+npm run check         # Fast static checks: typecheck
 npm run lint          # ESLint and Prettier
+npm run verify        # Full verification: check + lint + e2e tests (Docker required)
+npm run build         # Production build
+npm run test-e2e      # E2E tests only (Playwright with Docker)
 ```
 
 ## Architecture

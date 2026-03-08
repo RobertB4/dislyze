@@ -1,6 +1,11 @@
 sqlc:
 	sqlc generate
 
+# check and verify are the same for jirachi (library, no integration tests)
+check: lint test-unit
+
+verify: check
+
 lint:
 	golangci-lint run --timeout 5m
 

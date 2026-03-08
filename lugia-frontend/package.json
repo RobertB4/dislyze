@@ -12,7 +12,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check './src/**/*.{js,ts,svelte}' && eslint './src/**/*.{js,ts,svelte}'",
-		"test-e2e": "cd test && bash test.sh"
+		"test-e2e": "cd test && bash test.sh",
+		"verify": "npm run check && npm run lint && npm run test-e2e"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.0",
