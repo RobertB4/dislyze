@@ -125,6 +125,9 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 			testUser.UserID, successEmail, successHash, expiresAt)
 		assert.NoError(t, err)
 
+		// Authenticate as the token owner
+		testUserAccessToken, _ := setup.LoginUserAndGetTokens(t, testUser.Email, testUser.PlainTextPassword)
+
 		// Verify with our known token
 		verifyURL := fmt.Sprintf("%s/me/verify-change-email?token=%s", setup.BaseURL, successPlaintext)
 		verifyReq, err := http.NewRequest("GET", verifyURL, nil)
@@ -133,7 +136,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 		// Add authentication cookie
 		verifyReq.AddCookie(&http.Cookie{
 			Name:  "dislyze_access_token",
-			Value: accessToken,
+			Value: testUserAccessToken,
 			Path:  "/",
 		})
 
@@ -192,6 +195,9 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 			reuseUser.UserID, reuseEmail, reuseHash, expiresAt)
 		assert.NoError(t, err)
 
+		// Authenticate as the token owner
+		reuseAccessToken, _ := setup.LoginUserAndGetTokens(t, reuseUser.Email, reuseUser.PlainTextPassword)
+
 		verifyURL := fmt.Sprintf("%s/me/verify-change-email?token=%s", setup.BaseURL, reusePlaintext)
 
 		// First verification should succeed
@@ -201,7 +207,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 		// Add authentication cookie
 		verifyReq1.AddCookie(&http.Cookie{
 			Name:  "dislyze_access_token",
-			Value: accessToken,
+			Value: reuseAccessToken,
 			Path:  "/",
 		})
 
@@ -218,7 +224,7 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 		// Add authentication cookie
 		verifyReq2.AddCookie(&http.Cookie{
 			Name:  "dislyze_access_token",
-			Value: accessToken,
+			Value: reuseAccessToken,
 			Path:  "/",
 		})
 
@@ -230,6 +236,47 @@ func TestVerifyChangeEmail_Integration(t *testing.T) {
 
 		var errorResp map[string]string
 		err = json.NewDecoder(verifyResp2.Body).Decode(&errorResp)
+		assert.NoError(t, err)
+		assert.Equal(t, "無効または期限切れのトークンです。", errorResp["error"])
+	})
+
+	// Test that a user cannot verify another user's token
+	t.Run("cannot verify another users token", func(t *testing.T) {
+		otherUser := setup.TestUsersData["enterprise_1"]
+		otherPlaintext, otherHash := createTestToken(66)
+
+		// Clean up existing tokens for this user (expired token from earlier test)
+		_, err := pool.Exec(ctx, "DELETE FROM email_change_tokens WHERE user_id = $1", otherUser.UserID)
+		assert.NoError(t, err)
+
+		expiresAt := time.Now().Add(30 * time.Minute)
+		_, err = pool.Exec(ctx,
+			"INSERT INTO email_change_tokens (user_id, new_email, token_hash, expires_at) VALUES ($1, $2, $3, $4)",
+			otherUser.UserID, "other@example.com", otherHash, expiresAt)
+		assert.NoError(t, err)
+
+		// Authenticate as a different user (enterprise_2 trying to use enterprise_1's token)
+		attackerUser := setup.TestUsersData["smb_2"]
+		attackerToken, _ := setup.LoginUserAndGetTokens(t, attackerUser.Email, attackerUser.PlainTextPassword)
+
+		verifyURL := fmt.Sprintf("%s/me/verify-change-email?token=%s", setup.BaseURL, otherPlaintext)
+		req, err := http.NewRequest("GET", verifyURL, nil)
+		assert.NoError(t, err)
+
+		req.AddCookie(&http.Cookie{
+			Name:  "dislyze_access_token",
+			Value: attackerToken,
+			Path:  "/",
+		})
+
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "Should not be able to verify another user's token")
+
+		var errorResp map[string]string
+		err = json.NewDecoder(resp.Body).Decode(&errorResp)
 		assert.NoError(t, err)
 		assert.Equal(t, "無効または期限切れのトークンです。", errorResp["error"])
 	})

@@ -70,6 +70,10 @@ func (h *UsersHandler) verifyChangeEmail(ctx context.Context, token string) erro
 		return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to get email change token: %w", err), http.StatusInternalServerError)
 	}
 
+	if emailChangeToken.UserID != libctx.GetUserID(ctx) {
+		return errlib.NewErrorWithDetail(fmt.Errorf("VerifyChangeEmail: token user %s does not match authenticated user", emailChangeToken.UserID), http.StatusBadRequest, "無効または期限切れのトークンです。")
+	}
+
 	if emailChangeToken.ExpiresAt.Time.Before(time.Now()) {
 		return errlib.NewErrorWithDetail(fmt.Errorf("VerifyChangeEmail: token expired at %s", emailChangeToken.ExpiresAt.Time), http.StatusBadRequest, "無効または期限切れのトークンです。")
 	}
