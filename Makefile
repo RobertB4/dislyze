@@ -9,6 +9,8 @@ verify-go:
 	cd lugia-backend && make test-unit
 	cd giratina-backend && make test-unit
 	cd jirachi && make test-unit
+	cd lugia-backend && make deadcode
+	cd giratina-backend && make deadcode
 
 verify-frontend: build-zoroark
 	cd zoroark && npm run check
