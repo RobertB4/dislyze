@@ -36,11 +36,7 @@ If the diff adds or modifies test files, read the implementation code being test
 - [ ] **PROGRESS.md**: If project state changed (feature completed, known issue fixed, roadmap shifted), is `PROGRESS.md` updated?
 - [ ] **PR ready**: Is the PR description drafted following `.github/PULL_REQUEST_TEMPLATE.md`?
 
-### 4. Run verification
-
-Run `make verify` from the repo root to confirm lint + typecheck + unit tests pass.
-
-### 5. Report
+### 4. Report
 
 Summarize findings:
 

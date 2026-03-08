@@ -18,6 +18,7 @@ Read the PR description carefully. If the description is empty or doesn't explai
 ### 2. Understand the change
 
 Before reviewing line-by-line:
+
 - What is this PR trying to accomplish?
 - Does the approach make sense?
 - Are there simpler alternatives the author may have missed?
@@ -25,6 +26,7 @@ Before reviewing line-by-line:
 ### 3. Explore related code and documentation
 
 Before judging the diff, build context:
+
 - Read the CLAUDE.md files for each affected module
 - Read the existing code surrounding the changed lines — understand what the code looked like before and why
 - Check how similar patterns are implemented elsewhere in the codebase
@@ -56,15 +58,7 @@ If the diff adds or modifies test files, read the implementation code being test
 - [ ] **No mocks**: Tests use real dependencies, not mocks or stubs.
 - [ ] **Behavior over implementation**: Would these tests survive an internal refactor without breaking?
 
-### 5. Verify
-
-If the branch is checked out locally, run `make verify`. If not, check if CI has passed on the PR:
-
-```bash
-gh pr checks $ARGUMENTS
-```
-
-### 6. Submit review
+### 5. Submit review
 
 Based on your findings, submit the review directly:
 

@@ -14,6 +14,7 @@ git diff baseline
 ### 2. Understand the change
 
 Before reviewing line-by-line:
+
 - What is this change trying to accomplish?
 - Does the approach make sense?
 - Are there simpler alternatives the author may have missed?
@@ -21,6 +22,7 @@ Before reviewing line-by-line:
 ### 3. Explore related code and documentation
 
 Before judging the diff, build context:
+
 - Read the CLAUDE.md files for each affected module
 - Read the existing code surrounding the changed lines — understand what the code looked like before and why
 - Check how similar patterns are implemented elsewhere in the codebase
@@ -50,11 +52,7 @@ If the diff adds or modifies test files, read the implementation code being test
 - [ ] **No mocks**: Tests use real dependencies, not mocks or stubs.
 - [ ] **Behavior over implementation**: Would these tests survive an internal refactor without breaking?
 
-### 5. Run verification
-
-Run `make verify` from the repo root to confirm lint + typecheck + unit tests pass.
-
-### 6. Report
+### 5. Report
 
 Only block on issues that genuinely matter — incorrect behavior, bugs, security problems, or tests that provide no value (tautological). Do NOT block on style nits, minor naming preferences, or "nice to have" improvements.
 

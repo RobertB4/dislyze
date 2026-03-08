@@ -5,8 +5,10 @@ Jirachi is the shared Go library used by both `lugia-backend` and `giratina-back
 ## Essential commands
 
 ```bash
+make check      # Fast static checks: lint + unit tests
+make verify     # Same as check (library has no integration tests)
 make sqlc       # Regenerate SQLC queries from queries_pregeneration/
-make test-unit  # Run unit tests
+make test-unit  # Run unit tests only
 ```
 
 ## Package overview

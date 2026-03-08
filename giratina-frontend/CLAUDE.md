@@ -5,9 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working in gira
 ## Essential Commands
 
 ```bash
-npm run build         # Production build
-npm run test-e2e      # E2E tests (Playwright with Docker)
+npm run check         # Fast static checks: typecheck
 npm run lint          # ESLint and Prettier
+npm run build         # Production build
 ```
 
 ## Architecture

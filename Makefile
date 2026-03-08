@@ -1,33 +1,27 @@
-verify: verify-go verify-frontend verify-structural
-
-verify-structural: verify-claude-refs verify-feature-docs
-
-verify-go:
-	cd lugia-backend && make lint
-	cd giratina-backend && make lint
-	cd jirachi && make lint
-	cd lugia-backend && make test-unit
-	cd giratina-backend && make test-unit
-	cd jirachi && make test-unit
-	cd lugia-backend && make deadcode
-	cd giratina-backend && make deadcode
-
-verify-frontend: build-zoroark
-	cd zoroark && npm run check
-	cd lugia-frontend && npm run check
-	cd giratina-frontend && npm run check
-	cd zoroark && npm run lint
-	cd lugia-frontend && npm run lint
-	cd giratina-frontend && npm run lint
-
-build-zoroark:
-	cd zoroark && npm run build
+check-structural: verify-claude-refs verify-feature-docs
 
 verify-claude-refs:
 	@./scripts/verify-claude-refs.sh
 
 verify-feature-docs:
 	@./scripts/verify-feature-docs.sh
+
+periodic-review:
+	@echo ""
+	@echo "══════════════════════════════════════════════════════════════"
+	@echo "  PERIODIC REVIEW — Write a status update"
+	@echo "══════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "  1. DONE:       What did you complete since your last update?"
+	@echo "  2. VERIFIED:   What did you test? (specific commands, tools,"
+	@echo "                 playwright — not just 'make check')"
+	@echo "  3. NEXT:       What are you about to do? Does it match the plan?"
+	@echo "  4. BLOCKED:    Anything stuck or concerning? (skip if nothing)"
+	@echo "  5. DISCOVERED: Anything unexpected? (skip if nothing)"
+	@echo ""
+	@echo "  Write your update now, then continue working."
+	@echo "══════════════════════════════════════════════════════════════"
+	@echo ""
 
 generate:
 	cd lugia-backend && make sqlc
