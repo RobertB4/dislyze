@@ -1,16 +1,23 @@
 package middleware
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
+	"dislyze/jirachi/auditlog"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/logger"
 	"lugia/lib/authz"
+	"lugia/lib/iputils"
+	"lugia/queries"
 )
 
-func RequireFeature(feature authz.EnterpriseFeature) func(http.Handler) http.Handler {
+func RequireFeature(feature authz.EnterpriseFeature, db *queries.Queries) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !authz.TenantHasFeature(r.Context(), feature) {
@@ -29,6 +36,24 @@ func RequireFeature(feature authz.EnterpriseFeature) func(http.Handler) http.Han
 					Feature:   string(feature),
 				})
 
+				if authz.TenantHasFeature(r.Context(), authz.FeatureAuditLog) {
+					metadata, _ := json.Marshal(map[string]string{
+						"feature": string(feature),
+					})
+					ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+					_ = db.InsertAuditLog(r.Context(), &queries.InsertAuditLogParams{
+						TenantID:     tenantID,
+						ActorID:      userID,
+						ResourceType: string(auditlog.ResourceAccess),
+						Action:       string(auditlog.ActionFeatureGateBlocked),
+						Outcome:      string(auditlog.OutcomeFailure),
+						ResourceID:   pgtype.Text{},
+						Metadata:     metadata,
+						IpAddress:    &ipAddr,
+						UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+					})
+				}
+
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}
@@ -38,10 +63,14 @@ func RequireFeature(feature authz.EnterpriseFeature) func(http.Handler) http.Han
 	}
 }
 
-func RequireRBAC() func(http.Handler) http.Handler {
-	return RequireFeature(authz.FeatureRBAC)
+func RequireRBAC(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequireFeature(authz.FeatureRBAC, db)
 }
 
-func RequireIPWhitelist() func(http.Handler) http.Handler {
-	return RequireFeature(authz.FeatureIPWhitelist)
+func RequireIPWhitelist(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequireFeature(authz.FeatureIPWhitelist, db)
+}
+
+func RequireAuditLog(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequireFeature(authz.FeatureAuditLog, db)
 }

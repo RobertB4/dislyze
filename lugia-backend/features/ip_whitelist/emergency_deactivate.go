@@ -1,4 +1,4 @@
-// Feature doc: docs/features/ip-whitelisting.md
+// Feature doc: docs/features/ip-whitelisting.md, docs/features/audit-logging.md
 package ip_whitelist
 
 import (
@@ -7,15 +7,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
+	"dislyze/jirachi/auditlog"
 	jirachiAuthz "dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
+	"lugia/lib/iputils"
 	"lugia/lib/middleware"
 	"lugia/queries"
 )
@@ -115,6 +119,33 @@ func (h *IPWhitelistHandler) emergencyDeactivate(ctx context.Context, token stri
 	err = qtx.MarkIPWhitelistEmergencyTokenAsUsed(ctx, claims.JTI)
 	if err != nil {
 		return errlib.NewError(fmt.Errorf("EmergencyDeactivate: failed to mark emergency token as used: %w", err), http.StatusInternalServerError)
+	}
+
+	if currentFeatures.AuditLog.Enabled {
+		r := middleware.GetHTTPRequest(ctx)
+		actor, err := qtx.GetUserByID(ctx, claims.UserID)
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("EmergencyDeactivate: failed to get actor for audit log: %w", err), http.StatusInternalServerError)
+		}
+		metadata, _ := json.Marshal(map[string]string{
+			"actor_name":  actor.Name,
+			"actor_email": actor.Email,
+		})
+		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+		err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     claims.TenantID,
+			ActorID:      claims.UserID,
+			ResourceType: string(auditlog.ResourceIPWhitelist),
+			Action:       string(auditlog.ActionEmergencyDeactivated),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("EmergencyDeactivate: failed to insert audit log: %w", err), http.StatusInternalServerError)
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {

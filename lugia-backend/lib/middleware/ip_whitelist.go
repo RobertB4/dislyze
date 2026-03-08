@@ -1,12 +1,16 @@
 package middleware
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
+	"dislyze/jirachi/auditlog"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/logger"
@@ -153,6 +157,24 @@ func IPWhitelistMiddleware(db *queries.Queries) func(http.Handler) http.Handler 
 					Error:     fmt.Sprintf("Access denied: IP %s not in whitelist", clientIP),
 					Feature:   "ip_whitelist",
 				})
+
+				if authz.TenantHasFeature(ctx, authz.FeatureAuditLog) {
+					metadata, _ := json.Marshal(map[string]string{
+						"blocked_ip": clientIP,
+					})
+					ipAddr, _ := netip.ParseAddr(clientIP)
+					_ = db.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+						TenantID:     tenantID,
+						ActorID:      userID,
+						ResourceType: string(auditlog.ResourceAccess),
+						Action:       string(auditlog.ActionIPBlocked),
+						Outcome:      string(auditlog.OutcomeFailure),
+						ResourceID:   pgtype.Text{},
+						Metadata:     metadata,
+						IpAddress:    &ipAddr,
+						UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+					})
+				}
 
 				w.WriteHeader(http.StatusForbidden)
 				return

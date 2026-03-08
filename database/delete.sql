@@ -8,6 +8,7 @@ DELETE FROM sso_auth_requests;
 DELETE FROM user_roles;
 DELETE FROM role_permissions;
 -- permission data is hardcoded and global for all tenants, no need to delete
+DELETE FROM audit_logs;
 DELETE FROM roles;
 DELETE FROM users;
 DELETE FROM tenants;

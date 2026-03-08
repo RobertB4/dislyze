@@ -5,10 +5,11 @@
 INSERT INTO tenants (id, name, enterprise_features, auth_method) VALUES
 ('11111111-1111-1111-1111-111111111111', 'エンタープライズ株式会社', '{
   "rbac": {"enabled": true},
-  "ip_whitelist": {"enabled": true, "active": false, "allow_internal_admin_bypass": true}
+  "ip_whitelist": {"enabled": true, "active": false, "allow_internal_admin_bypass": true},
+  "audit_log": {"enabled": true}
 }', 'password'),
 ('22222222-2222-2222-2222-222222222222', 'SMB株式会社', '{ "rbac": {"enabled": false}, "ip_whitelist": {"enabled": false} }', 'password'),
-('33333333-3333-3333-3333-333333333333', '内部株式会社', '{ "rbac": {"enabled": true}, "ip_whitelist": {"enabled": true, "active": false, "allow_internal_admin_bypass": true} }', 'password'),
+('33333333-3333-3333-3333-333333333333', '内部株式会社', '{ "rbac": {"enabled": true}, "ip_whitelist": {"enabled": true, "active": false, "allow_internal_admin_bypass": true}, "audit_log": {"enabled": true} }', 'password'),
 ('44444444-4444-4444-4444-444444444444', 'SSO株式会社', '{
   "rbac": {"enabled": true},
   "sso": {
@@ -72,6 +73,7 @@ INSERT INTO role_permissions (role_id, permission_id, tenant_id) VALUES
 ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'db994eda-6ff7-4ae5-a675-3abe735ce9cc', '11111111-1111-1111-1111-111111111111'), -- users edit
 ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'cccf277b-5fd5-4f1d-b763-ebf69973e5b7', '11111111-1111-1111-1111-111111111111'), -- roles edit
 ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4', '11111111-1111-1111-1111-111111111111'), -- ip_whitelist edit
+('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6', '11111111-1111-1111-1111-111111111111'), -- audit_log view
 -- Assign permissions to ユーザー管理者 role (users view and edit only)
 ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'db994eda-6ff7-4ae5-a675-3abe735ce9cc', '11111111-1111-1111-1111-111111111111'), -- users edit
 
@@ -86,6 +88,7 @@ INSERT INTO role_permissions (role_id, permission_id, tenant_id) VALUES
 ('22222222-3333-4444-5555-666666666666', 'db994eda-6ff7-4ae5-a675-3abe735ce9cc', '33333333-3333-3333-3333-333333333333'), -- users edit
 ('22222222-3333-4444-5555-666666666666', 'cccf277b-5fd5-4f1d-b763-ebf69973e5b7', '33333333-3333-3333-3333-333333333333'), -- roles edit
 ('22222222-3333-4444-5555-666666666666', 'a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4', '33333333-3333-3333-3333-333333333333'), -- ip_whitelist edit
+('22222222-3333-4444-5555-666666666666', 'b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6', '33333333-3333-3333-3333-333333333333'), -- audit_log view
 
 -- SSO tenant admin role permissions
 ('55555555-5555-6666-7777-999999999999', '6e95ed87-f380-41fe-bc5b-f8af002345a4', '44444444-4444-4444-4444-444444444444'), -- tenant edit
@@ -380,3 +383,18 @@ INSERT INTO invitation_tokens (id, token_hash, tenant_id, user_id, expires_at, c
 -- Token for enterprise14@enterprise.test (User ID: a0000000-0000-0000-0000-000000000014) - Expired token for testing  
 -- unhashed token value: accept-invite-expired-token-for-testing
 ('d0000000-0000-0000-0000-000000000005', '1689934ddd1d942277310ce36b363be5bd6201523f348d2dda35ebce74643db3', '11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000014', NOW() - INTERVAL '48 hours', NOW());
+
+-- Sample audit log entries for enterprise tenant
+INSERT INTO audit_logs (tenant_id, actor_id, resource_type, action, outcome, resource_id, metadata, ip_address, user_agent, created_at) VALUES
+('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000001', 'auth', 'login', 'success', NULL, '{"actor_name": "田中 太郎", "actor_email": "enterprise1@enterprise.test"}', '192.168.1.1', 'Mozilla/5.0', NOW() - INTERVAL '7 days'),
+('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000002', 'auth', 'login', 'success', NULL, '{"actor_name": "佐藤 花子", "actor_email": "enterprise2@enterprise.test"}', '192.168.1.2', 'Mozilla/5.0', NOW() - INTERVAL '6 days'),
+('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000001', 'role', 'created', 'success', 'dddddddd-dddd-dddd-dddd-dddddddddddd', '{"actor_name": "田中 太郎", "actor_email": "enterprise1@enterprise.test", "role_name": "ユーザー管理者"}', '192.168.1.1', 'Mozilla/5.0', NOW() - INTERVAL '5 days'),
+('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000001', 'user', 'invited', 'success', 'a0000000-0000-0000-0000-000000000011', '{"actor_name": "田中 太郎", "actor_email": "enterprise1@enterprise.test", "email": "enterprise11@enterprise.test"}', '192.168.1.1', 'Mozilla/5.0', NOW() - INTERVAL '4 days'),
+('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000003', 'access', 'permission_denied', 'failure', NULL, '{"actor_name": "鈴木 一郎", "actor_email": "enterprise3@enterprise.test", "resource": "roles", "action": "edit"}', '192.168.1.3', 'Mozilla/5.0', NOW() - INTERVAL '3 days'),
+('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000001', 'ip_whitelist', 'activated', 'success', NULL, '{"actor_name": "田中 太郎", "actor_email": "enterprise1@enterprise.test"}', '192.168.1.1', 'Mozilla/5.0', NOW() - INTERVAL '2 days'),
+('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000001', 'ip_whitelist', 'ip_added', 'success', NULL, '{"actor_name": "田中 太郎", "actor_email": "enterprise1@enterprise.test", "ip_address": "10.0.0.0/24", "label": "オフィス"}', '192.168.1.1', 'Mozilla/5.0', NOW() - INTERVAL '2 days' + INTERVAL '1 hour'),
+('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000001', 'ip_whitelist', 'deactivated', 'success', NULL, '{"actor_name": "田中 太郎", "actor_email": "enterprise1@enterprise.test"}', '192.168.1.1', 'Mozilla/5.0', NOW() - INTERVAL '1 day'),
+('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000001', 'user', 'list_viewed', 'success', NULL, '{"actor_name": "田中 太郎", "actor_email": "enterprise1@enterprise.test"}', '192.168.1.1', 'Mozilla/5.0', NOW() - INTERVAL '12 hours'),
+('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000002', 'auth', 'login', 'failure', NULL, '{"actor_name": "佐藤 花子", "actor_email": "enterprise2@enterprise.test", "reason": "invalid_password"}', '10.0.0.5', 'Mozilla/5.0', NOW() - INTERVAL '6 hours'),
+('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000001', 'tenant', 'name_changed', 'success', '11111111-1111-1111-1111-111111111111', '{"actor_name": "田中 太郎", "actor_email": "enterprise1@enterprise.test", "old_name": "旧エンタープライズ株式会社", "new_name": "エンタープライズ株式会社"}', '192.168.1.1', 'Mozilla/5.0', NOW() - INTERVAL '3 hours'),
+('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000001', 'auth', 'password_changed', 'success', 'a0000000-0000-0000-0000-000000000001', '{"actor_name": "田中 太郎", "actor_email": "enterprise1@enterprise.test"}', '192.168.1.1', 'Mozilla/5.0', NOW() - INTERVAL '1 hour');

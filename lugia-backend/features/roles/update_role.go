@@ -1,18 +1,24 @@
-// Feature doc: docs/features/rbac.md
+// Feature doc: docs/features/rbac.md, docs/features/audit-logging.md
 package roles
 
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"dislyze/jirachi/auditlog"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
+	"lugia/lib/authz"
+	"lugia/lib/iputils"
+	"lugia/lib/middleware"
 	"lugia/queries"
 )
 
@@ -144,6 +150,36 @@ func (h *RolesHandler) updateRole(ctx context.Context, roleID pgtype.UUID, req U
 		})
 		if err != nil {
 			return errlib.NewError(fmt.Errorf("UpdateRole: failed to assign permissions to role: %w", err), http.StatusInternalServerError)
+		}
+	}
+
+	if authz.TenantHasFeature(ctx, authz.FeatureAuditLog) {
+		r := middleware.GetHTTPRequest(ctx)
+		actor, err := qtx.GetUserByID(ctx, libctx.GetUserID(ctx))
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("UpdateRole: failed to get actor for audit log: %w", err), http.StatusInternalServerError)
+		}
+
+		metadata, _ := json.Marshal(map[string]string{
+			"actor_name":  actor.Name,
+			"actor_email": actor.Email,
+			"role_name":   req.Name,
+		})
+
+		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+		err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     tenantID,
+			ActorID:      actor.ID,
+			ResourceType: string(auditlog.ResourceRole),
+			Action:       string(auditlog.ActionUpdated),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{String: roleID.String(), Valid: true},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("UpdateRole: failed to insert audit log: %w", err), http.StatusInternalServerError)
 		}
 	}
 

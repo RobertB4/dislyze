@@ -1,13 +1,19 @@
 package middleware
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
+	"dislyze/jirachi/auditlog"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/logger"
 	"lugia/lib/authz"
+	"lugia/lib/iputils"
 	"lugia/queries"
 )
 
@@ -30,6 +36,25 @@ func RequirePermission(db *queries.Queries, resource authz.Resource, action stri
 					Resource:  resource.String(),
 					Action:    action,
 				})
+
+				if authz.TenantHasFeature(r.Context(), authz.FeatureAuditLog) {
+					metadata, _ := json.Marshal(map[string]string{
+						"resource": resource.String(),
+						"action":   action,
+					})
+					ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+					_ = db.InsertAuditLog(r.Context(), &queries.InsertAuditLogParams{
+						TenantID:     tenantID,
+						ActorID:      userID,
+						ResourceType: string(auditlog.ResourceAccess),
+						Action:       string(auditlog.ActionPermissionDenied),
+						Outcome:      string(auditlog.OutcomeFailure),
+						ResourceID:   pgtype.Text{},
+						Metadata:     metadata,
+						IpAddress:    &ipAddr,
+						UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+					})
+				}
 
 				w.WriteHeader(http.StatusForbidden)
 				return
@@ -66,4 +91,8 @@ func RequireIPWhitelistView(db *queries.Queries) func(http.Handler) http.Handler
 
 func RequireIPWhitelistEdit(db *queries.Queries) func(http.Handler) http.Handler {
 	return RequirePermission(db, authz.ResourceIPWhitelist, authz.ActionEdit)
+}
+
+func RequireAuditLogView(db *queries.Queries) func(http.Handler) http.Handler {
+	return RequirePermission(db, authz.ResourceAuditLog, authz.ActionView)
 }

@@ -1,19 +1,25 @@
-// Feature doc: docs/features/profile-management.md
+// Feature doc: docs/features/profile-management.md, docs/features/audit-logging.md
 package users
 
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 
+	"dislyze/jirachi/auditlog"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
+	"lugia/lib/authz"
+	"lugia/lib/iputils"
+	"lugia/lib/middleware"
 	"lugia/queries"
 )
 
@@ -91,6 +97,31 @@ func (h *UsersHandler) changePassword(ctx context.Context, userID pgtype.UUID, r
 
 	if err := qtx.DeleteRefreshTokensByUserID(ctx, userID); err != nil {
 		return errlib.NewError(fmt.Errorf("ChangePassword: failed to invalidate refresh tokens for user %s: %w", userID.String(), err), http.StatusInternalServerError)
+	}
+
+	if authz.TenantHasFeature(ctx, authz.FeatureAuditLog) {
+		tenantID := libctx.GetTenantID(ctx)
+		r := middleware.GetHTTPRequest(ctx)
+		metadata, _ := json.Marshal(map[string]string{
+			"actor_name":  user.Name,
+			"actor_email": user.Email,
+		})
+
+		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+		err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     tenantID,
+			ActorID:      userID,
+			ResourceType: string(auditlog.ResourceAuth),
+			Action:       string(auditlog.ActionPasswordChanged),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("ChangePassword: failed to insert audit log: %w", err), http.StatusInternalServerError)
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {

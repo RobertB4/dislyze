@@ -1,4 +1,4 @@
-// Feature doc: docs/features/user-management.md
+// Feature doc: docs/features/user-management.md, docs/features/audit-logging.md
 package users
 
 import (
@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strings"
 	"time"
@@ -20,10 +21,14 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 	"golang.org/x/crypto/bcrypt"
 
+	"dislyze/jirachi/auditlog"
 	"dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/sendgridlib"
+	libAuthz "lugia/lib/authz"
+	"lugia/lib/iputils"
+	"lugia/lib/middleware"
 	"lugia/queries"
 )
 
@@ -213,6 +218,32 @@ func (h *UsersHandler) invitePasswordUser(ctx context.Context, req InviteUserReq
 		return errlib.NewError(fmt.Errorf("InviteUser: SendGrid API returned error status code: %d, Body: %s", response.StatusCode, response.Body), http.StatusInternalServerError)
 	}
 
+	if libAuthz.TenantHasFeature(ctx, libAuthz.FeatureAuditLog) {
+		r := middleware.GetHTTPRequest(ctx)
+		metadata, _ := json.Marshal(map[string]string{
+			"actor_name":    inviterDBUser.Name,
+			"actor_email":   inviterDBUser.Email,
+			"invited_email": req.Email,
+			"invited_name":  req.Name,
+		})
+
+		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+		err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     tenantID,
+			ActorID:      inviterUserID,
+			ResourceType: string(auditlog.ResourceUser),
+			Action:       string(auditlog.ActionInvited),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{String: createdUserID.String(), Valid: true},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("InviteUser: failed to insert audit log: %w", err), http.StatusInternalServerError)
+		}
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return errlib.NewError(fmt.Errorf("InviteUser: failed to commit transaction: %w", err), http.StatusInternalServerError)
 	}
@@ -356,6 +387,32 @@ func (h *UsersHandler) inviteSSOUser(ctx context.Context, req InviteUserRequestB
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return errlib.NewError(fmt.Errorf("InviteUser: SendGrid API returned error status code: %d, Body: %s", response.StatusCode, response.Body), http.StatusInternalServerError)
+	}
+
+	if libAuthz.TenantHasFeature(ctx, libAuthz.FeatureAuditLog) {
+		r := middleware.GetHTTPRequest(ctx)
+		metadata, _ := json.Marshal(map[string]string{
+			"actor_name":    inviterDBUser.Name,
+			"actor_email":   inviterDBUser.Email,
+			"invited_email": req.Email,
+			"invited_name":  req.Name,
+		})
+
+		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+		err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     tenantID,
+			ActorID:      inviterUserID,
+			ResourceType: string(auditlog.ResourceUser),
+			Action:       string(auditlog.ActionInvited),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{String: createdUserID.String(), Valid: true},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("InviteUser: failed to insert audit log: %w", err), http.StatusInternalServerError)
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {

@@ -1,16 +1,22 @@
-// Feature doc: docs/features/profile-management.md
+// Feature doc: docs/features/profile-management.md, docs/features/audit-logging.md
 package users
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"dislyze/jirachi/auditlog"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
+	"lugia/lib/authz"
+	"lugia/lib/iputils"
+	"lugia/lib/middleware"
 	"lugia/queries"
 )
 
@@ -43,6 +49,37 @@ func (h *UsersHandler) changeTenantName(ctx context.Context, tenantID pgtype.UUI
 		ID:   tenantID,
 	}); err != nil {
 		return errlib.NewError(fmt.Errorf("ChangeTenantName: failed to update tenant name for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError)
+	}
+
+	if authz.TenantHasFeature(ctx, authz.FeatureAuditLog) {
+		actorUserID := libctx.GetUserID(ctx)
+		actorDBUser, err := h.q.GetUserByID(ctx, actorUserID)
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("ChangeTenantName: failed to get actor user details for audit log: %w", err), http.StatusInternalServerError)
+		}
+
+		r := middleware.GetHTTPRequest(ctx)
+		metadata, _ := json.Marshal(map[string]string{
+			"actor_name":  actorDBUser.Name,
+			"actor_email": actorDBUser.Email,
+			"new_name":    req.Name,
+		})
+
+		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+		err = h.q.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     tenantID,
+			ActorID:      actorUserID,
+			ResourceType: string(auditlog.ResourceTenant),
+			Action:       string(auditlog.ActionNameChanged),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{String: tenantID.String(), Valid: true},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("ChangeTenantName: failed to insert audit log: %w", err), http.StatusInternalServerError)
+		}
 	}
 
 	return nil

@@ -1,9 +1,24 @@
 {
   "components": {
     "schemas": {
+      "AuditLog": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "type": "object"
+      },
       "EnterpriseFeatures": {
         "additionalProperties": false,
         "properties": {
+          "audit_log": {
+            "$ref": "#/components/schemas/AuditLog"
+          },
           "ip_whitelist": {
             "$ref": "#/components/schemas/IPWhitelist"
           },
@@ -16,7 +31,8 @@
         },
         "required": [
           "rbac",
-          "ip_whitelist"
+          "ip_whitelist",
+          "audit_log"
         ],
         "type": "object"
       },

@@ -21,10 +21,10 @@ test-integration-single:
 		echo "Usage: make test-integration-single TEST=TestSomething_Integration"; \
 		exit 1; \
 	fi
-	cd test && docker compose -f docker-compose.integration.yml down
-	cd test && docker compose -f docker-compose.integration.yml build giratina-backend
-	cd test && docker compose -f docker-compose.integration.yml up -d
-	cd test && docker compose -f docker-compose.integration.yml exec giratina-backend go test ./test/integration/... -run "$(TEST)" -json -v -p 1 -parallel 1 2>&1 | gotestfmt -hide=empty-packages,successful-tests
+	cd test && docker compose -p giratina-backend-integration -f docker-compose.integration.yml down --remove-orphans
+	cd test && docker compose -p giratina-backend-integration -f docker-compose.integration.yml build giratina-backend
+	cd test && docker compose -p giratina-backend-integration -f docker-compose.integration.yml up -d
+	cd test && docker compose -p giratina-backend-integration -f docker-compose.integration.yml exec giratina-backend go test ./test/integration/... -run "$(TEST)" -json -v -p 1 -parallel 1 2>&1 | gotestfmt -hide=empty-packages,successful-tests
 
 lint:
 	golangci-lint run --timeout 5m

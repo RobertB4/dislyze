@@ -43,10 +43,10 @@ Each step must include verification. What "verify" means depends on what changed
 - [ ] Step 1: [description]
   - **Verify:** [what kind of tests to write, what to check in the browser]
 
-## Status Updates
-
-_Agents: add a brief entry here during each periodic review._
-
 ## Discoveries
 
 _Updated during implementation. Capture anything learned that wasn't anticipated._
+
+## Status Updates
+
+_Agents: add a brief entry here during each periodic review._

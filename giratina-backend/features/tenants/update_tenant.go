@@ -1,17 +1,24 @@
-// Feature doc: docs/features/rbac.md, docs/features/ip-whitelisting.md
+// Feature doc: docs/features/rbac.md, docs/features/ip-whitelisting.md, docs/features/audit-logging.md
 package tenants
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"giratina/lib/middleware"
 	"giratina/queries"
+	"net"
 	"net/http"
+	"net/netip"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"dislyze/jirachi/auditlog"
 	"dislyze/jirachi/authz"
+	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 )
 
@@ -50,13 +57,56 @@ func (h *TenantsHandler) updateTenant(ctx context.Context, tenantID *pgtype.UUID
 		return errlib.NewError(fmt.Errorf("failed to marshal enterprise features: %w", err), http.StatusInternalServerError)
 	}
 
-	err = h.queries.UpdateTenant(ctx, &queries.UpdateTenantParams{
+	tx, err := h.dbConn.Begin(ctx)
+	if err != nil {
+		return errlib.NewError(fmt.Errorf("UpdateTenant: failed to begin transaction: %w", err), http.StatusInternalServerError)
+	}
+	defer func() {
+		if rbErr := tx.Rollback(ctx); rbErr != nil && !errlib.Is(rbErr, pgx.ErrTxClosed) && !errlib.Is(rbErr, sql.ErrTxDone) {
+			errlib.LogError(fmt.Errorf("UpdateTenant: failed to rollback transaction: %w", rbErr))
+		}
+	}()
+	qtx := h.queries.WithTx(tx)
+
+	err = qtx.UpdateTenant(ctx, &queries.UpdateTenantParams{
 		Name:               requestBody.Name,
 		EnterpriseFeatures: enterpriseFeaturesJSON,
 		ID:                 *tenantID,
 	})
 	if err != nil {
 		return errlib.NewError(fmt.Errorf("failed to update tenant: %w", err), http.StatusInternalServerError)
+	}
+
+	// Check if target tenant has audit logging enabled (in the NEW features being set)
+	if requestBody.EnterpriseFeatures.AuditLog.Enabled {
+		r := middleware.GetHTTPRequest(ctx)
+		userID := libctx.GetUserID(ctx)
+
+		metadata, _ := json.Marshal(map[string]string{
+			"is_internal_admin":    "true",
+			"enterprise_features":  string(enterpriseFeaturesJSON),
+		})
+
+		host, _, _ := net.SplitHostPort(r.RemoteAddr)
+		ipAddr, _ := netip.ParseAddr(host)
+		err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     *tenantID,
+			ActorID:      userID,
+			ResourceType: string(auditlog.ResourceTenant),
+			Action:       string(auditlog.ActionEnterpriseFeatureToggled),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("UpdateTenant: failed to insert audit log: %w", err), http.StatusInternalServerError)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return errlib.NewError(fmt.Errorf("UpdateTenant: failed to commit transaction: %w", err), http.StatusInternalServerError)
 	}
 
 	return nil

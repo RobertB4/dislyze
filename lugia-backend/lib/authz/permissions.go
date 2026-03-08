@@ -23,6 +23,7 @@ const (
 	ResourceUsers       Resource = "users"
 	ResourceRoles       Resource = "roles"
 	ResourceIPWhitelist Resource = "ip_whitelist"
+	ResourceAuditLog    Resource = "audit_log"
 )
 
 const (

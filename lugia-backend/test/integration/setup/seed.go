@@ -56,7 +56,8 @@ var TestTenantsData = map[string]TenantTestData{
 		ID:   "11111111-1111-1111-1111-111111111111",
 		Name: "エンタープライズ株式会社",
 		EnterpriseFeatures: map[string]interface{}{
-			"rbac": map[string]interface{}{"enabled": true},
+			"rbac":      map[string]interface{}{"enabled": true},
+			"audit_log": map[string]interface{}{"enabled": true},
 		},
 	},
 	"smb": {
@@ -70,7 +71,8 @@ var TestTenantsData = map[string]TenantTestData{
 		ID:   "33333333-3333-3333-3333-333333333333",
 		Name: "内部株式会社",
 		EnterpriseFeatures: map[string]interface{}{
-			"rbac": map[string]interface{}{"enabled": true},
+			"rbac":      map[string]interface{}{"enabled": true},
+			"audit_log": map[string]interface{}{"enabled": true},
 		},
 	},
 	"sso": {
@@ -158,6 +160,12 @@ var TestPermissionsData = map[string]PermissionTestData{
 		Resource:    "ip_whitelist",
 		Action:      "edit",
 		Description: "IP制限画面の編集",
+	},
+	"audit_log_view": {
+		ID:          "b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6",
+		Resource:    "audit_log",
+		Action:      "view",
+		Description: "監査ログの閲覧",
 	},
 }
 

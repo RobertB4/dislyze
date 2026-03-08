@@ -1,4 +1,4 @@
-// Feature doc: docs/features/user-management.md
+// Feature doc: docs/features/user-management.md, docs/features/audit-logging.md
 package users
 
 import (
@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"time"
 
@@ -18,10 +19,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sendgrid/sendgrid-go"
 
-	"dislyze/jirachi/authz"
+	"dislyze/jirachi/auditlog"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/sendgridlib"
+	libAuthz "lugia/lib/authz"
+	"lugia/lib/iputils"
 	"lugia/lib/middleware"
 	"lugia/queries"
 )
@@ -177,6 +180,32 @@ func (h *UsersHandler) resendPasswordInvite(ctx context.Context, targetUserID pg
 		return errlib.NewError(fmt.Errorf("ResendInvite: SendGrid API returned error status code %d for user %s, body: %s", sgResponse.StatusCode, targetUserID.String(), sgResponse.Body), http.StatusInternalServerError)
 	}
 
+	if libAuthz.TenantHasFeature(ctx, libAuthz.FeatureAuditLog) {
+		r := middleware.GetHTTPRequest(ctx)
+		metadata, _ := json.Marshal(map[string]string{
+			"actor_name":        invokerDBUser.Name,
+			"actor_email":       invokerDBUser.Email,
+			"target_user_name":  targetDBUser.Name,
+			"target_user_email": targetDBUser.Email,
+		})
+
+		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+		err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     invokerTenantID,
+			ActorID:      invokerUserID,
+			ResourceType: string(auditlog.ResourceUser),
+			Action:       string(auditlog.ActionInviteResent),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{String: targetUserID.String(), Valid: true},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("ResendInvite: failed to insert audit log: %w", err), http.StatusInternalServerError)
+		}
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return errlib.NewError(fmt.Errorf("ResendInvite: failed to commit transaction for user %s: %w", targetUserID.String(), err), http.StatusInternalServerError)
 	}
@@ -188,12 +217,7 @@ func (h *UsersHandler) resendSSOInvite(ctx context.Context, targetUserID pgtype.
 	invokerUserID := libctx.GetUserID(ctx)
 	invokerTenantID := libctx.GetTenantID(ctx)
 
-	var enterpriseFeatures authz.EnterpriseFeatures
-	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
-		return errlib.NewError(fmt.Errorf("ResendInvite: failed to parse enterprise features: %w", err), http.StatusInternalServerError)
-	}
-
-	if !enterpriseFeatures.SSO.Enabled {
+	if !libAuthz.TenantHasFeature(ctx, libAuthz.FeatureSSO) {
 		return errlib.NewError(fmt.Errorf("ResendInvite: SSO not enabled for tenant"), http.StatusBadRequest)
 	}
 
@@ -259,6 +283,32 @@ func (h *UsersHandler) resendSSOInvite(ctx context.Context, targetUserID pgtype.
 
 	if sgResponse.StatusCode < 200 || sgResponse.StatusCode >= 300 {
 		return errlib.NewError(fmt.Errorf("ResendInvite: SendGrid API returned error status code %d for user %s, body: %s", sgResponse.StatusCode, targetUserID.String(), sgResponse.Body), http.StatusInternalServerError)
+	}
+
+	if libAuthz.TenantHasFeature(ctx, libAuthz.FeatureAuditLog) {
+		r := middleware.GetHTTPRequest(ctx)
+		metadata, _ := json.Marshal(map[string]string{
+			"actor_name":        invokerDBUser.Name,
+			"actor_email":       invokerDBUser.Email,
+			"target_user_name":  targetDBUser.Name,
+			"target_user_email": targetDBUser.Email,
+		})
+
+		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+		err = h.q.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     invokerTenantID,
+			ActorID:      invokerUserID,
+			ResourceType: string(auditlog.ResourceUser),
+			Action:       string(auditlog.ActionInviteResent),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{String: targetUserID.String(), Valid: true},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("ResendInvite: failed to insert audit log: %w", err), http.StatusInternalServerError)
+		}
 	}
 
 	return nil

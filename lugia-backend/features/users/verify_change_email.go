@@ -1,18 +1,26 @@
-// Feature doc: docs/features/profile-management.md
+// Feature doc: docs/features/profile-management.md, docs/features/audit-logging.md
 package users
 
 import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
+	"dislyze/jirachi/auditlog"
+	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
+	"lugia/lib/authz"
+	"lugia/lib/iputils"
+	"lugia/lib/middleware"
 	"lugia/queries"
 )
 
@@ -79,6 +87,36 @@ func (h *UsersHandler) verifyChangeEmail(ctx context.Context, token string) erro
 
 	if err := qtx.DeleteRefreshTokensByUserID(ctx, emailChangeToken.UserID); err != nil {
 		return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to invalidate sessions: %w", err), http.StatusInternalServerError)
+	}
+
+	if authz.TenantHasFeature(ctx, authz.FeatureAuditLog) {
+		r := middleware.GetHTTPRequest(ctx)
+		actor, err := qtx.GetUserByID(ctx, libctx.GetUserID(ctx))
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to get actor for audit log: %w", err), http.StatusInternalServerError)
+		}
+
+		metadata, _ := json.Marshal(map[string]string{
+			"actor_name":  actor.Name,
+			"actor_email": actor.Email,
+			"new_email":   emailChangeToken.NewEmail,
+		})
+
+		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+		err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     libctx.GetTenantID(ctx),
+			ActorID:      actor.ID,
+			ResourceType: string(auditlog.ResourceUser),
+			Action:       string(auditlog.ActionEmailChanged),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to insert audit log: %w", err), http.StatusInternalServerError)
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {

@@ -19,7 +19,9 @@ periodic-review:
 	@echo "  4. BLOCKED:    Anything stuck or concerning? (skip if nothing)"
 	@echo "  5. DISCOVERED: Anything unexpected? (skip if nothing)"
 	@echo ""
-	@echo "  Write your update now, then continue working."
+	@echo "  Append a new update below the previous ones."
+	@echo ""
+	@echo "  Then continue working."
 	@echo "══════════════════════════════════════════════════════════════"
 	@echo ""
 

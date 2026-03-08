@@ -1,4 +1,4 @@
-// Feature doc: docs/features/ip-whitelisting.md
+// Feature doc: docs/features/ip-whitelisting.md, docs/features/audit-logging.md
 package ip_whitelist
 
 import (
@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -15,11 +16,13 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sendgrid/sendgrid-go"
 
+	"dislyze/jirachi/auditlog"
 	jirachiAuthz "dislyze/jirachi/authz"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/sendgridlib"
 	"dislyze/jirachi/utils"
+	"lugia/lib/authz"
 	"lugia/lib/iputils"
 	"lugia/lib/middleware"
 	"lugia/queries"
@@ -126,6 +129,34 @@ func (h *IPWhitelistHandler) activateWhitelist(ctx context.Context, req Activate
 		err = h.createEmergencyTokenAndSendEmail(ctx, qtx, tenantID, userID)
 		if err != nil {
 			return "", errlib.NewError(fmt.Errorf("ActivateWhitelist: failed to create emergency token and send email: %w", err), http.StatusInternalServerError)
+		}
+	}
+
+	if authz.TenantHasFeature(ctx, authz.FeatureAuditLog) {
+		actor, err := qtx.GetUserByID(ctx, userID)
+		if err != nil {
+			return "", errlib.NewError(fmt.Errorf("ActivateWhitelist: failed to get actor for audit log: %w", err), http.StatusInternalServerError)
+		}
+
+		metadata, _ := json.Marshal(map[string]string{
+			"actor_name":  actor.Name,
+			"actor_email": actor.Email,
+		})
+
+		ipAddr, _ := netip.ParseAddr(userIP)
+		err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     tenantID,
+			ActorID:      userID,
+			ResourceType: string(auditlog.ResourceIPWhitelist),
+			Action:       string(auditlog.ActionActivated),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return "", errlib.NewError(fmt.Errorf("ActivateWhitelist: failed to insert audit log: %w", err), http.StatusInternalServerError)
 		}
 	}
 
