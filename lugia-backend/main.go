@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"lugia/features/audit_logs"
 	"lugia/features/auth"
 	"lugia/features/ip_whitelist"
 	"lugia/features/roles"
@@ -65,6 +66,7 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 	usersHandler := users.NewUsersHandler(dbConn, queries, env, resendInviteRateLimiter, deleteUserRateLimiter, changeEmailRateLimiter)
 	rolesHandler := roles.NewRolesHandler(dbConn, queries, env)
 	ipWhitelistHandler := ip_whitelist.NewIPWhitelistHandler(dbConn, queries, env, ipWhitelistRateLimiter)
+	auditLogsHandler := audit_logs.NewAuditLogsHandler(dbConn, queries, env)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -129,26 +131,30 @@ func SetupRoutes(dbConn *pgxpool.Pool, env *config.Env, queries *queries.Queries
 		huma.Register(usersEditAPI, users.DeleteUserOp, usersHandler.DeleteUser)
 
 		// /roles endpoints
-		rolesViewAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireRBAC(), middleware.RequireRolesView(queries))...), humaConfig)
+		rolesViewAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireRBAC(queries), middleware.RequireRolesView(queries))...), humaConfig)
 		huma.Register(rolesViewAPI, roles.GetRolesOp, rolesHandler.GetRoles)
 		huma.Register(rolesViewAPI, roles.GetPermissionsOp, rolesHandler.GetPermissions)
 
-		rolesEditAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireRBAC(), middleware.RequireRolesEdit(queries))...), humaConfig)
+		rolesEditAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireRBAC(queries), middleware.RequireRolesEdit(queries))...), humaConfig)
 		huma.Register(rolesEditAPI, roles.CreateRoleOp, rolesHandler.CreateRole)
 		huma.Register(rolesEditAPI, roles.UpdateRoleOp, rolesHandler.UpdateRole)
 		huma.Register(rolesEditAPI, roles.DeleteRoleOp, rolesHandler.DeleteRole)
 
 		// /ip-whitelist endpoints
-		ipViewAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireIPWhitelist(), middleware.RequireIPWhitelistView(queries))...), humaConfig)
+		ipViewAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireIPWhitelist(queries), middleware.RequireIPWhitelistView(queries))...), humaConfig)
 		huma.Register(ipViewAPI, ip_whitelist.GetIPWhitelistOp, ipWhitelistHandler.GetIPWhitelist)
 
-		ipEditAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireIPWhitelist(), middleware.RequireIPWhitelistEdit(queries))...), humaConfig)
+		ipEditAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireIPWhitelist(queries), middleware.RequireIPWhitelistEdit(queries))...), humaConfig)
 		huma.Register(ipEditAPI, ip_whitelist.AddIPOp, ipWhitelistHandler.AddIPToWhitelist)
 		huma.Register(ipEditAPI, ip_whitelist.UpdateIPLabelOp, ipWhitelistHandler.UpdateIPLabel)
 		huma.Register(ipEditAPI, ip_whitelist.DeleteIPOp, ipWhitelistHandler.DeleteIP)
 		huma.Register(ipEditAPI, ip_whitelist.ActivateWhitelistOp, ipWhitelistHandler.ActivateWhitelist)
 		huma.Register(ipEditAPI, ip_whitelist.DeactivateWhitelistOp, ipWhitelistHandler.DeactivateWhitelist)
 		huma.Register(ipEditAPI, ip_whitelist.EmergencyDeactivateOp, ipWhitelistHandler.EmergencyDeactivate)
+
+		// /audit-logs endpoints
+		auditLogViewAPI := humachi.New(r.With(append(authenticatedMiddleware, middleware.RequireAuditLog(queries), middleware.RequireAuditLogView(queries))...), humaConfig)
+		huma.Register(auditLogViewAPI, audit_logs.GetAuditLogsOp, auditLogsHandler.GetAuditLogs)
 	})
 
 	// Conditionally serve frontend static files - not used on localhost

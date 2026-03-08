@@ -5,13 +5,14 @@ export type Me = {
 	email: string;
 	user_name: string;
 	tenant_name: string;
-	permissions: `${"tenant" | "users" | "roles" | "ip_whitelist"}.${"view" | "edit"}`[]; // array of {resource}.{action}, e.g. users.view
+	permissions: `${"tenant" | "users" | "roles" | "ip_whitelist" | "audit_log"}.${"view" | "edit"}`[]; // array of {resource}.{action}, e.g. users.view
 	enterprise_features: EnterpriseFeatures;
 };
 
 export type EnterpriseFeatures = {
 	rbac: { enabled: boolean };
 	ip_whitelist: { enabled: boolean; active: boolean; allow_internal_admin_bypass: boolean };
+	audit_log: { enabled: boolean };
 };
 
 /**

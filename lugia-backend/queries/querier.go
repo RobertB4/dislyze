@@ -19,6 +19,7 @@ type Querier interface {
 	CheckRoleInUse(ctx context.Context, arg *CheckRoleInUseParams) (bool, error)
 	CheckRoleNameExists(ctx context.Context, arg *CheckRoleNameExistsParams) (bool, error)
 	ClearTenantIPWhitelist(ctx context.Context, tenantID pgtype.UUID) error
+	CountAuditLogs(ctx context.Context, arg *CountAuditLogsParams) (int64, error)
 	CountTenantIPWhitelistRules(ctx context.Context, tenantID pgtype.UUID) (int64, error)
 	CountUsersByTenantID(ctx context.Context, arg *CountUsersByTenantIDParams) (int64, error)
 	CreateEmailChangeToken(ctx context.Context, arg *CreateEmailChangeTokenParams) error
@@ -63,7 +64,9 @@ type Querier interface {
 	GetUserRoleIDs(ctx context.Context, arg *GetUserRoleIDsParams) ([]pgtype.UUID, error)
 	GetUserRolesWithDetails(ctx context.Context, arg *GetUserRolesWithDetailsParams) ([]*GetUserRolesWithDetailsRow, error)
 	GetUsersWithRolesRespectingRBAC(ctx context.Context, arg *GetUsersWithRolesRespectingRBACParams) ([]*GetUsersWithRolesRespectingRBACRow, error)
+	InsertAuditLog(ctx context.Context, arg *InsertAuditLogParams) error
 	InviteUserToTenant(ctx context.Context, arg *InviteUserToTenantParams) (pgtype.UUID, error)
+	ListAuditLogs(ctx context.Context, arg *ListAuditLogsParams) ([]*ListAuditLogsRow, error)
 	MarkEmailChangeTokenAsUsed(ctx context.Context, id pgtype.UUID) error
 	MarkIPWhitelistEmergencyTokenAsUsed(ctx context.Context, jti pgtype.UUID) error
 	MarkInvitationTokenAsUsed(ctx context.Context, id pgtype.UUID) error

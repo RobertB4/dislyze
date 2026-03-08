@@ -8,8 +8,14 @@ linters:
     - ineffassign
     - unused
     - misspell
+    - auditcheck
   disable:
     - gocyclo
+  settings:
+    custom:
+      auditcheck:
+        type: "module"
+        description: "Ensures InsertAuditLog errors are returned, not silently dropped (compliance)"
 
 run:
   timeout: 5m

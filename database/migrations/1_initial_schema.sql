@@ -48,7 +48,8 @@ INSERT INTO permissions (id, resource, action, description) VALUES
 ('44b8962d-5dc5-490e-8469-03078668dd52', 'roles', 'view', 'ロール一覧の閲覧'),
 ('cccf277b-5fd5-4f1d-b763-ebf69973e5b7', 'roles', 'edit', 'ロールの編集'),
 ('f1a8b2c3-d4e5-f6a7-b8c9-d0e1f2a3b4c5', 'ip_whitelist', 'view', 'IP制限画面の閲覧'),
-('a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4', 'ip_whitelist', 'edit', 'IP制限画面の編集');
+('a9b8c7d6-e5f4-a3b2-c1d0-e9f8a7b6c5d4', 'ip_whitelist', 'edit', 'IP制限画面の編集'),
+('b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6', 'audit_log', 'view', '監査ログの閲覧');
 
 CREATE TABLE role_permissions (
     role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
@@ -173,6 +174,24 @@ CREATE TABLE ip_whitelist_emergency_tokens (
 );
 CREATE INDEX idx_ip_whitelist_emergency_tokens_jti ON ip_whitelist_emergency_tokens(jti);
 
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    actor_id UUID NOT NULL REFERENCES users(id),
+    resource_type VARCHAR(100) NOT NULL,
+    action VARCHAR(100) NOT NULL,
+    outcome VARCHAR(50) NOT NULL CHECK (outcome IN ('success', 'failure')),
+    resource_id VARCHAR(255),
+    metadata JSONB NOT NULL DEFAULT '{}',
+    ip_address INET,
+    user_agent TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_audit_logs_tenant_created ON audit_logs(tenant_id, created_at DESC);
+CREATE INDEX idx_audit_logs_tenant_actor ON audit_logs(tenant_id, actor_id);
+CREATE INDEX idx_audit_logs_tenant_action ON audit_logs(tenant_id, action);
+CREATE INDEX idx_audit_logs_tenant_resource ON audit_logs(tenant_id, resource_type, resource_id);
+
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -208,6 +227,10 @@ CREATE TRIGGER update_users_updated_at
 
 -- Drop indexes
 
+DROP INDEX IF EXISTS idx_audit_logs_tenant_resource;
+DROP INDEX IF EXISTS idx_audit_logs_tenant_action;
+DROP INDEX IF EXISTS idx_audit_logs_tenant_actor;
+DROP INDEX IF EXISTS idx_audit_logs_tenant_created;
 DROP INDEX IF EXISTS idx_tenant_ip_whitelist_ip_address;
 DROP INDEX IF EXISTS idx_tenant_ip_whitelist_tenant_id;
 DROP INDEX IF EXISTS idx_email_change_tokens_expires_at;
@@ -234,6 +257,7 @@ DROP INDEX IF EXISTS idx_password_reset_tokens_token_hash;
 DROP INDEX IF EXISTS idx_password_reset_tokens_expires_at;
 
 -- Drop tables
+DROP TABLE IF EXISTS audit_logs;
 DROP TABLE IF EXISTS ip_whitelist_emergency_tokens;
 DROP TABLE IF EXISTS tenant_ip_whitelist;
 DROP TABLE IF EXISTS email_change_tokens;

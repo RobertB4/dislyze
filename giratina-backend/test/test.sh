@@ -8,7 +8,7 @@ NC='\033[0m'
 cleanup() {
     echo "🧹 Cleaning up..."
     # Stop and remove containers
-    docker compose -p giratina-backend-integration -f docker-compose.integration.yml down --volumes
+    docker compose -p giratina-backend-integration -f docker-compose.integration.yml down --volumes --remove-orphans
 }
 
 # Set trap to run cleanup on exit (success, failure, or interruption)

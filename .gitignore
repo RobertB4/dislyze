@@ -46,3 +46,6 @@ keycloak-mock/keycloak*
 
 .playwright-cli
 settings.local.json
+
+# custom golangci-lint binary
+lugia-backend/custom-gcl

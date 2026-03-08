@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 
+	"lugia/features/audit_logs"
 	"lugia/features/auth"
 	"lugia/features/ip_whitelist"
 	"lugia/features/roles"
@@ -139,6 +140,11 @@ func main() {
 			return nil, nil
 		})
 		huma.Register(api, ip_whitelist.EmergencyDeactivateOp, func(_ context.Context, _ *ip_whitelist.EmergencyDeactivateInput) (*struct{}, error) {
+			return nil, nil
+		})
+
+		// /audit-logs endpoints
+		huma.Register(api, audit_logs.GetAuditLogsOp, func(_ context.Context, _ *audit_logs.GetAuditLogsInput) (*audit_logs.GetAuditLogsOutput, error) {
 			return nil, nil
 		})
 	})

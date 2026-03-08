@@ -1,18 +1,24 @@
-// Feature doc: docs/features/user-management.md
+// Feature doc: docs/features/user-management.md, docs/features/audit-logging.md
 package users
 
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"dislyze/jirachi/auditlog"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
+	"lugia/lib/authz"
+	"lugia/lib/iputils"
+	"lugia/lib/middleware"
 	"lugia/queries"
 )
 
@@ -160,6 +166,37 @@ func (h *UsersHandler) updateUserRoles(ctx context.Context, targetUserID pgtype.
 			_, err = qtx.AddRolesToUser(ctx, addRolesInput)
 			if err != nil {
 				return errlib.NewError(fmt.Errorf("UpdateUserRoles: failed to add roles: %w", err), http.StatusInternalServerError)
+			}
+		}
+
+		if authz.TenantHasFeature(ctx, authz.FeatureAuditLog) {
+			actorDBUser, err := qtx.GetUserByID(ctx, requestingUserID)
+			if err != nil {
+				return errlib.NewError(fmt.Errorf("UpdateUserRoles: failed to get actor user details for audit log: %w", err), http.StatusInternalServerError)
+			}
+
+			r := middleware.GetHTTPRequest(ctx)
+			metadata, _ := json.Marshal(map[string]string{
+				"actor_name":        actorDBUser.Name,
+				"actor_email":       actorDBUser.Email,
+				"target_user_name":  targetUser.Name,
+				"target_user_email": targetUser.Email,
+			})
+
+			ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+			err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+				TenantID:     requestingTenantID,
+				ActorID:      requestingUserID,
+				ResourceType: string(auditlog.ResourceUser),
+				Action:       string(auditlog.ActionRolesUpdated),
+				Outcome:      string(auditlog.OutcomeSuccess),
+				ResourceID:   pgtype.Text{String: targetUserID.String(), Valid: true},
+				Metadata:     metadata,
+				IpAddress:    &ipAddr,
+				UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+			})
+			if err != nil {
+				return errlib.NewError(fmt.Errorf("UpdateUserRoles: failed to insert audit log: %w", err), http.StatusInternalServerError)
 			}
 		}
 

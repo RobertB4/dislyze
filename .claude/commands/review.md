@@ -33,7 +33,6 @@ If the diff adds or modifies test files, read the implementation code being test
 
 - [ ] **Shared resources**: If `jirachi/`, `zoroark/`, or `database/` changed, were all consumers verified?
 - [ ] **Generated code regenerated**: If `queries_pregeneration/` changed, was `make generate` run and output committed?
-- [ ] **PROGRESS.md**: If project state changed (feature completed, known issue fixed, roadmap shifted), is `PROGRESS.md` updated?
 - [ ] **PR ready**: Is the PR description drafted following `.github/PULL_REQUEST_TEMPLATE.md`?
 
 ### 4. Report

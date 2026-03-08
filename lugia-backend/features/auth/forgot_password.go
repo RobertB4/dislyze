@@ -1,4 +1,4 @@
-// Feature doc: docs/features/authentication.md
+// Feature doc: docs/features/authentication.md, docs/features/audit-logging.md
 package auth
 
 import (
@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/netip"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -16,9 +17,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sendgrid/sendgrid-go"
 
+	"dislyze/jirachi/auditlog"
+	jirachiAuthz "dislyze/jirachi/authz"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/sendgridlib"
 	"dislyze/jirachi/utils"
+	"lugia/lib/iputils"
 	"lugia/lib/middleware"
 	"lugia/queries"
 )
@@ -46,7 +50,7 @@ func (h *AuthHandler) ForgotPassword(ctx context.Context, input *ForgotPasswordI
 		return nil, nil
 	}
 
-	if err := h.forgotPassword(ctx, input.Body); err != nil {
+	if err := h.forgotPassword(ctx, input.Body, r); err != nil {
 		errlib.LogError(err)
 		// Always return success for security (prevent email enumeration)
 	}
@@ -54,7 +58,7 @@ func (h *AuthHandler) ForgotPassword(ctx context.Context, input *ForgotPasswordI
 	return nil, nil
 }
 
-func (h *AuthHandler) forgotPassword(ctx context.Context, req ForgotPasswordRequestBody) error {
+func (h *AuthHandler) forgotPassword(ctx context.Context, req ForgotPasswordRequestBody, r *http.Request) error {
 	user, err := h.queries.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {
@@ -99,6 +103,32 @@ func (h *AuthHandler) forgotPassword(ctx context.Context, req ForgotPasswordRequ
 	})
 	if createErr != nil {
 		return errlib.NewError(fmt.Errorf("ForgotPassword: failed to create password reset token for user %s: %w", user.ID, createErr), http.StatusInternalServerError)
+	}
+
+	tenant, tenantErr := h.queries.GetTenantByID(ctx, user.TenantID)
+	if tenantErr == nil {
+		var ef jirachiAuthz.EnterpriseFeatures
+		if err := json.Unmarshal(tenant.EnterpriseFeatures, &ef); err == nil && ef.AuditLog.Enabled {
+			metadata, _ := json.Marshal(map[string]string{
+				"actor_name":  user.Name,
+				"actor_email": user.Email,
+			})
+
+			ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+			if err := qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+				TenantID:     tenant.ID,
+				ActorID:      user.ID,
+				ResourceType: string(auditlog.ResourceAuth),
+				Action:       string(auditlog.ActionPasswordResetRequested),
+				Outcome:      string(auditlog.OutcomeSuccess),
+				ResourceID:   pgtype.Text{},
+				Metadata:     metadata,
+				IpAddress:    &ipAddr,
+				UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+			}); err != nil {
+				return errlib.NewError(fmt.Errorf("ForgotPassword: failed to insert audit log: %w", err), http.StatusInternalServerError)
+			}
+		}
 	}
 
 	if commitErr := tx.Commit(ctx); commitErr != nil {

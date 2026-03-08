@@ -137,7 +137,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AuditLog: {
+            enabled: boolean;
+        };
         EnterpriseFeatures: {
+            audit_log: components["schemas"]["AuditLog"];
             ip_whitelist: components["schemas"]["IPWhitelist"];
             rbac: components["schemas"]["RBAC"];
             sso?: components["schemas"]["SSO"];
@@ -302,6 +306,7 @@ export interface components {
     headers: never;
     pathItems: never;
 }
+export type AuditLog = components['schemas']['AuditLog'];
 export type EnterpriseFeatures = components['schemas']['EnterpriseFeatures'];
 export type ErrorDetail = components['schemas']['ErrorDetail'];
 export type ErrorModel = components['schemas']['ErrorModel'];

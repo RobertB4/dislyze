@@ -1,6 +1,7 @@
 package roles
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"lugia/features/roles"
 	"lugia/test/integration/setup"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -207,7 +209,7 @@ func TestGetPermissions_ResponseFormat(t *testing.T) {
 	assert.GreaterOrEqual(t, len(response.Permissions), 6, "Should have at least 6 permissions")
 
 	// Validate each permission structure and content
-	expectedResources := map[string]bool{"users": false, "roles": false, "tenant": false, "ip_whitelist": false}
+	expectedResources := map[string]bool{"users": false, "roles": false, "tenant": false, "ip_whitelist": false, "audit_log": false}
 	expectedActions := map[string]bool{"view": false, "edit": false}
 
 	for _, permission := range response.Permissions {
@@ -238,4 +240,148 @@ func TestGetPermissions_ResponseFormat(t *testing.T) {
 	for action, found := range expectedActions {
 		assert.True(t, found, "Should have permissions with action: %s", action)
 	}
+}
+
+func updateTenantEnterpriseFeatures(t *testing.T, pool *pgxpool.Pool, tenantID string, features map[string]interface{}) {
+	t.Helper()
+	featuresJSON, err := json.Marshal(features)
+	require.NoError(t, err)
+	_, err = pool.Exec(context.Background(),
+		`UPDATE tenants SET enterprise_features = $1 WHERE id = $2`,
+		featuresJSON, tenantID)
+	require.NoError(t, err)
+}
+
+func TestGetPermissions_FeatureFiltering(t *testing.T) {
+	pool := setup.InitDB(t)
+	defer setup.CloseDB(pool)
+
+	client := &http.Client{}
+	smbTenant := setup.TestTenantsData["smb"]
+	smbUser := setup.TestUsersData["smb_1"]
+
+	t.Run("disabled features are excluded from permissions", func(t *testing.T) {
+		setup.ResetAndSeedDB(t, pool)
+
+		// Enable only RBAC for SMB tenant (no ip_whitelist, no audit_log)
+		updateTenantEnterpriseFeatures(t, pool, smbTenant.ID, map[string]interface{}{
+			"rbac":         map[string]interface{}{"enabled": true},
+			"ip_whitelist": map[string]interface{}{"enabled": false},
+		})
+
+		accessToken, _ := setup.LoginUserAndGetTokens(t, smbUser.Email, smbUser.PlainTextPassword)
+
+		reqURL := fmt.Sprintf("%s/roles/permissions", setup.BaseURL)
+		req, err := http.NewRequest("GET", reqURL, nil)
+		require.NoError(t, err)
+		req.AddCookie(&http.Cookie{Name: "dislyze_access_token", Value: accessToken, Path: "/"})
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response roles.GetPermissionsResponse
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		resources := make(map[string]bool)
+		for _, p := range response.Permissions {
+			resources[p.Resource] = true
+		}
+		assert.False(t, resources["ip_whitelist"], "Should not include ip_whitelist permissions")
+		assert.False(t, resources["audit_log"], "Should not include audit_log permissions")
+		assert.True(t, resources["tenant"], "Should include core tenant permissions")
+		assert.True(t, resources["users"], "Should include core users permissions")
+		assert.True(t, resources["roles"], "Should include core roles permissions")
+	})
+
+	t.Run("enabled features are included in permissions", func(t *testing.T) {
+		setup.ResetAndSeedDB(t, pool)
+
+		enterpriseUser := setup.TestUsersData["enterprise_1"]
+		accessToken, _ := setup.LoginUserAndGetTokens(t, enterpriseUser.Email, enterpriseUser.PlainTextPassword)
+
+		reqURL := fmt.Sprintf("%s/roles/permissions", setup.BaseURL)
+		req, err := http.NewRequest("GET", reqURL, nil)
+		require.NoError(t, err)
+		req.AddCookie(&http.Cookie{Name: "dislyze_access_token", Value: accessToken, Path: "/"})
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response roles.GetPermissionsResponse
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		resources := make(map[string]bool)
+		for _, p := range response.Permissions {
+			resources[p.Resource] = true
+		}
+		assert.True(t, resources["ip_whitelist"], "Should include ip_whitelist permissions")
+		assert.True(t, resources["audit_log"], "Should include audit_log permissions")
+	})
+
+	t.Run("enabling a feature makes its permissions visible", func(t *testing.T) {
+		setup.ResetAndSeedDB(t, pool)
+
+		// Start with only RBAC
+		updateTenantEnterpriseFeatures(t, pool, smbTenant.ID, map[string]interface{}{
+			"rbac":         map[string]interface{}{"enabled": true},
+			"ip_whitelist": map[string]interface{}{"enabled": false},
+		})
+
+		accessToken, _ := setup.LoginUserAndGetTokens(t, smbUser.Email, smbUser.PlainTextPassword)
+
+		reqURL := fmt.Sprintf("%s/roles/permissions", setup.BaseURL)
+
+		// First request: feature-gated permissions excluded
+		req1, err := http.NewRequest("GET", reqURL, nil)
+		require.NoError(t, err)
+		req1.AddCookie(&http.Cookie{Name: "dislyze_access_token", Value: accessToken, Path: "/"})
+		resp1, err := client.Do(req1)
+		require.NoError(t, err)
+
+		var response1 roles.GetPermissionsResponse
+		err = json.NewDecoder(resp1.Body).Decode(&response1)
+		_ = resp1.Body.Close()
+		require.NoError(t, err)
+
+		resources1 := make(map[string]bool)
+		for _, p := range response1.Permissions {
+			resources1[p.Resource] = true
+		}
+		assert.False(t, resources1["audit_log"], "Should not include audit_log before enabling")
+		assert.False(t, resources1["ip_whitelist"], "Should not include ip_whitelist")
+
+		// Enable audit_log
+		updateTenantEnterpriseFeatures(t, pool, smbTenant.ID, map[string]interface{}{
+			"rbac":         map[string]interface{}{"enabled": true},
+			"ip_whitelist": map[string]interface{}{"enabled": false},
+			"audit_log":    map[string]interface{}{"enabled": true},
+		})
+
+		// Second request: audit_log now visible, ip_whitelist still excluded
+		req2, err := http.NewRequest("GET", reqURL, nil)
+		require.NoError(t, err)
+		req2.AddCookie(&http.Cookie{Name: "dislyze_access_token", Value: accessToken, Path: "/"})
+		resp2, err := client.Do(req2)
+		require.NoError(t, err)
+		defer func() { _ = resp2.Body.Close() }()
+
+		var response2 roles.GetPermissionsResponse
+		err = json.NewDecoder(resp2.Body).Decode(&response2)
+		require.NoError(t, err)
+
+		resources2 := make(map[string]bool)
+		for _, p := range response2.Permissions {
+			resources2[p.Resource] = true
+		}
+		assert.True(t, resources2["audit_log"], "Should now include audit_log permissions")
+		assert.False(t, resources2["ip_whitelist"], "Should still not include ip_whitelist")
+	})
 }

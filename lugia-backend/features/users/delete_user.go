@@ -1,19 +1,25 @@
-// Feature doc: docs/features/user-management.md
+// Feature doc: docs/features/user-management.md, docs/features/audit-logging.md
 package users
 
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"dislyze/jirachi/auditlog"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
+	"lugia/lib/authz"
+	"lugia/lib/iputils"
 	"lugia/lib/middleware"
+	"lugia/queries"
 )
 
 var DeleteUserOp = huma.Operation{
@@ -79,6 +85,37 @@ func (h *UsersHandler) deleteUser(ctx context.Context, targetUserID, invokerUser
 
 	if err := qtx.MarkUserDeletedAndAnonymize(ctx, targetUserID); err != nil {
 		return errlib.NewError(fmt.Errorf("DeleteUser: failed to anonymize user %s: %w", targetUserID.String(), err), http.StatusInternalServerError)
+	}
+
+	if authz.TenantHasFeature(ctx, authz.FeatureAuditLog) {
+		actorDBUser, err := qtx.GetUserByID(ctx, invokerUserID)
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("DeleteUser: failed to get actor user details for audit log: %w", err), http.StatusInternalServerError)
+		}
+
+		r := middleware.GetHTTPRequest(ctx)
+		metadata, _ := json.Marshal(map[string]string{
+			"actor_name":         actorDBUser.Name,
+			"actor_email":        actorDBUser.Email,
+			"deleted_user_name":  targetDBUser.Name,
+			"deleted_user_email": targetDBUser.Email,
+		})
+
+		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+		err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     invokerTenantID,
+			ActorID:      invokerUserID,
+			ResourceType: string(auditlog.ResourceUser),
+			Action:       string(auditlog.ActionDeleted),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{String: targetUserID.String(), Valid: true},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("DeleteUser: failed to insert audit log: %w", err), http.StatusInternalServerError)
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {

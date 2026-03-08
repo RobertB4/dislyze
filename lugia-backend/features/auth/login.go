@@ -1,11 +1,13 @@
-// Feature doc: docs/features/authentication.md
+// Feature doc: docs/features/authentication.md, docs/features/audit-logging.md
 package auth
 
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -13,9 +15,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 
+	"dislyze/jirachi/auditlog"
+	jirachiAuthz "dislyze/jirachi/authz"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/jwt"
 	"dislyze/jirachi/logger"
+	"lugia/lib/iputils"
 	"lugia/lib/middleware"
 	"lugia/queries"
 )
@@ -114,10 +119,12 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequestBody, r *http.
 	}
 
 	if tenant.AuthMethod == "sso" {
+		h.insertLoginAuditLog(ctx, r, tenant, user, auditlog.OutcomeFailure, "sso_only")
 		return nil, user.ID.String(), fmt.Errorf("このアカウントはSSO専用です。SSOでログインしてください。")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		h.insertLoginAuditLog(ctx, r, tenant, user, auditlog.OutcomeFailure, "invalid_password")
 		return nil, user.ID.String(), fmt.Errorf("メールアドレスまたはパスワードが正しくありません")
 	}
 
@@ -161,8 +168,78 @@ func (h *AuthHandler) login(ctx context.Context, req *LoginRequestBody, r *http.
 		return nil, user.ID.String(), fmt.Errorf("failed to store refresh token: %w", err)
 	}
 
+	if err := h.insertLoginAuditLogTx(ctx, r, qtx, tenant, user, auditlog.OutcomeSuccess, ""); err != nil {
+		return nil, user.ID.String(), fmt.Errorf("failed to insert audit log: %w", err)
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return nil, user.ID.String(), fmt.Errorf("failed to commit transaction: %w", err)
 	}
 	return tokenPair, user.ID.String(), nil
+}
+
+// insertLoginAuditLog inserts an audit log for login events outside a transaction.
+// Used for failure paths where the tenant is already loaded.
+func (h *AuthHandler) insertLoginAuditLog(ctx context.Context, r *http.Request, tenant *queries.Tenant, user *queries.User, outcome auditlog.Outcome, reason string) {
+	var ef jirachiAuthz.EnterpriseFeatures
+	if err := json.Unmarshal(tenant.EnterpriseFeatures, &ef); err != nil || !ef.AuditLog.Enabled {
+		return
+	}
+
+	metadata := map[string]string{
+		"actor_name":  user.Name,
+		"actor_email": user.Email,
+	}
+	if reason != "" {
+		metadata["reason"] = reason
+	}
+	metadataJSON, _ := json.Marshal(metadata)
+
+	ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+	//nolint:auditcheck // login already failed, user gets 401 regardless — audit log is best-effort for failure events
+	err := h.queries.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+		TenantID:     tenant.ID,
+		ActorID:      user.ID,
+		ResourceType: string(auditlog.ResourceAuth),
+		Action:       string(auditlog.ActionLogin),
+		Outcome:      string(outcome),
+		ResourceID:   pgtype.Text{},
+		Metadata:     metadataJSON,
+		IpAddress:    &ipAddr,
+		UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+	})
+	if err != nil {
+		errlib.LogError(fmt.Errorf("login: failed to insert audit log: %w", err))
+	}
+}
+
+// insertLoginAuditLogTx inserts an audit log for login events within a transaction.
+// Used for the success path where the audit log should be part of the same transaction.
+func (h *AuthHandler) insertLoginAuditLogTx(ctx context.Context, r *http.Request, qtx *queries.Queries, tenant *queries.Tenant, user *queries.User, outcome auditlog.Outcome, reason string) error {
+	var ef jirachiAuthz.EnterpriseFeatures
+	if err := json.Unmarshal(tenant.EnterpriseFeatures, &ef); err != nil || !ef.AuditLog.Enabled {
+		return nil
+	}
+
+	metadata := map[string]string{
+		"actor_name":  user.Name,
+		"actor_email": user.Email,
+	}
+	if reason != "" {
+		metadata["reason"] = reason
+	}
+	metadataJSON, _ := json.Marshal(metadata)
+
+	ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+	return qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+		TenantID:     tenant.ID,
+		ActorID:      user.ID,
+		ResourceType: string(auditlog.ResourceAuth),
+		Action:       string(auditlog.ActionLogin),
+		Outcome:      string(outcome),
+		ResourceID:   pgtype.Text{},
+		Metadata:     metadataJSON,
+		IpAddress:    &ipAddr,
+		UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+	})
 }

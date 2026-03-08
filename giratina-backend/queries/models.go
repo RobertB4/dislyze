@@ -10,6 +10,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AuditLog struct {
+	ID           pgtype.UUID        `json:"id"`
+	TenantID     pgtype.UUID        `json:"tenant_id"`
+	ActorID      pgtype.UUID        `json:"actor_id"`
+	ResourceType string             `json:"resource_type"`
+	Action       string             `json:"action"`
+	Outcome      string             `json:"outcome"`
+	ResourceID   pgtype.Text        `json:"resource_id"`
+	Metadata     []byte             `json:"metadata"`
+	IpAddress    *netip.Addr        `json:"ip_address"`
+	UserAgent    pgtype.Text        `json:"user_agent"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
 type EmailChangeToken struct {
 	ID        pgtype.UUID        `json:"id"`
 	UserID    pgtype.UUID        `json:"user_id"`

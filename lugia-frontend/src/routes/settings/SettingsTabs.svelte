@@ -38,6 +38,15 @@
 						id: "ip-whitelist"
 					}
 				]
+			: []),
+		...(hasPermission(me, "audit_log.view") && hasFeature(me, "audit_log")
+			? [
+					{
+						name: "監査ログ",
+						href: "/settings/audit-logs" as const,
+						id: "audit-logs"
+					}
+				]
 			: [])
 	];
 

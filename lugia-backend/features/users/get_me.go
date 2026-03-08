@@ -26,6 +26,7 @@ var GetMeOp = huma.Operation{
 type ClientEnterpriseFeatures struct {
 	RBAC        authz.RBAC        `json:"rbac"`
 	IPWhitelist authz.IPWhitelist `json:"ip_whitelist"`
+	AuditLog    authz.AuditLog    `json:"audit_log"`
 }
 
 type MeResponse struct {
@@ -99,6 +100,7 @@ func (h *UsersHandler) getMe(ctx context.Context) (*MeResponse, error) {
 		EnterpriseFeatures: ClientEnterpriseFeatures{
 			RBAC:        enterpriseFeatures.RBAC,
 			IPWhitelist: enterpriseFeatures.IPWhitelist,
+			AuditLog:    enterpriseFeatures.AuditLog,
 		},
 	}
 

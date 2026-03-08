@@ -10,6 +10,7 @@ Lugia (customer facing) and giratina (internal admin panel) share the same user 
 
 - **SSO:** SSO configuration is set by admins at tenant invitation time, not by the customer. Once a tenant is SSO-enabled, their users authenticate through their own IdP (SAML/OIDC) instead of email/password. Keycloak is only used as a mock IdP in development.
 - **Tenant onboarding:** Signup creates both a tenant and the first user account in one step. Subsequent users are added via invitations.
+- **Audit logging:** All auth events are logged — login (success and failure), logout, signup, password reset, SSO ACS, accept invite. Failed logins record the attempted email and failure reason in metadata.
 
 ## Non-obvious constraints
 

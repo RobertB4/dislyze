@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-audit-logs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/accept-invite": {
         parameters: {
             query?: never;
@@ -559,6 +575,23 @@ export interface components {
             ip_address: string;
             label: string | null;
         };
+        AuditLog: {
+            enabled: boolean;
+        };
+        AuditLogEntry: {
+            action: string;
+            actor_email: string;
+            actor_id: string;
+            actor_name: string;
+            created_at: string;
+            id: string;
+            ip_address: string | null;
+            metadata: unknown;
+            outcome: string;
+            resource_id: string | null;
+            resource_type: string;
+            user_agent: string | null;
+        };
         ChangeEmailRequestBody: {
             /**
              * Format: uri
@@ -589,6 +622,7 @@ export interface components {
             name: string;
         };
         ClientEnterpriseFeatures: {
+            audit_log: components["schemas"]["AuditLog"];
             ip_whitelist: components["schemas"]["IPWhitelist"];
             rbac: components["schemas"]["RBAC"];
         };
@@ -658,6 +692,16 @@ export interface components {
              */
             readonly $schema?: string;
             email: string;
+        };
+        GetAuditLogsResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetAuditLogsResponse.json
+             */
+            readonly $schema?: string;
+            audit_logs: components["schemas"]["AuditLogEntry"][];
+            pagination: components["schemas"]["PaginationMetadata"];
         };
         GetIPWhitelistResponse: {
             /**
@@ -889,6 +933,8 @@ export type AcceptInviteRequestBody = components['schemas']['AcceptInviteRequest
 export type ActivateWhitelistRequestBody = components['schemas']['ActivateWhitelistRequestBody'];
 export type ActivateWhitelistResponse = components['schemas']['ActivateWhitelistResponse'];
 export type AddIpToWhitelistRequest = components['schemas']['AddIPToWhitelistRequest'];
+export type AuditLog = components['schemas']['AuditLog'];
+export type AuditLogEntry = components['schemas']['AuditLogEntry'];
 export type ChangeEmailRequestBody = components['schemas']['ChangeEmailRequestBody'];
 export type ChangePasswordRequestBody = components['schemas']['ChangePasswordRequestBody'];
 export type ChangeTenantNameRequestBody = components['schemas']['ChangeTenantNameRequestBody'];
@@ -897,6 +943,7 @@ export type CreateRoleRequestBody = components['schemas']['CreateRoleRequestBody
 export type ErrorDetail = components['schemas']['ErrorDetail'];
 export type ErrorModel = components['schemas']['ErrorModel'];
 export type ForgotPasswordRequestBody = components['schemas']['ForgotPasswordRequestBody'];
+export type GetAuditLogsResponse = components['schemas']['GetAuditLogsResponse'];
 export type GetIpWhitelistResponse = components['schemas']['GetIPWhitelistResponse'];
 export type GetPermissionsResponse = components['schemas']['GetPermissionsResponse'];
 export type GetRolesResponse = components['schemas']['GetRolesResponse'];
@@ -923,6 +970,44 @@ export type VerifyResetTokenRequestBody = components['schemas']['VerifyResetToke
 export type VerifyResetTokenResponse = components['schemas']['VerifyResetTokenResponse'];
 export type $defs = Record<string, never>;
 export interface operations {
+    "get-audit-logs": {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+                actor_id?: string;
+                resource_type?: string;
+                action?: string;
+                outcome?: string;
+                from_date?: string;
+                to_date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetAuditLogsResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "accept-invite": {
         parameters: {
             query?: never;

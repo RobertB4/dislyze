@@ -46,6 +46,8 @@ func GetEnterpriseFeatureEnabled(ctx context.Context, featureName string) bool {
 		return features.IPWhitelist.Enabled
 	case "sso":
 		return features.SSO.Enabled
+	case "audit_log":
+		return features.AuditLog.Enabled
 	default:
 		return false
 	}

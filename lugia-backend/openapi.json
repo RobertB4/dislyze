@@ -99,6 +99,81 @@
         ],
         "type": "object"
       },
+      "AuditLog": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "type": "object"
+      },
+      "AuditLogEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "actor_email": {
+            "type": "string"
+          },
+          "actor_id": {
+            "type": "string"
+          },
+          "actor_name": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "ip_address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata": {},
+          "outcome": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resource_type": {
+            "type": "string"
+          },
+          "user_agent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "actor_id",
+          "actor_name",
+          "actor_email",
+          "resource_type",
+          "action",
+          "outcome",
+          "resource_id",
+          "metadata",
+          "ip_address",
+          "user_agent",
+          "created_at"
+        ],
+        "type": "object"
+      },
       "ChangeEmailRequestBody": {
         "additionalProperties": false,
         "properties": {
@@ -179,6 +254,9 @@
       "ClientEnterpriseFeatures": {
         "additionalProperties": false,
         "properties": {
+          "audit_log": {
+            "$ref": "#/components/schemas/AuditLog"
+          },
           "ip_whitelist": {
             "$ref": "#/components/schemas/IPWhitelist"
           },
@@ -188,7 +266,8 @@
         },
         "required": [
           "rbac",
-          "ip_whitelist"
+          "ip_whitelist",
+          "audit_log"
         ],
         "type": "object"
       },
@@ -330,6 +409,34 @@
         },
         "required": [
           "email"
+        ],
+        "type": "object"
+      },
+      "GetAuditLogsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/schemas/GetAuditLogsResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "audit_logs": {
+            "items": {
+              "$ref": "#/components/schemas/AuditLogEntry"
+            },
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMetadata"
+          }
+        },
+        "required": [
+          "audit_logs",
+          "pagination"
         ],
         "type": "object"
       },
@@ -1027,6 +1134,106 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/audit-logs": {
+      "get": {
+        "operationId": "get-audit-logs",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "actor_id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "resource_type",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "action",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "outcome",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "from_date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "to_date",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetAuditLogsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        }
+      }
+    },
     "/auth/accept-invite": {
       "post": {
         "operationId": "accept-invite",

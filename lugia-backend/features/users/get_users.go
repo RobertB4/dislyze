@@ -1,4 +1,4 @@
-// Feature doc: docs/features/user-management.md
+// Feature doc: docs/features/user-management.md, docs/features/audit-logging.md
 package users
 
 import (
@@ -6,14 +6,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"dislyze/jirachi/authz"
+	"dislyze/jirachi/auditlog"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
+	libAuthz "lugia/lib/authz"
 	"lugia/lib/conversions"
+	"lugia/lib/iputils"
+	"lugia/lib/middleware"
 	"lugia/lib/pagination"
 	"lugia/queries"
 
@@ -83,17 +87,36 @@ func (h *UsersHandler) GetUsers(ctx context.Context, input *GetUsersInput) (*Get
 }
 
 func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, paginationParams pagination.QueryParams, searchTerm string) (*GetUsersResponse, error) {
-	tenant, err := h.q.GetTenantByID(ctx, tenantID)
-	if err != nil {
-		if errlib.Is(err, pgx.ErrNoRows) {
-			return nil, errlib.NewError(fmt.Errorf("GetUsers: tenant not found %s: %w", tenantID.String(), err), http.StatusUnauthorized)
+	// Compliance: audit log failure must block the request. If we can't prove
+	// who accessed personal data, we must deny access (GDPR Article 30).
+	if libAuthz.TenantHasFeature(ctx, libAuthz.FeatureAuditLog) {
+		actorUserID := libctx.GetUserID(ctx)
+		actorDBUser, err := h.q.GetUserByID(ctx, actorUserID)
+		if err != nil {
+			return nil, errlib.NewError(fmt.Errorf("GetUsers: failed to get actor user details for audit log: %w", err), http.StatusInternalServerError)
 		}
-		return nil, errlib.NewError(fmt.Errorf("GetUsers: failed to get tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError)
-	}
 
-	var enterpriseFeatures authz.EnterpriseFeatures
-	if err := json.Unmarshal(tenant.EnterpriseFeatures, &enterpriseFeatures); err != nil {
-		return nil, errlib.NewError(fmt.Errorf("GetUsers: failed to unmarshal features config for tenant %s: %w", tenantID.String(), err), http.StatusInternalServerError)
+		r := middleware.GetHTTPRequest(ctx)
+		metadata, _ := json.Marshal(map[string]string{
+			"actor_name":  actorDBUser.Name,
+			"actor_email": actorDBUser.Email,
+		})
+
+		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+		err = h.q.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     tenantID,
+			ActorID:      actorUserID,
+			ResourceType: string(auditlog.ResourceUser),
+			Action:       string(auditlog.ActionListViewed),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return nil, errlib.NewError(fmt.Errorf("GetUsers: failed to insert audit log: %w", err), http.StatusInternalServerError)
+		}
 	}
 
 	totalCount, err := h.q.CountUsersByTenantID(ctx, &queries.CountUsersByTenantIDParams{
@@ -109,7 +132,7 @@ func (h *UsersHandler) getUsers(ctx context.Context, tenantID pgtype.UUID, pagin
 		SearchTerm:  searchTerm,
 		LimitCount:  paginationParams.Limit,
 		OffsetCount: paginationParams.Offset,
-		RbacEnabled: enterpriseFeatures.RBAC.Enabled,
+		RbacEnabled: libAuthz.TenantHasFeature(ctx, libAuthz.FeatureRBAC),
 	})
 	if err != nil {
 		if errlib.Is(err, pgx.ErrNoRows) {

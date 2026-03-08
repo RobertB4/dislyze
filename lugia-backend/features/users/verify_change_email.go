@@ -1,18 +1,26 @@
-// Feature doc: docs/features/profile-management.md
+// Feature doc: docs/features/profile-management.md, docs/features/audit-logging.md
 package users
 
 import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
+	"dislyze/jirachi/auditlog"
+	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
+	"lugia/lib/authz"
+	"lugia/lib/iputils"
+	"lugia/lib/middleware"
 	"lugia/queries"
 )
 
@@ -62,8 +70,22 @@ func (h *UsersHandler) verifyChangeEmail(ctx context.Context, token string) erro
 		return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to get email change token: %w", err), http.StatusInternalServerError)
 	}
 
+	if emailChangeToken.UserID != libctx.GetUserID(ctx) {
+		return errlib.NewErrorWithDetail(fmt.Errorf("VerifyChangeEmail: token user %s does not match authenticated user", emailChangeToken.UserID), http.StatusBadRequest, "無効または期限切れのトークンです。")
+	}
+
 	if emailChangeToken.ExpiresAt.Time.Before(time.Now()) {
 		return errlib.NewErrorWithDetail(fmt.Errorf("VerifyChangeEmail: token expired at %s", emailChangeToken.ExpiresAt.Time), http.StatusBadRequest, "無効または期限切れのトークンです。")
+	}
+
+	// Fetch actor before updating email so we capture the old email in the audit log.
+	var oldEmail string
+	if authz.TenantHasFeature(ctx, authz.FeatureAuditLog) {
+		actor, err := qtx.GetUserByID(ctx, emailChangeToken.UserID)
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to get actor for audit log: %w", err), http.StatusInternalServerError)
+		}
+		oldEmail = actor.Email
 	}
 
 	if err := qtx.UpdateUserEmail(ctx, &queries.UpdateUserEmailParams{
@@ -79,6 +101,37 @@ func (h *UsersHandler) verifyChangeEmail(ctx context.Context, token string) erro
 
 	if err := qtx.DeleteRefreshTokensByUserID(ctx, emailChangeToken.UserID); err != nil {
 		return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to invalidate sessions: %w", err), http.StatusInternalServerError)
+	}
+
+	if authz.TenantHasFeature(ctx, authz.FeatureAuditLog) {
+		r := middleware.GetHTTPRequest(ctx)
+		actor, err := qtx.GetUserByID(ctx, libctx.GetUserID(ctx))
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to get actor for audit log: %w", err), http.StatusInternalServerError)
+		}
+
+		metadata, _ := json.Marshal(map[string]string{
+			"actor_name":  actor.Name,
+			"actor_email": actor.Email,
+			"old_email":   oldEmail,
+			"new_email":   emailChangeToken.NewEmail,
+		})
+
+		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+		err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     libctx.GetTenantID(ctx),
+			ActorID:      actor.ID,
+			ResourceType: string(auditlog.ResourceUser),
+			Action:       string(auditlog.ActionEmailChangeVerified),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{String: emailChangeToken.UserID.String(), Valid: true},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("VerifyChangeEmail: failed to insert audit log: %w", err), http.StatusInternalServerError)
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {

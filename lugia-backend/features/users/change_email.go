@@ -1,4 +1,4 @@
-// Feature doc: docs/features/profile-management.md
+// Feature doc: docs/features/profile-management.md, docs/features/audit-logging.md
 package users
 
 import (
@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -17,9 +18,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sendgrid/sendgrid-go"
 
+	"dislyze/jirachi/auditlog"
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
 	"dislyze/jirachi/sendgridlib"
+	"lugia/lib/authz"
+	"lugia/lib/iputils"
 	"lugia/lib/middleware"
 	"lugia/queries"
 )
@@ -96,6 +100,36 @@ func (h *UsersHandler) changeEmail(ctx context.Context, userID pgtype.UUID, req 
 		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	}); err != nil {
 		return errlib.NewError(fmt.Errorf("ChangeEmail: failed to create token: %w", err), http.StatusInternalServerError)
+	}
+
+	if authz.TenantHasFeature(ctx, authz.FeatureAuditLog) {
+		actorDBUser, err := qtx.GetUserByID(ctx, userID)
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("ChangeEmail: failed to get user details for audit log: %w", err), http.StatusInternalServerError)
+		}
+
+		tenantID := libctx.GetTenantID(ctx)
+		metadata, _ := json.Marshal(map[string]string{
+			"actor_name":  actorDBUser.Name,
+			"actor_email": actorDBUser.Email,
+			"new_email":   req.NewEmail,
+		})
+
+		ipAddr, _ := netip.ParseAddr(iputils.ExtractClientIP(r))
+		err = qtx.InsertAuditLog(ctx, &queries.InsertAuditLogParams{
+			TenantID:     tenantID,
+			ActorID:      userID,
+			ResourceType: string(auditlog.ResourceUser),
+			Action:       string(auditlog.ActionEmailChangeRequested),
+			Outcome:      string(auditlog.OutcomeSuccess),
+			ResourceID:   pgtype.Text{String: userID.String(), Valid: true},
+			Metadata:     metadata,
+			IpAddress:    &ipAddr,
+			UserAgent:    pgtype.Text{String: r.UserAgent(), Valid: true},
+		})
+		if err != nil {
+			return errlib.NewError(fmt.Errorf("ChangeEmail: failed to insert audit log: %w", err), http.StatusInternalServerError)
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {

@@ -22,7 +22,8 @@
 	const featureKeyToLabelMap: Record<string, string> = {
 		rbac: "権限設定",
 		ip_whitelist: "IPアドレス制限",
-		sso: "SSO認証"
+		sso: "SSO認証",
+		audit_log: "監査ログ"
 	};
 
 	function isFeatureEditable(featureKey: string): boolean {
