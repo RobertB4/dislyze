@@ -32,10 +32,16 @@ What are the performance implications of this task? Think through how this behav
 ## Steps
 
 Order steps by the customer journey — build from the user's experience inward.
-Each step must include concrete verification: what tests to write, what commands to run, what to check in the browser.
+Each step must include verification. What "verify" means depends on what changed:
+
+- **Backend (lugia-backend, giratina-backend):** Write integration tests covering the new behavior. Tests must run and pass. Use curl to verify endpoints.
+- **Frontend (lugia-frontend):** Write e2e tests covering the new behavior. Tests must run and pass. Use `playwright-cli` to verify visually.
+- **Frontend (giratina-frontend):** Use `playwright-cli` to verify visually (no e2e test infrastructure yet).
+- **Shared library (jirachi):** Write unit tests for new logic. Tests must run and pass.
+- **Shared components (zoroark):** Verify in both consuming frontends.
 
 - [ ] Step 1: [description]
-  - **Verify:** [how to confirm this step works — unit tests, integration tests, e2e tests, browser, curl, all?]
+  - **Verify:** [what kind of tests to write, what to check in the browser]
 
 ## Status Updates
 
