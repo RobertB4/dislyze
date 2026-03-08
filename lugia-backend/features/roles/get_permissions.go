@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"dislyze/jirachi/errlib"
+	"lugia/lib/authz"
 )
 
 var GetPermissionsOp = huma.Operation{
@@ -48,14 +49,21 @@ func (h *RolesHandler) getPermissions(ctx context.Context) (*GetPermissionsRespo
 		return nil, errlib.NewError(fmt.Errorf("GetPermissions: failed to get permissions: %w", err), http.StatusInternalServerError)
 	}
 
-	permissionInfos := make([]Permission, len(permissions))
-	for i, permission := range permissions {
-		permissionInfos[i] = Permission{
+	permissionInfos := make([]Permission, 0, len(permissions))
+	for _, permission := range permissions {
+		feature, ok := resourceToFeature[permission.Resource]
+		if !ok {
+			return nil, errlib.NewError(fmt.Errorf("GetPermissions: permission resource %q not in resourceToFeature map", permission.Resource), http.StatusInternalServerError)
+		}
+		if feature != "" && !authz.TenantHasFeature(ctx, feature) {
+			continue
+		}
+		permissionInfos = append(permissionInfos, Permission{
 			ID:          permission.ID.String(),
 			Resource:    permission.Resource,
 			Action:      permission.Action,
 			Description: permission.Description,
-		}
+		})
 	}
 
 	response := &GetPermissionsResponse{

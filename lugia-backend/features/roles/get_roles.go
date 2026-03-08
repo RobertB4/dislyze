@@ -12,7 +12,20 @@ import (
 
 	libctx "dislyze/jirachi/ctx"
 	"dislyze/jirachi/errlib"
+	"lugia/lib/authz"
 )
+
+// resourceToFeature maps every permission resource to its enterprise feature gate.
+// Core resources use "" (always visible). Feature-gated resources use the feature constant.
+// Every resource in the permissions table MUST have an entry here — a missing
+// entry returns 500 to prevent silently exposing ungated permissions.
+var resourceToFeature = map[string]authz.EnterpriseFeature{
+	"tenant":       "",
+	"users":        "",
+	"roles":        "",
+	"ip_whitelist": authz.FeatureIPWhitelist,
+	"audit_log":    authz.FeatureAuditLog,
+}
 
 var GetRolesOp = huma.Operation{
 	OperationID: "get-roles",
@@ -92,6 +105,13 @@ func (h *RolesHandler) getRoles(ctx context.Context, tenantID pgtype.UUID) (*Get
 		}
 
 		if row.PermissionDescription.Valid {
+			feature, ok := resourceToFeature[row.Resource.String]
+			if !ok {
+				return nil, errlib.NewError(fmt.Errorf("GetRoles: permission resource %q not in resourceToFeature map", row.Resource.String), http.StatusInternalServerError)
+			}
+			if feature != "" && !authz.TenantHasFeature(ctx, feature) {
+				continue
+			}
 			permission := Permission{
 				ID:          row.PermissionID.String(),
 				Resource:    row.Resource.String,
